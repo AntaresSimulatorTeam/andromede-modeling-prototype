@@ -11,18 +11,12 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
 from andromede.expression import ExpressionNode
 from andromede.expression.degree import is_constant
 from andromede.expression.indexing_structure import IndexingStructure
-
-
-class VariableValueType(Enum):
-    FLOAT = "FLOAT"
-    INTEGER = "INTEGER"
-    # Needs more ?
+from andromede.model.common import ValueType
 
 
 @dataclass
@@ -32,7 +26,7 @@ class Variable:
     """
 
     name: str
-    data_type: VariableValueType
+    data_type: ValueType
     lower_bound: Optional[ExpressionNode]
     upper_bound: Optional[ExpressionNode]
     structure: IndexingStructure = field(default=IndexingStructure(True, True))
@@ -41,7 +35,7 @@ class Variable:
         if self.lower_bound and not is_constant(self.lower_bound):
             raise ValueError("Lower bounds of variables must be constant")
         if self.upper_bound and not is_constant(self.upper_bound):
-            raise ValueError("Lower bounds of variables must be constant")
+            raise ValueError("Upper bounds of variables must be constant")
 
 
 def int_variable(
@@ -52,10 +46,10 @@ def int_variable(
 ) -> Variable:
     # Dirty if/else just for MyPy
     if structural_type is None:
-        return Variable(name, VariableValueType.INTEGER, lower_bound, upper_bound)
+        return Variable(name, ValueType.INTEGER, lower_bound, upper_bound)
     else:
         return Variable(
-            name, VariableValueType.INTEGER, lower_bound, upper_bound, structural_type
+            name, ValueType.INTEGER, lower_bound, upper_bound, structural_type
         )
 
 
@@ -67,8 +61,6 @@ def float_variable(
 ) -> Variable:
     # Dirty if/else just for MyPy
     if structure is None:
-        return Variable(name, VariableValueType.FLOAT, lower_bound, upper_bound)
+        return Variable(name, ValueType.FLOAT, lower_bound, upper_bound)
     else:
-        return Variable(
-            name, VariableValueType.FLOAT, lower_bound, upper_bound, structure
-        )
+        return Variable(name, ValueType.FLOAT, lower_bound, upper_bound, structure)

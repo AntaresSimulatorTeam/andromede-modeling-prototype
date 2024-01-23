@@ -31,6 +31,7 @@ from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
 from andromede.model.variable import Variable
+from andromede.model.constraint import Constraint
 
 
 # TODO: Introduce bool_variable ?
