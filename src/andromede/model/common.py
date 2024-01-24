@@ -8,7 +8,5 @@ class ValueType(Enum):
 
 
 class ProblemContext(Enum):
-    simulator = 0
-    xpansion_merged = 1
-    xpansion_master = 2
-    xpansion_subproblem = 3
+    operational = 0
+    investment  = 1

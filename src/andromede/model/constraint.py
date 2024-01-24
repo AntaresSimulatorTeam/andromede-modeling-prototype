@@ -20,6 +20,7 @@ from andromede.expression.expression import (
     literal,
 )
 from andromede.expression.print import print_expr
+from andromede.model.common import ProblemContext
 
 
 class Constraint:
@@ -33,6 +34,7 @@ class Constraint:
     expression: ExpressionNode
     lower_bound: ExpressionNode
     upper_bound: ExpressionNode
+    context: ProblemContext
 
     def __init__(
         self,
@@ -40,8 +42,11 @@ class Constraint:
         expression: ExpressionNode,
         lower_bound: Optional[ExpressionNode] = None,
         upper_bound: Optional[ExpressionNode] = None,
+        context: ProblemContext = ProblemContext.operational,
     ) -> None:
         self.name = name
+        self.context = context
+
         if isinstance(expression, ComparisonNode):
             if lower_bound is not None or upper_bound is not None:
                 raise ValueError(
