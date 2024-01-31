@@ -25,12 +25,13 @@ from andromede.model import (
     Constraint,
     Model,
     ModelPort,
+    ProblemContext,
     float_parameter,
     float_variable,
     model,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
-from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation import OutputValues, ProblemType, TimeBlock, build_problem
 from andromede.study import (
     Component,
     ConstantData,
@@ -46,6 +47,13 @@ from andromede.study import (
 CONSTANT = IndexingStructure(False, False)
 FREE = IndexingStructure(True, True)
 
+INVESTMENT = ProblemContext.investment
+OPERATIONAL = ProblemContext.operational
+
+XPANSION_MASTER = ProblemType.xpansion_master
+XPANSION_SUBPBL = ProblemType.xpansion_subproblem
+XPANSION_MERGED = ProblemType.xpansion_merged
+
 
 @pytest.fixture
 def thermal_candidate() -> Model:
@@ -53,7 +61,7 @@ def thermal_candidate() -> Model:
         id="GEN",
         parameters=[
             float_parameter("op_cost", CONSTANT),
-            float_parameter("invest_cost", CONSTANT),
+            float_parameter("invest_cost", CONSTANT, INVESTMENT),
         ],
         variables=[
             float_variable("generation", lower_bound=literal(0)),
@@ -62,6 +70,7 @@ def thermal_candidate() -> Model:
                 lower_bound=literal(0),
                 upper_bound=literal(1000),
                 structure=CONSTANT,
+                context=INVESTMENT,
             ),
         ],
         ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
@@ -76,8 +85,10 @@ def thermal_candidate() -> Model:
                 name="Max generation", expression=var("generation") <= var("p_max")
             )
         ],
-        objective_contribution=(param("invest_cost") * var("p_max"))
-        + (param("op_cost") * var("generation")).sum().expec(),
+        objective_operational_contribution=(param("op_cost") * var("generation"))
+        .sum()
+        .expec(),
+        objective_investment_contribution=param("invest_cost") * var("p_max"),
     )
     return THERMAL_CANDIDATE
 
@@ -105,7 +116,7 @@ def test_generation_xpansion_single_time_step_single_scenario(
     Simple generation expansion problem on one node. One timestep, one scenario, one thermal cluster candidate.
 
     Demand = 300
-    Generator : P_max : 100, Cost : 40
+    Generator : P_max : 200, Cost : 40
     Unsupplied energy : Cost : 1000
 
     -> 100 of unsupplied energy
@@ -144,7 +155,11 @@ def test_generation_xpansion_single_time_step_single_scenario(
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_MERGED
+    )
+    # problem = build_problem(network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_MASTER)
+    # problem = build_problem(network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_SUBPBL)
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

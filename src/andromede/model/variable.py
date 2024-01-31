@@ -16,7 +16,7 @@ from typing import Optional
 from andromede.expression import ExpressionNode
 from andromede.expression.degree import is_constant
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.model.common import ValueType, ProblemContext
+from andromede.model.common import ProblemContext, ValueType
 
 
 @dataclass
@@ -58,6 +58,4 @@ def float_variable(
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.operational,
 ) -> Variable:
-    return Variable(
-        name, ValueType.FLOAT, lower_bound, upper_bound, structure, context
-    )
+    return Variable(name, ValueType.FLOAT, lower_bound, upper_bound, structure, context)

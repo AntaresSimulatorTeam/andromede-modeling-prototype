@@ -63,7 +63,9 @@ GENERATOR_MODEL = model(
             name="Max generation", expression=var("generation") <= param("p_max")
         ),
     ],
-    objective_contribution=(param("cost") * var("generation")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("generation"))
+    .sum()
+    .expec(),
 )
 
 """
@@ -133,7 +135,9 @@ GENERATOR_MODEL_WITH_PMIN = model(
             lower_bound=literal(0),
         ),  # To test both ways of setting constraints
     ],
-    objective_contribution=(param("cost") * var("generation")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("generation"))
+    .sum()
+    .expec(),
 )
 
 # For now, no starting cost
@@ -208,7 +212,9 @@ THERMAL_CLUSTER_MODEL_HD = model(
         )
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
-    objective_contribution=(param("cost") * var("generation")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("generation"))
+    .sum()
+    .expec(),
 )
 
 # Same model as previous one, except that starting/stopping variables are now non anticipative
@@ -282,7 +288,9 @@ THERMAL_CLUSTER_MODEL_DHD = model(
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
         ),
     ],
-    objective_contribution=(param("cost") * var("generation")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("generation"))
+    .sum()
+    .expec(),
 )
 
 SPILLAGE_MODEL = model(
@@ -296,7 +304,7 @@ SPILLAGE_MODEL = model(
             definition=-var("spillage"),
         )
     ],
-    objective_contribution=(param("cost") * var("spillage")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("spillage")).sum().expec(),
 )
 
 UNSUPPLIED_ENERGY_MODEL = model(
@@ -310,7 +318,9 @@ UNSUPPLIED_ENERGY_MODEL = model(
             definition=var("unsupplied_energy"),
         )
     ],
-    objective_contribution=(param("cost") * var("unsupplied_energy")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("unsupplied_energy"))
+    .sum()
+    .expec(),
 )
 
 # Simplified model
@@ -357,5 +367,5 @@ SHORT_TERM_STORAGE_SIMPLE = model(
             == param("inflows"),
         ),
     ],
-    objective_contribution=literal(0),  # Implcitement nul ?
+    objective_operational_contribution=literal(0),  # Implcitement nul ?
 )

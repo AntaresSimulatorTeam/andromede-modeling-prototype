@@ -9,4 +9,4 @@ class ValueType(Enum):
 
 class ProblemContext(Enum):
     operational = 0
-    investment  = 1
+    investment = 1

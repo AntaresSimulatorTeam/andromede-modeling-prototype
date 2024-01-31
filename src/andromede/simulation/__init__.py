@@ -10,6 +10,11 @@
 #
 # This file is part of the Antares project.
 
-from .optimization import BlockBorderManagement, SolverAndContext, build_problem
+from .optimization import (
+    BlockBorderManagement,
+    ProblemType,
+    SolverAndContext,
+    build_problem,
+)
 from .output_values import OutputValues
 from .time_block import TimeBlock

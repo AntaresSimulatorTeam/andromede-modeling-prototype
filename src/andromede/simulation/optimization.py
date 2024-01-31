@@ -36,6 +36,7 @@ from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
+from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
@@ -462,6 +463,44 @@ def _create_constraint(
             )
 
 
+def _create_objective(
+    solver: lp.Solver,
+    opt_context: OptimizationContext,
+    component: Component,
+    component_context: ComponentContext,
+    objective_contribution: ExpressionNode,
+) -> None:
+    # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
+    linear_expr = component_context.linearize_expression(0, 0, objective_contribution)
+    obj: lp.Objective = solver.Objective()
+    for term in linear_expr.terms.values():
+        # TODO : How to handle the scenario operator in a general manner ?
+        if isinstance(term.scenario_operator, Expectation):
+            weight = 1 / opt_context.scenarios
+            scenario_ids = range(opt_context.scenarios)
+        else:
+            weight = 1
+            scenario_ids = range(1)
+
+        for scenario in scenario_ids:
+            solver_vars = _get_solver_vars(
+                term,
+                opt_context,
+                0,
+                scenario,
+                0,
+            )
+
+            for solver_var in solver_vars:
+                obj.SetCoefficient(
+                    solver_var,
+                    obj.GetCoefficient(solver_var) + weight * term.coefficient,
+                )
+
+    # This should have no effect on the optimization
+    obj.SetOffset(linear_expr.constant + obj.offset())
+
+
 @dataclass
 class ConstraintData:
     name: str
@@ -596,12 +635,27 @@ def _create_variables(
     network: Network,
     opt_context: OptimizationContext,
     solver: lp.Solver,
+    problem_type: "ProblemType",
 ) -> None:
     for component in network.all_components:
         component_context = opt_context.get_component_context(component)
         model = component.model
 
         for model_var in model.variables.values():
+            if (
+                problem_type == ProblemType.xpansion_master
+                and model_var.context == ProblemContext.operational
+            ):
+                # Xpansion Master Problem only takes investment variables and parameters
+                continue
+
+            elif (
+                problem_type == ProblemType.xpansion_subproblem
+                and model_var.context == ProblemContext.investment
+            ):
+                # Xpansion SubProblems only take operational variables and parameters
+                continue
+
             var_indexing = IndexingStructure(
                 model_var.structure.time, model_var.structure.scenario
             )
@@ -687,50 +741,41 @@ def _create_constraints(
             )
 
 
-def _create_objective(
+def _create_objectives(
     network: Network,
     opt_context: OptimizationContext,
     solver: lp.Solver,
+    problem_type: "ProblemType",
 ) -> None:
     for component in network.all_components:
         component_context = opt_context.get_component_context(component)
         model = component.model
 
-        if model.objective_contribution is not None:
-            instantiated_expr = _instantiate_model_expression(
-                model.objective_contribution, component.id, opt_context
+        if (
+            problem_type != ProblemType.xpansion_master
+            and model.objective_operational_contribution is not None
+        ):
+            # Xpansion Master Problem only takes the investment contribution
+            _create_objective(
+                solver,
+                opt_context,
+                component,
+                component_context,
+                model.objective_operational_contribution,
             )
-            # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
-            linear_expr = component_context.linearize_expression(
-                0, 0, instantiated_expr
+
+        if (
+            problem_type != ProblemType.xpansion_subproblem
+            and model.objective_investment_contribution is not None
+        ):
+            # Xpansion SubProblems only take the operational contribution
+            _create_objective(
+                solver,
+                opt_context,
+                component,
+                component_context,
+                model.objective_investment_contribution,
             )
-            obj: lp.Objective = solver.Objective()
-            for term in linear_expr.terms.values():
-                # TODO : Comment gérer de manière générale les opérateurs sur les scénarios ?
-                if isinstance(term.scenario_operator, Expectation):
-                    weight = 1 / opt_context.scenarios
-                    scenario_ids = range(opt_context.scenarios)
-                else:
-                    weight = 1
-                    scenario_ids = range(1)
-
-                for scenario in scenario_ids:
-                    solver_vars = _get_solver_vars(
-                        term,
-                        opt_context,
-                        0,
-                        scenario,
-                        0,
-                    )
-
-                    for solver_var in solver_vars:
-                        obj.SetCoefficient(
-                            solver_var,
-                            obj.GetCoefficient(solver_var) + weight * term.coefficient,
-                        )
-
-            # This should have no effect on the optimization
-            obj.SetOffset(linear_expr.constant + obj.offset())
 
 
 @dataclass(frozen=True)
@@ -739,13 +784,30 @@ class SolverAndContext:
     context: "OptimizationContext"
 
 
+class ProblemType(Enum):
+    """
+    Class to specify the type of the created problem:
+        - simulator: Creates a Antares Simulator problem with only operational variables and constraints
+        - xpansion_master: Creates a Xpansion master problem only
+        - xpansion_subproblem: Creates Xpansion sub-problems only
+        - xpansion_merged: Creates a merged Xpansion master/subproblem
+    """
+
+    simulator = 0
+    xpansion_merged = 1
+    xpansion_master = 2
+    xpansion_subproblem = 3
+
+
 def build_problem(
     network: Network,
     database: DataBase,
     block: TimeBlock,
     scenarios: int,
+    *,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
+    problem_type: ProblemType = ProblemType.simulator,
 ) -> SolverAndContext:
     """
     Entry point to build the optimization problem for a time period.
@@ -759,9 +821,9 @@ def build_problem(
     )
 
     _register_connection_fields_definitions(network, opt_context)
-    _create_variables(network, opt_context, solver)
+    _create_variables(network, opt_context, solver, problem_type)
     _create_constraints(network, opt_context, solver)
-    _create_objective(network, opt_context, solver)
+    _create_objectives(network, opt_context, solver, problem_type)
     return SolverAndContext(solver, opt_context)
 
 
@@ -780,3 +842,7 @@ def _instantiate_model_expression(
         with_component, component_id, optimization_context.connection_fields_expressions
     )
     return with_component_and_ports
+
+
+def export_model_as_mps_format(problem: SolverAndContext) -> str:
+    return problem.solver.ExportModelAsMpsFormat(fixed_format=True, obfuscated=False)
