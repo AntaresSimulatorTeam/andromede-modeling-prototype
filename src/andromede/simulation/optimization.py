@@ -15,6 +15,7 @@ The optimization module contains the logic to translate the input model
 into a mathematical optimization problem.
 """
 
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -649,13 +650,6 @@ def _create_variables(
                 # Xpansion Master Problem only takes investment variables and parameters
                 continue
 
-            elif (
-                problem_type == ProblemType.xpansion_subproblem
-                and model_var.context == ProblemContext.investment
-            ):
-                # Xpansion SubProblems only take operational variables and parameters
-                continue
-
             var_indexing = IndexingStructure(
                 model_var.structure.time, model_var.structure.scenario
             )
@@ -824,6 +818,7 @@ def build_problem(
     _create_variables(network, opt_context, solver, problem_type)
     _create_constraints(network, opt_context, solver)
     _create_objectives(network, opt_context, solver, problem_type)
+
     return SolverAndContext(solver, opt_context)
 
 
@@ -844,5 +839,38 @@ def _instantiate_model_expression(
     return with_component_and_ports
 
 
-def export_model_as_mps_format(problem: SolverAndContext) -> str:
-    return problem.solver.ExportModelAsMpsFormat(fixed_format=True, obfuscated=False)
+def _export_model(
+    problem: SolverAndContext, filename: str, directory: str, is_mps_format: bool
+) -> bool:
+    if is_mps_format:
+        format = "mps"
+        exported_model = problem.solver.ExportModelAsMpsFormat(
+            fixed_format=True, obfuscated=False
+        )
+    else:
+        format = "lp"
+        exported_model = problem.solver.ExportModelAsLpFormat(obfuscated=False)
+
+    try:
+        os.makedirs(directory, exist_ok=True)
+        file = open(f"{directory}/{filename}.{format}", "w")
+
+    except os.error:
+        return False
+
+    else:
+        with file:
+            file.write(exported_model)
+        return True
+
+
+def export_model_as_mps_format(
+    problem: SolverAndContext, filename: str, directory: str = "outputs"
+) -> bool:
+    return _export_model(problem, filename, directory, True)
+
+
+def export_model_as_lp_format(
+    problem: SolverAndContext, filename: str, directory: str = "outputs"
+) -> bool:
+    return _export_model(problem, filename, directory, False)

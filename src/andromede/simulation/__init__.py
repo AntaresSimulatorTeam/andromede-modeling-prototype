@@ -15,6 +15,8 @@ from .optimization import (
     ProblemType,
     SolverAndContext,
     build_problem,
+    export_model_as_lp_format,
+    export_model_as_mps_format,
 )
 from .output_values import OutputValues
 from .time_block import TimeBlock

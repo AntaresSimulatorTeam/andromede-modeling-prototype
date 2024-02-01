@@ -31,7 +31,14 @@ from andromede.model import (
     model,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
-from andromede.simulation import OutputValues, ProblemType, TimeBlock, build_problem
+from andromede.simulation import (
+    OutputValues,
+    ProblemType,
+    TimeBlock,
+    build_problem,
+    export_model_as_lp_format,
+    export_model_as_mps_format,
+)
 from andromede.study import (
     Component,
     ConstantData,
@@ -158,8 +165,6 @@ def test_generation_xpansion_single_time_step_single_scenario(
     problem = build_problem(
         network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_MERGED
     )
-    # problem = build_problem(network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_MASTER)
-    # problem = build_problem(network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_SUBPBL)
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -174,18 +179,67 @@ def test_generation_xpansion_single_time_step_single_scenario(
     assert output == expected_output, f"Output differs from expected: {output}"
 
 
+def test_model_export_xpansion_single_time_step_single_scenario(
+    generator: Component,
+    candidate: Component,
+) -> None:
+    """
+    Same as the previous test, but only checking the MPS file generation for Bender's branching
+    in Xpansion
+    """
+
+    database = DataBase()
+    database.add_data("D", "demand", ConstantData(300))
+
+    database.add_data("G1", "p_max", ConstantData(200))
+    database.add_data("G1", "cost", ConstantData(40))
+
+    database.add_data("CAND", "op_cost", ConstantData(10))
+    database.add_data("CAND", "invest_cost", ConstantData(490))
+
+    demand = create_component(
+        model=DEMAND_MODEL,
+        id="D",
+    )
+
+    node = Node(model=NODE_BALANCE_MODEL, id="N")
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(generator)
+    network.add_component(candidate)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
+    scenarios = 1
+
+    master_problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_MASTER
+    )
+    sub_problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_SUBPBL
+    )
+
+    assert export_model_as_mps_format(master_problem, filename="master")
+    assert export_model_as_mps_format(sub_problem, filename="subproblem")
+
+    # For Debugging purposes, we can generate the LP file as well
+    assert export_model_as_lp_format(master_problem, filename="master")
+    assert export_model_as_lp_format(sub_problem, filename="subproblem")
+
+
 def test_generation_xpansion_two_time_steps_two_scenarios(
     generator: Component,
     candidate: Component,
 ) -> None:
     """
-    Same as previous example but with two timesteps and two scenarios, in order to test the correct instanciation of the objective function
+    Same as previous example but with two timesteps and two scenarios, in order to test the correct instantiation of the objective function
 
     Demand = [300, 500] for scenario 1, [200, 400] for scenario 2
     Generator : P_max : 200, Cost : 40
     Unsupplied energy : Cost : 1000
 
-    Scenarios équiprobables => Poids 0.5
+    Equiprobable scenarios => Weights 0.5
 
     -> 300 MW of unsupplied energy at step 2 for scenario 1
 
@@ -194,7 +248,7 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
     Optimal investment : 300 MW
 
     -> Optimal cost =       490 * 300                       (investment)
-    (poids 0.5 / scenario)  + 0.5 * 10 * 300                (scenario 1, step 1)
+    (weights 0.5/scenario)  + 0.5 * 10 * 300                (scenario 1, step 1)
                             + 0.5 * (10 * 300 + 40 * 200)   (scenario 1, step 2)
                             + 0.5 * 10 * 200                (scenario 2, step 1)
                             + 0.5 * (10 * 300 + 40 * 100)   (scenario 2, step 2)
