@@ -13,6 +13,7 @@
 """
 Module for technical utilities.
 """
+import os
 from typing import Any, Callable, Dict, Generic, Optional, TypeVar
 
 T = TypeVar("T")
@@ -41,3 +42,20 @@ def get_or_add(dictionary: Dict[K, V], key: K, default_factory: Supplier[V]) -> 
         value = default_factory()
         dictionary[key] = value
     return value
+
+
+def write_to_file(filename: str, message: str, path: str = "outputs") -> bool:
+    """
+    Write message to path/filename
+    """
+    try:
+        os.makedirs(path, exist_ok=True)
+        file = open(f"{path}/{filename}", "w")
+
+    except os.error:
+        return False
+
+    else:
+        with file:
+            file.write(message)
+        return True

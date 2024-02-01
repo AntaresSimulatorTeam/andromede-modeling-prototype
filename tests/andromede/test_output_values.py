@@ -17,19 +17,17 @@ import ortools.linear_solver.pywraplp as lp
 from andromede.simulation import OutputValues
 from andromede.simulation.optimization import (
     OptimizationContext,
-    SolverAndContext,
+    OptimizationProblem,
     TimestepComponentVariableKey,
 )
 
 
 def test_component_and_flow_output_object() -> None:
     mock_variable_component = Mock(spec=lp.Variable)
-    mock_variable_flow = Mock(spec=lp.Variable)
+    mock_problem = Mock(spec=OptimizationProblem)
     opt_context = Mock(spec=OptimizationContext)
 
     mock_variable_component.solution_value.side_effect = lambda: 1.0
-
-    mock_variable_flow.solution_value.side_effect = lambda: -1.0
 
     opt_context.get_all_component_variables.return_value = {
         TimestepComponentVariableKey(
@@ -42,8 +40,8 @@ def test_component_and_flow_output_object() -> None:
 
     opt_context.block_length.return_value = 1
 
-    problem = SolverAndContext(mock_variable_flow, opt_context)
-    output = OutputValues(problem)
+    mock_problem.context = opt_context
+    output = OutputValues(mock_problem)
 
     wrong_output = OutputValues()
     wrong_output.component("component_id_test").var(

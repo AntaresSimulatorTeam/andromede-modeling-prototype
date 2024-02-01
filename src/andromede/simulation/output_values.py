@@ -16,7 +16,7 @@ Util class to obtain solver results
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, TypeVar, Union, cast
 
-from andromede.simulation.optimization import SolverAndContext
+from andromede.simulation.optimization import OptimizationProblem
 from andromede.study.data import TimeScenarioIndex
 
 T = TypeVar("T")
@@ -128,7 +128,7 @@ class OutputValues:
                 self._variables[variable_name] = OutputValues.Variable(variable_name)
             return self._variables[variable_name]
 
-    problem: Optional[SolverAndContext] = field(default=None)
+    problem: Optional[OptimizationProblem] = field(default=None)
     _components: Dict[str, "OutputValues.Component"] = field(
         init=False, default_factory=dict
     )

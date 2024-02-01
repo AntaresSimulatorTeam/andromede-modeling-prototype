@@ -32,12 +32,12 @@ from andromede.model import (
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
+    OptimizationProblem,
     OutputValues,
-    ProblemType,
     TimeBlock,
     build_problem,
-    export_model_as_lp_format,
-    export_model_as_mps_format,
+    build_xpansion_problem,
+    export_xpansion_problem,
 )
 from andromede.study import (
     Component,
@@ -57,9 +57,9 @@ FREE = IndexingStructure(True, True)
 INVESTMENT = ProblemContext.investment
 OPERATIONAL = ProblemContext.operational
 
-XPANSION_MASTER = ProblemType.xpansion_master
-XPANSION_SUBPBL = ProblemType.xpansion_subproblem
-XPANSION_MERGED = ProblemType.xpansion_merged
+XPANSION_MASTER = OptimizationProblem.Type.xpansion_master
+XPANSION_SUBPBL = OptimizationProblem.Type.xpansion_subproblem
+XPANSION_MERGED = OptimizationProblem.Type.xpansion_merged
 
 
 @pytest.fixture
@@ -213,19 +213,8 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
     scenarios = 1
 
-    master_problem = build_problem(
-        network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_MASTER
-    )
-    sub_problem = build_problem(
-        network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_SUBPBL
-    )
-
-    assert export_model_as_mps_format(master_problem, filename="master")
-    assert export_model_as_mps_format(sub_problem, filename="subproblem")
-
-    # For Debugging purposes, we can generate the LP file as well
-    assert export_model_as_lp_format(master_problem, filename="master")
-    assert export_model_as_lp_format(sub_problem, filename="subproblem")
+    problems = build_xpansion_problem(network, database, TimeBlock(1, [0]), scenarios)
+    assert export_xpansion_problem(problems)
 
 
 def test_generation_xpansion_two_time_steps_two_scenarios(

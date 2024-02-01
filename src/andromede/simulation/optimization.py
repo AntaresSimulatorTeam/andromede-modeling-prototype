@@ -15,7 +15,7 @@ The optimization module contains the logic to translate the input model
 into a mathematical optimization problem.
 """
 
-import os
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -45,7 +45,7 @@ from andromede.simulation.linearize import linearize_expression
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
-from andromede.utils import get_or_add
+from andromede.utils import get_or_add, write_to_file
 
 
 @dataclass(eq=True, frozen=True)
@@ -423,6 +423,23 @@ def _compute_indexing_structure(
     return constraint_indexing
 
 
+def _instantiate_model_expression(
+    model_expression: ExpressionNode,
+    component_id: str,
+    optimization_context: OptimizationContext,
+) -> ExpressionNode:
+    """
+    Performs common operations that are necessary on model expressions before their actual use:
+     1. add component ID for variables and parameters of THIS component
+     2. replace port fields by their definition
+    """
+    with_component = add_component_context(component_id, model_expression)
+    with_component_and_ports = resolve_port(
+        with_component, component_id, optimization_context.connection_fields_expressions
+    )
+    return with_component_and_ports
+
+
 def _create_constraint(
     solver: lp.Solver,
     context: ComponentContext,
@@ -632,165 +649,174 @@ def make_constraint(
     return solver_constraints
 
 
-def _create_variables(
-    network: Network,
-    opt_context: OptimizationContext,
-    solver: lp.Solver,
-    problem_type: "ProblemType",
-) -> None:
-    for component in network.all_components:
-        component_context = opt_context.get_component_context(component)
-        model = component.model
+class OptimizationProblem:
+    class Type(Enum):
+        """
+        Class to specify the type of the created problem:
+            - simulator: Creates a Antares Simulator problem with only operational variables and constraints
+            - xpansion_master: Creates a Xpansion master problem only
+            - xpansion_subproblem: Creates Xpansion sub-problems only
+            - xpansion_merged: Creates a merged Xpansion master/subproblem
+        """
 
-        for model_var in model.variables.values():
-            if (
-                problem_type == ProblemType.xpansion_master
-                and model_var.context == ProblemContext.operational
-            ):
-                # Xpansion Master Problem only takes investment variables and parameters
-                continue
+        simulator = 0
+        xpansion_merged = 1
+        xpansion_master = 2
+        xpansion_subproblem = 3
 
-            var_indexing = IndexingStructure(
-                model_var.structure.time, model_var.structure.scenario
-            )
-            instantiated_lb_expr = None
-            instantiated_ub_expr = None
-            if model_var.lower_bound:
-                instantiated_lb_expr = _instantiate_model_expression(
-                    model_var.lower_bound, component.id, opt_context
-                )
-            if model_var.upper_bound:
-                instantiated_ub_expr = _instantiate_model_expression(
-                    model_var.upper_bound, component.id, opt_context
-                )
-            for block_timestep in opt_context.get_time_indices(var_indexing):
-                for scenario in opt_context.get_scenario_indices(var_indexing):
-                    lower_bound = -solver.infinity()
-                    upper_bound = solver.infinity()
-                    if instantiated_lb_expr:
-                        lower_bound = component_context.get_values(
-                            instantiated_lb_expr
-                        ).get_value(block_timestep, scenario)
-                    if instantiated_ub_expr:
-                        upper_bound = component_context.get_values(
-                            instantiated_ub_expr
-                        ).get_value(block_timestep, scenario)
-
-                    # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
-                    solver_var = solver.NumVar(lower_bound, upper_bound, model_var.name)
-                    component_context.add_variable(block_timestep, scenario, solver_var)
-
-
-def _register_connection_fields_definitions(
-    network: Network, opt_context: OptimizationContext
-) -> None:
-    for cnx in network.connections:
-        for field_name in list(cnx.master_port.keys()):
-            master_port = cnx.master_port[field_name]
-            port_definition = master_port.component.model.port_fields_definitions.get(
-                PortFieldId(port_name=master_port.port_id, field_name=field_name.name)
-            )
-            expression_node = port_definition.definition  # type: ignore
-            instantiated_expression = add_component_context(
-                master_port.component.id, expression_node
-            )
-            opt_context.register_connection_fields_expressions(
-                component_id=cnx.port1.component.id,
-                port_name=cnx.port1.port_id,
-                field_name=field_name.name,
-                expression=instantiated_expression,
-            )
-            opt_context.register_connection_fields_expressions(
-                component_id=cnx.port2.component.id,
-                port_name=cnx.port2.port_id,
-                field_name=field_name.name,
-                expression=instantiated_expression,
-            )
-
-
-def _create_constraints(
-    network: Network, opt_context: OptimizationContext, solver: lp.Solver
-) -> None:
-    for component in network.all_components:
-        for constraint in component.model.get_all_constraints():
-            instantiated_expr = _instantiate_model_expression(
-                constraint.expression, component.id, opt_context
-            )
-            instantiated_lb = _instantiate_model_expression(
-                constraint.lower_bound, component.id, opt_context
-            )
-            instantiated_ub = _instantiate_model_expression(
-                constraint.upper_bound, component.id, opt_context
-            )
-            instantiated_constraint = Constraint(
-                name=constraint.name,
-                expression=instantiated_expr,
-                lower_bound=instantiated_lb,
-                upper_bound=instantiated_ub,
-            )
-            _create_constraint(
-                solver,
-                opt_context.get_component_context(component),
-                instantiated_constraint,
-            )
-
-
-def _create_objectives(
-    network: Network,
-    opt_context: OptimizationContext,
-    solver: lp.Solver,
-    problem_type: "ProblemType",
-) -> None:
-    for component in network.all_components:
-        component_context = opt_context.get_component_context(component)
-        model = component.model
-
-        if (
-            problem_type != ProblemType.xpansion_master
-            and model.objective_operational_contribution is not None
-        ):
-            # Xpansion Master Problem only takes the investment contribution
-            _create_objective(
-                solver,
-                opt_context,
-                component,
-                component_context,
-                model.objective_operational_contribution,
-            )
-
-        if (
-            problem_type != ProblemType.xpansion_subproblem
-            and model.objective_investment_contribution is not None
-        ):
-            # Xpansion SubProblems only take the operational contribution
-            _create_objective(
-                solver,
-                opt_context,
-                component,
-                component_context,
-                model.objective_investment_contribution,
-            )
-
-
-@dataclass(frozen=True)
-class SolverAndContext:
+    name: str
     solver: lp.Solver
-    context: "OptimizationContext"
+    context: OptimizationContext
+    type: Type
+
+    def __init__(
+        self,
+        name: str,
+        solver: lp.Solver,
+        opt_context: OptimizationContext,
+        opt_type: Type = Type.simulator,
+    ) -> None:
+        self.name = name
+        self.solver = solver
+        self.context = opt_context
+        self.type = opt_type
+
+        self._register_connection_fields_definitions()
+        self._create_variables()
+        self._create_constraints()
+        self._create_objectives()
 
 
-class ProblemType(Enum):
-    """
-    Class to specify the type of the created problem:
-        - simulator: Creates a Antares Simulator problem with only operational variables and constraints
-        - xpansion_master: Creates a Xpansion master problem only
-        - xpansion_subproblem: Creates Xpansion sub-problems only
-        - xpansion_merged: Creates a merged Xpansion master/subproblem
-    """
+    def _register_connection_fields_definitions(self) -> None:
+        for cnx in self.context.network.connections:
+            for field_name in list(cnx.master_port.keys()):
+                master_port = cnx.master_port[field_name]
+                port_definition = master_port.component.model.port_fields_definitions.get(
+                    PortFieldId(port_name=master_port.port_id, field_name=field_name.name)
+                )
+                expression_node = port_definition.definition  # type: ignore
+                instantiated_expression = add_component_context(
+                    master_port.component.id, expression_node
+                )
+                self.context.register_connection_fields_expressions(
+                    component_id=cnx.port1.component.id,
+                    port_name=cnx.port1.port_id,
+                    field_name=field_name.name,
+                    expression=instantiated_expression,
+                )
+                self.context.register_connection_fields_expressions(
+                    component_id=cnx.port2.component.id,
+                    port_name=cnx.port2.port_id,
+                    field_name=field_name.name,
+                    expression=instantiated_expression,
+                )
 
-    simulator = 0
-    xpansion_merged = 1
-    xpansion_master = 2
-    xpansion_subproblem = 3
+
+    def _create_variables(self) -> None:
+        for component in self.context.network.all_components:
+            component_context = self.context.get_component_context(component)
+            model = component.model
+
+            for model_var in model.variables.values():
+                if (
+                    self.type == OptimizationProblem.Type.xpansion_master
+                    and model_var.context == ProblemContext.operational
+                ):
+                    # Xpansion Master Problem only takes investment variables and parameters
+                    continue
+
+                var_indexing = IndexingStructure(
+                    model_var.structure.time, model_var.structure.scenario
+                )
+                instantiated_lb_expr = None
+                instantiated_ub_expr = None
+                if model_var.lower_bound:
+                    instantiated_lb_expr = _instantiate_model_expression(
+                        model_var.lower_bound, component.id, self.context
+                    )
+                if model_var.upper_bound:
+                    instantiated_ub_expr = _instantiate_model_expression(
+                        model_var.upper_bound, component.id, self.context
+                    )
+                for block_timestep in self.context.get_time_indices(var_indexing):
+                    for scenario in self.context.get_scenario_indices(var_indexing):
+                        lower_bound = -self.solver.infinity()
+                        upper_bound = self.solver.infinity()
+                        if instantiated_lb_expr:
+                            lower_bound = component_context.get_values(
+                                instantiated_lb_expr
+                            ).get_value(block_timestep, scenario)
+                        if instantiated_ub_expr:
+                            upper_bound = component_context.get_values(
+                                instantiated_ub_expr
+                            ).get_value(block_timestep, scenario)
+
+                        # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
+                        solver_var = self.solver.NumVar(lower_bound, upper_bound, model_var.name)
+                        component_context.add_variable(block_timestep, scenario, solver_var)
+
+
+    def _create_constraints(self) -> None:
+        for component in self.context.network.all_components:
+            for constraint in component.model.get_all_constraints():
+                instantiated_expr = _instantiate_model_expression(
+                    constraint.expression, component.id, self.context
+                )
+                instantiated_lb = _instantiate_model_expression(
+                    constraint.lower_bound, component.id, self.context
+                )
+                instantiated_ub = _instantiate_model_expression(
+                    constraint.upper_bound, component.id, self.context
+                )
+                instantiated_constraint = Constraint(
+                    name=constraint.name,
+                    expression=instantiated_expr,
+                    lower_bound=instantiated_lb,
+                    upper_bound=instantiated_ub,
+                )
+                _create_constraint(
+                    self.solver,
+                    self.context.get_component_context(component),
+                    instantiated_constraint,
+                )
+
+
+    def _create_objectives(self) -> None:
+        for component in self.context.network.all_components:
+            component_context = self.context.get_component_context(component)
+            model = component.model
+
+            if (
+                self.type != OptimizationProblem.Type.xpansion_master
+                and model.objective_operational_contribution is not None
+            ):
+                # Xpansion SubProblems only take the operational contribution
+                _create_objective(
+                    self.solver,
+                    self.context,
+                    component,
+                    component_context,
+                    model.objective_operational_contribution,
+                )
+
+            if (
+                self.type != OptimizationProblem.Type.xpansion_subproblem
+                and model.objective_investment_contribution is not None
+            ):
+                # Xpansion Master Problem only takes the investment contribution
+                _create_objective(
+                    self.solver,
+                    self.context,
+                    component,
+                    component_context,
+                    model.objective_investment_contribution,
+                )
+
+    def export_as_mps(self) -> str:
+        return self.solver.ExportModelAsMpsFormat(fixed_format=True, obfuscated=False)
+
+    def export_as_lp(self) -> str:
+        return self.solver.ExportModelAsLpFormat(obfuscated=False)
 
 
 def build_problem(
@@ -799,10 +825,11 @@ def build_problem(
     block: TimeBlock,
     scenarios: int,
     *,
+    problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-    problem_type: ProblemType = ProblemType.simulator,
-) -> SolverAndContext:
+    problem_type: OptimizationProblem.Type = OptimizationProblem.Type.simulator,
+) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.
     """
@@ -814,63 +841,138 @@ def build_problem(
         network, database, block, scenarios, border_management
     )
 
-    _register_connection_fields_definitions(network, opt_context)
-    _create_variables(network, opt_context, solver, problem_type)
-    _create_constraints(network, opt_context, solver)
-    _create_objectives(network, opt_context, solver, problem_type)
-
-    return SolverAndContext(solver, opt_context)
+    return OptimizationProblem(problem_name, solver, opt_context, problem_type)
 
 
-def _instantiate_model_expression(
-    model_expression: ExpressionNode,
-    component_id: str,
-    optimization_context: OptimizationContext,
-) -> ExpressionNode:
+def build_xpansion_problem(
+    network: Network,
+    database: DataBase,
+    block: TimeBlock,
+    scenarios: int,
+    *,
+    border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
+    solver_id: str = "GLOP",
+) -> List[OptimizationProblem]:
     """
-    Performs common operations that are necessary on model expressions before their actual use:
-     1. add component ID for variables and parameters of THIS component
-     2. replace port fields by their definition
+    Entry point to build the xpansion problem for a time period
+
+    Returns a list of problems where the first one is the master problem and
+    subsequent problems are sub-problems
     """
-    with_component = add_component_context(component_id, model_expression)
-    with_component_and_ports = resolve_port(
-        with_component, component_id, optimization_context.connection_fields_expressions
-    )
-    return with_component_and_ports
+    problems = []
 
-
-def _export_model(
-    problem: SolverAndContext, filename: str, directory: str, is_mps_format: bool
-) -> bool:
-    if is_mps_format:
-        format = "mps"
-        exported_model = problem.solver.ExportModelAsMpsFormat(
-            fixed_format=True, obfuscated=False
+    # Xpansion Master Problem
+    problems.append(
+        build_problem(
+            network,
+            database,
+            block,
+            scenarios,
+            problem_name="master",
+            border_management=border_management,
+            solver_id=solver_id,
+            problem_type=OptimizationProblem.Type.xpansion_master,
         )
-    else:
-        format = "lp"
-        exported_model = problem.solver.ExportModelAsLpFormat(obfuscated=False)
+    )
 
-    try:
-        os.makedirs(directory, exist_ok=True)
-        file = open(f"{directory}/{filename}.{format}", "w")
+    # Xpansion Sub-problems
+    problems.append(
+        build_problem(
+            network,
+            database,
+            block,
+            scenarios,
+            problem_name="subproblem",
+            border_management=border_management,
+            solver_id=solver_id,
+            problem_type=OptimizationProblem.Type.xpansion_subproblem,
+        )
+    )
 
-    except os.error:
+    return problems
+
+
+def export_xpansion_problem(problems: List["OptimizationProblem"]) -> bool:
+    """
+    Write MPS files for Master and Sub problems as well as the structure.txt file
+
+    It parses the MPS strings generated by the exports to stock
+    the candidates of Master present in the objective function
+    keeping record of their column indexes
+
+    Then it parses the sub problems strings and identify the previous
+    candidates and their respective column indexes
+
+    Finally it writes the structure.txt file
+    """
+
+    if len(problems) < 2:
+        # TODO For now, only one master and one subproblem
         return False
 
-    else:
-        with file:
-            file.write(exported_model)
-        return True
+    # A mapping similar to the Xpansion mapping for keeping track of variable indexes
+    # in Master and Sub-problem files
+    problem_to_candidates: Dict[str, Dict[str, int]] = {}
+    candidates = set()
+    prog = re.compile(r"COLUMNS\n(( .*\n)*)(BOUNDS|RHS|ENDATA)")
 
+    # === write master.mps file ===
+    problem_to_candidates["master"] = {}
+    master_mps_str = problems[0].export_as_mps()
+    match = prog.search(master_mps_str)
 
-def export_model_as_mps_format(
-    problem: SolverAndContext, filename: str, directory: str = "outputs"
-) -> bool:
-    return _export_model(problem, filename, directory, True)
+    if match is None:
+        return False
 
+    seen_variables = set()
+    for column in match.group(1).splitlines():
+        is_variable_in_objective_func = "COST" in column
+        variable = column.lstrip().split()[0]
 
-def export_model_as_lp_format(
-    problem: SolverAndContext, filename: str, directory: str = "outputs"
-) -> bool:
-    return _export_model(problem, filename, directory, False)
+        if variable in seen_variables:
+            # Since MPS files have fixed line length, some variables
+            # are duplicated. To avoid over-counting, we check to see
+            # if variable was already seen
+            continue
+
+        seen_variables.add(variable)
+        if is_variable_in_objective_func:
+            problem_to_candidates["master"][variable] = len(seen_variables) - 1
+            candidates.add(variable)
+
+    if not write_to_file("master.mps", master_mps_str, "outputs/lp"):
+        return False
+
+    # === write subproblem.mps file ===
+    for problem in problems[1:]:
+        problem_to_candidates[problem.name] = {}
+        problem_mps_str = problem.export_as_mps()
+        match = prog.search(problem_mps_str)
+
+        if match is None:
+            return False
+
+        seen_variables.clear()
+        for column in match.group(1).splitlines():
+            variable = column.lstrip().split()[0]
+
+            if variable in seen_variables:
+                continue
+
+            seen_variables.add(variable)
+            if variable in candidates:
+                # If candidate was identified in master
+                problem_to_candidates[problem.name][variable] = len(seen_variables) - 1
+
+        if not write_to_file(
+            f"{problem.name}.mps", problem_mps_str, "outputs/lp"
+        ):
+            return False
+
+    # === write structure.txt file ===
+    structure_str = ""
+    for problem_name, candidate_to_index in problem_to_candidates.items():
+        for candidate, index in candidate_to_index.items():
+            structure_str += f"{problem_name:>50}{candidate:>50}{index:>10}\n"
+
+    return write_to_file(f"structure.txt", structure_str, "outputs/lp")
