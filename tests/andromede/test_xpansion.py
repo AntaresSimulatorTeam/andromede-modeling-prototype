@@ -28,6 +28,7 @@ from andromede.model import (
     ProblemContext,
     float_parameter,
     float_variable,
+    int_variable,
     model,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
@@ -101,6 +102,54 @@ def thermal_candidate() -> Model:
 
 
 @pytest.fixture
+def wind_cluster_candidate() -> Model:
+    WIND_CLUSTER_CANDIDATE = model(
+        id="WIND_CLUSTER",
+        parameters=[
+            float_parameter("op_cost", CONSTANT),
+            float_parameter("invest_cost", CONSTANT, INVESTMENT),
+            float_parameter("p_max_per_unit", CONSTANT, INVESTMENT),
+        ],
+        variables=[
+            float_variable("generation", lower_bound=literal(0)),
+            float_variable(
+                "p_max",
+                lower_bound=literal(0),
+                structure=CONSTANT,
+                context=INVESTMENT,
+            ),
+            int_variable(
+                "nb_units",
+                lower_bound=literal(0),
+                upper_bound=literal(10),
+                structure=CONSTANT,
+                context=INVESTMENT,
+            ),
+        ],
+        ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+        constraints=[
+            Constraint(
+                name="Max generation", expression=var("generation") <= var("p_max")
+            ),
+            Constraint(
+                name="Max investment",
+                expression=var("p_max") == param("p_max_per_unit") * var("nb_units"),
+                context=INVESTMENT,
+            ),
+            Constraint(
+                name="Balance contribution",
+                expression=port_field("balance_port", "flow") == var("generation"),
+            ),
+        ],
+        objective_operational_contribution=(param("op_cost") * var("generation"))
+        .sum()
+        .expec(),
+        objective_investment_contribution=param("invest_cost") * var("p_max"),
+    )
+    return WIND_CLUSTER_CANDIDATE
+
+
+@pytest.fixture
 def generator() -> Component:
     generator = create_component(
         model=GENERATOR_MODEL,
@@ -113,6 +162,12 @@ def generator() -> Component:
 def candidate(thermal_candidate: Model) -> Component:
     candidate = create_component(model=thermal_candidate, id="CAND")
     return candidate
+
+
+@pytest.fixture
+def cluster_candidate(wind_cluster_candidate: Model) -> Component:
+    cluster = create_component(model=wind_cluster_candidate, id="CLUSTER")
+    return cluster
 
 
 def test_generation_xpansion_single_time_step_single_scenario(
@@ -182,6 +237,7 @@ def test_generation_xpansion_single_time_step_single_scenario(
 def test_model_export_xpansion_single_time_step_single_scenario(
     generator: Component,
     candidate: Component,
+    cluster_candidate: Component,
 ) -> None:
     """
     Same as the previous test, but only checking the MPS file generation for Bender's branching
@@ -197,6 +253,10 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     database.add_data("CAND", "op_cost", ConstantData(10))
     database.add_data("CAND", "invest_cost", ConstantData(490))
 
+    database.add_data("CLUSTER", "op_cost", ConstantData(5))
+    database.add_data("CLUSTER", "invest_cost", ConstantData(495))
+    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(100))
+
     demand = create_component(
         model=DEMAND_MODEL,
         id="D",
@@ -208,9 +268,13 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     network.add_component(demand)
     network.add_component(generator)
     network.add_component(candidate)
+    network.add_component(cluster_candidate)
     network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(
+        PortRef(cluster_candidate, "balance_port"), PortRef(node, "balance_port")
+    )
     scenarios = 1
 
     problems = build_xpansion_problem(network, database, TimeBlock(1, [0]), scenarios)
