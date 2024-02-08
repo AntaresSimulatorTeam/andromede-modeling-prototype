@@ -363,6 +363,8 @@ class OptimizationContext:
         if variable_structure.scenario == False:
             scenario = 0
 
+        variable_name = f"{component_id}_{variable_name}_{block_timestep}_{scenario}"
+
         return self._component_variables[
             TimestepComponentVariableKey(
                 component_id, variable_name, block_timestep, scenario
