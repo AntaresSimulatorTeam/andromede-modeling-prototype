@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "andromede_modeling_prototype"
 version = "0.0.1"
+license = {text="MPL-2.0"}
 dependencies = [
     "ortools"
 ]
