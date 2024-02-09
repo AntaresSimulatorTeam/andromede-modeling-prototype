@@ -1,0 +1,12 @@
+.vscode
+__pycache__
+algebre_with_florian.py
+**.ipynb
+prof
+
+.idea
+venv
+.env
+.coverage
+coverage.xml
+prof
