@@ -1,6 +1,5 @@
 .vscode
 __pycache__
-algebre_with_florian.py
 **.ipynb
 prof
 
@@ -9,4 +8,3 @@ venv
 .env
 .coverage
 coverage.xml
-prof
