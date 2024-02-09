@@ -25,7 +25,8 @@ jobs:
         uses: isort/isort-action@v1
         with:
           sort-paths: src, tests
-          requirementsFiles: "requirements.txt requirements-dev.txt"
+          configuration: --profile black --check-only --diff
+          requirements-files: "requirements.txt requirements-dev.txt"
 
       - name: Check formatting
         uses: psf/black@stable
