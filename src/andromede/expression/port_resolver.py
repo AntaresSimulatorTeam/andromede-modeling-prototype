@@ -65,12 +65,13 @@ class PortResolver(CopyVisitor):
         if not isinstance(port_field_node, PortFieldNode):
             raise ValueError(f"Should be a portFieldNode : {port_field_node}")
 
-        expressions = self.ports_expressions[
+        expressions = self.ports_expressions.get(
             PortFieldKey(
                 self.component_id,
                 PortFieldId(port_field_node.port_name, port_field_node.field_name),
-            )
-        ]
+            ),
+            [],
+        )
         return sum_expressions(expressions)
 
 

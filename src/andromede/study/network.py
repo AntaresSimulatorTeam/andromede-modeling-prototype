@@ -147,7 +147,11 @@ class Network:
         self._components[component.id] = component
 
     def get_component(self, component_id: str) -> Component:
-        return self._components[component_id]
+        """
+        Returns the component (possibly a node) corresponding to this ID.
+        """
+        res = self._components.get(component_id, None)
+        return res if res else self._nodes[component_id]
 
     @property
     def components(self) -> Iterable[Component]:

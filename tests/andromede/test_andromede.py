@@ -79,6 +79,9 @@ def test_network() -> None:
     network.add_arc(Arc("L", "N1", "N2"))
     assert list(network.arcs) == [Arc("L", "N1", "N2")]
     assert network.get_arc("L") == Arc("L", "N1", "N2")
+    assert network.get_component("N1") == Node(model=NODE_BALANCE_MODEL, id="N1")
+    with pytest.raises(KeyError):
+        network.get_component("unknown")
 
 
 def test_basic_balance() -> None:
