@@ -1,0 +1,10 @@
+Github identifiers of authors, in alphabetical order:
+
+flomnes
+ianmnz
+klorel
+MartinBelthle
+pet-mit
+sylvlecl
+tbittar
+vargastat

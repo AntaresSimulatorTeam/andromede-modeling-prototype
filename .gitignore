@@ -1,0 +1,10 @@
+.vscode
+__pycache__
+**.ipynb
+prof
+
+.idea
+venv
+.env
+.coverage
+coverage.xml
