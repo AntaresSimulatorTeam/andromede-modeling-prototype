@@ -337,6 +337,15 @@ def expression_range(
 
 
 class InstancesTimeIndex:
+    """
+    Defines a set of time indices on which a time operator operates.
+
+    In particular, it defines time indices created by the shift operator.
+
+    The actual indices can either be defined as a time range defined by
+    2 expression, or as a list of expressions.
+    """
+
     expressions: Union[List[ExpressionNode], ExpressionRange]
 
     def __init__(
