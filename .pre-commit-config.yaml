@@ -13,7 +13,7 @@ repos:
     -   id: black
         name: Run black
         entry: black
-        args: ["--config", "pyproject.toml", "src", "tests"]
+        args: ["--config", "pyproject.toml"]
         language: system
         types: [python]
 
