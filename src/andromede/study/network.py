@@ -63,9 +63,6 @@ class PortRef:
     component: Component
     port_id: str
 
-    def get_id(self) -> str:
-        return f"{self.port_id}_{self.component.id}"
-
 
 @dataclass()
 class PortsConnection:
@@ -78,9 +75,6 @@ class PortsConnection:
         self.port2 = port2
         self.master_port = {}
         self.__validate_ports()
-
-    def get_id(self) -> str:
-        return f"{self.port1.get_id()}__{self.port2.get_id()}"
 
     def __validate_ports(self) -> None:
         model1 = self.port1.component.model

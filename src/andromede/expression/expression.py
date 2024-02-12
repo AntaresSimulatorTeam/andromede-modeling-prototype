@@ -179,6 +179,14 @@ def param(name: str) -> ParameterNode:
 
 @dataclass(frozen=True, eq=False)
 class ComponentParameterNode(ExpressionNode):
+    """
+    Represents one parameter of one component.
+
+    When building actual equations for a system,
+    we need to associated each parameter to its
+    actual component, at some point.
+    """
+
     component_id: str
     name: str
 
@@ -189,6 +197,14 @@ def comp_param(component_id: str, name: str) -> ComponentParameterNode:
 
 @dataclass(frozen=True, eq=False)
 class ComponentVariableNode(ExpressionNode):
+    """
+    Represents one variable of one component.
+
+    When building actual equations for a system,
+    we need to associated each variable to its
+    actual component, at some point.
+    """
+
     component_id: str
     name: str
 

@@ -43,12 +43,6 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
     Simply copies the whole AST.
     """
 
-    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
-        return ComponentParameterNode(node.component_id, node.name)
-
-    def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
-        return ComponentVariableNode(node.component_id, node.name)
-
     def literal(self, node: LiteralNode) -> ExpressionNode:
         return LiteralNode(node.value)
 
@@ -62,6 +56,12 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
 
     def parameter(self, node: ParameterNode) -> ExpressionNode:
         return ParameterNode(node.name)
+
+    def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
+        return ComponentVariableNode(node.component_id, node.name)
+
+    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
+        return ComponentParameterNode(node.component_id, node.name)
 
     def copy_expression_range(
         self, expression_range: ExpressionRange

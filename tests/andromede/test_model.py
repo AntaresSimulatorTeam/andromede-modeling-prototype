@@ -15,11 +15,15 @@ import pytest
 from andromede.expression.expression import (
     ExpressionNode,
     ExpressionRange,
+    comp_param,
+    comp_var,
     literal,
     param,
+    port_field,
     var,
 )
 from andromede.model import Constraint, float_variable, model
+from andromede.model.model import PortFieldDefinition, port_field_def
 
 
 @pytest.mark.parametrize(
@@ -187,3 +191,18 @@ def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objectiv
             objective_contribution=var("generation").variance(),
         )
     assert str(exc.value) == "Objective contribution must be a linear expression."
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        var("x") <= 0,
+        comp_var("c", "x"),
+        comp_param("c", "x"),
+        port_field("p", "f"),
+        port_field("p", "f").sum_connections(),
+    ],
+)
+def test_invalid_port_field_definition_should_raise(expression: ExpressionNode) -> None:
+    with pytest.raises(ValueError) as exc:
+        port_field_def(port_name="p", field_name="f", definition=expression)

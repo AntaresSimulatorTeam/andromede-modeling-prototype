@@ -54,12 +54,6 @@ class PrinterVisitor(ExpressionVisitor[str]):
     TODO: remove parenthis where not necessary.
     """
 
-    def comp_parameter(self, node: ComponentParameterNode) -> str:
-        return f"{node.component_id}.{node.name}"
-
-    def comp_variable(self, node: ComponentVariableNode) -> str:
-        return f"{node.component_id}.{node.name}"
-
     def literal(self, node: LiteralNode) -> str:
         return str(node.value)
 
@@ -97,6 +91,12 @@ class PrinterVisitor(ExpressionVisitor[str]):
 
     def parameter(self, node: ParameterNode) -> str:
         return node.name
+
+    def comp_variable(self, node: ComponentVariableNode) -> str:
+        return f"{node.component_id}.{node.name}"
+
+    def comp_parameter(self, node: ComponentParameterNode) -> str:
+        return f"{node.component_id}.{node.name}"
 
     # TODO: Add pretty print for node.instances_index
     def time_operator(self, node: TimeOperatorNode) -> str:

@@ -58,17 +58,6 @@ class TimestepComponentVariableKey:
     scenario: Optional[int] = None
 
 
-@dataclass(eq=True, frozen=True)
-class TimestepFlowVariableKey:
-    """
-    Identifies the solver variable for one timestep and one link.
-    """
-
-    link_id: str
-    block_timestep: Optional[int] = None
-    scenario: Optional[int] = None
-
-
 def _get_parameter_value(
     context: "OptimizationContext",
     block_timestep: int,
