@@ -237,10 +237,14 @@ class ComponentContext:
         )
 
     def add_variable(
-        self, block_timestep: int, scenario: int, variable: lp.Variable
+        self,
+        block_timestep: int,
+        scenario: int,
+        model_var_name: str,
+        variable: lp.Variable,
     ) -> None:
         self.opt_context.register_component_variable(
-            block_timestep, scenario, self.component.id, variable.name(), variable
+            block_timestep, scenario, self.component.id, model_var_name, variable
         )
 
     def get_variable(
@@ -362,8 +366,6 @@ class OptimizationContext:
             block_timestep = 0
         if variable_structure.scenario == False:
             scenario = 0
-
-        variable_name = f"{component_id}_{variable_name}_{block_timestep}_{scenario}"
 
         return self._component_variables[
             TimestepComponentVariableKey(
@@ -490,8 +492,12 @@ def _create_objective(
     component_context: ComponentContext,
     objective_contribution: ExpressionNode,
 ) -> None:
+    instantiated_expr = _instantiate_model_expression(
+        objective_contribution, component.id, opt_context
+    )
     # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
-    linear_expr = component_context.linearize_expression(0, 0, objective_contribution)
+    linear_expr = component_context.linearize_expression(0, 0, instantiated_expr)
+
     obj: lp.Objective = solver.Objective()
     for term in linear_expr.terms.values():
         # TODO : How to handle the scenario operator in a general manner ?
@@ -688,13 +694,16 @@ class OptimizationProblem:
         self._create_constraints()
         self._create_objectives()
 
-
     def _register_connection_fields_definitions(self) -> None:
         for cnx in self.context.network.connections:
             for field_name in list(cnx.master_port.keys()):
                 master_port = cnx.master_port[field_name]
-                port_definition = master_port.component.model.port_fields_definitions.get(
-                    PortFieldId(port_name=master_port.port_id, field_name=field_name.name)
+                port_definition = (
+                    master_port.component.model.port_fields_definitions.get(
+                        PortFieldId(
+                            port_name=master_port.port_id, field_name=field_name.name
+                        )
+                    )
                 )
                 expression_node = port_definition.definition  # type: ignore
                 instantiated_expression = add_component_context(
@@ -712,7 +721,6 @@ class OptimizationProblem:
                     field_name=field_name.name,
                     expression=instantiated_expression,
                 )
-
 
     def _create_variables(self) -> None:
         for component in self.context.network.all_components:
@@ -754,13 +762,35 @@ class OptimizationProblem:
                             ).get_value(block_timestep, scenario)
 
                         # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
-                        solver_var = self.solver.NumVar(lower_bound, upper_bound, model_var.name)
-                        component_context.add_variable(block_timestep, scenario, solver_var)
-
+                        # Externally, for the Solver, this variable will have a full name
+                        # Internally, it will be indexed by a structure that into account
+                        # the component id, variable name, timestep and scenario separately
+                        solver_var = self.solver.NumVar(
+                            lower_bound,
+                            upper_bound,
+                            f"{component.id}_{model_var.name}_{block_timestep}_{scenario}",
+                        )
+                        component_context.add_variable(
+                            block_timestep, scenario, model_var.name, solver_var
+                        )
 
     def _create_constraints(self) -> None:
         for component in self.context.network.all_components:
             for constraint in component.model.get_all_constraints():
+                if (
+                    self.type == OptimizationProblem.Type.xpansion_master
+                    and constraint.context == ProblemContext.operational
+                ):
+                    # Xpansion Master Problem only takes investment constraints
+                    continue
+
+                elif (
+                    self.type == OptimizationProblem.Type.xpansion_subproblem
+                    and constraint.context == ProblemContext.investment
+                ):
+                    # Xpansion SubProblems only take operational constraints
+                    continue
+
                 instantiated_expr = _instantiate_model_expression(
                     constraint.expression, component.id, self.context
                 )
@@ -770,8 +800,9 @@ class OptimizationProblem:
                 instantiated_ub = _instantiate_model_expression(
                     constraint.upper_bound, component.id, self.context
                 )
+
                 instantiated_constraint = Constraint(
-                    name=constraint.name,
+                    name=f"{component.id}_{constraint.name}",
                     expression=instantiated_expr,
                     lower_bound=instantiated_lb,
                     upper_bound=instantiated_ub,
@@ -781,7 +812,6 @@ class OptimizationProblem:
                     self.context.get_component_context(component),
                     instantiated_constraint,
                 )
-
 
     def _create_objectives(self) -> None:
         for component in self.context.network.all_components:
@@ -966,9 +996,7 @@ def export_xpansion_problem(problems: List["OptimizationProblem"]) -> bool:
                 # If candidate was identified in master
                 problem_to_candidates[problem.name][variable] = len(seen_variables) - 1
 
-        if not write_to_file(
-            f"{problem.name}.mps", problem_mps_str, "outputs/lp"
-        ):
+        if not write_to_file(f"{problem.name}.mps", problem_mps_str, "outputs/lp"):
             return False
 
     # === write structure.txt file ===

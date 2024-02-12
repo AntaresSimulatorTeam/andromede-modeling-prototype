@@ -127,6 +127,12 @@ def wind_cluster_candidate() -> Model:
             ),
         ],
         ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+        port_fields_definitions=[
+            PortFieldDefinition(
+                port_field=PortFieldId("balance_port", "flow"),
+                definition=var("generation"),
+            )
+        ],
         constraints=[
             Constraint(
                 name="Max generation", expression=var("generation") <= var("p_max")
@@ -135,10 +141,6 @@ def wind_cluster_candidate() -> Model:
                 name="Max investment",
                 expression=var("p_max") == param("p_max_per_unit") * var("nb_units"),
                 context=INVESTMENT,
-            ),
-            Constraint(
-                name="Balance contribution",
-                expression=port_field("balance_port", "flow") == var("generation"),
             ),
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
