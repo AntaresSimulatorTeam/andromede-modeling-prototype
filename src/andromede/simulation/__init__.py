@@ -15,7 +15,7 @@ from .optimization import (
     OptimizationProblem,
     build_problem,
     build_xpansion_problem,
-    export_xpansion_problem,
+    export_xpansion_structure,
 )
 from .output_values import OutputValues
 from .time_block import TimeBlock

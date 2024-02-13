@@ -38,7 +38,7 @@ from andromede.simulation import (
     TimeBlock,
     build_problem,
     build_xpansion_problem,
-    export_xpansion_problem,
+    export_xpansion_structure,
 )
 from andromede.study import (
     Component,
