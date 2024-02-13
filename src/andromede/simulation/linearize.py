@@ -62,6 +62,24 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
     def parameter(self, node: ParameterNode) -> LinearExpression:
         raise ValueError("Parameters must be evaluated before linearization.")
 
+    def comp_variable(self, node: ComponentVariableNode) -> LinearExpression:
+        return LinearExpression(
+            [
+                Term(
+                    1,
+                    node.component_id,
+                    node.name,
+                    self.structure_provider.get_component_variable_structure(
+                        node.component_id, node.name
+                    ),
+                )
+            ],
+            0,
+        )
+
+    def comp_parameter(self, node: ComponentParameterNode) -> LinearExpression:
+        raise ValueError("Parameters must be evaluated before linearization.")
+
     def time_operator(self, node: TimeOperatorNode) -> LinearExpression:
         if self.value_provider is None:
             raise ValueError(
@@ -123,24 +141,8 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
         raise ValueError("Port fields must be replaced before linearization.")
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> LinearExpression:
-        raise ValueError("Port fields must be replaced before linearization.")
-
-    def comp_parameter(self, node: ComponentParameterNode) -> LinearExpression:
-        raise ValueError("Parameters must be evaluated before linearization.")
-
-    def comp_variable(self, node: ComponentVariableNode) -> LinearExpression:
-        return LinearExpression(
-            [
-                Term(
-                    1,
-                    node.component_id,
-                    node.name,
-                    self.structure_provider.get_component_variable_structure(
-                        node.component_id, node.name
-                    ),
-                )
-            ],
-            0,
+        raise ValueError(
+            "Port fields aggregators must be replaced before linearization."
         )
 
 

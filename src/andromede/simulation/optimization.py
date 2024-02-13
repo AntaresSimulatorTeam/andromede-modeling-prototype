@@ -58,17 +58,6 @@ class TimestepComponentVariableKey:
     scenario: Optional[int] = None
 
 
-@dataclass(eq=True, frozen=True)
-class TimestepFlowVariableKey:
-    """
-    Identifies the solver variable for one timestep and one link.
-    """
-
-    link_id: str
-    block_timestep: Optional[int] = None
-    scenario: Optional[int] = None
-
-
 def _get_parameter_value(
     context: "OptimizationContext",
     block_timestep: int,
@@ -141,9 +130,7 @@ def _make_value_provider(
             )
 
         def parameter_is_constant_over_time(self, name: str) -> bool:
-            return _parameter_is_constant_over_time(
-                component, name, context, block_timestep, scenario
-            )
+            return not component.model.parameters[name].structure.time
 
     return Provider()
 

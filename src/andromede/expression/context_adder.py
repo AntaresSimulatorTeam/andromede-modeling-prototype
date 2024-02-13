@@ -38,12 +38,12 @@ class ContextAdder(CopyVisitor):
     def parameter(self, node: ParameterNode) -> ExpressionNode:
         return ComponentParameterNode(self.component_id, node.name)
 
-    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
+    def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
         raise ValueError(
             "This expression has already been associated to another component."
         )
 
-    def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
+    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
         raise ValueError(
             "This expression has already been associated to another component."
         )
