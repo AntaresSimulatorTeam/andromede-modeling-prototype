@@ -10,16 +10,8 @@ else:
 
 
 class ExprVisitor(ParseTreeVisitor):
-    # Visit a parse tree produced by ExprParser#division.
-    def visitDivision(self, ctx: ExprParser.DivisionContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#identifier.
     def visitIdentifier(self, ctx: ExprParser.IdentifierContext):
-        return self.visitChildren(ctx)
-
-    # Visit a parse tree produced by ExprParser#number.
-    def visitNumber(self, ctx: ExprParser.NumberContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#negation.
@@ -38,12 +30,32 @@ class ExprVisitor(ParseTreeVisitor):
     def visitSubtraction(self, ctx: ExprParser.SubtractionContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#multiplication.
-    def visitMultiplication(self, ctx: ExprParser.MultiplicationContext):
+    # Visit a parse tree produced by ExprParser#sum.
+    def visitSum(self, ctx: ExprParser.SumContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#portField.
     def visitPortField(self, ctx: ExprParser.PortFieldContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#division.
+    def visitDivision(self, ctx: ExprParser.DivisionContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#number.
+    def visitNumber(self, ctx: ExprParser.NumberContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#sumConnections.
+    def visitSumConnections(self, ctx: ExprParser.SumConnectionsContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeShift.
+    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#multiplication.
+    def visitMultiplication(self, ctx: ExprParser.MultiplicationContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#addition.

@@ -30,6 +30,7 @@ from andromede.expression.expression import (
     BinaryOperatorNode,
     ExpressionRange,
     InstancesTimeIndex,
+    PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
     TimeAggregatorNode,
@@ -87,6 +88,10 @@ class EqualityVisitor:
             return self.scenario_operator(left, right)
         if isinstance(left, PortFieldNode) and isinstance(right, PortFieldNode):
             return self.port_field(left, right)
+        if isinstance(left, PortFieldAggregatorNode) and isinstance(
+            right, PortFieldAggregatorNode
+        ):
+            return self.port_field_aggregator(left, right)
         raise NotImplementedError(f"Equality not implemented for {left.__class__}")
 
     def literal(self, left: LiteralNode, right: LiteralNode) -> bool:
@@ -168,6 +173,13 @@ class EqualityVisitor:
 
     def port_field(self, left: PortFieldNode, right: PortFieldNode) -> bool:
         return left.port_name == right.port_name and left.field_name == right.field_name
+
+    def port_field_aggregator(
+        self, left: PortFieldAggregatorNode, right: PortFieldAggregatorNode
+    ) -> bool:
+        return left.aggregator == right.aggregator and self.visit(
+            left.operand, right.operand
+        )
 
 
 def expressions_equal(

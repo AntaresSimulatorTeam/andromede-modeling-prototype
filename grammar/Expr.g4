@@ -6,6 +6,9 @@ expr: expr '*' expr             # multiplication
     | expr '-' expr             # subtraction
     | '-' expr                  # negation
     | expr COMPARISON expr      # comparison
+    | expr '.sum()'             # sum
+    | expr '.sum_connections()' # sumConnections
+    | expr '.shift(' expr ')'   # timeShift
     | IDENTIFIER                # identifier
     | IDENTIFIER '.' IDENTIFIER # portField
     | NUMBER                    # number
