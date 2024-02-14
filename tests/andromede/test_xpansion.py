@@ -36,9 +36,9 @@ from andromede.simulation import (
     OptimizationProblem,
     OutputValues,
     TimeBlock,
+    XpansionProblem,
     build_problem,
     build_xpansion_problem,
-    export_xpansion_structure,
 )
 from andromede.study import (
     Component,
@@ -279,8 +279,39 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     )
     scenarios = 1
 
-    problems = build_xpansion_problem(network, database, TimeBlock(1, [0]), scenarios)
-    assert export_xpansion_problem(problems)
+    xpansion = build_xpansion_problem(network, database, TimeBlock(1, [0]), scenarios)
+
+    assert any(
+        "CAND_p_max_0_0" == solver_var.name and 0 == solver_var.column
+        for solver_var in xpansion.master.context._solver_variables.values()
+    )
+    assert any(
+        "CLUSTER_p_max_0_0" == solver_var.name and 1 == solver_var.column
+        for solver_var in xpansion.master.context._solver_variables.values()
+    )
+    assert any(
+        "CLUSTER_nb_units_0_0" == solver_var.name and not solver_var.is_in_objective
+        for solver_var in xpansion.master.context._solver_variables.values()
+    )
+
+    assert any(
+        "CAND_p_max_0_0" == solver_var.name and 2 == solver_var.column
+        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
+    )
+    assert any(
+        "CLUSTER_p_max_0_0" == solver_var.name and 4 == solver_var.column
+        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
+    )
+    assert any(
+        "CAND_generation_0_0" == solver_var.name
+        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
+    )
+    assert any(
+        "CLUSTER_generation_0_0" == solver_var.name
+        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
+    )
+
+    xpansion.set_environment(is_debug=True)
 
 
 def test_generation_xpansion_two_time_steps_two_scenarios(

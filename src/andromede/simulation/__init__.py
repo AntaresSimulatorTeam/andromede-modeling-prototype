@@ -10,12 +10,7 @@
 #
 # This file is part of the Antares project.
 
-from .optimization import (
-    BlockBorderManagement,
-    OptimizationProblem,
-    build_problem,
-    build_xpansion_problem,
-    export_xpansion_structure,
-)
+from .optimization import BlockBorderManagement, OptimizationProblem, build_problem
 from .output_values import OutputValues
 from .time_block import TimeBlock
+from .xpansion import XpansionProblem, build_xpansion_problem

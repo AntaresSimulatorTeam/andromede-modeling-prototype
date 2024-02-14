@@ -8,4 +8,5 @@ venv
 .env
 .coverage
 coverage.xml
+bin
 outputs

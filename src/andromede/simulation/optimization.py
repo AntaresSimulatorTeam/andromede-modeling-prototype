@@ -15,7 +15,6 @@ The optimization module contains the logic to translate the input model
 into a mathematical optimization problem.
 """
 
-import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -894,93 +893,3 @@ def build_problem(
     )
 
     return OptimizationProblem(problem_name, solver, opt_context, problem_type)
-
-
-def build_xpansion_problem(
-    network: Network,
-    database: DataBase,
-    block: TimeBlock,
-    scenarios: int,
-    *,
-    border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
-    solver_id: str = "GLOP",
-) -> List[OptimizationProblem]:
-    """
-    Entry point to build the xpansion problem for a time period
-
-    Returns a list of problems where the first one is the master problem and
-    subsequent problems are sub-problems
-    """
-    problems = []
-
-    # Xpansion Master Problem
-    problems.append(
-        build_problem(
-            network,
-            database,
-            block,
-            scenarios,
-            problem_name="master",
-            border_management=border_management,
-            solver_id=solver_id,
-            problem_type=OptimizationProblem.Type.xpansion_master,
-        )
-    )
-
-    # Xpansion Sub-problems
-    problems.append(
-        build_problem(
-            network,
-            database,
-            block,
-            scenarios,
-            problem_name="subproblem",
-            border_management=border_management,
-            solver_id=solver_id,
-            problem_type=OptimizationProblem.Type.xpansion_subproblem,
-        )
-    )
-
-    return problems
-
-
-def export_xpansion_structure(problems: List["OptimizationProblem"]) -> str:
-    """
-    Write MPS files for Master and Sub problems as well as the structure.txt file
-    """
-
-    if len(problems) < 2:
-        # TODO For now, only one master and one subproblem
-        raise RuntimeError(
-            "Argument list must have at least a master and a sub problem"
-        )
-
-    # A mapping similar to the Xpansion mapping for keeping track of variable indexes
-    # in Master and Sub-problem files
-    problem_to_candidates: Dict[str, Dict[str, int]] = {}
-    candidates = set()
-
-    problem_to_candidates["master"] = {}
-    for solver_var_info in problems[0].context._solver_variables.values():
-        if solver_var_info.is_in_objective:
-            problem_to_candidates["master"][
-                solver_var_info.name
-            ] = solver_var_info.column
-            candidates.add(solver_var_info.name)
-
-    for problem in problems[1:]:
-        problem_to_candidates[problem.name] = {}
-
-        for solver_var_info in problem.context._solver_variables.values():
-            if solver_var_info.name in candidates:
-                # If candidate was identified in master
-                problem_to_candidates[problem.name][
-                    solver_var_info.name
-                ] = solver_var_info.column
-
-    structure_str = ""
-    for problem_name, candidate_to_index in problem_to_candidates.items():
-        for candidate, index in candidate_to_index.items():
-            structure_str += f"{problem_name:>50}{candidate:>50}{index:>10}\n"
-
-    return structure_str
