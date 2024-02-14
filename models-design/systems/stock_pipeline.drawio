@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="C5RBs43oDa-KdzZeNtuy" name="page_1">
-        <mxGraphModel dx="750" dy="1740" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="1202" dy="1762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="WIyWlLk6GJQsqaUBKTNV-0"/>
                 <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0"/>
@@ -46,10 +46,10 @@
                 <mxCell id="hW5n2ouBTmK9XzmkuQqM-64" value="Gas production 1" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="130" y="-110" width="100" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="hW5n2ouBTmK9XzmkuQqM-65" value="Gas production 1" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                <mxCell id="hW5n2ouBTmK9XzmkuQqM-65" value="Gas production 2" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="660" y="-110" width="100" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="hW5n2ouBTmK9XzmkuQqM-66" value="Gas demand 1" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                <mxCell id="hW5n2ouBTmK9XzmkuQqM-66" value="Gas demand 2" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="660" y="-260" width="90" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="hW5n2ouBTmK9XzmkuQqM-67" value="Gas demand 1" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
@@ -62,7 +62,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="hW5n2ouBTmK9XzmkuQqM-81" value="&lt;h1&gt;Physical system&lt;br&gt;&lt;/h1&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-                    <mxGeometry x="310" y="-440" width="250" height="40" as="geometry"/>
+                    <mxGeometry x="289" y="-520" width="250" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="1" value="" style="group" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1" connectable="0">
                     <mxGeometry x="109" y="40" width="680" height="320" as="geometry"/>
@@ -154,7 +154,7 @@
                 <mxCell id="34" value="" style="group" parent="49" vertex="1" connectable="0">
                     <mxGeometry x="590" y="190" width="80" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="35" value="demand_e_2" style="rounded=1;whiteSpace=wrap;html=1;container=0;" parent="34" vertex="1">
+                <mxCell id="35" value="demand_g_2" style="rounded=1;whiteSpace=wrap;html=1;container=0;" parent="34" vertex="1">
                     <mxGeometry y="30" width="80" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="36" value="flow_d" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#6c8ebf;container=0;fontColor=#000000;" parent="34" vertex="1">
@@ -197,7 +197,7 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="129" value="&lt;i&gt;We represent a pipeline with a stock capacity.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-                    <mxGeometry x="156" y="-520" width="515" height="40" as="geometry"/>
+                    <mxGeometry x="156" y="-570" width="515" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="130" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="hW5n2ouBTmK9XzmkuQqM-59" target="hW5n2ouBTmK9XzmkuQqM-58" edge="1">
                     <mxGeometry relative="1" as="geometry">
@@ -246,10 +246,10 @@
                 <mxCell id="196" value="flow_from, flow_to, flow_from_pos, flow_to_pos : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="186" vertex="1">
                     <mxGeometry y="300" width="310" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="197" value="flow_from.f = f_from" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="186" vertex="1">
+                <mxCell id="197" value="flow_from.f = - f_from" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="186" vertex="1">
                     <mxGeometry y="330" width="310" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="198" value="flow_to.f&amp;nbsp; = f_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="186" vertex="1">
+                <mxCell id="198" value="flow_to.f&amp;nbsp; = - f_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="186" vertex="1">
                     <mxGeometry y="360" width="310" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="199" value="flow_from_pos.f.sum() = max(f_from,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="186" vertex="1">
@@ -260,6 +260,9 @@
                 </mxCell>
                 <mxCell id="hW5n2ouBTmK9XzmkuQqM-79" value="&lt;h1&gt;Ports and models&lt;br&gt;&lt;/h1&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="1150" y="-550" width="250" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="201" value="min&amp;nbsp;&amp;nbsp;&lt;span style=&quot;&quot;&gt;&lt;/span&gt;production costs + balance costs&lt;br&gt;s.t.&amp;nbsp;&lt;span style=&quot;&quot;&gt;&amp;nbsp; s&lt;/span&gt;tock_pipeline(t+1) = stock_pipeline(t) + power_pipeline_1(t) + power_pipeline_2(t)&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;gas_production_1 - gas_demand_1 - power_pipeline_1 +ens_1 -spill_1 = 0&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;gas_production_2 - gas_demand_2 - power_pipeline_2+ens_1 -spill_1 = 0&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production constraints" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="280" y="-450" width="590" height="80" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
