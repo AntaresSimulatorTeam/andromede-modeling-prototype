@@ -45,7 +45,7 @@ from andromede.simulation.linearize import linearize_expression
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
-from andromede.utils import get_or_add, write_to_file
+from andromede.utils import get_or_add
 
 
 @dataclass(eq=True, frozen=True)

@@ -44,7 +44,7 @@ def get_or_add(dictionary: Dict[K, V], key: K, default_factory: Supplier[V]) -> 
     return value
 
 
-def write_to_file(filename: str, message: str, path: str = "outputs") -> bool:
+def serialize(filename: str, message: str, path: str = "outputs") -> bool:
     """
     Write message to path/filename
     """
