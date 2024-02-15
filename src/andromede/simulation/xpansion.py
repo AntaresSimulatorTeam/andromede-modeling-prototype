@@ -85,7 +85,9 @@ class XpansionProblem:
 
         return structure_str
 
-    def export_options(self, *, solver_name: str = "COIN") -> Dict[str, Any]:
+    def export_options(
+        self, *, solver_name: str = "XPRESS", log_level: int = 0
+    ) -> Dict[str, Any]:
         # Default values
         options_values = {
             "MAX_ITERATIONS": -1,
@@ -104,22 +106,23 @@ class XpansionProblem:
             "BOUND_ALPHA": True,
             "SEPARATION_PARAM": 0.5,
             "BATCH_SIZE": 0,
-            "JSON_FILE": "outputs/xpansion/out.json",
-            "LAST_ITERATION_JSON_FILE": "outputs/xpansion/last_iteration.json",
+            "JSON_FILE": "output/xpansion/out.json",
+            "LAST_ITERATION_JSON_FILE": "output/xpansion/last_iteration.json",
             "MASTER_FORMULATION": "integer",
             "SOLVER_NAME": solver_name,
             "TIME_LIMIT": 1_000_000_000_000,
-            "LOG_LEVEL": 0,
+            "LOG_LEVEL": log_level,
             "LAST_MASTER_MPS": "master_last_iteration",
             "LAST_MASTER_BASIS": "master_last_basis.bss",
         }
         return options_values
 
-    def set_environment(
+    def prepare(
         self,
         *,
         path: str = "outputs/lp",
-        solver_name: str = "COIN",
+        solver_name: str = "XPRESS",
+        log_level: int = 0,
         is_debug: bool = False,
     ) -> None:
         serialize("master.mps", self.master.export_as_mps(), path)
@@ -127,7 +130,10 @@ class XpansionProblem:
         serialize("structure.txt", self.export_structure(), path)
         serialize(
             "options.json",
-            json.dumps(self.export_options(solver_name=solver_name), indent=4),
+            json.dumps(
+                self.export_options(solver_name=solver_name, log_level=log_level),
+                indent=4,
+            ),
             path,
         )
 
@@ -135,17 +141,25 @@ class XpansionProblem:
             serialize("master.lp", self.master.export_as_lp(), path)
             serialize("subproblem.lp", self.subproblems[0].export_as_lp(), path)
 
-    def launch(self, *, path: str = "outputs/lp", solver_name: str = "COIN") -> None:
-        self.set_environment(path=path, solver_name=solver_name)
+    def run(
+        self,
+        *,
+        path: str = "outputs/lp",
+        solver_name: str = "XPRESS",
+        log_level: int = 0,
+    ) -> bool:
+        self.prepare(path=path, solver_name=solver_name, log_level=log_level)
         root_dir = os.getcwd()
         os.chdir(path)
-        subprocess.run(
+        res = subprocess.run(
             [root_dir + "/bin/benders", "options.json"],
             stdout=sys.stdout,
-            stderr=sys.stderr,
+            stderr=subprocess.DEVNULL,  # TODO For now, to avoid the "Invalid MIT-MAGIC-COOKIE-1 key" error
             shell=False,
         )
         os.chdir(root_dir)
+
+        return res.returncode == 0
 
 
 def build_xpansion_problem(

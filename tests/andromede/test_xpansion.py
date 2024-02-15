@@ -20,6 +20,7 @@ from andromede.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
     NODE_BALANCE_MODEL,
+    NODE_WITH_SPILL_AND_ENS_MODEL,
 )
 from andromede.model import (
     Constraint,
@@ -236,33 +237,46 @@ def test_generation_xpansion_single_time_step_single_scenario(
     assert output == expected_output, f"Output differs from expected: {output}"
 
 
-def test_model_export_xpansion_single_time_step_single_scenario(
+def test_two_candidates_xpansion_single_time_step_single_scenario(
     generator: Component,
     candidate: Component,
     cluster_candidate: Component,
 ) -> None:
     """
-    Same as the previous test, but only checking the MPS file generation for Bender's branching
-    in Xpansion
+    As before, simple generation expansion problem on one node, one timestep and one scenario
+    but this time with two candidates: one thermal cluster and one wind cluster.
+
+    Demand = 400
+    Generator : P_max : 200, Cost : 45
+    Unsupplied energy : Cost : 1_000
+
+    -> 200 of unsupplied energy
+    -> Total cost without investment = 45 * 200 + 1_000 * 200 = 209_000
+
+    Single candidate  : Invest cost : 490 / MW; Prod cost : 10
+    Cluster candidate : Invest cost : 200 / MW; Prod cost : 10; Nb of discrete thresholds: 10; Prod per threshold: 10
+
+    Optimal investment : 100 MW (Cluster) + 100 MW (Single)
+
+    -> Optimal cost =                       490 * 100 (Single) + 200 * 100 (Cluster) -> investment
+                    + 45 * 200 (Generator) + 10 * 100 (Single) +  10 * 100 (Cluster) -> operational
+                    = 69_000 + 11_000 = 80_000
     """
 
     database = DataBase()
-    database.add_data("D", "demand", ConstantData(300))
+    database.add_data("D", "demand", ConstantData(400))
 
     database.add_data("G1", "p_max", ConstantData(200))
-    database.add_data("G1", "cost", ConstantData(40))
+    database.add_data("G1", "cost", ConstantData(45))
 
     database.add_data("CAND", "op_cost", ConstantData(10))
     database.add_data("CAND", "invest_cost", ConstantData(490))
 
-    database.add_data("CLUSTER", "op_cost", ConstantData(5))
-    database.add_data("CLUSTER", "invest_cost", ConstantData(495))
-    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(100))
+    database.add_data("CLUSTER", "op_cost", ConstantData(10))
+    database.add_data("CLUSTER", "invest_cost", ConstantData(200))
+    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(10))
 
-    demand = create_component(
-        model=DEMAND_MODEL,
-        id="D",
-    )
+    demand = create_component(model=DEMAND_MODEL, id="D")
 
     node = Node(model=NODE_BALANCE_MODEL, id="N")
     network = Network("test")
@@ -279,39 +293,72 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     )
     scenarios = 1
 
+    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+
+    status = problem.solver.Solve()
+
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == (45 * 200) + (490 * 100 + 10 * 100) + (
+        200 * 100 + 10 * 100
+    )
+
+    output = OutputValues(problem)
+    expected_output = OutputValues()
+    expected_output.component("G1").var("generation").value = 200.0
+    expected_output.component("CAND").var("generation").value = 100.0
+    expected_output.component("CAND").var("p_max").value = 100.0
+    expected_output.component("CLUSTER").var("generation").value = 100.0
+    expected_output.component("CLUSTER").var("p_max").value = 100.0
+    expected_output.component("CLUSTER").var("nb_units").value = 10.0
+
+    assert output == expected_output, f"Output differs from expected: {output}"
+
+
+def test_model_export_xpansion_single_time_step_single_scenario(
+    generator: Component,
+    candidate: Component,
+    cluster_candidate: Component,
+) -> None:
+    """
+    Same test as before but this time we separate master/subproblem and
+    export the problems in MPS format to be solved by the Bender solver in Xpansion
+    """
+
+    database = DataBase()
+    database.add_data("D", "demand", ConstantData(400))
+
+    database.add_data("N", "spillage_cost", ConstantData(1))
+    database.add_data("N", "ens_cost", ConstantData(501))
+
+    database.add_data("G1", "p_max", ConstantData(200))
+    database.add_data("G1", "cost", ConstantData(45))
+
+    database.add_data("CAND", "op_cost", ConstantData(10))
+    database.add_data("CAND", "invest_cost", ConstantData(490))
+
+    database.add_data("CLUSTER", "op_cost", ConstantData(10))
+    database.add_data("CLUSTER", "invest_cost", ConstantData(200))
+    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(10))
+
+    demand = create_component(model=DEMAND_MODEL, id="D")
+
+    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(generator)
+    network.add_component(candidate)
+    network.add_component(cluster_candidate)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(
+        PortRef(cluster_candidate, "balance_port"), PortRef(node, "balance_port")
+    )
+    scenarios = 1
+
     xpansion = build_xpansion_problem(network, database, TimeBlock(1, [0]), scenarios)
-
-    assert any(
-        "CAND_p_max_0_0" == solver_var.name and 0 == solver_var.column
-        for solver_var in xpansion.master.context._solver_variables.values()
-    )
-    assert any(
-        "CLUSTER_p_max_0_0" == solver_var.name and 1 == solver_var.column
-        for solver_var in xpansion.master.context._solver_variables.values()
-    )
-    assert any(
-        "CLUSTER_nb_units_0_0" == solver_var.name and not solver_var.is_in_objective
-        for solver_var in xpansion.master.context._solver_variables.values()
-    )
-
-    assert any(
-        "CAND_p_max_0_0" == solver_var.name and 2 == solver_var.column
-        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
-    )
-    assert any(
-        "CLUSTER_p_max_0_0" == solver_var.name and 4 == solver_var.column
-        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
-    )
-    assert any(
-        "CAND_generation_0_0" == solver_var.name
-        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
-    )
-    assert any(
-        "CLUSTER_generation_0_0" == solver_var.name
-        for solver_var in xpansion.subproblems[0].context._solver_variables.values()
-    )
-
-    xpansion.set_environment(is_debug=True)
+    assert xpansion.run()
 
 
 def test_generation_xpansion_two_time_steps_two_scenarios(
