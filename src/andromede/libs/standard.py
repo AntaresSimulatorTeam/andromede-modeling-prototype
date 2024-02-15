@@ -41,6 +41,28 @@ NODE_BALANCE_MODEL = model(
     ],
 )
 
+NODE_WITH_SPILL_AND_ENS_MODEL = model(
+    id="NODE_WITH_SPILL_AND_ENS_MODEL",
+    parameters=[float_parameter("spillage_cost"), float_parameter("ens_cost")],
+    variables=[
+        float_variable("spillage", lower_bound=literal(0)),
+        float_variable("unsupplied_energy", lower_bound=literal(0)),
+    ],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    binding_constraints=[
+        Constraint(
+            name="Balance",
+            expression=port_field("balance_port", "flow").sum_connections()
+            == var("spillage") - var("unsupplied_energy"),
+        )
+    ],
+    objective_operational_contribution=(
+        param("spillage_cost") * var("spillage")
+        + param("ens_cost") * var("unsupplied_energy")
+    )
+    .sum()
+    .expec(),
+)
 """
 A standard model for a linear cost generation, limited by a maximum generation.
 """
