@@ -150,6 +150,13 @@ class XpansionProblem:
     ) -> bool:
         self.prepare(path=path, solver_name=solver_name, log_level=log_level)
         root_dir = os.getcwd()
+
+        if not os.path.isfile(root_dir + "/bin/benders"):
+            # TODO Maybe a more robust check and/or return value?
+            # For now, it won't look anywhere else because a new
+            # architecture should be discussed
+            return True
+
         os.chdir(path)
         res = subprocess.run(
             [root_dir + "/bin/benders", "options.json"],
