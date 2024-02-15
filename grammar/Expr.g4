@@ -30,7 +30,7 @@ expr: expr '*' expr             # multiplication
     ;
 
 fragment DIGIT         : [0-9] ;
-fragment CHAR          : [a-zA-Z];
+fragment CHAR          : [a-zA-Z_];
 fragment CHAR_OR_DIGIT : (CHAR | DIGIT);
 
 NUMBER        : DIGIT+ ('.' DIGIT+)?;
