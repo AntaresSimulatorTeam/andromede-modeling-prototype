@@ -265,7 +265,7 @@
                     <mxGeometry y="90" width="200" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="198" value="Node : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;fontColor=#000000;" parent="133" vertex="1">
-                    <mxGeometry x="489" y="160" width="290" height="180" as="geometry"/>
+                    <mxGeometry x="489" y="160" width="290" height="210" as="geometry"/>
                 </mxCell>
                 <mxCell id="199" value="c_spill, c_ens : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
                     <mxGeometry y="30" width="290" height="30" as="geometry"/>
@@ -273,14 +273,17 @@
                 <mxCell id="200" value="spillage, ens : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
                     <mxGeometry y="60" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="201" value="c_spill*spillage + c_ens*ens : ObjectiveContribution" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
+                <mxCell id="215" value="spillage, ens &amp;gt;= 0" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
                     <mxGeometry y="90" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="202" value="flow_n : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
+                <mxCell id="201" value="c_spill*spillage + c_ens*ens : ObjectiveContribution" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
                     <mxGeometry y="120" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="203" value="flow_n.f..sum() = spillage - ens" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
+                <mxCell id="202" value="flow_n : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
                     <mxGeometry y="150" width="290" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="203" value="flow_n.f..sum() = spillage - ens" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="198" vertex="1">
+                    <mxGeometry y="180" width="290" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="204" value="Production : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;fontColor=#000000;" parent="133" vertex="1">
                     <mxGeometry x="224" y="-10" width="230" height="300" as="geometry"/>
@@ -291,7 +294,7 @@
                 <mxCell id="206" value="p_min, p_max, c : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="204" vertex="1">
                     <mxGeometry y="60" width="230" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="207" value="taux_emission : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="204" vertex="1">
+                <mxCell id="207" value="emission_rate : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="204" vertex="1">
                     <mxGeometry y="90" width="230" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="208" value="p_min &amp;lt;= p &amp;lt;= p_max" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="204" vertex="1">
@@ -309,7 +312,7 @@
                 <mxCell id="212" value="flow_p.f = p" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="204" vertex="1">
                     <mxGeometry y="240" width="230" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="213" value="my_emission.q = taux_emission * p" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="204" vertex="1">
+                <mxCell id="213" value="my_emission.q = emission_rate * p" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="204" vertex="1">
                     <mxGeometry y="270" width="230" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="hW5n2ouBTmK9XzmkuQqM-36" value="File &quot;network.txt&quot;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;container=0;fillColor=#CCCCFF;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
@@ -351,8 +354,8 @@
                 <mxCell id="hW5n2ouBTmK9XzmkuQqM-80" value="&lt;h1&gt;Data&lt;br&gt;&lt;/h1&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;align=center;container=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="180.62235294117647" y="10" width="143.38235294117646" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="214" value="min&amp;nbsp; sum(cost_thermic*thermic_prod)&lt;br&gt;s.t.&amp;nbsp; &lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;sum(thermic_prod * emission) &amp;lt;= C02_quota&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;sum(thermic_prod) = demand for each node" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-                    <mxGeometry x="104" y="-70" width="286" height="60" as="geometry"/>
+                <mxCell id="214" value="min&amp;nbsp; sum(cost_thermic*thermic_prod)&lt;br&gt;s.t.&amp;nbsp; &lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;sum(thermic_prod * emission_rate) &amp;lt;= C02_quota&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;sum(thermic_prod) = demand for each node" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="104" y="-70" width="306" height="60" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

@@ -170,7 +170,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="559" value="Node : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;fontColor=#000000;" parent="0" vertex="1">
-                    <mxGeometry x="530" y="304" width="290" height="240" as="geometry"/>
+                    <mxGeometry x="530" y="304" width="290" height="270" as="geometry"/>
                 </mxCell>
                 <mxCell id="666" value="c_spill, c_ens : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="30" width="290" height="30" as="geometry"/>
@@ -178,20 +178,23 @@
                 <mxCell id="560" value="spillage, ens, consumption_e : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="60" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="659" value="consumption_e &amp;gt;= 0" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
+                <mxCell id="671" value="spillage, ens &amp;gt;= 0" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="559">
                     <mxGeometry y="90" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="667" value="c_spill*spillage + c_ens*ens : ObjectiveContribution" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
+                <mxCell id="659" value="consumption_e &amp;gt;= 0" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="120" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="561" value="flow_n, flow_e : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
+                <mxCell id="667" value="c_spill*spillage + c_ens*ens : ObjectiveContribution" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="150" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="562" value="flow_n.f.sum() - consumption_e = spillage - ens" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
+                <mxCell id="561" value="flow_n, flow_e : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="180" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="652" value="flow_e.f. = - consumption_e" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
+                <mxCell id="562" value="flow_n.f.sum() - consumption_e = spillage - ens" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="210" width="290" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="652" value="flow_e.f. = - consumption_e" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
+                    <mxGeometry y="240" width="290" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="1" value="" style="group;fillColor=none;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1" connectable="0">
                     <mxGeometry x="109" y="80" width="680" height="690" as="geometry"/>
