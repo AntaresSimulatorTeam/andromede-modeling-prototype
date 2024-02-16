@@ -68,16 +68,6 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
 
     context: IndexingStructureProvider
 
-    def comp_parameter(self, node: ComponentParameterNode) -> IndexingStructure:
-        return self.context.get_component_parameter_structure(
-            node.component_id, node.name
-        )
-
-    def comp_variable(self, node: ComponentVariableNode) -> IndexingStructure:
-        return self.context.get_component_variable_structure(
-            node.component_id, node.name
-        )
-
     def literal(self, node: LiteralNode) -> IndexingStructure:
         return IndexingStructure(False, False)
 
@@ -109,6 +99,16 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
         scenario = self.context.get_parameter_structure(node.name).scenario == True
         return IndexingStructure(time, scenario)
 
+    def comp_variable(self, node: ComponentVariableNode) -> IndexingStructure:
+        return self.context.get_component_variable_structure(
+            node.component_id, node.name
+        )
+
+    def comp_parameter(self, node: ComponentParameterNode) -> IndexingStructure:
+        return self.context.get_component_parameter_structure(
+            node.component_id, node.name
+        )
+
     def time_operator(self, node: TimeOperatorNode) -> IndexingStructure:
         time_operator_cls = getattr(andromede.expression.time_operator, node.name)
         if time_operator_cls.rolling():
@@ -126,10 +126,14 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
         return IndexingStructure(visit(node.operand, self).time, False)
 
     def port_field(self, node: PortFieldNode) -> IndexingStructure:
-        raise ValueError("Should be instantiated before computing indexing structure.")
+        raise ValueError(
+            "Port fields must be resolved before computing indexing structure."
+        )
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> IndexingStructure:
-        raise ValueError("Should be instantiated before computing indexing structure.")
+        raise ValueError(
+            "Port fields aggregators must be resolved before computing indexing structure."
+        )
 
 
 def compute_indexation(

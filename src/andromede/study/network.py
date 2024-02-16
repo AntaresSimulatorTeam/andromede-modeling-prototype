@@ -47,24 +47,9 @@ class Node(Component):
 
 
 @dataclass(frozen=True)
-class Arc:
-    """
-    An arc between 2 nodes of the network.
-    TODO: we could imagine that it would be a component.
-    """
-
-    id: str
-    node1_id: str
-    node2_id: str
-
-
-@dataclass(frozen=True)
 class PortRef:
     component: Component
     port_id: str
-
-    def get_id(self) -> str:
-        return f"{self.port_id}_{self.component.id}"
 
 
 @dataclass()
@@ -78,9 +63,6 @@ class PortsConnection:
         self.port2 = port2
         self.master_port = {}
         self.__validate_ports()
-
-    def get_id(self) -> str:
-        return f"{self.port1.get_id()}__{self.port2.get_id()}"
 
     def __validate_ports(self) -> None:
         model1 = self.port1.component.model
@@ -134,7 +116,6 @@ class Network:
     def __init__(self, id: str):
         self.id: str = id
         self._nodes: Dict[str, Node] = {}
-        self._arcs: Dict[str, Arc] = {}
         self._components: Dict[str, Component] = {}
         self._connections: List[PortsConnection] = []
 
@@ -173,18 +154,6 @@ class Network:
         An iterable over both nodes and components.
         """
         return itertools.chain(self.nodes, self.components)
-
-    def add_arc(self, arc: Arc) -> None:
-        self._check_node_exists(arc.node1_id)
-        self._check_node_exists(arc.node2_id)
-        self._arcs[arc.id] = arc
-
-    def get_arc(self, arc_id: str) -> Arc:
-        return self._arcs[arc_id]
-
-    @property
-    def arcs(self) -> Iterable[Arc]:
-        return self._arcs.values()
 
     def connect(self, port1: PortRef, port2: PortRef) -> None:
         ports_connection = PortsConnection(port1, port2)

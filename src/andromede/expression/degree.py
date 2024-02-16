@@ -41,12 +41,6 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
     Computes degree of expression with respect to variables.
     """
 
-    def comp_parameter(self, node: ComponentParameterNode) -> int:
-        return 0
-
-    def comp_variable(self, node: ComponentVariableNode) -> int:
-        return 1
-
     def literal(self, node: LiteralNode) -> int:
         return 0
 
@@ -76,6 +70,12 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
         return 1
 
     def parameter(self, node: ParameterNode) -> int:
+        return 0
+
+    def comp_variable(self, node: ComponentVariableNode) -> int:
+        return 1
+
+    def comp_parameter(self, node: ComponentParameterNode) -> int:
         return 0
 
     def time_operator(self, node: TimeOperatorNode) -> int:

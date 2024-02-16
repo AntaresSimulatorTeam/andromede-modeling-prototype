@@ -102,12 +102,6 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
 
     context: ValueProvider
 
-    def comp_parameter(self, node: ComponentParameterNode) -> float:
-        return self.context.get_component_parameter_value(node.component_id, node.name)
-
-    def comp_variable(self, node: ComponentVariableNode) -> float:
-        return self.context.get_component_variable_value(node.component_id, node.name)
-
     def literal(self, node: LiteralNode) -> float:
         return node.value
 
@@ -119,6 +113,12 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
 
     def parameter(self, node: ParameterNode) -> float:
         return self.context.get_parameter_value(node.name)
+
+    def comp_parameter(self, node: ComponentParameterNode) -> float:
+        return self.context.get_component_parameter_value(node.component_id, node.name)
+
+    def comp_variable(self, node: ComponentVariableNode) -> float:
+        return self.context.get_component_variable_value(node.component_id, node.name)
 
     def time_operator(self, node: TimeOperatorNode) -> float:
         raise NotImplementedError()
