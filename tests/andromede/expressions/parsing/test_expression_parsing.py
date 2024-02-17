@@ -14,7 +14,7 @@ import pytest
 
 from andromede.expression import ExpressionNode, literal, param, var
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression import port_field
+from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.parsing.parse_expression import (
     ModelIdentifiers,
     parse_expression,
@@ -32,9 +32,14 @@ from andromede.expression.parsing.parse_expression import (
             "port.f <= 0",
             port_field("port", "f") <= 0,
         ),
-        ("x.sum()", var("x").sum()),
-        ("x.shift(-1)", var("x").shift(-literal(1))),
-        ("port.f.sum_connections()", port_field("port", "f").sum_connections()),
+        ("sum(x)", var("x").sum()),
+        ("x[-1]", var("x").shift(-literal(1))),
+        ("x[-1..5]", var("x").shift(ExpressionRange(-literal(1), literal(5)))),
+        (
+            "sum(x[-1..5])",
+            var("x").shift(ExpressionRange(-literal(1), literal(5))).sum(),
+        ),
+        ("sum_connections(port.f)", port_field("port", "f").sum_connections()),
     ],
 )
 def test_parsing_visitor(expression_str: str, expected: ExpressionNode):

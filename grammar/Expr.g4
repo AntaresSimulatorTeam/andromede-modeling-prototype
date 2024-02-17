@@ -20,13 +20,13 @@ expr: expr '*' expr             # multiplication
     | expr '-' expr             # subtraction
     | '-' expr                  # negation
     | expr COMPARISON expr      # comparison
-    | expr '.sum()'             # sum
-    | expr '.sum_connections()' # sumConnections
-    | expr '.shift(' expr ')'   # timeShift
     | IDENTIFIER                # identifier
     | IDENTIFIER '.' IDENTIFIER # portField
     | NUMBER                    # number
     | '(' expr ')'              # expression
+    | IDENTIFIER '(' expr ')'   # function
+    | IDENTIFIER '[' expr  (',' expr )* ']'  # timeShift
+    | IDENTIFIER '[' expr '..' expr ']'      # rangeTimeShift
     ;
 
 fragment DIGIT         : [0-9] ;

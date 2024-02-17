@@ -30,10 +30,6 @@ class ExprVisitor(ParseTreeVisitor):
     def visitSubtraction(self, ctx: ExprParser.SubtractionContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#sum.
-    def visitSum(self, ctx: ExprParser.SumContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#portField.
     def visitPortField(self, ctx: ExprParser.PortFieldContext):
         return self.visitChildren(ctx)
@@ -46,12 +42,16 @@ class ExprVisitor(ParseTreeVisitor):
     def visitNumber(self, ctx: ExprParser.NumberContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#sumConnections.
-    def visitSumConnections(self, ctx: ExprParser.SumConnectionsContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#timeShift.
     def visitTimeShift(self, ctx: ExprParser.TimeShiftContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#rangeTimeShift.
+    def visitRangeTimeShift(self, ctx: ExprParser.RangeTimeShiftContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#function.
+    def visitFunction(self, ctx: ExprParser.FunctionContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#multiplication.

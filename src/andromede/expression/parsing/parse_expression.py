@@ -15,7 +15,12 @@ from typing import Set
 from antlr4 import CommonTokenStream, InputStream
 
 from andromede.expression import ExpressionNode, literal, param, var
-from andromede.expression.expression import Comparator, ComparisonNode, PortFieldNode
+from andromede.expression.expression import (
+    Comparator,
+    ComparisonNode,
+    ExpressionRange,
+    PortFieldNode,
+)
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
 from andromede.expression.parsing.antlr.ExprParser import ExprParser
 from andromede.expression.parsing.antlr.ExprVisitor import ExprVisitor
@@ -65,7 +70,9 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     # Visit a parse tree produced by ExprParser#identifier.
     def visitIdentifier(self, ctx: ExprParser.IdentifierContext) -> ExpressionNode:
-        identifier = ctx.IDENTIFIER().getText()  # type: ignore
+        return self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+
+    def _convert_identifier(self, identifier: str) -> ExpressionNode:
         if self.identifiers.is_variable(identifier):
             return var(identifier)
         elif self.identifiers.is_parameter(identifier):
@@ -111,21 +118,29 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         }[op]
         return ComparisonNode(exp1, exp2, comp)
 
-    # Visit a parse tree produced by ExprParser#sum.
-    def visitSum(self, ctx: ExprParser.SumContext) -> ExpressionNode:
-        return ctx.expr().accept(self).sum()  # type: ignore
-
-    # Visit a parse tree produced by ExprParser#sumConnections.
-    def visitSumConnections(
-        self, ctx: ExprParser.SumConnectionsContext
-    ) -> ExpressionNode:
-        return ctx.expr().accept(self).sum_connections()  # type: ignore
-
     # Visit a parse tree produced by ExprParser#timeShift.
     def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> ExpressionNode:
-        shifted_expr = ctx.expr(0).accept(self)  # type: ignore
-        time_expr = ctx.expr(1).accept(self)  # type: ignore
-        return shifted_expr.shift(time_expr)
+        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+        time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
+        return shifted_expr.shift(time_shifts)
+
+    # Visit a parse tree produced by ExprParser#rangeTimeShift.
+    def visitRangeTimeShift(
+        self, ctx: ExprParser.RangeTimeShiftContext
+    ) -> ExpressionNode:
+        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+        expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
+        return shifted_expr.shift(ExpressionRange(expressions[0], expressions[1]))
+
+    # Visit a parse tree produced by ExprParser#function.
+    def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:
+        function_name: str = ctx.IDENTIFIER().getText()  # type: ignore
+        operand: ExpressionNode = ctx.expr().accept(self)  # type: ignore
+        if function_name == "sum":
+            return operand.sum()
+        elif function_name == "sum_connections":
+            return operand.sum_connections()
+        raise ValueError(f"Encountered invalid function name {function_name}")
 
 
 def parse_expression(expression: str, identifiers: ModelIdentifiers) -> ExpressionNode:
