@@ -58,7 +58,7 @@ library:
           type: flow
       binding-constraints:
         - name: balance
-          expression:  injection_port.flow.sum_connections() = 0
+          expression:  sum_connections(injection_port.flow) = 0
 
     - id: demand
       description: A basic fixed demand model
@@ -73,7 +73,6 @@ library:
         - port: injection_port
           field: flow
           definition: "-demand"
-
     """
 
     with io.StringIO(yaml_lib) as stream:

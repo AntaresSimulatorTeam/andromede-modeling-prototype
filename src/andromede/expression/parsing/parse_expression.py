@@ -50,11 +50,30 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     identifiers: ModelIdentifiers
 
+    def visitFullexpr(self, ctx: ExprParser.FullexprContext) -> ExpressionNode:
+        return ctx.expr().accept(self)  # type: ignore
+
     # Visit a parse tree produced by ExprParser#division.
-    def visitDivision(self, ctx: ExprParser.DivisionContext) -> ExpressionNode:
+    def visitMuldiv(self, ctx: ExprParser.MuldivContext) -> ExpressionNode:
         left = ctx.expr(0).accept(self)  # type: ignore
         right = ctx.expr(1).accept(self)  # type: ignore
-        return left / right
+        op = ctx.op.text  # type: ignore
+        if op == "*":
+            return left * right
+        elif op == "/":
+            return left / right
+        raise ValueError(f"Invalid operator {op}")
+
+    # Visit a parse tree produced by ExprParser#subtraction.
+    def visitAddsub(self, ctx: ExprParser.AddsubContext) -> ExpressionNode:
+        left = ctx.expr(0).accept(self)  # type: ignore
+        right = ctx.expr(1).accept(self)  # type: ignore
+        op = ctx.op.text  # type: ignore
+        if op == "+":
+            return left + right
+        elif op == "-":
+            return left - right
+        raise ValueError(f"Invalid operator {op}")
 
     # Visit a parse tree produced by ExprParser#number.
     def visitNumber(self, ctx: ExprParser.NumberContext) -> ExpressionNode:
@@ -78,26 +97,6 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         elif self.identifiers.is_parameter(identifier):
             return param(identifier)
         raise ValueError(f"{identifier} is not a valid variable or parameter name.")
-
-    # Visit a parse tree produced by ExprParser#subtraction.
-    def visitSubtraction(self, ctx: ExprParser.SubtractionContext) -> ExpressionNode:
-        left = ctx.expr(0).accept(self)  # type: ignore
-        right = ctx.expr(1).accept(self)  # type: ignore
-        return left - right
-
-    # Visit a parse tree produced by ExprParser#multiplication.
-    def visitMultiplication(
-        self, ctx: ExprParser.MultiplicationContext
-    ) -> ExpressionNode:
-        left = ctx.expr(0).accept(self)  # type: ignore
-        right = ctx.expr(1).accept(self)  # type: ignore
-        return left * right
-
-    # Visit a parse tree produced by ExprParser#addition.
-    def visitAddition(self, ctx: ExprParser.AdditionContext) -> ExpressionNode:
-        left = ctx.expr(0).accept(self)  # type: ignore
-        right = ctx.expr(1).accept(self)  # type: ignore
-        return left + right
 
     # Visit a parse tree produced by ExprParser#portField.
     def visitPortField(self, ctx: ExprParser.PortFieldContext) -> ExpressionNode:
@@ -151,4 +150,4 @@ def parse_expression(expression: str, identifiers: ModelIdentifiers) -> Expressi
     lexer = ExprLexer(input)
     stream = CommonTokenStream(lexer)
     parser = ExprParser(stream)
-    return ExpressionNodeBuilderVisitor(identifiers).visit(parser.expr())
+    return ExpressionNodeBuilderVisitor(identifiers).visit(parser.fullexpr())  # type: ignore

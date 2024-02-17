@@ -14,27 +14,32 @@ This file is part of the Antares project.
 
 grammar Expr;
 
-expr: expr '*' expr             # multiplication
-    | expr '/' expr             # division
-    | expr '+' expr             # addition
-    | expr '-' expr             # subtraction
-    | '-' expr                  # negation
+/* To match the whole input */
+fullexpr: expr EOF;
+
+expr: '-' expr                  # negation
+    | expr op=('/' | '*') expr  # muldiv
+    | expr op=('+' | '-') expr  # addsub
     | expr COMPARISON expr      # comparison
     | IDENTIFIER                # identifier
     | IDENTIFIER '.' IDENTIFIER # portField
     | NUMBER                    # number
     | '(' expr ')'              # expression
     | IDENTIFIER '(' expr ')'   # function
-    | IDENTIFIER '[' expr  (',' expr )* ']'  # timeShift
-    | IDENTIFIER '[' expr '..' expr ']'      # rangeTimeShift
+    | IDENTIFIER LBRACKET expr  (',' expr )* RBRACKET  # timeShift
+    | IDENTIFIER LBRACKET expr '..' expr RBRACKET      # rangeTimeShift
     ;
 
 fragment DIGIT         : [0-9] ;
 fragment CHAR          : [a-zA-Z_];
 fragment CHAR_OR_DIGIT : (CHAR | DIGIT);
 
-NUMBER        : DIGIT+ ('.' DIGIT+)?;
+NUMBER        : ('-')? DIGIT+ ('.' DIGIT+)?;
 IDENTIFIER    : CHAR CHAR_OR_DIGIT*;
 COMPARISON    : ( '=' | '>=' | '<=' );
+ADDSUB        : ( '+' | '-' );
+MULDIV        : ( '*' | '/' );
+LBRACKET: '[';
+RBRACKET: ']';
 
 WS: (' ' | '\t' | '\r'| '\n') -> skip;

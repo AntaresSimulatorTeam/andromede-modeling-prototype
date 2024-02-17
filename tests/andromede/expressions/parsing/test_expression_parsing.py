@@ -11,10 +11,13 @@
 # This file is part of the Antares project.
 
 import pytest
+from antlr4 import CommonTokenStream, InputStream
 
-from andromede.expression import ExpressionNode, literal, param, var
+from andromede.expression import ExpressionNode, literal, param, print_expr, var
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import ExpressionRange, port_field
+from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
+from andromede.expression.parsing.antlr.ExprParser import ExprParser
 from andromede.expression.parsing.parse_expression import (
     ModelIdentifiers,
     parse_expression,
@@ -24,6 +27,9 @@ from andromede.expression.parsing.parse_expression import (
 @pytest.mark.parametrize(
     "expression_str, expected",
     [
+        ("1 + 2", literal(1) + 2),
+        ("1 - 2", literal(1) - 2),
+        ("1 - 3 + 4 - 2", literal(1) - 3 + 4 - 2),
         (
             "1 + 2 * x = p",
             literal(1) + 2 * var("x") == param("p"),
@@ -33,18 +39,45 @@ from andromede.expression.parsing.parse_expression import (
             port_field("port", "f") <= 0,
         ),
         ("sum(x)", var("x").sum()),
-        ("x[-1]", var("x").shift(-literal(1))),
-        ("x[-1..5]", var("x").shift(ExpressionRange(-literal(1), literal(5)))),
+        ("x[-1]", var("x").shift(-1)),
+        ("x[-1..5]", var("x").shift(ExpressionRange(-1, 5))),
         (
             "sum(x[-1..5])",
-            var("x").shift(ExpressionRange(-literal(1), literal(5))).sum(),
+            var("x").shift(ExpressionRange(-1, 5)).sum(),
         ),
         ("sum_connections(port.f)", port_field("port", "f").sum_connections()),
+        (
+            "level - level[-1] - efficiency * injection + withdrawal = inflows",
+            var("level")
+            - var("level").shift(-1)
+            - param("efficiency") * var("injection")
+            + var("withdrawal")
+            == param("inflows"),
+        ),
+        (
+            "sum(nb_start[-d_min_up + 1 .. 0]) <= nb_on",
+            var("nb_start")
+            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            .sum()
+            <= var("nb_on"),
+        ),
     ],
 )
 def test_parsing_visitor(expression_str: str, expected: ExpressionNode):
-    identifiers = ModelIdentifiers(variables={"x"}, parameters={"p"})
+    identifiers = ModelIdentifiers(
+        variables={"x", "level", "injection", "withdrawal", "nb_start", "nb_on"},
+        parameters={"p", "inflows", "efficiency", "d_min_up"},
+    )
 
     expr = parse_expression(expression_str, identifiers)
-
+    print()
+    print(print_expr(expr))
     assert expressions_equal(expr, expected)
+
+
+def test_parsing():
+    identifiers = ModelIdentifiers(
+        variables={"x", "level", "injection", "withdrawal"},
+        parameters={"p", "inflows", "efficiency"},
+    )
+    expr = parse_expression("-p", identifiers)
