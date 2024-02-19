@@ -9,10 +9,11 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
-from typing import Optional
+from dataclasses import dataclass
+from typing import Any, Optional
 
 from andromede.expression.degree import is_constant
+from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
@@ -22,6 +23,7 @@ from andromede.expression.expression import (
 from andromede.expression.print import print_expr
 
 
+@dataclass
 class Constraint:
     """
     A constraint linking variables and parameters of a model together.
@@ -79,3 +81,24 @@ class Constraint:
                 self.upper_bound = upper_bound
             else:
                 self.upper_bound = literal(float("inf"))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Constraint):
+            return False
+        return (
+            self.name == other.name
+            and expressions_equal(self.expression, other.expression)
+            and _expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and _expressions_equal_if_present(self.upper_bound, other.upper_bound)
+        )
+
+
+def _expressions_equal_if_present(
+    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
+) -> bool:
+    if lhs is None and rhs is None:
+        return True
+    elif lhs is None or rhs is None:
+        return False
+    else:
+        return expressions_equal(lhs, rhs)

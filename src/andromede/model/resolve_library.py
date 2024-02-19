@@ -85,6 +85,9 @@ def _resolve_model(input_model: InputModel, port_types: Dict[str, PortType]) -> 
             _to_constraint(c, identifiers) for c in input_model.binding_constraints
         ],
         constraints=[_to_constraint(c, identifiers) for c in input_model.constraints],
+        objective_contribution=_to_expression_if_present(
+            input_model.objective, identifiers
+        ),
     )
 
 

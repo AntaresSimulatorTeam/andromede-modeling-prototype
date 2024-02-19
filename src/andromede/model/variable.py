@@ -12,10 +12,11 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from andromede.expression import ExpressionNode
 from andromede.expression.degree import is_constant
+from andromede.expression.equality import expressions_equal
 from andromede.expression.indexing_structure import IndexingStructure
 
 
@@ -42,6 +43,28 @@ class Variable:
             raise ValueError("Lower bounds of variables must be constant")
         if self.upper_bound and not is_constant(self.upper_bound):
             raise ValueError("Lower bounds of variables must be constant")
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Variable):
+            return False
+        return (
+            self.name == other.name
+            and self.data_type == other.data_type
+            and _expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and _expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and self.structure == other.structure
+        )
+
+
+def _expressions_equal_if_present(
+    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
+) -> bool:
+    if lhs is None and rhs is None:
+        return True
+    elif lhs is None or rhs is None:
+        return False
+    else:
+        return expressions_equal(lhs, rhs)
 
 
 def int_variable(

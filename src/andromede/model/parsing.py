@@ -44,6 +44,7 @@ class InputVariable(BaseModel):
 
     class Config:
         alias_generator = _to_kebab
+        coerce_numbers_to_str = True
 
 
 class InputConstraint(BaseModel):

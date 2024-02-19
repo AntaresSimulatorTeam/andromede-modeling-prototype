@@ -11,6 +11,17 @@
 # This file is part of the Antares project.
 import io
 
+from andromede.expression import literal, param, var
+from andromede.libs.standard import CONSTANT
+from andromede.model import (
+    ModelPort,
+    PortField,
+    PortType,
+    float_parameter,
+    float_variable,
+    model,
+)
+from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 
@@ -40,7 +51,7 @@ library:
           scenario-dependent: false
       variables:
         - name: generation
-          lowed-bound: 0
+          lower-bound: 0
           upper-bound: p_max
       ports:
         - name: injection_port
@@ -49,7 +60,7 @@ library:
         - port: injection_port
           field: flow
           definition: generation
-      objective: "cost * generation"
+      objective: expec(sum(cost * generation))
 
     - id: node
       description: A basic balancing node model
@@ -155,6 +166,7 @@ library:
           expression: sum(nb_start[-d_min_up + 1 .. 0]) <= nb_on
         - name: Min down time
           expression: sum(nb_stop[-d_min_down + 1 .. 0]) <= nb_units_max[-d_min_down] - nb_on
+      objective: expec(sum(cost * generation))
     """
 
     with io.StringIO(yaml_lib) as stream:
@@ -162,7 +174,30 @@ library:
     assert input_lib.id == "basic"
     assert len(input_lib.models) == 5
     assert len(input_lib.port_types) == 1
+
     lib = resolve_library(input_lib)
     assert len(lib.models) == 5
     assert len(lib.port_types) == 1
-    print(lib)
+    port_type = lib.port_types["flow"]
+    assert port_type == PortType(id="flow", fields=[PortField(name="flow")])
+    gen_model = lib.models["generator"]
+    assert gen_model == model(
+        id="generator",
+        parameters=[
+            float_parameter("cost", structure=CONSTANT),
+            float_parameter("p_max", structure=CONSTANT),
+        ],
+        variables=[
+            float_variable(
+                "generation", lower_bound=literal(0), upper_bound=param("p_max")
+            )
+        ],
+        ports=[ModelPort(port_type=port_type, port_name="injection_port")],
+        port_fields_definitions=[
+            PortFieldDefinition(
+                port_field=PortFieldId(port_name="injection_port", field_name="flow"),
+                definition=var("generation"),
+            )
+        ],
+        objective_contribution=(param("cost") * var("generation")).sum().expec(),
+    )
