@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.model.common import ValueType, ProblemContext
+from andromede.model.common import ValueType
 
 
 @dataclass(frozen=True)
@@ -27,20 +27,17 @@ class Parameter:
     name: str
     type: ValueType
     structure: IndexingStructure
-    context: ProblemContext
 
 
 def int_parameter(
     name: str,
     structure: IndexingStructure = IndexingStructure(True, True),
-    context: ProblemContext = ProblemContext.operational,
 ) -> Parameter:
-    return Parameter(name, ValueType.INTEGER, structure, context)
+    return Parameter(name, ValueType.INTEGER, structure)
 
 
 def float_parameter(
     name: str,
     structure: IndexingStructure = IndexingStructure(True, True),
-    context: ProblemContext = ProblemContext.operational,
 ) -> Parameter:
-    return Parameter(name, ValueType.FLOAT, structure, context)
+    return Parameter(name, ValueType.FLOAT, structure)

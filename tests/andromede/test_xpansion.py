@@ -59,9 +59,9 @@ FREE = IndexingStructure(True, True)
 INVESTMENT = ProblemContext.investment
 OPERATIONAL = ProblemContext.operational
 
-XPANSION_MASTER = OptimizationProblem.Type.xpansion_master
-XPANSION_SUBPBL = OptimizationProblem.Type.xpansion_subproblem
-XPANSION_MERGED = OptimizationProblem.Type.xpansion_merged
+MASTER = OptimizationProblem.Type.master
+SUBPBL = OptimizationProblem.Type.subproblem
+MERGED = OptimizationProblem.Type.merged
 
 
 @pytest.fixture
@@ -70,7 +70,7 @@ def thermal_candidate() -> Model:
         id="GEN",
         parameters=[
             float_parameter("op_cost", CONSTANT),
-            float_parameter("invest_cost", CONSTANT, INVESTMENT),
+            float_parameter("invest_cost", CONSTANT),
         ],
         variables=[
             float_variable("generation", lower_bound=literal(0)),
@@ -108,8 +108,8 @@ def wind_cluster_candidate() -> Model:
         id="WIND_CLUSTER",
         parameters=[
             float_parameter("op_cost", CONSTANT),
-            float_parameter("invest_cost", CONSTANT, INVESTMENT),
-            float_parameter("p_max_per_unit", CONSTANT, INVESTMENT),
+            float_parameter("invest_cost", CONSTANT),
+            float_parameter("p_max_per_unit", CONSTANT),
         ],
         variables=[
             float_variable("generation", lower_bound=literal(0)),
@@ -221,12 +221,14 @@ def test_generation_xpansion_single_time_step_single_scenario(
 
     scenarios = 1
     problem = build_problem(
-        network, database, TimeBlock(1, [0]), scenarios, problem_type=XPANSION_MERGED
+        network, database, TimeBlock(1, [0]), scenarios, problem_type=MERGED
     )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 490 * 100 + 100 * 10 + 200 * 40
+    assert problem.solver.Objective().Value() == pytest.approx(
+        490 * 100 + 100 * 10 + 200 * 40
+    )
 
     output = OutputValues(problem)
     expected_output = OutputValues()
@@ -298,8 +300,8 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == (45 * 200) + (490 * 100 + 10 * 100) + (
-        200 * 100 + 10 * 100
+    assert problem.solver.Objective().Value() == pytest.approx(
+        (45 * 200) + (490 * 100 + 10 * 100) + (200 * 100 + 10 * 100)
     )
 
     output = OutputValues(problem)
@@ -321,7 +323,7 @@ def test_model_export_xpansion_single_time_step_single_scenario(
 ) -> None:
     """
     Same test as before but this time we separate master/subproblem and
-    export the problems in MPS format to be solved by the Bender solver in Xpansion
+    export the problems in MPS format to be solved by the Benders solver in Xpansion
     """
 
     database = DataBase()
@@ -429,9 +431,11 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
     # assert (
     #     problem.solver.NumConstraints() == 3 * scenarios * horizon
     # )  # Flow balance, Max generation for each cluster
-    assert problem.solver.Objective().Value() == 490 * 300 + 0.5 * (
-        10 * 300 + 10 * 300 + 40 * 200
-    ) + 0.5 * (10 * 200 + 10 * 300 + 40 * 100)
+    assert problem.solver.Objective().Value() == pytest.approx(
+        490 * 300
+        + 0.5 * (10 * 300 + 10 * 300 + 40 * 200)
+        + 0.5 * (10 * 200 + 10 * 300 + 40 * 100)
+    )
 
     output = OutputValues(problem)
     expected_output = OutputValues()

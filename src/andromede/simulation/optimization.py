@@ -280,13 +280,13 @@ class BlockBorderManagement(Enum):
 class SolverVariableInfo:
     """
     Helper class for constructing the structure file
-    for Bender solver. It keeps track of the corresponding
+    for Benders solver. It keeps track of the corresponding
     column of the variable in the MPS format as well as if it is
     present in the objective function or not
     """
 
     name: str
-    column: int
+    column_id: int
     is_in_objective: bool
 
 
@@ -667,33 +667,31 @@ class OptimizationProblem:
     class Type(Enum):
         """
         Class to specify the type of the created problem:
-            - simulator: Creates a Antares Simulator problem with only operational variables and constraints
-            - xpansion_master: Creates a Xpansion master problem only
-            - xpansion_subproblem: Creates Xpansion sub-problems only
-            - xpansion_merged: Creates a merged Xpansion master/subproblem
+            - master: Creates a Xpansion master problem with investment variables and constraints only
+            - subproblem: Creates Xpansion sub-problems with operational variables and constraints only
+            - merged: Creates a Antares Simulator/ Xpansion problem with both
         """
 
-        simulator = 0
-        xpansion_merged = 1
-        xpansion_master = 2
-        xpansion_subproblem = 3
+        merged = 0
+        master = 1
+        subproblem = 2
 
     name: str
     solver: lp.Solver
     context: OptimizationContext
-    type: Type
+    problem_type: Type
 
     def __init__(
         self,
         name: str,
         solver: lp.Solver,
         opt_context: OptimizationContext,
-        opt_type: Type = Type.simulator,
+        opt_type: Type = Type.merged,
     ) -> None:
         self.name = name
         self.solver = solver
         self.context = opt_context
-        self.type = opt_type
+        self.problem_type = opt_type
 
         self._register_connection_fields_definitions()
         self._create_variables()
@@ -735,7 +733,7 @@ class OptimizationProblem:
 
             for model_var in model.variables.values():
                 if (
-                    self.type == OptimizationProblem.Type.xpansion_master
+                    self.problem_type == OptimizationProblem.Type.master
                     and model_var.context == ProblemContext.operational
                 ):
                     # Xpansion Master Problem only takes investment variables and parameters
@@ -784,14 +782,14 @@ class OptimizationProblem:
         for component in self.context.network.all_components:
             for constraint in component.model.get_all_constraints():
                 if (
-                    self.type == OptimizationProblem.Type.xpansion_master
+                    self.problem_type == OptimizationProblem.Type.master
                     and constraint.context == ProblemContext.operational
                 ):
                     # Xpansion Master Problem only takes investment constraints
                     continue
 
                 elif (
-                    self.type == OptimizationProblem.Type.xpansion_subproblem
+                    self.problem_type == OptimizationProblem.Type.subproblem
                     and constraint.context == ProblemContext.investment
                 ):
                     # Xpansion SubProblems only take operational constraints
@@ -825,7 +823,7 @@ class OptimizationProblem:
             model = component.model
 
             if (
-                self.type != OptimizationProblem.Type.xpansion_master
+                self.problem_type != OptimizationProblem.Type.master
                 and model.objective_operational_contribution is not None
             ):
                 # Xpansion SubProblems only take the operational contribution
@@ -838,7 +836,7 @@ class OptimizationProblem:
                 )
 
             if (
-                self.type != OptimizationProblem.Type.xpansion_subproblem
+                self.problem_type != OptimizationProblem.Type.subproblem
                 and model.objective_investment_contribution is not None
             ):
                 # Xpansion Master Problem only takes the investment contribution
@@ -866,7 +864,7 @@ def build_problem(
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-    problem_type: OptimizationProblem.Type = OptimizationProblem.Type.simulator,
+    problem_type: OptimizationProblem.Type = OptimizationProblem.Type.merged,
 ) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.

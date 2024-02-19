@@ -12,7 +12,7 @@
 
 """
 The xpansion module extends the optimization module
-with Bender solver related functions
+with Benders solver related functions
 """
 
 import json
@@ -65,7 +65,7 @@ class XpansionProblem:
             if solver_var_info.is_in_objective:
                 problem_to_candidates["master"][
                     solver_var_info.name
-                ] = solver_var_info.column
+                ] = solver_var_info.column_id
                 candidates.add(solver_var_info.name)
 
         for problem in self.subproblems:
@@ -76,7 +76,7 @@ class XpansionProblem:
                     # If candidate was identified in master
                     problem_to_candidates[problem.name][
                         solver_var_info.name
-                    ] = solver_var_info.column
+                    ] = solver_var_info.column_id
 
         structure_str = ""
         for problem_name, candidate_to_index in problem_to_candidates.items():
@@ -155,6 +155,7 @@ class XpansionProblem:
             # TODO Maybe a more robust check and/or return value?
             # For now, it won't look anywhere else because a new
             # architecture should be discussed
+            print(root_dir + "/bin/benders executable not found. Returning True")
             return True
 
         os.chdir(path)
@@ -193,7 +194,7 @@ def build_xpansion_problem(
         problem_name="master",
         border_management=border_management,
         solver_id=solver_id,
-        problem_type=OptimizationProblem.Type.xpansion_master,
+        problem_type=OptimizationProblem.Type.master,
     )
 
     # Xpansion Sub-problems
@@ -205,7 +206,7 @@ def build_xpansion_problem(
         problem_name="subproblem",
         border_management=border_management,
         solver_id=solver_id,
-        problem_type=OptimizationProblem.Type.xpansion_subproblem,
+        problem_type=OptimizationProblem.Type.subproblem,
     )
 
     return XpansionProblem(master, [subproblem])
