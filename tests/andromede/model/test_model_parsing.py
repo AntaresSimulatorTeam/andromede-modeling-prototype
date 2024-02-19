@@ -73,14 +73,96 @@ library:
         - port: injection_port
           field: flow
           definition: "-demand"
+          
+    - id: short-term-storage
+      description: A short term storage
+      parameters:
+        - name: efficiency
+        - name: level_min
+        - name: level_max
+        - name: p_max_withdrawal
+        - name: p_max_injection
+        - name: inflows
+      variables:
+        - name: injection
+          lower_bound: 0
+          upper_bound: p_max_injection
+        - name: withdrawal
+          lower_bound: 0
+          upper_bound: p_max_withdrawal
+        - name: level
+          lower_bound: level_min
+          upper_bound: level_max
+      ports:
+        - name: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: "injection - withdrawal"
+      constraints:
+        - name: Level equation
+          expression: "level - level[-1] - efficiency * injection + withdrawal = inflows"
+          
+    - id: thermal-cluster-dhd
+      description: DHD model for thermal cluster
+      parameters:
+        - name: cost
+        - name: p_min
+        - name: p_max
+        - name: d_min_up
+        - name: d_min_down
+        - name: nb_units_max
+        - name: nb_failures
+          time-dependent: true
+          scenario-dependent: true
+      variables:
+        - name: generation
+          lower_bound: 0
+          upper_bound: nb_units_max * p_max
+          time-dependent: true
+          scenario-dependent: true
+        - name: nb_on
+          lower_bound: 0
+          upper_bound: nb_units_max
+          time-dependent: true
+          scenario-dependent: false
+        - name: nb_stop
+          lower_bound: 0
+          upper_bound: nb_units_max
+          time-dependent: true
+          scenario-dependent: false
+        - name: nb_start
+          lower_bound: 0
+          upper_bound: nb_units_max
+          time-dependent: true
+          scenario-dependent: false
+      ports:
+        - name: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: generation
+      constraints:
+        - name: Max generation
+          expression: generation <= nb_on * p_max
+        - name: Min generation
+          expression: generation >= nb_on * p_min
+        - name: Number of units variation
+          expression: nb_on = nb_on[-1] + nb_start - nb_stop
+        - name: Min up time
+          expression: sum(nb_start[-d_min_up + 1 .. 0]) <= nb_on
+        - name: Min down time
+          expression: sum(nb_stop[-d_min_down + 1 .. 0]) <= nb_units_max[-d_min_down] - nb_on
     """
 
     with io.StringIO(yaml_lib) as stream:
         input_lib = parse_yaml_library(stream)
     assert input_lib.id == "basic"
-    assert len(input_lib.models) == 3
+    assert len(input_lib.models) == 5
     assert len(input_lib.port_types) == 1
     lib = resolve_library(input_lib)
-    assert len(lib.models) == 3
+    assert len(lib.models) == 5
     assert len(lib.port_types) == 1
     print(lib)
