@@ -61,23 +61,27 @@ from andromede.expression.parsing.parse_expression import (
             .sum()
             <= var("nb_on"),
         ),
+        (
+            "expec(sum(cost * generation))",
+            (param("cost") * var("generation")).sum().expec(),
+        ),
     ],
 )
 def test_parsing_visitor(expression_str: str, expected: ExpressionNode):
     identifiers = ModelIdentifiers(
-        variables={"x", "level", "injection", "withdrawal", "nb_start", "nb_on"},
-        parameters={"p", "inflows", "efficiency", "d_min_up"},
+        variables={
+            "x",
+            "level",
+            "injection",
+            "withdrawal",
+            "nb_start",
+            "nb_on",
+            "generation",
+        },
+        parameters={"p", "inflows", "efficiency", "d_min_up", "cost"},
     )
 
     expr = parse_expression(expression_str, identifiers)
     print()
     print(print_expr(expr))
     assert expressions_equal(expr, expected)
-
-
-def test_parsing():
-    identifiers = ModelIdentifiers(
-        variables={"x", "level", "injection", "withdrawal"},
-        parameters={"p", "inflows", "efficiency"},
-    )
-    expr = parse_expression("-p", identifiers)

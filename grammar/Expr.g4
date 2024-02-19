@@ -26,8 +26,8 @@ expr: '-' expr                  # negation
     | NUMBER                    # number
     | '(' expr ')'              # expression
     | IDENTIFIER '(' expr ')'   # function
-    | IDENTIFIER LBRACKET expr  (',' expr )* RBRACKET  # timeShift
-    | IDENTIFIER LBRACKET expr '..' expr RBRACKET      # rangeTimeShift
+    | IDENTIFIER '[' expr  (',' expr )* ']'  # timeShift
+    | IDENTIFIER '[' expr '..' expr ']'      # rangeTimeShift
     ;
 
 fragment DIGIT         : [0-9] ;

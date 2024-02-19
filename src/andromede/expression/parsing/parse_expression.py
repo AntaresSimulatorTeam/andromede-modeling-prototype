@@ -135,11 +135,17 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:
         function_name: str = ctx.IDENTIFIER().getText()  # type: ignore
         operand: ExpressionNode = ctx.expr().accept(self)  # type: ignore
-        if function_name == "sum":
-            return operand.sum()
-        elif function_name == "sum_connections":
-            return operand.sum_connections()
-        raise ValueError(f"Encountered invalid function name {function_name}")
+        fn = _FUNCTIONS.get(function_name, None)
+        if fn is None:
+            raise ValueError(f"Encountered invalid function name {function_name}")
+        return fn(operand)
+
+
+_FUNCTIONS = {
+    "sum": ExpressionNode.sum,
+    "sum_connections": ExpressionNode.sum_connections,
+    "expec": ExpressionNode.expec,
+}
 
 
 def parse_expression(expression: str, identifiers: ModelIdentifiers) -> ExpressionNode:
