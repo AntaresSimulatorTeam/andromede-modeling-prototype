@@ -58,6 +58,7 @@ FREE = IndexingStructure(True, True)
 
 INVESTMENT = ProblemContext.investment
 OPERATIONAL = ProblemContext.operational
+COUPLING = ProblemContext.coupling
 
 MASTER = OptimizationProblem.Type.master
 SUBPBL = OptimizationProblem.Type.subproblem
@@ -79,7 +80,7 @@ def thermal_candidate() -> Model:
                 lower_bound=literal(0),
                 upper_bound=literal(1000),
                 structure=CONSTANT,
-                context=INVESTMENT,
+                context=COUPLING,
             ),
         ],
         ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
@@ -117,7 +118,7 @@ def wind_cluster_candidate() -> Model:
                 "p_max",
                 lower_bound=literal(0),
                 structure=CONSTANT,
-                context=INVESTMENT,
+                context=COUPLING,
             ),
             int_variable(
                 "nb_units",

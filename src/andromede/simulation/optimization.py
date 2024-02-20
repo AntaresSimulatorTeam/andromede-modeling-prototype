@@ -432,6 +432,21 @@ def _compute_indexing_structure(
     return constraint_indexing
 
 
+def _should_keep_in_model(
+    problem_type: "OptimizationProblem.Type", context: ProblemContext
+) -> bool:
+    if (problem_type == OptimizationProblem.Type.merged) or (
+        context == ProblemContext.coupling
+    ):
+        return True
+    elif problem_type == OptimizationProblem.Type.master:
+        return context == ProblemContext.investment
+    elif problem_type == OptimizationProblem.Type.subproblem:
+        return context == ProblemContext.operational
+    else:
+        return False
+
+
 def _instantiate_model_expression(
     model_expression: ExpressionNode,
     component_id: str,
@@ -667,9 +682,9 @@ class OptimizationProblem:
     class Type(Enum):
         """
         Class to specify the type of the created problem:
-            - master: Creates a Xpansion master problem with investment variables and constraints only
-            - subproblem: Creates Xpansion sub-problems with operational variables and constraints only
-            - merged: Creates a Antares Simulator/ Xpansion problem with both
+            - master: Creates a Xpansion master problem with investment and coupling variables and constraints only
+            - subproblem: Creates Xpansion sub-problems with operational and coupling variables and constraints only
+            - merged: Creates a Antares Simulator/ Xpansion problem with all
         """
 
         merged = 0
@@ -732,11 +747,7 @@ class OptimizationProblem:
             model = component.model
 
             for model_var in model.variables.values():
-                if (
-                    self.problem_type == OptimizationProblem.Type.master
-                    and model_var.context == ProblemContext.operational
-                ):
-                    # Xpansion Master Problem only takes investment variables and parameters
+                if not _should_keep_in_model(self.problem_type, model_var.context):
                     continue
 
                 var_indexing = IndexingStructure(
@@ -781,18 +792,7 @@ class OptimizationProblem:
     def _create_constraints(self) -> None:
         for component in self.context.network.all_components:
             for constraint in component.model.get_all_constraints():
-                if (
-                    self.problem_type == OptimizationProblem.Type.master
-                    and constraint.context == ProblemContext.operational
-                ):
-                    # Xpansion Master Problem only takes investment constraints
-                    continue
-
-                elif (
-                    self.problem_type == OptimizationProblem.Type.subproblem
-                    and constraint.context == ProblemContext.investment
-                ):
-                    # Xpansion SubProblems only take operational constraints
+                if not _should_keep_in_model(self.problem_type, constraint.context):
                     continue
 
                 instantiated_expr = _instantiate_model_expression(
@@ -823,10 +823,9 @@ class OptimizationProblem:
             model = component.model
 
             if (
-                self.problem_type != OptimizationProblem.Type.master
-                and model.objective_operational_contribution is not None
+                model.objective_operational_contribution is not None
+                and _should_keep_in_model(self.problem_type, ProblemContext.operational)
             ):
-                # Xpansion SubProblems only take the operational contribution
                 _create_objective(
                     self.solver,
                     self.context,
@@ -836,10 +835,9 @@ class OptimizationProblem:
                 )
 
             if (
-                self.problem_type != OptimizationProblem.Type.subproblem
-                and model.objective_investment_contribution is not None
+                model.objective_investment_contribution is not None
+                and _should_keep_in_model(self.problem_type, ProblemContext.investment)
             ):
-                # Xpansion Master Problem only takes the investment contribution
                 _create_objective(
                     self.solver,
                     self.context,
