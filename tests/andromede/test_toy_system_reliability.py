@@ -71,7 +71,9 @@ def test_model_export_xpansion_toy_reliability_system() -> None:
 
     As the investment cost is higher than the ENS cost, adding 1MW of capacity would cost 20 to reduce ENS cost only by 10, hence an increased overall cost. Therefore the optimal investment is not to add any capacity beyond the existing one. Given the transmission cost, all flow will get to node 2.
 
-    If further, we aim at counting the number of expected ENS hours, given that we add 1 hour of ENS if there is at least 0.1 MWh of unsupplied energy, the "optimal" situation leads to 5h of ENS hours overall, hence 2.5h in expectation.
+    This use case is simple enough so that we can count the number of hours with ENS with respect to the investment. Then we could use this test to check the behavior of any heuristic that aims at reaching a given target of LOLE (not done here).
+
+    We add 1 hour of ENS if there is at least 0.1 MWh of unsupplied energy, the "optimal" situation leads to 5h of ENS hours overall, hence 2.5h in expectation.
 
     Each invested capacity will first go to node 2, then to node 1 and finally to node 3 given the transmission costs.
 
@@ -82,7 +84,6 @@ def test_model_export_xpansion_toy_reliability_system() -> None:
         - 5.9 <= P_max <= 8.9 : 0.5h
         - 8.9 <= P_max : 0h
 
-    Calcul de lambda_max avec investissement gratuit : Investi 8 avec un coût de 20 donc lambda_max = 20 * 8 = 160
     """
 
     NODE_WITH_SPILL_AND_ENS = model(
@@ -263,7 +264,6 @@ def test_model_export_xpansion_toy_reliability_system() -> None:
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
-    print(output)
 
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == pytest.approx(
@@ -271,6 +271,7 @@ def test_model_export_xpansion_toy_reliability_system() -> None:
     )
 
     expected_output = OutputValues()
+    # TODO : Do we need to overload == operator to compare lists of float
     expected_output.component("N0").var("NegativeUnsuppliedEnergy").value = [
         [0.0],
         [0.0],
