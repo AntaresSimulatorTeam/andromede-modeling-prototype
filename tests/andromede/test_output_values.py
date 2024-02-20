@@ -24,10 +24,12 @@ from andromede.simulation.optimization import (
 
 def test_component_and_flow_output_object() -> None:
     mock_variable_component = Mock(spec=lp.Variable)
+    mock_variable_component_approx = Mock(spec=lp.Variable)
     mock_variable_flow = Mock(spec=lp.Variable)
     opt_context = Mock(spec=OptimizationContext)
 
     mock_variable_component.solution_value.side_effect = lambda: 1.0
+    mock_variable_component_approx.solution_value.side_effect = lambda: 0.3
 
     mock_variable_flow.solution_value.side_effect = lambda: -1.0
 
@@ -37,7 +39,13 @@ def test_component_and_flow_output_object() -> None:
             variable_name="component_var_name",
             block_timestep=0,
             scenario=0,
-        ): mock_variable_component
+        ): mock_variable_component,
+        TimestepComponentVariableKey(
+            component_id="component_id_test",
+            variable_name="component_approx_var_name",
+            block_timestep=0,
+            scenario=0,
+        ): mock_variable_component_approx,
     }
 
     opt_context.block_length.return_value = 1
@@ -54,6 +62,11 @@ def test_component_and_flow_output_object() -> None:
 
     expected_output = OutputValues()
     expected_output.component("component_id_test").var("component_var_name").value = 1.0
+    expected_output.component("component_id_test").var(
+        "component_approx_var_name"
+    ).value = (
+        0.1 + 0.2  # 0.30000000000000004
+    )
 
     assert output == expected_output, f"Output differs from expected: {output}"
 

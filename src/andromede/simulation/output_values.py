@@ -13,6 +13,7 @@
 """
 Util class to obtain solver results
 """
+import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, TypeVar, Union, cast
 
@@ -50,7 +51,11 @@ class OutputValues:
             return (
                 self._name == other._name
                 and self._size == other._size
-                and self._value == other._value
+                and self._value.keys() == other._value.keys()
+                and all(
+                    math.isclose(self._value[key], other._value[key])
+                    for key in self._value
+                )
             )
 
         def __str__(self) -> str:
