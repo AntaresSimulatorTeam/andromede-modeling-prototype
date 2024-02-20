@@ -29,7 +29,6 @@ from andromede.libs.standard import (
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
-    BlockBorderManagement,
     OutputValues,
     TimeBlock,
     build_problem,
@@ -435,13 +434,8 @@ def test_min_up_down_times() -> None:
         PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
     )
 
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
+    # For MILP problems, we should use SCIP
+    problem = build_problem(network, database, time_block, scenarios, solver_id="SCIP")
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -517,13 +511,7 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
     network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(unsupplied, "balance_port"), PortRef(node, "balance_port"))
 
-    problem = build_problem(
-        network,
-        database,
-        time_blocks[0],
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
+    problem = build_problem(network, database, time_blocks[0], scenarios)
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

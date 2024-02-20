@@ -10,10 +10,6 @@
 #
 # This file is part of the Antares project.
 
-from .benders_decomposed import (
-    BendersDecomposedProblem,
-    build_benders_decomposed_problem,
-)
-from .optimization import BlockBorderManagement, OptimizationProblem, build_problem
+from .optimization import OptimizationProblem, build_problem
 from .output_values import OutputValues
 from .time_block import TimeBlock

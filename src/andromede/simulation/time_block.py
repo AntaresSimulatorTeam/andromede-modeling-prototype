@@ -11,16 +11,35 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List, Optional
+
+import ortools.linear_solver.pywraplp as lp
+
+
+# TODO: Move keys elsewhere as variables have no sense in this file
+@dataclass(eq=True, frozen=True)
+class TimestepComponentVariableKey:
+    """
+    Identifies the solver variable for one timestep and one component variable.
+    """
+
+    component_id: str
+    variable_name: str
+    block_timestep: Optional[int] = None
+    scenario: Optional[int] = None
 
 
 @dataclass(frozen=True)
 class TimeBlock:
-    """
-    One block for otimization (week in current tool).
-
-    timesteps: list of the different timesteps of the block (0, 1, ... 168 for each hour in one week)
-    """
-
     id: int
     timesteps: List[int]
+
+    def __len__(self) -> int:
+        return len(self.timesteps)
+
+
+class BlockTree:
+    id: int
+    children: List[TimeBlock]
+    block: TimeBlock
+    solution: Dict[TimestepComponentVariableKey, lp.Variable]

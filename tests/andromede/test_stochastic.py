@@ -115,7 +115,7 @@ def test_stochastic_model_with_HD_for_thermal_startup(
     network.connect(PortRef(peak, "balance_port"), PortRef(node, "balance_port"))
 
     for block in time_blocks:  # TODO : To manage blocks simply for now
-        problem = build_problem(network, database, block, scenarios)
+        problem = build_problem(network, database, block, scenarios, solver_id="SCIP")
         status = problem.solver.Solve()
 
         assert (
@@ -181,7 +181,7 @@ def test_stochastic_model_with_DH_for_thermal_startup(
     network.connect(PortRef(peak, "balance_port"), PortRef(node, "balance_port"))
 
     for block in time_blocks:  # TODO : To manage blocks simply for now
-        problem = build_problem(network, database, block, scenarios)
+        problem = build_problem(network, database, block, scenarios, solver_id="SCIP")
         status = problem.solver.Solve()
 
         assert (

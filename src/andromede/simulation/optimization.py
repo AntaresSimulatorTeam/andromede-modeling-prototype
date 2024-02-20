@@ -18,7 +18,7 @@ into a mathematical optimization problem.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Type
+from typing import Dict, Iterable, List, Optional, Union
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -36,31 +36,15 @@ from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
-from andromede.model.common import ProblemContext
+from andromede.model.common import ProblemContext, ValueType
 from andromede.model.constraint import Constraint
-from andromede.model.model import (
-    MergedProblemStrategy,
-    ModelSelectionStrategy,
-    PortFieldId,
-)
+from andromede.model.model import BlockBoundariesDynamics, PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
-from andromede.simulation.time_block import TimeBlock
+from andromede.simulation.time_block import TimeBlock, TimestepComponentVariableKey
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
 from andromede.utils import get_or_add
-
-
-@dataclass(eq=True, frozen=True)
-class TimestepComponentVariableKey:
-    """
-    Identifies the solver variable for one timestep and one component variable.
-    """
-
-    component_id: str
-    variable_name: str
-    block_timestep: Optional[int] = None
-    scenario: Optional[int] = None
 
 
 def _get_parameter_value(
@@ -237,15 +221,92 @@ class ComponentContext:
             block_timestep, scenario, self.component.id, model_var_name, variable
         )
 
-    def get_variable(
-        self, block_timestep: int, scenario: int, variable_name: str
-    ) -> lp.Variable:
+    def get_variable_or_init_cond(
+        self,
+        block_timestep: int,
+        scenario: int,
+        variable_name: str,
+        variable_structure: IndexingStructure,
+    ) -> Union[lp.Variable, float, None]:
+        if not variable_structure.scenario:
+            scenario = 0
+
+        if self.component.model.inter_block_dyn == BlockBoundariesDynamics.CYCLE:
+            if variable_structure.time:
+                block_timestep = block_timestep % self.opt_context.block_length()
+            else:
+                block_timestep = 0
+        elif (
+            self.component.model.inter_block_dyn
+            == BlockBoundariesDynamics.IGNORE_BOUNDARIES
+        ):
+            if block_timestep not in range(self.opt_context.block_length()):
+                # The corresponding variable does not belong to the current block
+                return None
+            elif not variable_structure.time:
+                block_timestep = 0
+
+        elif (
+            self.component.model.inter_block_dyn
+            == BlockBoundariesDynamics.INTERBLOCK_DYNAMICS
+        ):
+            if block_timestep not in range(self.opt_context.block_length()):
+                # The corresponding variable does not belong to the current block, we use the solution value from previous block
+                if block_timestep > 0:
+                    raise ValueError(
+                        "Cannot retrieve solution value for timesteps in future blocks."
+                    )
+
+                if (
+                    self.opt_context._orchestration_method
+                    == OrchestrationMethod.SEQUENTIAL
+                ):
+                    if variable_structure.time:
+                        if self.opt_context._previous_block is not None:
+                            previous_block_step = (
+                                len(self.opt_context._previous_block) + block_timestep
+                            )
+                        elif self.opt_context._block.id == 1:
+                            # Ignore init condition for first block
+                            return None
+                        else:
+                            raise ValueError(
+                                f"Previous block must be specified to get variable solution value for {TimestepComponentVariableKey(self.component.id, variable_name, block_timestep, scenario)}."
+                            )
+                    else:
+                        previous_block_step = 0
+
+                    if self.opt_context._initial_variables is not None:
+                        return self.opt_context._initial_variables[
+                            TimestepComponentVariableKey(
+                                self.component.id,
+                                variable_name,
+                                previous_block_step,
+                                scenario,
+                            )
+                        ].solution_value()
+                    else:
+                        raise ValueError(
+                            f"Cannot retrieve initial condition for variable {TimestepComponentVariableKey(self.component.id, variable_name, previous_block_step, scenario)}."
+                        )
+                elif (
+                    self.opt_context._orchestration_method
+                    == OrchestrationMethod.SLIDING_WINDOW
+                ):
+                    # TODO : Get correct relative block index of previous block given the slide length, note that sliding window with slide size = window size -> Sequential mode
+                    raise NotImplementedError
+                else:
+                    raise NotImplementedError
+            elif not variable_structure.time:
+                block_timestep = 0
+        else:
+            raise NotImplementedError
+
         return self.opt_context.get_component_variable(
             block_timestep,
             scenario,
             self.component.id,
             variable_name,
-            self.component.model.variables[variable_name].structure,
         )
 
     def linearize_expression(
@@ -269,15 +330,15 @@ class ComponentContext:
         return linearize_expression(evaluated_expr, structure_provider, value_provider)
 
 
-class BlockBorderManagement(Enum):
+class OrchestrationMethod(Enum):
     """
-    Class to specify the way of handling the time horizon (or time block) border.
-        - IGNORE_OUT_OF_FRAME: Ignore terms in constraints that lead to out of horizon data
-        - CYCLE: Consider all timesteps to be specified modulo the horizon length, this is the actual functioning of Antares
+    Defines methods that can be used to process the optimization over several time blocks :
+        - SEQUENTIAL : Each time block is processed sequentially, while taking into account the interblock dynamics for the components that require it
+        - SLIDING_WINDOW : Defines a time window within which to perform the optimization, while retaining the results only on a subwindow. The optimization window is then moved of some timesteps and the process goes on until the horizon is reached.
     """
 
-    IGNORE_OUT_OF_FRAME = "IGNORE"
-    CYCLE = "CYCLE"
+    SEQUENTIAL = "SEQUENTIAL"
+    SLIDING_WINDOW = "SLIDING_WINDOW"
 
 
 @dataclass
@@ -306,14 +367,22 @@ class OptimizationContext:
         network: Network,
         database: DataBase,
         block: TimeBlock,
+        previous_block: Optional[TimeBlock],
         scenarios: int,
-        border_management: BlockBorderManagement,
+        orchestration_method: OrchestrationMethod,
+        initial_variables: Optional[
+            Dict[TimestepComponentVariableKey, lp.Variable]
+        ] = None,
     ):
         self._network = network
         self._database = database
         self._block = block
+        self._previous_block = previous_block
         self._scenarios = scenarios
-        self._border_management = border_management
+        self._orchestration_method = orchestration_method
+        self._initial_variables = initial_variables
+
+        # TODO: The flow and components variables will be very similar between blocks, is there a way to construct them once ?
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
         self._solver_variables: Dict[lp.Variable, SolverVariableInfo] = {}
         self._connection_fields_expressions: Dict[
@@ -329,7 +398,7 @@ class OptimizationContext:
         return self._scenarios
 
     def block_length(self) -> int:
-        return len(self._block.timesteps)
+        return len(self._block)
 
     @property
     def connection_fields_expressions(self) -> Dict[PortFieldKey, List[ExpressionNode]]:
@@ -342,12 +411,6 @@ class OptimizationContext:
     @property
     def database(self) -> DataBase:
         return self._database
-
-    def _manage_border_timesteps(self, timestep: int) -> int:
-        if self._border_management == BlockBorderManagement.CYCLE:
-            return timestep % self.block_length()
-        else:
-            raise NotImplementedError
 
     def get_time_indices(self, index_structure: IndexingStructure) -> Iterable[int]:
         return range(self.block_length()) if index_structure.time else range(1)
@@ -362,15 +425,10 @@ class OptimizationContext:
         scenario: int,
         component_id: str,
         variable_name: str,
-        variable_structure: IndexingStructure,
     ) -> lp.Variable:
-        block_timestep = self._manage_border_timesteps(block_timestep)
-
-        # TODO: Improve design, variable_structure defines indexing
-        if variable_structure.time == False:
-            block_timestep = 0
-        if variable_structure.scenario == False:
-            scenario = 0
+        """
+        Retrieves the solver variable for a component at given timestep and scenario. It returns None if the timesteps and border management strategy make the requested variable belong to another optimization block.
+        """
 
         return self._component_variables[
             TimestepComponentVariableKey(
@@ -508,6 +566,7 @@ def _create_objective(
     linear_expr = component_context.linearize_expression(0, 0, instantiated_expr)
 
     obj: lp.Objective = solver.Objective()
+    out_of_block_offset: float = 0
     for term in linear_expr.terms.values():
         # TODO : How to handle the scenario operator in a general manner ?
         if isinstance(term.scenario_operator, Expectation):
@@ -518,7 +577,8 @@ def _create_objective(
             scenario_ids = range(1)
 
         for scenario in scenario_ids:
-            solver_vars = _get_solver_vars(
+            # TODO: here we may only be interested in solver vars and no on initial conditions ?
+            var_and_init_cond = _get_solver_vars_and_init_cond(
                 term,
                 opt_context,
                 0,
@@ -526,15 +586,18 @@ def _create_objective(
                 0,
             )
 
-            for solver_var in solver_vars:
+            for solver_var in var_and_init_cond.solver_vars:
                 opt_context._solver_variables[solver_var].is_in_objective = True
                 obj.SetCoefficient(
                     solver_var,
                     obj.GetCoefficient(solver_var) + weight * term.coefficient,
                 )
+            # TODO: Maybe useless ?
+            for init_cond in var_and_init_cond.initial_conditions_from_previous_block:
+                out_of_block_offset += init_cond
 
     # This should have no effect on the optimization
-    obj.SetOffset(linear_expr.constant + obj.offset())
+    obj.SetOffset(linear_expr.constant + out_of_block_offset + obj.offset())
 
 
 @dataclass
@@ -545,82 +608,103 @@ class ConstraintData:
     expression: LinearExpression
 
 
-def _get_solver_vars(
+@dataclass
+class ConstraintVarAndInitialCondition:
+    solver_vars: List[lp.Variable]
+    initial_conditions_from_previous_block: List[float]
+
+
+def _get_solver_vars_and_init_cond(
     term: Term,
     context: OptimizationContext,
     block_timestep: int,
     scenario: int,
     instance: int,
-) -> List[lp.Variable]:
-    solver_vars = []
+) -> ConstraintVarAndInitialCondition:
+    solver_vars: List[lp.Variable] = []
+    init_cond: List[float] = []
+    constraint_var_and_init_cond = ConstraintVarAndInitialCondition(
+        solver_vars, init_cond
+    )
+    component_context = context.get_component_context(
+        context.network._components[term.component_id]
+    )
     if isinstance(term.time_aggregator, TimeSum):
         if isinstance(term.time_operator, TimeShift):
             for time_id in term.time_operator.time_ids:
-                solver_vars.append(
-                    context.get_component_variable(
-                        block_timestep + time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
+                fill_constraint_var_and_init_cond(
+                    term,
+                    block_timestep + time_id,
+                    scenario,
+                    component_context,
+                    constraint_var_and_init_cond,
                 )
         elif isinstance(term.time_operator, TimeEvaluation):
             for time_id in term.time_operator.time_ids:
-                solver_vars.append(
-                    context.get_component_variable(
-                        time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
+                fill_constraint_var_and_init_cond(
+                    term,
+                    time_id,
+                    scenario,
+                    component_context,
+                    constraint_var_and_init_cond,
                 )
         else:  # time_operator is None, retrieve variable for each time step of the block. What happens if we do x.sum() with x not being indexed by time ? Is there a check that it is a valid expression ?
             for time_id in range(context.block_length()):
-                solver_vars.append(
-                    context.get_component_variable(
-                        block_timestep + time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
+                fill_constraint_var_and_init_cond(
+                    term,
+                    block_timestep + time_id,
+                    scenario,
+                    component_context,
+                    constraint_var_and_init_cond,
                 )
 
     else:  # time_aggregator is None
         if isinstance(term.time_operator, TimeShift):
-            solver_vars.append(
-                context.get_component_variable(
-                    block_timestep + term.time_operator.time_ids[instance],
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
+            fill_constraint_var_and_init_cond(
+                term,
+                block_timestep + term.time_operator.time_ids[instance],
+                scenario,
+                component_context,
+                constraint_var_and_init_cond,
             )
         elif isinstance(term.time_operator, TimeEvaluation):
-            solver_vars.append(
-                context.get_component_variable(
-                    term.time_operator.time_ids[instance],
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
+            fill_constraint_var_and_init_cond(
+                term,
+                term.time_operator.time_ids[instance],
+                scenario,
+                component_context,
+                constraint_var_and_init_cond,
             )
         else:  # time_operator is None
-            # TODO: horrible tous ces if/else
-            solver_vars.append(
-                context.get_component_variable(
-                    block_timestep,
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
+            fill_constraint_var_and_init_cond(
+                term,
+                block_timestep,
+                scenario,
+                component_context,
+                constraint_var_and_init_cond,
             )
-    return solver_vars
+    return constraint_var_and_init_cond
+
+
+def fill_constraint_var_and_init_cond(
+    term: Term,
+    block_timestep: int,
+    scenario: int,
+    component_context: ComponentContext,
+    constraint_var_and_init_cond: ConstraintVarAndInitialCondition,
+) -> None:
+    output = component_context.get_variable_or_init_cond(
+        block_timestep,
+        scenario,
+        term.variable_name,
+        term.structure,
+    )
+    if isinstance(output, lp.Variable):
+        constraint_var_and_init_cond.solver_vars.append(output)
+    elif isinstance(output, float):
+        constraint_var_and_init_cond.initial_conditions_from_previous_block.append(
+            output
+        )
 
 
 def make_constraint(
@@ -642,24 +726,27 @@ def make_constraint(
 
         solver_constraint: lp.Constraint = solver.Constraint(constraint_name)
         constant: float = 0
+        rhs_offset: float = 0
         for term in data.expression.terms.values():
-            solver_vars = _get_solver_vars(
+            var_and_init_cond = _get_solver_vars_and_init_cond(
                 term,
                 context,
                 block_timestep,
                 scenario,
                 instance,
             )
-            for solver_var in solver_vars:
+            for solver_var in var_and_init_cond.solver_vars:
                 coefficient = term.coefficient + solver_constraint.GetCoefficient(
                     solver_var
                 )
                 solver_constraint.SetCoefficient(solver_var, coefficient)
-        # TODO: On pourrait aussi faire que l'objet Constraint n'ait pas de terme constant dans son expression et que les constantes soit déjà prises en compte dans les bornes, ça simplifierait le traitement ici
+            for init_cond in var_and_init_cond.initial_conditions_from_previous_block:
+                rhs_offset += init_cond
         constant += data.expression.constant
 
         solver_constraint.SetBounds(
-            data.lower_bound - constant, data.upper_bound - constant
+            data.lower_bound - constant - rhs_offset,
+            data.upper_bound - constant - rhs_offset,
         )
 
         # TODO: this dictionary does not make sense, we override the content when there are multiple instances
@@ -750,15 +837,21 @@ class OptimizationProblem:
                                 instantiated_ub_expr
                             ).get_value(block_timestep, scenario)
 
-                        # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
                         # Externally, for the Solver, this variable will have a full name
                         # Internally, it will be indexed by a structure that into account
                         # the component id, variable name, timestep and scenario separately
-                        solver_var = self.solver.NumVar(
-                            lower_bound,
-                            upper_bound,
-                            f"{component.id}_{model_var.name}_{block_timestep}_{scenario}",
-                        )
+                        if model_var.data_type == ValueType.FLOAT:
+                            solver_var = self.solver.NumVar(
+                                lower_bound,
+                                upper_bound,
+                                f"{component.id}_{model_var.name}_{block_timestep}_{scenario}",
+                            )
+                        else:
+                            solver_var = self.solver.IntVar(
+                                lower_bound,
+                                upper_bound,
+                                f"{component.id}_{model_var.name}_{block_timestep}_{scenario}",
+                            )
                         component_context.add_variable(
                             block_timestep, scenario, model_var.name, solver_var
                         )
@@ -817,7 +910,9 @@ def build_problem(
     scenarios: int,
     *,
     problem_name: str = "optimization_problem",
-    border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
+    orchestration_method: OrchestrationMethod = OrchestrationMethod.SEQUENTIAL,
+    previous_block: Optional[TimeBlock] = None,
+    initial_variables: Optional[Dict[TimestepComponentVariableKey, lp.Variable]] = None,
     solver_id: str = "GLOP",
     problem_strategy: Type[ModelSelectionStrategy] = MergedProblemStrategy,
 ) -> OptimizationProblem:
@@ -829,7 +924,13 @@ def build_problem(
     database.requirements_consistency(network)
 
     opt_context = OptimizationContext(
-        network, database, block, scenarios, border_management
+        network,
+        database,
+        block,
+        previous_block,
+        scenarios,
+        orchestration_method,
+        initial_variables,
     )
 
     return OptimizationProblem(problem_name, solver, opt_context, problem_strategy)

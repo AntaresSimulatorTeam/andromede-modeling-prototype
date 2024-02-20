@@ -22,12 +22,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List
 
-from andromede.model.model import InvestmentProblemStrategy, OperationalProblemStrategy
-from andromede.simulation.optimization import (
-    BlockBorderManagement,
-    OptimizationProblem,
-    build_problem,
-)
+from andromede.simulation.optimization import OptimizationProblem, build_problem
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Network
@@ -180,7 +175,6 @@ def build_benders_decomposed_problem(
     block: TimeBlock,
     scenarios: int,
     *,
-    border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
 ) -> BendersDecomposedProblem:
     """
@@ -196,7 +190,6 @@ def build_benders_decomposed_problem(
         block,
         scenarios,
         problem_name="master",
-        border_management=border_management,
         solver_id=solver_id,
         problem_strategy=InvestmentProblemStrategy,
     )
@@ -208,7 +201,6 @@ def build_benders_decomposed_problem(
         block,
         scenarios,
         problem_name="subproblem",
-        border_management=border_management,
         solver_id=solver_id,
         problem_strategy=OperationalProblemStrategy,
     )

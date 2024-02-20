@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Mapping
 
 from andromede.study.network import Network
 
@@ -69,7 +69,7 @@ class TimeSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_series: Dict[TimeIndex, float]
+    time_series: Mapping[TimeIndex, float]
 
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.time_series[TimeIndex(timestep)]
@@ -89,7 +89,7 @@ class ScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    scenario_series: Dict[ScenarioIndex, float]
+    scenario_series: Mapping[ScenarioIndex, float]
 
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.scenario_series[ScenarioIndex(scenario)]
@@ -109,7 +109,7 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_scenario_series: Dict[TimeScenarioIndex, float]
+    time_scenario_series: Mapping[TimeScenarioIndex, float]
 
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.time_scenario_series[TimeScenarioIndex(timestep, scenario)]

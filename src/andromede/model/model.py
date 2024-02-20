@@ -15,6 +15,7 @@ The model module defines the data model for user-defined models.
 A model allows to define the behaviour for components, by
 defining parameters, variables, and equations.
 """
+from enum import Enum
 import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -135,6 +136,19 @@ def port_field_def(
     return PortFieldDefinition(PortFieldId(port_name, field_name), definition)
 
 
+class BlockBoundariesDynamics(Enum):
+    """
+    Defines the management of the dynamics at the boundaries of a block for a model :
+        - IGNORE_BOUNDARIES : Terms in constraints that corespond to out of frame variables are ignored
+        - CYCLE : The dynamics is bounding the end of a time block with its beginning in a cyclic way. This is the actual functioning of Antares for thermal clusters.
+        - INTERBLOCK_DYNAMICS : The necessary state information is passed between time blocks to ensure the satisfaction of the dynamics between blocks.
+    """
+
+    IGNORE_BOUNDARIES = "IGNORE"
+    CYCLE = "CYCLE"
+    INTERBLOCK_DYNAMICS = "INTERBLOCK"
+
+
 @dataclass(frozen=True)
 class Model:
     """
@@ -145,7 +159,7 @@ class Model:
     id: str
     constraints: Dict[str, Constraint] = field(default_factory=dict)
     binding_constraints: Dict[str, Constraint] = field(default_factory=dict)
-    inter_block_dyn: bool = False
+    inter_block_dyn: BlockBoundariesDynamics = BlockBoundariesDynamics.CYCLE
     parameters: Dict[str, Parameter] = field(default_factory=dict)
     variables: Dict[str, Variable] = field(default_factory=dict)
     objective_operational_contribution: Optional[ExpressionNode] = None
@@ -269,7 +283,7 @@ def model(
     variables: Optional[Iterable[Variable]] = None,
     objective_operational_contribution: Optional[ExpressionNode] = None,
     objective_investment_contribution: Optional[ExpressionNode] = None,
-    inter_block_dyn: bool = False,
+    inter_block_dyn: BlockBoundariesDynamics = BlockBoundariesDynamics.CYCLE,
     ports: Optional[Iterable[ModelPort]] = None,
     port_fields_definitions: Optional[Iterable[PortFieldDefinition]] = None,
 ) -> Model:

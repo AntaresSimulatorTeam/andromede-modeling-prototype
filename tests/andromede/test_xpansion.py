@@ -349,7 +349,9 @@ def test_model_export_xpansion_single_time_step_single_scenario(
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
     network = Network("test")
-    network.add_node(node)
+    network.add_component(
+        node
+    )  # Need to use add_component as we need to access its component_context (because there are variables in the node model)
     network.add_component(demand)
     network.add_component(generator)
     network.add_component(candidate)
