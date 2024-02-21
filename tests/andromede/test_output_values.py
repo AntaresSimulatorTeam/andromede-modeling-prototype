@@ -76,18 +76,21 @@ def test_component_and_flow_output_object() -> None:
         "component_approx_var_name"
     ).value = 1.000_000_001
 
-    assert (
-        output != test_output
+    assert output != test_output and not output.is_close(
+        test_output
     ), f"Output is equal to expected outside tolerance: {output}"
 
     test_output.component("component_id_test").var(
         "component_approx_var_name"
     ).value = 1.000_000_000_1
 
-    assert (
-        output == test_output
+    assert output != test_output and output.is_close(
+        test_output
     ), f"Output differs from the expected inside tolerance: {output}"
 
+    test_output.component("component_id_test").var(
+        "component_approx_var_name"
+    ).ignore = True
     test_output.component("component_id_test").var(
         "wrong_component_var_name"
     ).value = 1.0
