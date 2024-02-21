@@ -41,7 +41,10 @@ class OutputValues:
         _name: str
         _value: Dict[TimeScenarioIndex, float] = field(init=False, default_factory=dict)
         _size: Tuple[int, int] = field(init=False, default=(0, 0))
+
         ignore: bool = field(default=False, init=False)
+        rel_tol: float = field(default=1.0e-9, init=False)
+        abs_tol: float = field(default=0.0, init=False)
 
         def __eq__(self, other: object) -> bool:
             if not isinstance(other, OutputValues.Variable):
@@ -51,7 +54,12 @@ class OutputValues:
                 and self._size == other._size
                 and self._value.keys() == other._value.keys()
                 and all(
-                    math.isclose(self._value[key], other._value[key])
+                    math.isclose(
+                        self._value[key],
+                        other._value[key],
+                        rel_tol=self.rel_tol,
+                        abs_tol=self.abs_tol,
+                    )
                     for key in self._value
                 )
             )
