@@ -221,9 +221,7 @@ def test_thermal_no_dynamics(
     )
 
     network = Network("test")
-    network.add_component(
-        node
-    )  # Need to use add_component as we need to access its component_context
+    network.add_node(node)
     network.add_component(demand)
     network.add_component(base)
 
@@ -275,9 +273,7 @@ def test_thermal_with_dynamics(
     )
 
     network = Network("test")
-    network.add_component(
-        node
-    )  # Need to use add_component as we need to access its component_context
+    network.add_node(node)
     network.add_component(demand)
     network.add_component(base)
 

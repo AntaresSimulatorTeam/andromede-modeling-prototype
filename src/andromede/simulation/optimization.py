@@ -627,7 +627,7 @@ def _get_solver_vars_and_init_cond(
         solver_vars, init_cond
     )
     component_context = context.get_component_context(
-        context.network._components[term.component_id]
+        context.network.get_component(term.component_id)
     )
     if isinstance(term.time_aggregator, TimeSum):
         if isinstance(term.time_operator, TimeShift):
