@@ -150,17 +150,18 @@ class XpansionProblem:
     ) -> bool:
         self.prepare(path=path, solver_name=solver_name, log_level=log_level)
         root_dir = os.getcwd()
+        path_to_benders = f"{root_dir}/bin/benders"
 
-        if not os.path.isfile(root_dir + "/bin/benders"):
+        if not os.path.isfile(path_to_benders):
             # TODO Maybe a more robust check and/or return value?
             # For now, it won't look anywhere else because a new
             # architecture should be discussed
-            print(root_dir + "/bin/benders executable not found. Returning True")
+            print(f"{path_to_benders} executable not found. Returning True")
             return True
 
         os.chdir(path)
         res = subprocess.run(
-            [root_dir + "/bin/benders", "options.json"],
+            [path_to_benders, "options.json"],
             stdout=sys.stdout,
             stderr=subprocess.DEVNULL,  # TODO For now, to avoid the "Invalid MIT-MAGIC-COOKIE-1 key" error
             shell=False,
