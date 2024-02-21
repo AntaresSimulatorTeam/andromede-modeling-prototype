@@ -79,51 +79,6 @@
                 <mxCell id="hW5n2ouBTmK9XzmkuQqM-79" value="&lt;h1&gt;Ports and models&lt;br&gt;&lt;/h1&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="0" vertex="1">
                     <mxGeometry x="230" width="250" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="175" value="LinkWithStorage : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;fontColor=#000000;" parent="0" vertex="1">
-                    <mxGeometry x="10" y="40" width="310" height="450" as="geometry"/>
-                </mxCell>
-                <mxCell id="176" value="r, f_from, f_to : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="30" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="177" value="f_from_max, f_to_max : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="60" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="178" value="capacity, initial_level : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="90" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="179" value="-f_max_from &amp;lt;= f_from &amp;lt;= f_max_from" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="120" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="180" value="-f_max_to &amp;lt;= f_to &amp;lt;= f_max_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="150" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="181" value="r_0= initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="180" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="182" value="r_H = initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="210" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="183" value="0&amp;lt;=r &amp;lt;=capacity" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="240" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="184" value="r(h+1) = r(h) + f_from(h) + f_to(h)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="270" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="185" value="flow_from, flow_to, flow_from_pos, flow_to_pos : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="300" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="186" value="flow_from.f = - f_from" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="330" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="187" value="flow_to.f&amp;nbsp; = - f_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="360" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="188" value="flow_from_pos.f.sum() = max(f_from,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="390" width="310" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="189" value="flow_from_to.f.sum() = max(f_to,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="175" vertex="1">
-                    <mxGeometry y="420" width="310" height="30" as="geometry"/>
-                </mxCell>
                 <mxCell id="1" value="" style="group" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1" connectable="0">
                     <mxGeometry x="109" y="40" width="680" height="320" as="geometry"/>
                 </mxCell>
@@ -423,6 +378,51 @@
                 <mxCell id="232" value="min&amp;nbsp;&amp;nbsp;&lt;span style=&quot;&quot;&gt;&lt;/span&gt;production costs + balance costs&lt;br&gt;s.t.&amp;nbsp;&lt;span style=&quot;&quot;&gt;&amp;nbsp;&amp;nbsp;&lt;/span&gt;prod_gas_electrolyzer = efficiency_electrolyzer * (consumption_elec_electrolyzer)&amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;consumption_compressor = consumption_compressor_1 + consumption_compressor_2&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;consumption_compressor_i = eff_compressor * power_inj_pipeline_by_i&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;power_inj_pipeline_by_i = max(power_pipeline_i,0)&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;stock_pipeline(t+1) = stock_pipeline(t) + power_pipeline_1(t) + power_pipeline_2(t)&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;- gas_demand - power_pipeline_1 = 0&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;gas_production - power_pipeline_2 = 0&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;balance at elec node&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production constraints" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="330" y="-510" width="540" height="140" as="geometry"/>
                 </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-232" value="LinkWithStorage : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;fontColor=#000000;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                    <mxGeometry x="910" y="-470" width="310" height="450" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-233" value="r, f_from, f_to : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="30" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-234" value="f_from_max, f_to_max : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="60" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-235" value="capacity, initial_level : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="90" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-236" value="-f_max_from &amp;lt;= f_from &amp;lt;= f_max_from" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="120" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-237" value="-f_max_to &amp;lt;= f_to &amp;lt;= f_max_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="150" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-238" value="r(0)= initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="180" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-239" value="r(H) = initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="210" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-240" value="0&amp;lt;=r &amp;lt;=capacity" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="240" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-241" value="r(h+1) = r(h) + f_from(h) - f_to(h)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="270" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-242" value="flow_from, flow_to, flow_from_pos, flow_to_pos : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="300" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-243" value="flow_from.f = - f_from" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="330" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-244" value="flow_to.f&amp;nbsp; = f_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="360" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-245" value="flow_from_pos.f.sum() = max(f_from,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="390" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqxK2w121oiBoX9bIa8L-246" value="flow_to_pos.f.sum() = max(f_to,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="sqxK2w121oiBoX9bIa8L-232" vertex="1">
+                    <mxGeometry y="420" width="310" height="30" as="geometry"/>
+                </mxCell>
             </root>
         </mxGraphModel>
     </diagram>
@@ -521,10 +521,10 @@
                 <mxCell id="GFeeWsShc_s_I5010j_D-23" value="-f_max_to &amp;lt;= f_to &amp;lt;= f_max_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="GFeeWsShc_s_I5010j_D-18" vertex="1">
                     <mxGeometry y="180" width="340" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="GFeeWsShc_s_I5010j_D-24" value="r_0= initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="GFeeWsShc_s_I5010j_D-18" vertex="1">
+                <mxCell id="GFeeWsShc_s_I5010j_D-24" value="r(0)= initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="GFeeWsShc_s_I5010j_D-18" vertex="1">
                     <mxGeometry y="210" width="340" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="GFeeWsShc_s_I5010j_D-25" value="r_H = initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="GFeeWsShc_s_I5010j_D-18" vertex="1">
+                <mxCell id="GFeeWsShc_s_I5010j_D-25" value="r(H) = initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="GFeeWsShc_s_I5010j_D-18" vertex="1">
                     <mxGeometry y="240" width="340" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="GFeeWsShc_s_I5010j_D-26" value="0&amp;lt;=r &amp;lt;=capacity" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="GFeeWsShc_s_I5010j_D-18" vertex="1">

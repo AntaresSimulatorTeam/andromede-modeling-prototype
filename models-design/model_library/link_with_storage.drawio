@@ -22,16 +22,16 @@
                 <mxCell id="35" value="-f_max_to &amp;lt;= f_to &amp;lt;= f_max_to" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
                     <mxGeometry y="150" width="310" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="36" value="r_0= initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
+                <mxCell id="36" value="r(0)= initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
                     <mxGeometry y="180" width="310" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="37" value="r_H = initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
+                <mxCell id="37" value="r(H) = initial_level" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
                     <mxGeometry y="210" width="310" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="38" value="0&amp;lt;=r &amp;lt;=capacity" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
                     <mxGeometry y="240" width="310" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="39" value="r(h+1) = r(h) + f_from(h) + f_to(h)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
+                <mxCell id="39" value="r(h+1) = r(h) + f_from(h) - f_to(h)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
                     <mxGeometry y="270" width="310" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="40" value="flow_from, flow_to, flow_from_pos, flow_to_pos : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
@@ -46,7 +46,7 @@
                 <mxCell id="43" value="flow_from_pos.f.sum() = max(f_from,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
                     <mxGeometry y="390" width="310" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="44" value="flow_from_to.f.sum() = max(f_to,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
+                <mxCell id="44" value="flow_to_pos.f.sum() = max(f_to,0)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="30" vertex="1">
                     <mxGeometry y="420" width="310" height="30" as="geometry"/>
                 </mxCell>
             </root>
