@@ -10,8 +10,21 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+
+# TODO: Move keys elsewhere as variables have no sense in this file
+@dataclass(eq=True, frozen=True)
+class TimestepComponentVariableKey:
+    """
+    Identifies the solver variable for one timestep and one component variable.
+    """
+
+    component_id: str
+    variable_name: str
+    block_timestep: Optional[int] = None
+    scenario: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -24,3 +37,11 @@ class TimeBlock:
 
     id: int
     timesteps: List[int]
+
+
+@dataclass(frozen=True)
+class ResolutionNode:
+    id: str
+    blocks: List[TimeBlock]
+    children: List["ResolutionNode"] = field(default_factory=list)
+    # solution: Dict[TimestepComponentVariableKey, lp.Variable]
