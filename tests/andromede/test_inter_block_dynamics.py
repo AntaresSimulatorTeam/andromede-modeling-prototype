@@ -8,7 +8,7 @@ from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
     DEMAND_MODEL,
-    NODE_WITH_SPILL_AND_ENS_MODEL,
+    NODE_WITH_SPILL_AND_ENS,
     SPILLAGE_MODEL,
     THERMAL_CLUSTER_MODEL_HD,
     TIME_AND_SCENARIO_FREE,
@@ -213,7 +213,7 @@ def test_thermal_no_dynamics(
     Ad d_min_up = 1, the optimal solution is to turn on the thermal cluster when the demand is 500 and turn it off otherwise. The optimal value of each block problem is 500 x 30
     """
 
-    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    node = Node(model=NODE_WITH_SPILL_AND_ENS, id="N")
 
     base = create_component(
         model=thermal_cycle_dynamics,
@@ -265,7 +265,7 @@ def test_thermal_with_dynamics(
     Then, on the second block, as we have d_min_down = 4, the unit will not be able to turn on at time 6, hence there is unsupplied energy. The optimal solution is 500 x 1000.
     """
 
-    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    node = Node(model=NODE_WITH_SPILL_AND_ENS, id="N")
 
     base = create_component(
         model=thermal_with_dynamics,

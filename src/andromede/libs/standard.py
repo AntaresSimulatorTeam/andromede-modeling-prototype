@@ -16,6 +16,7 @@ The standard module contains the definition of standard models.
 from andromede.expression import literal, param, var
 from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
 from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
 from andromede.model.parameter import float_parameter, int_parameter
@@ -41,7 +42,7 @@ NODE_BALANCE_MODEL = model(
     ],
 )
 
-NODE_WITH_SPILL_AND_ENS_MODEL = model(
+NODE_WITH_SPILL_AND_ENS = model(
     id="NODE_WITH_SPILL_AND_ENS_MODEL",
     parameters=[float_parameter("spillage_cost"), float_parameter("ens_cost")],
     variables=[
@@ -231,7 +232,7 @@ THERMAL_CLUSTER_MODEL_HD = model(
             .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
             .sum()
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
-        )
+        ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -390,4 +391,77 @@ SHORT_TERM_STORAGE_SIMPLE = model(
         ),
     ],
     objective_operational_contribution=literal(0),  # Implcitement nul ?
+)
+
+""" Simple thermal unit that can be invested on"""
+THERMAL_CANDIDATE = model(
+    id="GEN",
+    parameters=[
+        float_parameter("op_cost", CONSTANT),
+        float_parameter("invest_cost", CONSTANT),
+        float_parameter("max_invest", CONSTANT),
+    ],
+    variables=[
+        float_variable("generation", lower_bound=literal(0)),
+        float_variable(
+            "p_max",
+            lower_bound=literal(0),
+            upper_bound=param("max_invest"),
+            structure=CONSTANT,
+            context=ProblemContext.coupling,
+        ),
+    ],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "flow"),
+            definition=var("generation"),
+        )
+    ],
+    constraints=[
+        Constraint(name="Max generation", expression=var("generation") <= var("p_max"))
+    ],
+    objective_operational_contribution=(param("op_cost") * var("generation"))
+    .sum()
+    .expec(),
+    objective_investment_contribution=param("invest_cost") * var("p_max"),
+)
+
+""" Simple thermal unit that can be invested on and with already installed capacity"""
+THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA = model(
+    id="GEN",
+    parameters=[
+        float_parameter("op_cost", CONSTANT),
+        float_parameter("invest_cost", CONSTANT),
+        float_parameter("max_invest", CONSTANT),
+        float_parameter("already_installed_capa", CONSTANT),
+    ],
+    variables=[
+        float_variable("generation", lower_bound=literal(0)),
+        float_variable(
+            "invested_capa",
+            lower_bound=literal(0),
+            upper_bound=param("max_invest"),
+            structure=CONSTANT,
+            context=ProblemContext.coupling,
+        ),
+    ],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "flow"),
+            definition=var("generation"),
+        )
+    ],
+    constraints=[
+        Constraint(
+            name="Max generation",
+            expression=var("generation")
+            <= param("already_installed_capa") + var("invested_capa"),
+        )
+    ],
+    objective_operational_contribution=(param("op_cost") * var("generation"))
+    .sum()
+    .expec(),
+    objective_investment_contribution=param("invest_cost") * var("invested_capa"),
 )

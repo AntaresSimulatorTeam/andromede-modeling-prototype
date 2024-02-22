@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 import ortools.linear_solver.pywraplp as lp
@@ -38,8 +38,10 @@ class TimeBlock:
         return len(self.timesteps)
 
 
-class BlockTree:
-    id: int
-    children: List[TimeBlock]
-    block: TimeBlock
-    solution: Dict[TimestepComponentVariableKey, lp.Variable]
+@dataclass(frozen=True)
+class ResolutionNode:
+    id: str
+    blocks: List[TimeBlock]
+    children: List["ResolutionNode"] = field(default_factory=list)
+    # solution: Dict[TimestepComponentVariableKey, lp.Variable]
+    
