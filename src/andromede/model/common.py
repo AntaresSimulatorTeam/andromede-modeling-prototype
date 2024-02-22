@@ -23,6 +23,6 @@ class ValueType(Enum):
 
 
 class ProblemContext(Enum):
-    operational = 0
-    investment = 1
-    coupling = 2
+    OPERATIONAL = 0
+    INVESTMENT = 1
+    COUPLING = 2

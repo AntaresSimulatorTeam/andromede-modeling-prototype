@@ -435,14 +435,14 @@ def _compute_indexing_structure(
 def _should_keep_in_model(
     problem_type: "OptimizationProblem.Type", context: ProblemContext
 ) -> bool:
-    if (problem_type == OptimizationProblem.Type.merged) or (
-        context == ProblemContext.coupling
+    if (problem_type == OptimizationProblem.Type.MERGED) or (
+        context == ProblemContext.COUPLING
     ):
         return True
-    elif problem_type == OptimizationProblem.Type.master:
-        return context == ProblemContext.investment
-    elif problem_type == OptimizationProblem.Type.subproblem:
-        return context == ProblemContext.operational
+    elif problem_type == OptimizationProblem.Type.MASTER:
+        return context == ProblemContext.INVESTMENT
+    elif problem_type == OptimizationProblem.Type.SUBPROBLEM:
+        return context == ProblemContext.OPERATIONAL
     else:
         return False
 
@@ -687,9 +687,9 @@ class OptimizationProblem:
             - merged: Creates a Antares Simulator/ Xpansion problem with all
         """
 
-        merged = 0
-        master = 1
-        subproblem = 2
+        MERGED = 0
+        MASTER = 1
+        SUBPROBLEM = 2
 
     name: str
     solver: lp.Solver
@@ -701,7 +701,7 @@ class OptimizationProblem:
         name: str,
         solver: lp.Solver,
         opt_context: OptimizationContext,
-        opt_type: Type = Type.merged,
+        opt_type: Type = Type.MERGED,
     ) -> None:
         self.name = name
         self.solver = solver
@@ -824,7 +824,7 @@ class OptimizationProblem:
 
             if (
                 model.objective_operational_contribution is not None
-                and _should_keep_in_model(self.problem_type, ProblemContext.operational)
+                and _should_keep_in_model(self.problem_type, ProblemContext.OPERATIONAL)
             ):
                 _create_objective(
                     self.solver,
@@ -836,7 +836,7 @@ class OptimizationProblem:
 
             if (
                 model.objective_investment_contribution is not None
-                and _should_keep_in_model(self.problem_type, ProblemContext.investment)
+                and _should_keep_in_model(self.problem_type, ProblemContext.INVESTMENT)
             ):
                 _create_objective(
                     self.solver,
@@ -862,7 +862,7 @@ def build_problem(
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-    problem_type: OptimizationProblem.Type = OptimizationProblem.Type.merged,
+    problem_type: OptimizationProblem.Type = OptimizationProblem.Type.MERGED,
 ) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.

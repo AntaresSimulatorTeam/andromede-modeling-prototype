@@ -56,13 +56,13 @@ from andromede.study import (
 CONSTANT = IndexingStructure(False, False)
 FREE = IndexingStructure(True, True)
 
-INVESTMENT = ProblemContext.investment
-OPERATIONAL = ProblemContext.operational
-COUPLING = ProblemContext.coupling
+INVESTMENT = ProblemContext.INVESTMENT
+OPERATIONAL = ProblemContext.OPERATIONAL
+COUPLING = ProblemContext.COUPLING
 
-MASTER = OptimizationProblem.Type.master
-SUBPBL = OptimizationProblem.Type.subproblem
-MERGED = OptimizationProblem.Type.merged
+MASTER = OptimizationProblem.Type.MASTER
+SUBPBL = OptimizationProblem.Type.SUBPROBLEM
+MERGED = OptimizationProblem.Type.MERGED
 
 
 @pytest.fixture

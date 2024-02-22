@@ -44,7 +44,7 @@ def int_variable(
     lower_bound: Optional[ExpressionNode] = None,
     upper_bound: Optional[ExpressionNode] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
-    context: ProblemContext = ProblemContext.operational,
+    context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
     return Variable(
         name, ValueType.INTEGER, lower_bound, upper_bound, structure, context
@@ -56,6 +56,6 @@ def float_variable(
     lower_bound: Optional[ExpressionNode] = None,
     upper_bound: Optional[ExpressionNode] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
-    context: ProblemContext = ProblemContext.operational,
+    context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
     return Variable(name, ValueType.FLOAT, lower_bound, upper_bound, structure, context)

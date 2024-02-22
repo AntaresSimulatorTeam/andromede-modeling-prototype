@@ -13,7 +13,7 @@
 """
 Module for technical utilities.
 """
-import os
+import pathlib
 from typing import Any, Callable, Dict, Generic, Optional, TypeVar
 
 T = TypeVar("T")
@@ -44,18 +44,14 @@ def get_or_add(dictionary: Dict[K, V], key: K, default_factory: Supplier[V]) -> 
     return value
 
 
-def serialize(filename: str, message: str, path: str = "outputs") -> bool:
+def serialize(filename: str, message: str, path: pathlib.Path) -> None:
     """
     Write message to path/filename
+
+    Will throw an exception if it fails to create dir or ro open file
     """
-    try:
-        os.makedirs(path, exist_ok=True)
-        file = open(f"{path}/{filename}", "w")
+    path.mkdir(parents=True, exist_ok=True)
+    file = (path / filename).open(mode="w")
 
-    except os.error:
-        return False
-
-    else:
-        with file:
-            file.write(message)
-        return True
+    with file:
+        file.write(message)

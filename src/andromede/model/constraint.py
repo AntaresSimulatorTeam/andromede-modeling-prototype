@@ -42,7 +42,7 @@ class Constraint:
         expression: ExpressionNode,
         lower_bound: Optional[ExpressionNode] = None,
         upper_bound: Optional[ExpressionNode] = None,
-        context: ProblemContext = ProblemContext.operational,
+        context: ProblemContext = ProblemContext.OPERATIONAL,
     ) -> None:
         self.name = name
         self.context = context

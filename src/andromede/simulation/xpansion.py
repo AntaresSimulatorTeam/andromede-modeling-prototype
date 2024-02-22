@@ -17,6 +17,7 @@ with Benders solver related functions
 
 import json
 import os
+import pathlib
 import subprocess
 import sys
 from typing import Any, Dict, List
@@ -125,21 +126,22 @@ class XpansionProblem:
         log_level: int = 0,
         is_debug: bool = False,
     ) -> None:
-        serialize("master.mps", self.master.export_as_mps(), path)
-        serialize("subproblem.mps", self.subproblems[0].export_as_mps(), path)
-        serialize("structure.txt", self.export_structure(), path)
+        directory = pathlib.Path(path)
+        serialize("master.mps", self.master.export_as_mps(), directory)
+        serialize("subproblem.mps", self.subproblems[0].export_as_mps(), directory)
+        serialize("structure.txt", self.export_structure(), directory)
         serialize(
             "options.json",
             json.dumps(
                 self.export_options(solver_name=solver_name, log_level=log_level),
                 indent=4,
             ),
-            path,
+            directory,
         )
 
         if is_debug:
-            serialize("master.lp", self.master.export_as_lp(), path)
-            serialize("subproblem.lp", self.subproblems[0].export_as_lp(), path)
+            serialize("master.lp", self.master.export_as_lp(), directory)
+            serialize("subproblem.lp", self.subproblems[0].export_as_lp(), directory)
 
     def run(
         self,
@@ -149,10 +151,10 @@ class XpansionProblem:
         log_level: int = 0,
     ) -> bool:
         self.prepare(path=path, solver_name=solver_name, log_level=log_level)
-        root_dir = os.getcwd()
-        path_to_benders = f"{root_dir}/bin/benders"
+        root_dir = pathlib.Path().cwd()
+        path_to_benders = root_dir / "bin" / "benders"
 
-        if not os.path.isfile(path_to_benders):
+        if not path_to_benders.is_file():
             # TODO Maybe a more robust check and/or return value?
             # For now, it won't look anywhere else because a new
             # architecture should be discussed
@@ -195,7 +197,7 @@ def build_xpansion_problem(
         problem_name="master",
         border_management=border_management,
         solver_id=solver_id,
-        problem_type=OptimizationProblem.Type.master,
+        problem_type=OptimizationProblem.Type.MASTER,
     )
 
     # Xpansion Sub-problems
@@ -207,7 +209,7 @@ def build_xpansion_problem(
         problem_name="subproblem",
         border_management=border_management,
         solver_id=solver_id,
-        problem_type=OptimizationProblem.Type.subproblem,
+        problem_type=OptimizationProblem.Type.SUBPROBLEM,
     )
 
     return XpansionProblem(master, [subproblem])
