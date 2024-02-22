@@ -104,9 +104,9 @@ def thermal_candidate() -> Model:
 
 
 @pytest.fixture
-def wind_cluster_candidate() -> Model:
-    WIND_CLUSTER_CANDIDATE = model(
-        id="WIND_CLUSTER",
+def discrete_candidate() -> Model:
+    DISCRETE_CANDIDATE = model(
+        id="DISCRETE",
         parameters=[
             float_parameter("op_cost", CONSTANT),
             float_parameter("invest_cost", CONSTANT),
@@ -150,7 +150,7 @@ def wind_cluster_candidate() -> Model:
         .expec(),
         objective_investment_contribution=param("invest_cost") * var("p_max"),
     )
-    return WIND_CLUSTER_CANDIDATE
+    return DISCRETE_CANDIDATE
 
 
 @pytest.fixture
@@ -169,8 +169,8 @@ def candidate(thermal_candidate: Model) -> Component:
 
 
 @pytest.fixture
-def cluster_candidate(wind_cluster_candidate: Model) -> Component:
-    cluster = create_component(model=wind_cluster_candidate, id="CLUSTER")
+def cluster_candidate(discrete_candidate: Model) -> Component:
+    cluster = create_component(model=discrete_candidate, id="DISCRETE")
     return cluster
 
 
@@ -275,9 +275,9 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
     database.add_data("CAND", "op_cost", ConstantData(10))
     database.add_data("CAND", "invest_cost", ConstantData(490))
 
-    database.add_data("CLUSTER", "op_cost", ConstantData(10))
-    database.add_data("CLUSTER", "invest_cost", ConstantData(200))
-    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(10))
+    database.add_data("DISCRETE", "op_cost", ConstantData(10))
+    database.add_data("DISCRETE", "invest_cost", ConstantData(200))
+    database.add_data("DISCRETE", "p_max_per_unit", ConstantData(10))
 
     demand = create_component(model=DEMAND_MODEL, id="D")
 
@@ -310,9 +310,9 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
     expected_output.component("G1").var("generation").value = 200.0
     expected_output.component("CAND").var("generation").value = 100.0
     expected_output.component("CAND").var("p_max").value = 100.0
-    expected_output.component("CLUSTER").var("generation").value = 100.0
-    expected_output.component("CLUSTER").var("p_max").value = 100.0
-    expected_output.component("CLUSTER").var("nb_units").value = 10.0
+    expected_output.component("DISCRETE").var("generation").value = 100.0
+    expected_output.component("DISCRETE").var("p_max").value = 100.0
+    expected_output.component("DISCRETE").var("nb_units").value = 10.0
 
     assert output == expected_output, f"Output differs from expected: {output}"
 
@@ -339,9 +339,9 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     database.add_data("CAND", "op_cost", ConstantData(10))
     database.add_data("CAND", "invest_cost", ConstantData(490))
 
-    database.add_data("CLUSTER", "op_cost", ConstantData(10))
-    database.add_data("CLUSTER", "invest_cost", ConstantData(200))
-    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(10))
+    database.add_data("DISCRETE", "op_cost", ConstantData(10))
+    database.add_data("DISCRETE", "invest_cost", ConstantData(200))
+    database.add_data("DISCRETE", "p_max_per_unit", ConstantData(10))
 
     demand = create_component(model=DEMAND_MODEL, id="D")
 
