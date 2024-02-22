@@ -62,11 +62,23 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     node: Node,
 ) -> None:
     """
-    Simple generation expansion problem on one node with one thermal candidate.
+    This use case aims at representing the situation where investment decisions are to be made at different, say "planning times". An actualisation rate can be taken into account.
 
-    The investment pathway needs to be determined on a tree with one root and two children. This means that we need to take a common initial investment decision and two different descisions one the second investment horizon. Within each decision tree node, one timestep and one scenario are considered.
+    The novelty compared the actual usage of planning tools, is that the planning decisions at a given time are taken without knowing exactly which "macro-scenario" / hypothesis on the system that will eventually happen (only knowing the probability distribution of these hypothesis).
 
-    Root node :
+    This example models a case where investment decisions have to be made in 2030 and 2040.
+        - In 2030, we have full knowledge of the existing assets
+        - In 2040, two equiprobable hypothesis are possible :
+            - A case where there is no change in the generation assets since 2030 (except te potential investment in 2030)
+            - A case where a base generation unit is present
+
+    When taking the decision in 2030, we do not know which case will occur in 2040 and we seek the best decision given a risk criterion (the expectation here).
+
+    The value of these models lies in the output for the first decision rather than the decisions at the later stages as the first decisions are related to "what we have to do today" ?  
+
+    More specifically, to define the use case, we define the following tree representing the system at the different decision times and hypothesis
+
+    2030 (root node) :
         Demand = 300
         Generator :
             P_max = 200,
@@ -76,7 +88,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         Unsupplied energy :
             Cost = 10000
 
-    Child 1 :
+    2040 with new base (scenario 1) :
         Demand = 600
         Generator :
             P_max = 200,
@@ -89,7 +101,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         Unsupplied energy :
             Cost = 10000
 
-    Child 2 :
+    2040 no base (scenario 2) :
         Demand = 600
         Generator :
             P_max = 200,
@@ -99,7 +111,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         Unsupplied energy :
             Cost = 10000
 
-    Inthe second decision time, demand increases from 300 to 600 in both scenarios. However, investment capacity in the candidate is limited to 100 in the second stage. Investment cost decreases to reflect the effect of a discount rate.
+    In the second decision time, demand increases from 300 to 600 in both scenarios. However, investment capacity in the candidate is limited to 100 in the second stage. Investment cost decreases to reflect the effect of a discount rate.
 
     In case 1, a base unit of capacity 100 has arrived and can produce at the same cost than the candidate. As it is more intersting to invest the latest possible, the optimal solution for scenario 1 is to invest [100, 100].
 
@@ -159,6 +171,11 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
     database.add_data("BASE", "cost", ConstantData(5))
 
+    # Fonction qui crée les composants / noeud en fonction de l'arbre et du Database initial / modèles + générer les contraintes couplantes temporelles trajectoire + actualisation + 
+    # contraintes industrielles liées à l'arbre ?
+    # Test mode peigne
+    # Générer le modèle "couplant"
+
     network = Network("test")
     network.add_node(node)
     network.add_component(demand)
@@ -169,7 +186,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
 
     root = ResolutionNode("2030", [TimeBlock(0, [0])])
-    child_1 = ResolutionNode("2040_with_base", [TimeBlock(0, [0])])
+    child_1 = ResolutionNode("2040_new_base", [TimeBlock(0, [0])])
     child_2 = ResolutionNode("2040_no_base", [TimeBlock(0, [0])])
     resolution_tree = ResolutionNode(root, [child_1, child_2])
 
