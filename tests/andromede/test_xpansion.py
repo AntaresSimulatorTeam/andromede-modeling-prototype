@@ -34,12 +34,12 @@ from andromede.model import (
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
+    BendersDecomposedProblem,
     OptimizationProblem,
     OutputValues,
     TimeBlock,
-    XpansionProblem,
+    build_benders_decomposed_problem,
     build_problem,
-    build_xpansion_problem,
 )
 from andromede.study import (
     Component,
@@ -360,7 +360,9 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     )
     scenarios = 1
 
-    xpansion = build_xpansion_problem(network, database, TimeBlock(1, [0]), scenarios)
+    xpansion = build_benders_decomposed_problem(
+        network, database, TimeBlock(1, [0]), scenarios
+    )
     assert xpansion.run()
 
 

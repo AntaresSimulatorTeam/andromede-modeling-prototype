@@ -33,7 +33,7 @@ from andromede.study.network import Network
 from andromede.utils import serialize
 
 
-class XpansionProblem:
+class BendersDecomposedProblem:
     """
     A simpler interface for the Xpansion problem
     """
@@ -173,7 +173,7 @@ class XpansionProblem:
         return res.returncode == 0
 
 
-def build_xpansion_problem(
+def build_benders_decomposed_problem(
     network: Network,
     database: DataBase,
     block: TimeBlock,
@@ -181,7 +181,7 @@ def build_xpansion_problem(
     *,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-) -> XpansionProblem:
+) -> BendersDecomposedProblem:
     """
     Entry point to build the xpansion problem for a time period
 
@@ -212,4 +212,4 @@ def build_xpansion_problem(
         problem_type=OptimizationProblem.Type.SUBPROBLEM,
     )
 
-    return XpansionProblem(master, [subproblem])
+    return BendersDecomposedProblem(master, [subproblem])
