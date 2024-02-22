@@ -16,8 +16,9 @@ A model allows to define the behaviour for components, by
 defining parameters, variables, and equations.
 """
 import itertools
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, Optional
+from typing import Dict, Generator, Iterable, Optional
 
 from andromede.expression import (
     AdditionNode,
@@ -46,6 +47,7 @@ from andromede.expression.expression import (
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.visitor import T, visit
+from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
@@ -182,6 +184,81 @@ class Model:
         return itertools.chain(
             self.binding_constraints.values(), self.constraints.values()
         )
+
+
+class ModelSelectionStrategy(ABC):
+    """
+    Abstract class to specify the strategy of the created problem.
+    Its derived classes select variables and constraints for the optimization problems:
+        - InvestmentProblemStrategy: Keep investment and coupling variables and constraints only for a BendersDecomposed master
+        - OperationalProblemStrategy: Keep operational and coupling variables and constraints only for a BendersDecomposed sub-problems
+        - MergedProblemStrategy: Keep all variables and constraints
+    """
+
+    @classmethod
+    def get_variables(cls, model: Model) -> Generator[Variable, None, None]:
+        for variable in model.variables.values():
+            if cls._keep_from_context(variable.context):
+                yield variable
+
+    @classmethod
+    def get_constraints(cls, model: Model) -> Generator[Constraint, None, None]:
+        for constraint in model.get_all_constraints():
+            if cls._keep_from_context(constraint.context):
+                yield constraint
+
+    @classmethod
+    @abstractmethod
+    def _keep_from_context(cls, context: ProblemContext) -> bool:
+        ...
+
+    @classmethod
+    @abstractmethod
+    def get_objectives(
+        cls, model: Model
+    ) -> Generator[Optional[ExpressionNode], None, None]:
+        ...
+
+
+class MergedProblemStrategy(ModelSelectionStrategy):
+    @classmethod
+    def _keep_from_context(cls, context: ProblemContext) -> bool:
+        return True
+
+    @classmethod
+    def get_objectives(
+        cls, model: Model
+    ) -> Generator[Optional[ExpressionNode], None, None]:
+        yield model.objective_operational_contribution
+        yield model.objective_investment_contribution
+
+
+class InvestmentProblemStrategy(ModelSelectionStrategy):
+    @classmethod
+    def _keep_from_context(cls, context: ProblemContext) -> bool:
+        return (
+            context == ProblemContext.INVESTMENT or context == ProblemContext.COUPLING
+        )
+
+    @classmethod
+    def get_objectives(
+        cls, model: Model
+    ) -> Generator[Optional[ExpressionNode], None, None]:
+        yield model.objective_investment_contribution
+
+
+class OperationalProblemStrategy(ModelSelectionStrategy):
+    @classmethod
+    def _keep_from_context(cls, context: ProblemContext) -> bool:
+        return (
+            context == ProblemContext.OPERATIONAL or context == ProblemContext.COUPLING
+        )
+
+    @classmethod
+    def get_objectives(
+        cls, model: Model
+    ) -> Generator[Optional[ExpressionNode], None, None]:
+        yield model.objective_operational_contribution
 
 
 def model(

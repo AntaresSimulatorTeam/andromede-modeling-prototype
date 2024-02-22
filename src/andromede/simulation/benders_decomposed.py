@@ -22,6 +22,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List
 
+from andromede.model.model import InvestmentProblemStrategy, OperationalProblemStrategy
 from andromede.simulation.optimization import (
     BlockBorderManagement,
     OptimizationProblem,
@@ -197,7 +198,7 @@ def build_benders_decomposed_problem(
         problem_name="master",
         border_management=border_management,
         solver_id=solver_id,
-        problem_type=OptimizationProblem.Type.MASTER,
+        problem_strategy=InvestmentProblemStrategy,
     )
 
     # Xpansion Sub-problems
@@ -209,7 +210,7 @@ def build_benders_decomposed_problem(
         problem_name="subproblem",
         border_management=border_management,
         solver_id=solver_id,
-        problem_type=OptimizationProblem.Type.SUBPROBLEM,
+        problem_strategy=OperationalProblemStrategy,
     )
 
     return BendersDecomposedProblem(master, [subproblem])

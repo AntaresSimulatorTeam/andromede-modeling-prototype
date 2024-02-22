@@ -32,10 +32,12 @@ from andromede.model import (
     int_variable,
     model,
 )
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.model import (
+    MergedProblemStrategy,
+    PortFieldDefinition,
+    PortFieldId,
+)
 from andromede.simulation import (
-    BendersDecomposedProblem,
-    OptimizationProblem,
     OutputValues,
     TimeBlock,
     build_benders_decomposed_problem,
@@ -59,10 +61,6 @@ FREE = IndexingStructure(True, True)
 INVESTMENT = ProblemContext.INVESTMENT
 OPERATIONAL = ProblemContext.OPERATIONAL
 COUPLING = ProblemContext.COUPLING
-
-MASTER = OptimizationProblem.Type.MASTER
-SUBPBL = OptimizationProblem.Type.SUBPROBLEM
-MERGED = OptimizationProblem.Type.MERGED
 
 
 @pytest.fixture
@@ -222,7 +220,11 @@ def test_generation_xpansion_single_time_step_single_scenario(
 
     scenarios = 1
     problem = build_problem(
-        network, database, TimeBlock(1, [0]), scenarios, problem_type=MERGED
+        network,
+        database,
+        TimeBlock(1, [0]),
+        scenarios,
+        problem_strategy=MergedProblemStrategy,
     )
     status = problem.solver.Solve()
 

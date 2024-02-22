@@ -18,7 +18,7 @@ into a mathematical optimization problem.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Type
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -38,7 +38,11 @@ from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
-from andromede.model.model import PortFieldId
+from andromede.model.model import (
+    MergedProblemStrategy,
+    ModelSelectionStrategy,
+    PortFieldId,
+)
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
 from andromede.simulation.time_block import TimeBlock
@@ -432,21 +436,6 @@ def _compute_indexing_structure(
     return constraint_indexing
 
 
-def _should_keep_in_model(
-    problem_type: "OptimizationProblem.Type", context: ProblemContext
-) -> bool:
-    if (problem_type == OptimizationProblem.Type.MERGED) or (
-        context == ProblemContext.COUPLING
-    ):
-        return True
-    elif problem_type == OptimizationProblem.Type.MASTER:
-        return context == ProblemContext.INVESTMENT
-    elif problem_type == OptimizationProblem.Type.SUBPROBLEM:
-        return context == ProblemContext.OPERATIONAL
-    else:
-        return False
-
-
 def _instantiate_model_expression(
     model_expression: ExpressionNode,
     component_id: str,
@@ -679,34 +668,22 @@ def make_constraint(
 
 
 class OptimizationProblem:
-    class Type(Enum):
-        """
-        Class to specify the type of the created problem:
-            - master: Creates a Xpansion master problem with investment and coupling variables and constraints only
-            - subproblem: Creates Xpansion sub-problems with operational and coupling variables and constraints only
-            - merged: Creates a Antares Simulator/ Xpansion problem with all
-        """
-
-        MERGED = 0
-        MASTER = 1
-        SUBPROBLEM = 2
-
     name: str
     solver: lp.Solver
     context: OptimizationContext
-    problem_type: Type
+    strategy: Type[ModelSelectionStrategy]
 
     def __init__(
         self,
         name: str,
         solver: lp.Solver,
         opt_context: OptimizationContext,
-        opt_type: Type = Type.MERGED,
+        opt_strategy: Type[ModelSelectionStrategy] = MergedProblemStrategy,
     ) -> None:
         self.name = name
         self.solver = solver
         self.context = opt_context
-        self.problem_type = opt_type
+        self.strategy = opt_strategy
 
         self._register_connection_fields_definitions()
         self._create_variables()
@@ -746,10 +723,7 @@ class OptimizationProblem:
             component_context = self.context.get_component_context(component)
             model = component.model
 
-            for model_var in model.variables.values():
-                if not _should_keep_in_model(self.problem_type, model_var.context):
-                    continue
-
+            for model_var in self.strategy.get_variables(model):
                 var_indexing = IndexingStructure(
                     model_var.structure.time, model_var.structure.scenario
                 )
@@ -791,10 +765,7 @@ class OptimizationProblem:
 
     def _create_constraints(self) -> None:
         for component in self.context.network.all_components:
-            for constraint in component.model.get_all_constraints():
-                if not _should_keep_in_model(self.problem_type, constraint.context):
-                    continue
-
+            for constraint in self.strategy.get_constraints(component.model):
                 instantiated_expr = _instantiate_model_expression(
                     constraint.expression, component.id, self.context
                 )
@@ -822,29 +793,15 @@ class OptimizationProblem:
             component_context = self.context.get_component_context(component)
             model = component.model
 
-            if (
-                model.objective_operational_contribution is not None
-                and _should_keep_in_model(self.problem_type, ProblemContext.OPERATIONAL)
-            ):
-                _create_objective(
-                    self.solver,
-                    self.context,
-                    component,
-                    component_context,
-                    model.objective_operational_contribution,
-                )
-
-            if (
-                model.objective_investment_contribution is not None
-                and _should_keep_in_model(self.problem_type, ProblemContext.INVESTMENT)
-            ):
-                _create_objective(
-                    self.solver,
-                    self.context,
-                    component,
-                    component_context,
-                    model.objective_investment_contribution,
-                )
+            for objective in self.strategy.get_objectives(model):
+                if objective is not None:
+                    _create_objective(
+                        self.solver,
+                        self.context,
+                        component,
+                        component_context,
+                        objective,
+                    )
 
     def export_as_mps(self) -> str:
         return self.solver.ExportModelAsMpsFormat(fixed_format=True, obfuscated=False)
@@ -862,7 +819,7 @@ def build_problem(
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-    problem_type: OptimizationProblem.Type = OptimizationProblem.Type.MERGED,
+    problem_strategy: Type[ModelSelectionStrategy] = MergedProblemStrategy,
 ) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.
@@ -875,4 +832,4 @@ def build_problem(
         network, database, block, scenarios, border_management
     )
 
-    return OptimizationProblem(problem_name, solver, opt_context, problem_type)
+    return OptimizationProblem(problem_name, solver, opt_context, problem_strategy)
