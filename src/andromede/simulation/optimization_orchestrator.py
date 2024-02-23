@@ -6,7 +6,7 @@ from andromede.simulation.optimization import (
     OrchestrationMethod,
     build_problem,
 )
-from andromede.simulation.time_block import TimeBlock, TimestepComponentVariableKey
+from andromede.simulation.time_block import ConfiguredTree, TimeBlock, TimestepComponentVariableKey
 from andromede.study.data import DataBase
 from andromede.study.network import Network
 
@@ -20,20 +20,18 @@ class OptimizationOrchestrator:
         self,
         network: Network,
         database: DataBase,
-        time_blocks: List[TimeBlock],
-        orchestration_method: OrchestrationMethod,
-        scenarios: int,
+        configured_tree: ConfiguredTree,
     ) -> None:
         self._network = network
         self._database = database
-        self._time_blocks = time_blocks
-        self._orchestration_method = orchestration_method
-        self._scenarios = scenarios
+        self._configured_tree = configured_tree
 
     def run(self) -> Dict[int, Tuple[OptimizationProblem, int]]:
         initial_variables: Dict[TimestepComponentVariableKey, Variable] = {}
         output = {}
         for count, block in enumerate(self._time_blocks):
+
+            # Parcourir l'arbre puis les blocs
             previous_block = self._time_blocks[count - 1] if count > 0 else None
             problem = build_problem(
                 self._network,

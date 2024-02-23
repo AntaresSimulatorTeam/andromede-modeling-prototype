@@ -13,7 +13,9 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-import ortools.linear_solver.pywraplp as lp
+from anytree import Node as TreeNode
+
+from andromede.simulation.optimization import OrchestrationMethod
 
 
 # TODO: Move keys elsewhere as variables have no sense in this file
@@ -39,12 +41,14 @@ class TimeBlock:
 
 
 @dataclass(frozen=True)
-class ResolutionNode:
-    id: str
-    blocks: List[TimeBlock]  # Séparer horizon de simu annuel
-    children: List["ResolutionNode"] = field(default_factory=list)
-    # solution: Dict[TimestepComponentVariableKey, lp.Variable]
-
-
-class InBetweenMasterDecisionTimeHorizon:
+class InterDecisionTimeScenarioConfig:
     blocks: List[TimeBlock]
+    scenarios: int
+    orchestration_method: OrchestrationMethod = field(
+        default=OrchestrationMethod.SEQUENTIAL
+    )  # Link to resolution and not to problem description, should be placed elsewhere maybe ?
+
+
+@dataclass(frozen=True)
+class ConfiguredTree:
+    node_to_config: Dict[TreeNode, InterDecisionTimeScenarioConfig]
