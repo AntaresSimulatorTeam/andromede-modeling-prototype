@@ -15,10 +15,10 @@ The model module defines the data model for user-defined models.
 A model allows to define the behaviour for components, by
 defining parameters, variables, and equations.
 """
-from enum import Enum
 import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Dict, Generator, Iterable, Optional
 
 from andromede.expression import (
@@ -223,15 +223,13 @@ class ModelSelectionStrategy(ABC):
 
     @classmethod
     @abstractmethod
-    def _keep_from_context(cls, context: ProblemContext) -> bool:
-        ...
+    def _keep_from_context(cls, context: ProblemContext) -> bool: ...
 
     @classmethod
     @abstractmethod
     def get_objectives(
         cls, model: Model
-    ) -> Generator[Optional[ExpressionNode], None, None]:
-        ...
+    ) -> Generator[Optional[ExpressionNode], None, None]: ...
 
 
 class MergedProblemStrategy(ModelSelectionStrategy):
@@ -303,18 +301,20 @@ def model(
     return Model(
         id=id,
         constraints={c.name: c for c in constraints} if constraints else {},
-        binding_constraints={c.name: c for c in binding_constraints}
-        if binding_constraints
-        else {},
+        binding_constraints=(
+            {c.name: c for c in binding_constraints} if binding_constraints else {}
+        ),
         parameters={p.name: p for p in parameters} if parameters else {},
         variables={v.name: v for v in variables} if variables else {},
         objective_operational_contribution=objective_operational_contribution,
         objective_investment_contribution=objective_investment_contribution,
         inter_block_dyn=inter_block_dyn,
         ports=existing_port_names,
-        port_fields_definitions={d.port_field: d for d in port_fields_definitions}
-        if port_fields_definitions
-        else {},
+        port_fields_definitions=(
+            {d.port_field: d for d in port_fields_definitions}
+            if port_fields_definitions
+            else {}
+        ),
     )
 
 
