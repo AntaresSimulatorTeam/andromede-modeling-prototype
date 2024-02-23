@@ -11,7 +11,9 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+from anytree import Node as TreeNode
 
 
 # TODO: Move keys elsewhere as variables have no sense in this file
@@ -40,11 +42,11 @@ class TimeBlock:
 
 
 @dataclass(frozen=True)
-class ResolutionNode:
-    id: str
-    blocks: List[TimeBlock] # Séparer horizon de simu annuel
-    children: List["ResolutionNode"] = field(default_factory=list)
-    # solution: Dict[TimestepComponentVariableKey, lp.Variable]
-    
-class InBetweenMasterDecisionTimeHorizon:
-    blocks : List[TimeBlock]
+class InterDecisionTimeScenarioConfig:
+    blocks: List[TimeBlock]
+    scenarios: int
+
+
+@dataclass(frozen=True)
+class ConfiguredTree:
+    node_to_config: Dict[TreeNode, InterDecisionTimeScenarioConfig]

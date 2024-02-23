@@ -11,6 +11,7 @@
 # This file is part of the Antares project.
 
 import pytest
+from anytree import Node as TreeNode
 
 from andromede.libs.standard import (
     DEMAND_MODEL,
@@ -18,10 +19,12 @@ from andromede.libs.standard import (
     NODE_WITH_SPILL_AND_ENS,
     THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA,
 )
-from andromede.simulation.optimization import build_problem
 from andromede.simulation.optimization_orchestrator import OptimizationOrchestrator
-from andromede.simulation.output_values import OutputValues
-from andromede.simulation.time_block import ResolutionNode, TimeBlock
+from andromede.simulation.time_block import (
+    ConfiguredTree,
+    InterDecisionTimeScenarioConfig,
+    TimeBlock,
+)
 from andromede.study.data import ConstantData, DataBase, TreeData
 from andromede.study.network import Component, Network, Node, PortRef, create_component
 
@@ -185,14 +188,23 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
 
-    root = ResolutionNode("2030", [TimeBlock(0, [0])])
-    child_1 = ResolutionNode("2040_new_base", [TimeBlock(0, [0])])
-    child_2 = ResolutionNode("2040_no_base", [TimeBlock(0, [0])])
-    resolution_tree = ResolutionNode(root, [child_1, child_2])
-
     scenarios = 1
+    time_scenario_config = InterDecisionTimeScenarioConfig(
+        [TimeBlock(0, [0])], scenarios
+    )
 
-    orchestrator = OptimizationOrchestrator(network, database, resolution_tree)
+    root = TreeNode("2030")
+    new_base = TreeNode("2040_new_base", parent=root)
+    no_base = TreeNode("2040_no_base", parent=root)
+    configured_tree = ConfiguredTree(
+        {
+            root: time_scenario_config,
+            new_base: time_scenario_config,
+            no_base: time_scenario_config,
+        }
+    )
+
+    orchestrator = OptimizationOrchestrator(network, database, configured_tree)
     solution_tree = orchestrator.run()
 
     # Réfléchir à la représentation des variables dans l'arbre
