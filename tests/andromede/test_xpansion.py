@@ -39,6 +39,7 @@ from andromede.model.model import (
     PortFieldId,
 )
 from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation.benders_decomposed import build_benders_decomposed_problem
 from andromede.study import (
     Component,
     ConstantData,

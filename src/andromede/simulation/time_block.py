@@ -41,9 +41,10 @@ class TimeBlock:
 @dataclass(frozen=True)
 class ResolutionNode:
     id: str
-    blocks: List[TimeBlock] # Séparer horizon de simu annuel
+    blocks: List[TimeBlock]  # Séparer horizon de simu annuel
     children: List["ResolutionNode"] = field(default_factory=list)
     # solution: Dict[TimestepComponentVariableKey, lp.Variable]
-    
+
+
 class InBetweenMasterDecisionTimeHorizon:
-    blocks : List[TimeBlock]
+    blocks: List[TimeBlock]

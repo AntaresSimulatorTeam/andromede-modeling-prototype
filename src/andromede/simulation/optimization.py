@@ -18,7 +18,7 @@ into a mathematical optimization problem.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Type, Union
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -38,7 +38,12 @@ from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.common import ProblemContext, ValueType
 from andromede.model.constraint import Constraint
-from andromede.model.model import BlockBoundariesDynamics, PortFieldId
+from andromede.model.model import (
+    BlockBoundariesDynamics,
+    MergedProblemStrategy,
+    ModelSelectionStrategy,
+    PortFieldId,
+)
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
 from andromede.simulation.time_block import TimeBlock, TimestepComponentVariableKey

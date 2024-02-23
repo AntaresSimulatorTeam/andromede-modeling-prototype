@@ -35,7 +35,6 @@ class ScenarioIndex:
 
 @dataclass(frozen=True)
 class AbstractDataStructure(ABC):
-
     @abstractmethod
     def get_value(
         self, timestep: int, scenario: int, node_id: Optional[int] = None

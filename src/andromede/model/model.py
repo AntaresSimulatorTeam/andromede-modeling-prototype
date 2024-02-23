@@ -223,13 +223,15 @@ class ModelSelectionStrategy(ABC):
 
     @classmethod
     @abstractmethod
-    def _keep_from_context(cls, context: ProblemContext) -> bool: ...
+    def _keep_from_context(cls, context: ProblemContext) -> bool:
+        ...
 
     @classmethod
     @abstractmethod
     def get_objectives(
         cls, model: Model
-    ) -> Generator[Optional[ExpressionNode], None, None]: ...
+    ) -> Generator[Optional[ExpressionNode], None, None]:
+        ...
 
 
 class MergedProblemStrategy(ModelSelectionStrategy):

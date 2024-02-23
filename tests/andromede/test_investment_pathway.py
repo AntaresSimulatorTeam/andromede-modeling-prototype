@@ -74,7 +74,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
 
     When taking the decision in 2030, we do not know which case will occur in 2040 and we seek the best decision given a risk criterion (the expectation here).
 
-    The value of these models lies in the output for the first decision rather than the decisions at the later stages as the first decisions are related to "what we have to do today" ?  
+    The value of these models lies in the output for the first decision rather than the decisions at the later stages as the first decisions are related to "what we have to do today" ?
 
     More specifically, to define the use case, we define the following tree representing the system at the different decision times and hypothesis
 
@@ -171,7 +171,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
     database.add_data("BASE", "cost", ConstantData(5))
 
-    # Fonction qui crée les composants / noeud en fonction de l'arbre et du Database initial / modèles + générer les contraintes couplantes temporelles trajectoire + actualisation + 
+    # Fonction qui crée les composants / noeud en fonction de l'arbre et du Database initial / modèles + générer les contraintes couplantes temporelles trajectoire + actualisation +
     # contraintes industrielles liées à l'arbre ?
     # Test mode peigne
     # Générer le modèle "couplant"

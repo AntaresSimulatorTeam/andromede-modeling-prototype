@@ -21,6 +21,7 @@ import pathlib
 import subprocess
 import sys
 from typing import Any, Dict, List
+from andromede.model.model import InvestmentProblemStrategy, OperationalProblemStrategy
 
 from andromede.simulation.optimization import OptimizationProblem, build_problem
 from andromede.simulation.time_block import TimeBlock
