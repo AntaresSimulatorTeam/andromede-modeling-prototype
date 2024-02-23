@@ -678,12 +678,12 @@ class OptimizationProblem:
         name: str,
         solver: lp.Solver,
         opt_context: OptimizationContext,
-        opt_strategy: Type[ModelSelectionStrategy] = MergedProblemStrategy,
+        build_strategy: Type[ModelSelectionStrategy] = MergedProblemStrategy,
     ) -> None:
         self.name = name
         self.solver = solver
         self.context = opt_context
-        self.strategy = opt_strategy
+        self.strategy = build_strategy
 
         self._register_connection_fields_definitions()
         self._create_variables()
