@@ -36,15 +36,11 @@ from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
-from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
-from andromede.model.model import (
-    MergedProblemStrategy,
-    ModelSelectionStrategy,
-    PortFieldId,
-)
+from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
+from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
@@ -671,14 +667,14 @@ class OptimizationProblem:
     name: str
     solver: lp.Solver
     context: OptimizationContext
-    strategy: Type[ModelSelectionStrategy]
+    strategy: ModelSelectionStrategy
 
     def __init__(
         self,
         name: str,
         solver: lp.Solver,
         opt_context: OptimizationContext,
-        build_strategy: Type[ModelSelectionStrategy] = MergedProblemStrategy,
+        build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
     ) -> None:
         self.name = name
         self.solver = solver
@@ -819,7 +815,7 @@ def build_problem(
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-    problem_strategy: Type[ModelSelectionStrategy] = MergedProblemStrategy,
+    problem_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
 ) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.

@@ -16,4 +16,5 @@ from .benders_decomposed import (
 )
 from .optimization import BlockBorderManagement, OptimizationProblem, build_problem
 from .output_values import OutputValues
+from .strategy import MergedProblemStrategy, ModelSelectionStrategy
 from .time_block import TimeBlock

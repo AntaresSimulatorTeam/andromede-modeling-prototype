@@ -32,12 +32,9 @@ from andromede.model import (
     int_variable,
     model,
 )
-from andromede.model.model import (
-    MergedProblemStrategy,
-    PortFieldDefinition,
-    PortFieldId,
-)
+from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
+    MergedProblemStrategy,
     OutputValues,
     TimeBlock,
     build_benders_decomposed_problem,
@@ -224,7 +221,7 @@ def test_generation_xpansion_single_time_step_single_scenario(
         database,
         TimeBlock(1, [0]),
         scenarios,
-        problem_strategy=MergedProblemStrategy,
+        problem_strategy=MergedProblemStrategy(),
     )
     status = problem.solver.Solve()
 

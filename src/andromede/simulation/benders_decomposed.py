@@ -22,11 +22,14 @@ import subprocess
 import sys
 from typing import Any, Dict, List
 
-from andromede.model.model import InvestmentProblemStrategy, OperationalProblemStrategy
 from andromede.simulation.optimization import (
     BlockBorderManagement,
     OptimizationProblem,
     build_problem,
+)
+from andromede.simulation.strategy import (
+    InvestmentProblemStrategy,
+    OperationalProblemStrategy,
 )
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
@@ -36,7 +39,7 @@ from andromede.utils import serialize
 
 class BendersDecomposedProblem:
     """
-    A simpler interface for the Xpansion problem
+    A simpler interface for the Benders Decomposed problem
     """
 
     master: OptimizationProblem
@@ -186,10 +189,10 @@ def build_benders_decomposed_problem(
     """
     Entry point to build the xpansion problem for a time period
 
-    Returns a Xpansion problem
+    Returns a Benders Decomposed problem
     """
 
-    # Xpansion Master Problem
+    # Benders Decomposed Master Problem
     master = build_problem(
         network,
         database,
@@ -198,10 +201,10 @@ def build_benders_decomposed_problem(
         problem_name="master",
         border_management=border_management,
         solver_id=solver_id,
-        problem_strategy=InvestmentProblemStrategy,
+        problem_strategy=InvestmentProblemStrategy(),
     )
 
-    # Xpansion Sub-problems
+    # Benders Decomposed Sub-problems
     subproblem = build_problem(
         network,
         database,
@@ -210,7 +213,7 @@ def build_benders_decomposed_problem(
         problem_name="subproblem",
         border_management=border_management,
         solver_id=solver_id,
-        problem_strategy=OperationalProblemStrategy,
+        problem_strategy=OperationalProblemStrategy(),
     )
 
     return BendersDecomposedProblem(master, [subproblem])
