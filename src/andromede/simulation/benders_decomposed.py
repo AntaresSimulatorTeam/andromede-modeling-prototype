@@ -33,7 +33,7 @@ from andromede.simulation.strategy import (
     InvestmentProblemStrategy,
     OperationalProblemStrategy,
 )
-from andromede.simulation.time_block import TimeBlock
+from andromede.simulation.time_block import ConfiguredTree, TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Network
 from andromede.utils import read_json, serialize, serialize_json
@@ -206,8 +206,7 @@ class BendersDecomposedProblem:
 def build_benders_decomposed_problem(
     network: Network,
     database: DataBase,
-    blocks: List[TimeBlock],
-    scenarios: int,
+    configured_tree: ConfiguredTree,
     *,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
@@ -222,6 +221,7 @@ def build_benders_decomposed_problem(
     master = build_problem(
         network,
         database,
+        configured_tree.root,  # Could be any node, given the implmentation of get_nodes()
         null_time_block := TimeBlock(  # Not necessary for master, but list must be non-empty
             0, [0]
         ),
@@ -234,18 +234,21 @@ def build_benders_decomposed_problem(
 
     # Benders Decomposed Sub-problems
     subproblems = []
-    for block in blocks:
-        subproblems.append(
-            build_problem(
+    for (
+        tree_node,
+        time_scenario_config,
+    ) in configured_tree.node_to_config.items():
+        for block in time_scenario_config.blocks:
+            # Xpansion Sub-problems
+            subproblems.append(build_problem(
                 network,
                 database,
+                tree_node,
                 block,
-                scenarios,
-                problem_name=f"subproblem_{block.id}",
-                border_management=border_management,
+                time_scenario_config.scenarios,
+                problem_name=f"subproblem_{tree_node.name}_{block.id}",
                 solver_id=solver_id,
                 problem_strategy=OperationalProblemStrategy(),
-            )
-        )
+            ))
 
     return BendersDecomposedProblem(master, subproblems)

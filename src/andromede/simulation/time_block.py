@@ -23,6 +23,7 @@ class TimestepComponentVariableKey:
     Identifies the solver variable for one timestep and one component variable.
     """
 
+    tree_node_name: str
     component_id: str
     variable_name: str
     block_timestep: Optional[int] = None
@@ -49,4 +50,5 @@ class InterDecisionTimeScenarioConfig:
 
 @dataclass(frozen=True)
 class ConfiguredTree:
+    root: TreeNode  # Could be retrieved easily from any node with node.root, but clearer to identify it separately
     node_to_config: Dict[TreeNode, InterDecisionTimeScenarioConfig]

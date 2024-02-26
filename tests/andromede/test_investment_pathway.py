@@ -19,7 +19,7 @@ from andromede.libs.standard import (
     NODE_WITH_SPILL_AND_ENS,
     THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA,
 )
-from andromede.simulation.optimization_orchestrator import OptimizationOrchestrator
+from andromede.simulation.benders_decomposed import build_benders_decomposed_problem
 from andromede.simulation.time_block import (
     ConfiguredTree,
     InterDecisionTimeScenarioConfig,
@@ -77,7 +77,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
 
     When taking the decision in 2030, we do not know which case will occur in 2040 and we seek the best decision given a risk criterion (the expectation here).
 
-    The value of these models lies in the output for the first decision rather than the decisions at the later stages as the first decisions are related to "what we have to do today" ?  
+    The value of these models lies in the output for the first decision rather than the decisions at the later stages as the first decisions are related to "what we have to do today" ?
 
     More specifically, to define the use case, we define the following tree representing the system at the different decision times and hypothesis
 
@@ -174,7 +174,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
     database.add_data("BASE", "cost", ConstantData(5))
 
-    # Fonction qui crée les composants / noeud en fonction de l'arbre et du Database initial / modèles + générer les contraintes couplantes temporelles trajectoire + actualisation + 
+    # Fonction qui crée les composants / noeud en fonction de l'arbre et du Database initial / modèles + générer les contraintes couplantes temporelles trajectoire + actualisation +
     # contraintes industrielles liées à l'arbre ?
     # Test mode peigne
     # Générer le modèle "couplant"
@@ -197,14 +197,16 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     new_base = TreeNode("2040_new_base", parent=root)
     no_base = TreeNode("2040_no_base", parent=root)
     configured_tree = ConfiguredTree(
+        root,
         {
             root: time_scenario_config,
             new_base: time_scenario_config,
             no_base: time_scenario_config,
-        }
+        },
     )
 
-    orchestrator = OptimizationOrchestrator(network, database, configured_tree)
-    solution_tree = orchestrator.run()
+    problems = build_benders_decomposed_problem(
+        network, database, configured_tree
+    )
 
     # Réfléchir à la représentation des variables dans l'arbre

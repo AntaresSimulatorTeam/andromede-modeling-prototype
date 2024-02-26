@@ -809,6 +809,7 @@ class OptimizationProblem:
 def build_problem(
     network: Network,
     database: DataBase,
+    tree_node_name: str,
     block: TimeBlock,
     scenarios: int,
     *,
