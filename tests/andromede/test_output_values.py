@@ -37,7 +37,13 @@ def test_component_and_flow_output_object() -> None:
             variable_name="component_var_name",
             block_timestep=0,
             scenario=0,
-        ): mock_variable_component
+        ): mock_variable_component,
+        TimestepComponentVariableKey(
+            component_id="component_id_test",
+            variable_name="component_approx_var_name",
+            block_timestep=0,
+            scenario=0,
+        ): mock_variable_component,
     }
 
     opt_context.block_length.return_value = 1
@@ -45,16 +51,56 @@ def test_component_and_flow_output_object() -> None:
     problem = SolverAndContext(mock_variable_flow, opt_context)
     output = OutputValues(problem)
 
-    wrong_output = OutputValues()
-    wrong_output.component("component_id_test").var(
+    test_output = OutputValues()
+    assert output != test_output, f"Output is equal to empty output: {output}"
+
+    test_output.component("component_id_test").ignore = True
+    assert (
+        output == test_output
+    ), f"Output differs from the expected output after 'ignore': {output}"
+
+    test_output.component("component_id_test").ignore = False
+    test_output.component("component_id_test").var("component_var_name").value = 1.0
+    test_output.component("component_id_test").var(
+        "component_approx_var_name"
+    ).ignore = True
+
+    assert (
+        output == test_output
+    ), f"Output differs from the expected after 'var_name': {output}"
+
+    test_output.component("component_id_test").var(
+        "component_approx_var_name"
+    ).ignore = False
+    test_output.component("component_id_test").var(
+        "component_approx_var_name"
+    ).value = 1.000_000_001
+
+    assert output != test_output and not output.is_close(
+        test_output
+    ), f"Output is equal to expected outside tolerance: {output}"
+
+    test_output.component("component_id_test").var(
+        "component_approx_var_name"
+    ).value = 1.000_000_000_1
+
+    assert output != test_output and output.is_close(
+        test_output
+    ), f"Output differs from the expected inside tolerance: {output}"
+
+    test_output.component("component_id_test").var(
+        "component_approx_var_name"
+    ).ignore = True
+    test_output.component("component_id_test").var(
         "wrong_component_var_name"
     ).value = 1.0
 
-    assert output != wrong_output, f"Output is equal to wrong output: {output}"
+    assert output != test_output, f"Output is equal to wrong output: {output}"
 
-    expected_output = OutputValues()
-    expected_output.component("component_id_test").var("component_var_name").value = 1.0
+    test_output.component("component_id_test").var(
+        "wrong_component_var_name"
+    ).ignore = True
 
-    assert output == expected_output, f"Output differs from expected: {output}"
+    assert output == test_output, f"Output differs from expected: {output}"
 
     print(output)

@@ -13,14 +13,12 @@
 """
 Util class to obtain solver results
 """
+import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Dict, List, Mapping, Optional, Tuple, TypeVar, Union, cast
 
 from andromede.simulation.optimization import SolverAndContext
 from andromede.study.data import TimeScenarioIndex
-
-T = TypeVar("T")
-K = TypeVar("K")
 
 
 @dataclass
@@ -43,18 +41,45 @@ class OutputValues:
         _name: str
         _value: Dict[TimeScenarioIndex, float] = field(init=False, default_factory=dict)
         _size: Tuple[int, int] = field(init=False, default=(0, 0))
+        ignore: bool = field(default=False, init=False)
 
         def __eq__(self, other: object) -> bool:
             if not isinstance(other, OutputValues.Variable):
                 return NotImplemented
-            return (
+            return (self.ignore or other.ignore) or (
                 self._name == other._name
                 and self._size == other._size
                 and self._value == other._value
             )
 
+        def is_close(
+            self,
+            other: "OutputValues.Variable",
+            *,
+            rel_tol: float = 1.0e-9,
+            abs_tol: float = 0.0,
+        ) -> bool:
+            # From the docs in https://docs.python.org/3/library/math.html#math.isclose
+            # math.isclose(a, b) returns abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+            return (self.ignore or other.ignore) or (
+                self._name == other._name
+                and self._size == other._size
+                and self._value.keys() == other._value.keys()
+                and all(
+                    math.isclose(
+                        self._value[key],
+                        other._value[key],
+                        rel_tol=rel_tol,
+                        abs_tol=abs_tol,
+                    )
+                    for key in self._value
+                )
+            )
+
         def __str__(self) -> str:
-            return f"{self._name} : {str(self.value)}"
+            return (
+                f"{self._name} : {str(self.value)} {'(ignored)' if self.ignore else ''}"
+            )
 
         @property
         def value(self) -> Union[None, float, List[float], List[List[float]]]:
@@ -111,14 +136,29 @@ class OutputValues:
         _variables: Dict[str, "OutputValues.Variable"] = field(
             init=False, default_factory=dict
         )
+        ignore: bool = field(default=False, init=False)
 
         def __eq__(self, other: object) -> bool:
             if not isinstance(other, OutputValues.Component):
                 return NotImplemented
-            return self._id == other._id and self._variables == other._variables
+            return self.is_close(other, rel_tol=0.0, abs_tol=0.0)
+
+        def is_close(
+            self,
+            other: "OutputValues.Component",
+            *,
+            rel_tol: float = 1.0e-9,
+            abs_tol: float = 0.0,
+        ) -> bool:
+            return (self.ignore or other.ignore) or (
+                self._id == other._id
+                and _are_mappings_close(
+                    self._variables, other._variables, rel_tol, abs_tol
+                )
+            )
 
         def __str__(self) -> str:
-            string = f"{self._id} :\n"
+            string = f"{self._id} : {'(ignored)' if self.ignore else ''}\n"
             for var in self._variables.values():
                 string += f"  {str(var)}\n"
             return string
@@ -139,7 +179,14 @@ class OutputValues:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, OutputValues):
             return NotImplemented
-        return self._components == other._components
+        return _are_mappings_close(self._components, other._components, 0.0, 0.0)
+
+    def is_close(
+        self, other: "OutputValues", *, rel_tol: float = 1.0e-9, abs_tol: float = 0.0
+    ) -> bool:
+        return _are_mappings_close(
+            self._components, other._components, rel_tol, abs_tol
+        )
 
     def __str__(self) -> str:
         string = "\n"
@@ -166,3 +213,37 @@ class OutputValues:
         if component_id not in self._components:
             self._components[component_id] = OutputValues.Component(component_id)
         return self._components[component_id]
+
+
+Comparable = TypeVar("Comparable", OutputValues.Component, OutputValues.Variable)
+
+
+def _are_mappings_close(
+    lhs: Mapping[str, Comparable],
+    rhs: Mapping[str, Comparable],
+    rel_tol: float,
+    abs_tol: float,
+) -> bool:
+    lhs_keys = lhs.keys()
+    rhs_keys = rhs.keys()
+
+    if (lhs_only_keys := lhs_keys - rhs_keys) and any(
+        not lhs[key].ignore for key in lhs_only_keys
+    ):
+        return False
+
+    elif (rhs_only_keys := rhs_keys - lhs_keys) and any(
+        not rhs[key].ignore for key in rhs_only_keys
+    ):
+        return False
+
+    elif intersect_keys := lhs_keys & rhs_keys:
+        if rel_tol == abs_tol == 0.0:
+            return all(lhs[key] == rhs[key] for key in intersect_keys)
+        else:
+            return all(
+                lhs[key].is_close(rhs[key], rel_tol=rel_tol, abs_tol=abs_tol)
+                for key in intersect_keys
+            )
+    else:
+        return True
