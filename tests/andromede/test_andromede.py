@@ -307,7 +307,9 @@ def test_variable_bound() -> None:
                 definition=var("generation"),
             )
         ],
-        objective_contribution=(param("cost") * var("generation")).sum().expec(),
+        objective_operational_contribution=(param("cost") * var("generation"))
+        .sum()
+        .expec(),
     )
 
     network = create_one_node_network(generator_model)
@@ -433,9 +435,13 @@ def test_min_up_down_times() -> None:
         PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
     )
 
-    border_management = BlockBorderManagement.CYCLE
-
-    problem = build_problem(network, database, time_block, scenarios, border_management)
+    problem = build_problem(
+        network,
+        database,
+        time_block,
+        scenarios,
+        border_management=BlockBorderManagement.CYCLE,
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -511,9 +517,12 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
     network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(unsupplied, "balance_port"), PortRef(node, "balance_port"))
 
-    border_management = BlockBorderManagement.CYCLE
     problem = build_problem(
-        network, database, time_blocks[0], scenarios, border_management
+        network,
+        database,
+        time_blocks[0],
+        scenarios,
+        border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()
 

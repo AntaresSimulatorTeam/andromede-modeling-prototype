@@ -78,6 +78,23 @@ def _make_structure_provider(model: "Model") -> IndexingStructureProvider:
     return Provider()
 
 
+def _is_objective_contribution_valid(
+    model: "Model", objective_contribution: ExpressionNode
+) -> bool:
+    if not is_linear(objective_contribution):
+        raise ValueError("Objective contribution must be a linear expression.")
+
+    data_structure_provider = _make_structure_provider(model)
+    objective_structure = compute_indexation(
+        objective_contribution, data_structure_provider
+    )
+
+    if objective_structure != IndexingStructure(time=False, scenario=False):
+        raise ValueError("Objective contribution should be a real-valued expression.")
+    # TODO: We should also check that the number of instances is equal to 1, but this would require a linearization here, do not want to do that for now...
+    return True
+
+
 @dataclass(frozen=True)
 class ModelPort:
     """
@@ -129,26 +146,23 @@ class Model:
     inter_block_dyn: bool = False
     parameters: Dict[str, Parameter] = field(default_factory=dict)
     variables: Dict[str, Variable] = field(default_factory=dict)
-    objective_contribution: Optional[ExpressionNode] = None
+    objective_operational_contribution: Optional[ExpressionNode] = None
+    objective_investment_contribution: Optional[ExpressionNode] = None
     ports: Dict[str, ModelPort] = field(default_factory=dict)  # key = port name
     port_fields_definitions: Dict[PortFieldId, PortFieldDefinition] = field(
         default_factory=dict
     )
 
     def __post_init__(self) -> None:
-        if self.objective_contribution:
-            if not is_linear(self.objective_contribution):
-                raise ValueError("Objective contribution must be a linear expression.")
-
-            data_structure_provider = _make_structure_provider(self)
-            objective_structure = compute_indexation(
-                self.objective_contribution, data_structure_provider
+        if self.objective_operational_contribution:
+            _is_objective_contribution_valid(
+                self, self.objective_operational_contribution
             )
-            if objective_structure != IndexingStructure(time=False, scenario=False):
-                raise ValueError(
-                    "Objective contribution should be a real-valued expression."
-                )
-            # TODO: We should also check that the number of instances is equal to 1, but this would require a linearization here, do not want to do that for now...
+
+        if self.objective_investment_contribution:
+            _is_objective_contribution_valid(
+                self, self.objective_investment_contribution
+            )
 
         for definition in self.port_fields_definitions.values():
             port_name = definition.port_field.port_name
@@ -176,7 +190,8 @@ def model(
     binding_constraints: Optional[Iterable[Constraint]] = None,
     parameters: Optional[Iterable[Parameter]] = None,
     variables: Optional[Iterable[Variable]] = None,
-    objective_contribution: Optional[ExpressionNode] = None,
+    objective_operational_contribution: Optional[ExpressionNode] = None,
+    objective_investment_contribution: Optional[ExpressionNode] = None,
     inter_block_dyn: bool = False,
     ports: Optional[Iterable[ModelPort]] = None,
     port_fields_definitions: Optional[Iterable[PortFieldDefinition]] = None,
@@ -202,7 +217,8 @@ def model(
         else {},
         parameters={p.name: p for p in parameters} if parameters else {},
         variables={v.name: v for v in variables} if variables else {},
-        objective_contribution=objective_contribution,
+        objective_operational_contribution=objective_operational_contribution,
+        objective_investment_contribution=objective_investment_contribution,
         inter_block_dyn=inter_block_dyn,
         ports=existing_port_names,
         port_fields_definitions={d.port_field: d for d in port_fields_definitions}

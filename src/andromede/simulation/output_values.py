@@ -17,7 +17,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Mapping, Optional, Tuple, TypeVar, Union, cast
 
-from andromede.simulation.optimization import SolverAndContext
+from andromede.simulation.optimization import OptimizationProblem
 from andromede.study.data import TimeScenarioIndex
 
 
@@ -168,7 +168,7 @@ class OutputValues:
                 self._variables[variable_name] = OutputValues.Variable(variable_name)
             return self._variables[variable_name]
 
-    problem: Optional[SolverAndContext] = field(default=None)
+    problem: Optional[OptimizationProblem] = field(default=None)
     _components: Dict[str, "OutputValues.Component"] = field(
         init=False, default_factory=dict
     )

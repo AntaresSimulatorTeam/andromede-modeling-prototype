@@ -52,7 +52,9 @@ def test_large_sum_with_loop() -> None:
             float_parameter(f"cost_{i}", IndexingStructure(False, False))
             for i in range(1, nb_terms)
         ],
-        objective_contribution=sum([param(f"cost_{i}") for i in range(1, nb_terms)]),
+        objective_operational_contribution=sum(
+            [param(f"cost_{i}") for i in range(1, nb_terms)]
+        ),
     )
 
     network = Network("test")
@@ -86,7 +88,7 @@ def test_large_sum_outside_model() -> None:
     SIMPLE_COST_MODEL = model(
         id="SIMPLE_COST",
         parameters=[],
-        objective_contribution=literal(obj_coeff),
+        objective_operational_contribution=literal(obj_coeff),
     )
 
     network = Network("test")

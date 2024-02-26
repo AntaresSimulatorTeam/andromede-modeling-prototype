@@ -11,15 +11,9 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from enum import Enum
 
 from andromede.expression.indexing_structure import IndexingStructure
-
-
-class ParameterValueType(Enum):
-    FLOAT = "FLOAT"
-    INTEGER = "INTEGER"
-    # Needs more ?
+from andromede.model.common import ValueType
 
 
 @dataclass(frozen=True)
@@ -31,7 +25,7 @@ class Parameter:
     """
 
     name: str
-    type: ParameterValueType
+    type: ValueType
     structure: IndexingStructure
 
 
@@ -39,11 +33,11 @@ def int_parameter(
     name: str,
     structure: IndexingStructure = IndexingStructure(True, True),
 ) -> Parameter:
-    return Parameter(name, ParameterValueType.INTEGER, structure)
+    return Parameter(name, ValueType.INTEGER, structure)
 
 
 def float_parameter(
     name: str,
     structure: IndexingStructure = IndexingStructure(True, True),
 ) -> Parameter:
-    return Parameter(name, ParameterValueType.FLOAT, structure)
+    return Parameter(name, ValueType.FLOAT, structure)

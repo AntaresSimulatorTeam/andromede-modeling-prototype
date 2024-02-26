@@ -188,7 +188,7 @@ def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objectiv
         _ = model(
             id="model_with_non_linear_op",
             variables=[float_variable("generation")],
-            objective_contribution=var("generation").variance(),
+            objective_operational_contribution=var("generation").variance(),
         )
     assert str(exc.value) == "Objective contribution must be a linear expression."
 
