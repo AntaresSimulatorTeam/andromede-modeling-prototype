@@ -41,6 +41,10 @@ from andromede.simulation import (
     build_problem,
 )
 from andromede.simulation.benders_decomposed import build_benders_decomposed_problem
+from andromede.simulation.decision_tree import (
+    create_network_on_tree,
+    create_single_node_decision_tree,
+)
 from andromede.study import (
     Component,
     ConstantData,
@@ -62,9 +66,9 @@ COUPLING = ProblemContext.COUPLING
 
 
 @pytest.fixture
-def wind_cluster_candidate() -> Model:
-    WIND_CLUSTER_CANDIDATE = model(
-        id="WIND_CLUSTER",
+def discrete_candidate() -> Model:
+    DISCRETE_CANDIDATE = model(
+        id="DISCRETE",
         parameters=[
             float_parameter("op_cost", CONSTANT),
             float_parameter("invest_cost", CONSTANT),
@@ -242,9 +246,9 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
     database.add_data("CAND", "invest_cost", ConstantData(490))
     database.add_data("CAND", "max_invest", ConstantData(1000))
 
-    database.add_data("CLUSTER", "op_cost", ConstantData(10))
-    database.add_data("CLUSTER", "invest_cost", ConstantData(200))
-    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(10))
+    database.add_data("DISCRETE", "op_cost", ConstantData(10))
+    database.add_data("DISCRETE", "invest_cost", ConstantData(200))
+    database.add_data("DISCRETE", "p_max_per_unit", ConstantData(10))
 
     node = Node(model=NODE_BALANCE_MODEL, id="N")
     network = Network("test")
@@ -306,9 +310,9 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     database.add_data("CAND", "invest_cost", ConstantData(490))
     database.add_data("CAND", "max_invest", ConstantData(1000))
 
-    database.add_data("CLUSTER", "op_cost", ConstantData(10))
-    database.add_data("CLUSTER", "invest_cost", ConstantData(200))
-    database.add_data("CLUSTER", "p_max_per_unit", ConstantData(10))
+    database.add_data("DISCRETE", "op_cost", ConstantData(10))
+    database.add_data("DISCRETE", "invest_cost", ConstantData(200))
+    database.add_data("DISCRETE", "p_max_per_unit", ConstantData(10))
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS, id="N")
     network = Network("test")
@@ -323,10 +327,15 @@ def test_model_export_xpansion_single_time_step_single_scenario(
     network.connect(
         PortRef(cluster_candidate, "balance_port"), PortRef(node, "balance_port")
     )
+
+    blocks = [TimeBlock(1, [0])]
     scenarios = 1
 
+    configured_tree = create_single_node_decision_tree(blocks, scenarios)
+    tree_node_to_network = create_network_on_tree(network, configured_tree.root)
+
     xpansion = build_benders_decomposed_problem(
-        network, database, TimeBlock(1, [0]), scenarios
+        tree_node_to_network, database, configured_tree
     )
     assert xpansion.run()
 

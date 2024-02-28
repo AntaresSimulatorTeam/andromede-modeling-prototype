@@ -18,7 +18,7 @@ into a mathematical optimization problem.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Type
+from typing import Dict, Iterable, List, Optional
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -809,7 +809,6 @@ class OptimizationProblem:
 def build_problem(
     network: Network,
     database: DataBase,
-    tree_node_name: str,
     block: TimeBlock,
     scenarios: int,
     *,

@@ -19,12 +19,14 @@ from andromede.libs.standard import (
     NODE_WITH_SPILL_AND_ENS,
     THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA,
 )
+from andromede.model.model import model
 from andromede.simulation.benders_decomposed import build_benders_decomposed_problem
-from andromede.simulation.time_block import (
+from andromede.simulation.decision_tree import (
     ConfiguredTree,
     InterDecisionTimeScenarioConfig,
-    TimeBlock,
+    create_network_on_tree,
 )
+from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import ConstantData, DataBase, TreeData
 from andromede.study.network import Component, Network, Node, PortRef, create_component
 
@@ -197,7 +199,6 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     new_base = TreeNode("2040_new_base", parent=root)
     no_base = TreeNode("2040_no_base", parent=root)
     configured_tree = ConfiguredTree(
-        root,
         {
             root: time_scenario_config,
             new_base: time_scenario_config,
@@ -205,8 +206,15 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         },
     )
 
+    decision_coupling_model = model("DECISION_COUPLING")
+
+    tree_node_to_network = create_network_on_tree(network, configured_tree.root)
+
     problems = build_benders_decomposed_problem(
-        network, database, configured_tree
+        tree_node_to_network,
+        database,
+        configured_tree,
+        decision_coupling_model=decision_coupling_model,
     )
 
     # Réfléchir à la représentation des variables dans l'arbre

@@ -35,7 +35,6 @@ class ScenarioIndex:
 
 @dataclass(frozen=True)
 class AbstractDataStructure(ABC):
-
     @abstractmethod
     def get_value(
         self, timestep: int, scenario: int, node_id: Optional[int] = None
@@ -81,7 +80,7 @@ class TimeSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_series: Dict[TimeIndex, float]
+    time_series: Mapping[TimeIndex, float]
 
     def get_value(
         self, timestep: int, scenario: int, node_id: Optional[int] = None
@@ -103,7 +102,7 @@ class ScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    scenario_series: Dict[ScenarioIndex, float]
+    scenario_series: Mapping[ScenarioIndex, float]
 
     def get_value(
         self, timestep: int, scenario: int, node_id: Optional[int] = None
@@ -125,7 +124,7 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_scenario_series: Dict[TimeScenarioIndex, float]
+    time_scenario_series: Mapping[TimeScenarioIndex, float]
 
     def get_value(
         self, timestep: int, scenario: int, node_id: Optional[int] = None

@@ -10,10 +10,8 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
-
-from anytree import Node as TreeNode
+from dataclasses import dataclass
+from typing import List, Optional
 
 
 # TODO: Move keys elsewhere as variables have no sense in this file
@@ -40,15 +38,3 @@ class TimeBlock:
 
     id: int
     timesteps: List[int]
-
-
-@dataclass(frozen=True)
-class InterDecisionTimeScenarioConfig:
-    blocks: List[TimeBlock]
-    scenarios: int
-
-
-@dataclass(frozen=True)
-class ConfiguredTree:
-    root: TreeNode  # Could be retrieved easily from any node with node.root, but clearer to identify it separately
-    node_to_config: Dict[TreeNode, InterDecisionTimeScenarioConfig]
