@@ -27,6 +27,7 @@ from andromede.simulation.optimization import (
     OptimizationProblem,
     build_problem,
 )
+from andromede.simulation.runner import BendersRunner, MergeMPSRunner
 from andromede.simulation.strategy import (
     InvestmentProblemStrategy,
     OperationalProblemStrategy,
@@ -153,28 +154,16 @@ class BendersDecomposedProblem:
         path: str = "outputs/lp",
         solver_name: str = "XPRESS",
         log_level: int = 0,
+        should_merge: bool = False,
     ) -> bool:
         self.prepare(path=path, solver_name=solver_name, log_level=log_level)
-        root_dir = pathlib.Path().cwd()
-        path_to_benders = root_dir / "bin" / "benders"
 
-        if not path_to_benders.is_file():
-            # TODO Maybe a more robust check and/or return value?
-            # For now, it won't look anywhere else because a new
-            # architecture should be discussed
-            print(f"{path_to_benders} executable not found. Returning True")
-            return True
+        if not should_merge:
+            return_code = BendersRunner(path).run()
+        else:
+            return_code = MergeMPSRunner(path).run()
 
-        os.chdir(path)
-        res = subprocess.run(
-            [path_to_benders, "options.json"],
-            stdout=sys.stdout,
-            stderr=subprocess.DEVNULL,  # TODO For now, to avoid the "Invalid MIT-MAGIC-COOKIE-1 key" error
-            shell=False,
-        )
-        os.chdir(root_dir)
-
-        return res.returncode == 0
+        return return_code == 0
 
 
 def build_benders_decomposed_problem(
