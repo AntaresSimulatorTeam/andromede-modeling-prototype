@@ -61,6 +61,7 @@ def _generate_tree_variables(
 ) -> Iterable[Variable]:
     tree_variables = []
     for variable in variables.values():
+        # Works as we do not allow variables in bounds, hence no problem to copy the corresponding expression nodes as is. If we had variables, we would have to replace the variable names by the ones with tree node information.
         tree_variables.append(
             dataclasses.replace(variable, name=f"{tree_node.name}_{variable.name}")
         )
@@ -86,7 +87,8 @@ def _generate_tree_port_field_definition(
 
 
 def _generate_tree_model(
-    tree_node: TreeNode, component: Component, network_id: str
+    tree_node: TreeNode,
+    component: Component,
 ) -> Model:
     variables = _generate_tree_variables(
         component.model.variables,
@@ -106,7 +108,7 @@ def _generate_tree_model(
         component.model.port_fields_definitions, tree_node
     )
     tree_model = model(
-        id=f"{network_id}_{component.model.id}",
+        id=f"{tree_node.name}_{component.model.id}",
         constraints=constraints,
         binding_constraints=binding_constraints,
         parameters=component.model.parameters.values(),
@@ -122,23 +124,18 @@ def _generate_tree_model(
 
 
 def _generate_network_on_node(network: Network, tree_node: TreeNode) -> Network:
-    network_id = tree_node.name
-    tree_node_network = Network(network_id)
+    tree_node_network = Network(tree_node.name)
 
     for component in network.all_components:
-        tree_node_model = _generate_tree_model(
-            tree_node,
-            component,
-            network_id,
-        )
+        tree_node_model = _generate_tree_model(tree_node, component)
 
         # It would be nice to have the same treatment for nodes and components as they are actually the same thing...
         if isinstance(component, Node):
-            network_node = Node(tree_node_model, id=f"{network_id}_{component.id}")
+            network_node = Node(tree_node_model, id=f"{tree_node.name}_{component.id}")
             tree_node_network.add_node(network_node)
         else:
             tree_node_component = create_component(
-                tree_node_model, id=f"{network_id}_{component.id}"
+                tree_node_model, id=f"{tree_node.name}_{component.id}"
             )
             tree_node_network.add_component(tree_node_component)
 
