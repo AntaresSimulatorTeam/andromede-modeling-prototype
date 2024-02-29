@@ -15,17 +15,18 @@ The xpansion module extends the optimization module
 with Benders solver related functions
 """
 
-import json
-import os
 import pathlib
-import subprocess
-import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from andromede.simulation.optimization import (
     BlockBorderManagement,
     OptimizationProblem,
     build_problem,
+)
+from andromede.simulation.output_values import (
+    BendersDecomposedSolution,
+    BendersMergedSolution,
+    BendersSolution,
 )
 from andromede.simulation.runner import BendersRunner, MergeMPSRunner
 from andromede.simulation.strategy import (
@@ -35,7 +36,7 @@ from andromede.simulation.strategy import (
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Network
-from andromede.utils import serialize
+from andromede.utils import read_json, serialize, serialize_json
 
 
 class BendersDecomposedProblem:
@@ -46,11 +47,27 @@ class BendersDecomposedProblem:
     master: OptimizationProblem
     subproblems: List[OptimizationProblem]
 
+    emplacement: pathlib.Path
+    output_path: pathlib.Path
+
+    solution: Optional[BendersSolution]
+    is_merged: bool
+
     def __init__(
-        self, master: OptimizationProblem, subproblems: List[OptimizationProblem]
+        self,
+        master: OptimizationProblem,
+        subproblems: List[OptimizationProblem],
+        emplacement: str = "outputs/lp",
+        output_path: str = "output/xpansion",
     ) -> None:
         self.master = master
         self.subproblems = subproblems
+
+        self.emplacement = pathlib.Path(emplacement)
+        self.output_path = pathlib.Path(output_path)
+
+        self.solution = None
+        self.is_merged = False
 
     def export_structure(self) -> str:
         """
@@ -112,8 +129,8 @@ class BendersDecomposedProblem:
             "BOUND_ALPHA": True,
             "SEPARATION_PARAM": 0.5,
             "BATCH_SIZE": 0,
-            "JSON_FILE": "output/xpansion/out.json",
-            "LAST_ITERATION_JSON_FILE": "output/xpansion/last_iteration.json",
+            "JSON_FILE": f"{self.output_path}/out.json",
+            "LAST_ITERATION_JSON_FILE": f"{self.output_path}/last_iteration.json",
             "MASTER_FORMULATION": "integer",
             "SOLVER_NAME": solver_name,
             "TIME_LIMIT": 1_000_000_000_000,
@@ -126,44 +143,54 @@ class BendersDecomposedProblem:
     def prepare(
         self,
         *,
-        path: str = "outputs/lp",
         solver_name: str = "XPRESS",
         log_level: int = 0,
         is_debug: bool = False,
     ) -> None:
-        directory = pathlib.Path(path)
-        serialize("master.mps", self.master.export_as_mps(), directory)
-        serialize("subproblem.mps", self.subproblems[0].export_as_mps(), directory)
-        serialize("structure.txt", self.export_structure(), directory)
+        serialize("master.mps", self.master.export_as_mps(), self.emplacement)
         serialize(
+            "subproblem.mps", self.subproblems[0].export_as_mps(), self.emplacement
+        )
+        serialize("structure.txt", self.export_structure(), self.emplacement)
+        serialize_json(
             "options.json",
-            json.dumps(
-                self.export_options(solver_name=solver_name, log_level=log_level),
-                indent=4,
-            ),
-            directory,
+            self.export_options(solver_name=solver_name, log_level=log_level),
+            self.emplacement,
         )
 
         if is_debug:
-            serialize("master.lp", self.master.export_as_lp(), directory)
-            serialize("subproblem.lp", self.subproblems[0].export_as_lp(), directory)
+            serialize("master.lp", self.master.export_as_lp(), self.emplacement)
+            serialize(
+                "subproblem.lp", self.subproblems[0].export_as_lp(), self.emplacement
+            )
+
+    def read_solution(self) -> None:
+        data = read_json("out.json", self.emplacement / self.output_path)
+        if self.is_merged:
+            self.solution = BendersMergedSolution(data)
+        else:
+            self.solution = BendersDecomposedSolution(data)
 
     def run(
         self,
         *,
-        path: str = "outputs/lp",
         solver_name: str = "XPRESS",
         log_level: int = 0,
         should_merge: bool = False,
     ) -> bool:
-        self.prepare(path=path, solver_name=solver_name, log_level=log_level)
+        self.prepare(solver_name=solver_name, log_level=log_level)
 
         if not should_merge:
-            return_code = BendersRunner(path).run()
+            return_code = BendersRunner(self.emplacement).run()
         else:
-            return_code = MergeMPSRunner(path).run()
+            self.is_merged = True
+            return_code = MergeMPSRunner(self.emplacement).run()
 
-        return return_code == 0
+        if return_code == 0:
+            self.read_solution()
+            return True
+        else:
+            return False
 
 
 def build_benders_decomposed_problem(

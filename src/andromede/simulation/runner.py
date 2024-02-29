@@ -24,11 +24,14 @@ class CommandRunner:
     emplacement: pathlib.Path
 
     def __init__(
-        self, binary_path: str, list_arguments: List[str], output_path: str
+        self,
+        binary_path: pathlib.Path,
+        list_arguments: List[str],
+        emplacement: pathlib.Path,
     ) -> None:
         self.current_dir = pathlib.Path().cwd()
-        self.command = pathlib.Path(binary_path)
-        self.emplacement = pathlib.Path(output_path)
+        self.command = binary_path
+        self.emplacement = emplacement
         self.arguments = list_arguments
 
     def check_command(self) -> bool:
@@ -47,7 +50,7 @@ class CommandRunner:
 
         os.chdir(self.emplacement)
         res = subprocess.run(
-            [self.command, *self.arguments],
+            [self.current_dir / self.command, *self.arguments],
             stdout=sys.stdout,
             stderr=subprocess.DEVNULL,  # TODO For now, to avoid the "Invalid MIT-MAGIC-COOKIE-1 key" error
             shell=False,
@@ -58,10 +61,10 @@ class CommandRunner:
 
 
 class BendersRunner(CommandRunner):
-    def __init__(self, output_path: str) -> None:
-        super().__init__("bin/benders", ["options.json"], output_path)
+    def __init__(self, emplacement: pathlib.Path) -> None:
+        super().__init__(pathlib.Path("bin/benders"), ["options.json"], emplacement)
 
 
 class MergeMPSRunner(CommandRunner):
-    def __init__(self, output_path: str) -> None:
-        super().__init__("bin/merge_mps", ["options.json"], output_path)
+    def __init__(self, emplacement: pathlib.Path) -> None:
+        super().__init__(pathlib.Path("bin/merge_mps"), ["options.json"], emplacement)

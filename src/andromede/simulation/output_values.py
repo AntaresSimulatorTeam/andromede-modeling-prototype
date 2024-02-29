@@ -15,7 +15,7 @@ Util class to obtain solver results
 """
 import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Mapping, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union, cast
 
 from andromede.simulation.optimization import OptimizationProblem
 from andromede.study.data import TimeScenarioIndex
@@ -247,3 +247,93 @@ def _are_mappings_close(
             )
     else:
         return True
+
+
+@dataclass(frozen=True)
+class BendersSolution:
+    data: Dict[str, Any]
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BendersSolution):
+            return NotImplemented
+        return (
+            self.overall_cost == other.overall_cost
+            and self.candidates == other.candidates
+        )
+
+    def is_close(
+        self,
+        other: "BendersSolution",
+        *,
+        rel_tol: float = 1.0e-9,
+        abs_tol: float = 0.0,
+    ) -> bool:
+        return (
+            math.isclose(
+                self.overall_cost, other.overall_cost, abs_tol=abs_tol, rel_tol=rel_tol
+            )
+            and self.candidates.keys() == other.candidates.keys()
+            and all(
+                math.isclose(
+                    self.candidates[key],
+                    other.candidates[key],
+                    rel_tol=rel_tol,
+                    abs_tol=abs_tol,
+                )
+                for key in self.candidates
+            )
+        )
+
+    @property
+    def investment_cost(self) -> float:
+        return self.data["solution"]["investment_cost"]
+
+    @property
+    def operational_cost(self) -> float:
+        return self.data["solution"]["operational_cost"]
+
+    @property
+    def overall_cost(self) -> float:
+        return self.data["solution"]["overall_cost"]
+
+    @property
+    def candidates(self) -> Dict[str, float]:
+        return self.data["solution"]["values"]
+
+    @property
+    def status(self) -> str:
+        return self.data["solution"]["problem_status"]
+
+    @property
+    def optimality_gap(self) -> float:
+        return self.data["solution"]["optimality_gap"]
+
+    @property
+    def relative_gap(self) -> float:
+        return self.data["solution"]["relative_gap"]
+
+    @property
+    def stopping_criterion(self) -> str:
+        return self.data["solution"]["stopping_criterion"]
+
+
+@dataclass(frozen=True, eq=False)
+class BendersMergedSolution(BendersSolution):
+    @property
+    def lower_bound(self) -> float:
+        return self.data["solution"]["lb"]
+
+    @property
+    def upper_bound(self) -> float:
+        return self.data["solution"]["ub"]
+
+
+@dataclass(frozen=True, eq=False)
+class BendersDecomposedSolution(BendersSolution):
+    @property
+    def nb_iterations(self) -> int:
+        return self.data["solution"]["iteration"]
+
+    @property
+    def duration(self) -> float:
+        return self.data["run_duration"]

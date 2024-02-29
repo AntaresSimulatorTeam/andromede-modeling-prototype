@@ -207,4 +207,6 @@ def test_benders_decomposed_single_time_step_single_scenario(
     xpansion = build_benders_decomposed_problem(
         network, database, TimeBlock(1, [0]), scenarios
     )
+
     assert xpansion.run()
+    assert xpansion.run(should_merge=True)
