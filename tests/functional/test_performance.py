@@ -28,7 +28,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.andromede.test_utils import generate_data
+from tests.unittests.test_utils import generate_data
 
 
 def test_large_sum_with_loop() -> None:

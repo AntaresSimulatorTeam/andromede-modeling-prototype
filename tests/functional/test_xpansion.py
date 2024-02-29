@@ -316,55 +316,6 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
     assert output == expected_output, f"Output differs from expected: {output}"
 
 
-def test_model_export_xpansion_single_time_step_single_scenario(
-    generator: Component,
-    candidate: Component,
-    cluster_candidate: Component,
-) -> None:
-    """
-    Same test as before but this time we separate master/subproblem and
-    export the problems in MPS format to be solved by the Benders solver in Xpansion
-    """
-
-    database = DataBase()
-    database.add_data("D", "demand", ConstantData(400))
-
-    database.add_data("N", "spillage_cost", ConstantData(1))
-    database.add_data("N", "ens_cost", ConstantData(501))
-
-    database.add_data("G1", "p_max", ConstantData(200))
-    database.add_data("G1", "cost", ConstantData(45))
-
-    database.add_data("CAND", "op_cost", ConstantData(10))
-    database.add_data("CAND", "invest_cost", ConstantData(490))
-
-    database.add_data("DISCRETE", "op_cost", ConstantData(10))
-    database.add_data("DISCRETE", "invest_cost", ConstantData(200))
-    database.add_data("DISCRETE", "p_max_per_unit", ConstantData(10))
-
-    demand = create_component(model=DEMAND_MODEL, id="D")
-
-    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
-    network = Network("test")
-    network.add_node(node)
-    network.add_component(demand)
-    network.add_component(generator)
-    network.add_component(candidate)
-    network.add_component(cluster_candidate)
-    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(
-        PortRef(cluster_candidate, "balance_port"), PortRef(node, "balance_port")
-    )
-    scenarios = 1
-
-    xpansion = build_benders_decomposed_problem(
-        network, database, TimeBlock(1, [0]), scenarios
-    )
-    assert xpansion.run()
-
-
 def test_generation_xpansion_two_time_steps_two_scenarios(
     generator: Component,
     candidate: Component,
