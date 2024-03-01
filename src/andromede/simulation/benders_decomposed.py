@@ -165,7 +165,15 @@ class BendersDecomposedProblem:
             )
 
     def read_solution(self) -> None:
-        data = read_json("out.json", self.emplacement / self.output_path)
+        try:
+            data = read_json("out.json", self.emplacement / self.output_path)
+
+        except FileNotFoundError:
+            # TODO For now, it will return as if nothing is wrong
+            # modify it with runner's run
+            print("Return without reading it for now")
+            return
+
         if self.is_merged:
             self.solution = BendersMergedSolution(data)
         else:

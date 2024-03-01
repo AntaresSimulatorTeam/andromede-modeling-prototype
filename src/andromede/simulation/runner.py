@@ -45,6 +45,7 @@ class CommandRunner:
             # TODO For now, it will return 0 as if nothing is wrong
             # eventually if should return an error
             # maybe wait when we separate unit tests from integration tests
+            # modify with bender_decomposed's read_solution
             print("Return code 0 for now")
             return 0
 
