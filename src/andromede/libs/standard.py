@@ -205,7 +205,7 @@ THERMAL_CLUSTER_MODEL_HD = model(
             .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
             .sum()
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
-        )
+        ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
     objective_contribution=(param("cost") * var("generation")).sum().expec(),
@@ -319,6 +319,49 @@ UNSUPPLIED_ENERGY_MODEL = model(
 # - The initial level is not fixed (it is optimized)
 SHORT_TERM_STORAGE_SIMPLE = model(
     id="STS_SIMPLE",
+    parameters=[
+        float_parameter("p_max_injection"),
+        float_parameter("p_max_withdrawal"),
+        float_parameter("level_min"),
+        float_parameter("level_max"),
+        float_parameter("inflows"),
+        float_parameter(
+            "efficiency"
+        ),  # Should be constant, but time-dependent values should work as well
+    ],
+    variables=[
+        float_variable(
+            "injection", lower_bound=literal(0), upper_bound=param("p_max_injection")
+        ),
+        float_variable(
+            "withdrawal", lower_bound=literal(0), upper_bound=param("p_max_withdrawal")
+        ),
+        float_variable(
+            "level", lower_bound=param("level_min"), upper_bound=param("level_max")
+        ),
+    ],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "flow"),
+            definition=var("withdrawal") - var("injection"),
+        )
+    ],
+    constraints=[
+        Constraint(
+            name="Level",
+            expression=var("level")
+            - var("level").shift(-1)
+            - param("efficiency") * var("injection")
+            + var("withdrawal")
+            == param("inflows"),
+        ),
+    ],
+    objective_contribution=literal(0),  # Implcitement nul ?
+)
+
+SHORT_TERM_STORAGE_COMPLEX = model(
+    id="STS_COMPLEX",
     parameters=[
         float_parameter("p_max_injection"),
         float_parameter("p_max_withdrawal"),
