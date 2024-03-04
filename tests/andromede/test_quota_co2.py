@@ -11,7 +11,7 @@ from andromede.model import (
     model,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
-from andromede.simulation import TimeBlock, build_problem, OutputValues
+from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -51,14 +51,20 @@ The power production p is bounded between p_min and p_max.
 An emission factor is used to determine the CO² emission according to the production.
 """
 C02_POWER_MODEL = model(
-    id='CO2 power',
-    parameters=[float_parameter("p_min", CONSTANT),
-                float_parameter("p_max", CONSTANT),
-                float_parameter("cost", CONSTANT),
-                float_parameter("taux_emission", CONSTANT)],
-    variables=[float_variable("p", lower_bound=param("p_min"), upper_bound=param("p_max"))],
-    ports=[ModelPort(port_type=FLOW_PORT, port_name="FlowP"),
-           ModelPort(port_type=EMISSION_PORT, port_name="OutCO2")],
+    id="CO2 power",
+    parameters=[
+        float_parameter("p_min", CONSTANT),
+        float_parameter("p_max", CONSTANT),
+        float_parameter("cost", CONSTANT),
+        float_parameter("taux_emission", CONSTANT),
+    ],
+    variables=[
+        float_variable("p", lower_bound=param("p_min"), upper_bound=param("p_max"))
+    ],
+    ports=[
+        ModelPort(port_type=FLOW_PORT, port_name="FlowP"),
+        ModelPort(port_type=EMISSION_PORT, port_name="OutCO2"),
+    ],
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("FlowP", "F"),
@@ -67,7 +73,7 @@ C02_POWER_MODEL = model(
         PortFieldDefinition(
             port_field=PortFieldId("OutCO2", "Q"),
             definition=var("p") * param("taux_emission"),
-        )
+        ),
     ],
     objective_contribution=(param("cost") * var("p")).sum().expec(),
 )
@@ -78,7 +84,7 @@ Basic energy consumption model.
 It consume a fixed amount of energy "d" each hour.
 """
 DEMAND_MODEL = model(
-    id='Demand model',
+    id="Demand model",
     parameters=[float_parameter("d", CONSTANT)],
     ports=[ModelPort(port_type=FLOW_PORT, port_name="FlowD")],
     port_fields_definitions=[
@@ -86,7 +92,7 @@ DEMAND_MODEL = model(
             port_field=PortFieldId("FlowD", "F"),
             definition=-param("d"),
         )
-    ]
+    ],
 )
 
 """
@@ -94,10 +100,16 @@ Model of the CO² quota.
 It takes a set a CO² emissions as input. It forces the sum of those emissions to be smaller than a predefined quota. 
 """
 QUOTA_CO2_MODEL = model(
-    id='QuotaCO2',
+    id="QuotaCO2",
     parameters=[float_parameter("quota", CONSTANT)],
     ports=[ModelPort(port_type=EMISSION_PORT, port_name="emissionCO2")],
-    constraints=[Constraint(name='Bound CO2', expression=port_field("emissionCO2", "Q").sum_connections() <= param("quota"))]
+    constraints=[
+        Constraint(
+            name="Bound CO2",
+            expression=port_field("emissionCO2", "Q").sum_connections()
+            <= param("quota"),
+        )
+    ],
 )
 
 """
@@ -121,8 +133,8 @@ LINK_MODEL = model(
         PortFieldDefinition(
             port_field=PortFieldId("port_to", "F"),
             definition=var("flow"),
-        )
-    ]
+        ),
+    ],
 )
 
 
@@ -138,14 +150,16 @@ build the quota CO² test system.
     MonQuotaCO2
 
 """
+
+
 def test_quota_co2():
     n1 = Node(model=NODE_MODEL, id="N1")
     n2 = Node(model=NODE_MODEL, id="N2")
     oil1 = create_component(model=C02_POWER_MODEL, id="Oil1")
     coal1 = create_component(model=C02_POWER_MODEL, id="Coal1")
-    l12 = create_component(model=LINK_MODEL, id='L12')
-    demand = create_component(model=DEMAND_MODEL, id='Demand')
-    monQuotaCO2 = create_component(model=QUOTA_CO2_MODEL, id='MonQuotaCO2')
+    l12 = create_component(model=LINK_MODEL, id="L12")
+    demand = create_component(model=DEMAND_MODEL, id="Demand")
+    monQuotaCO2 = create_component(model=QUOTA_CO2_MODEL, id="MonQuotaCO2")
 
     network = Network("test")
     network.add_node(n1)
@@ -160,7 +174,7 @@ def test_quota_co2():
     network.connect(PortRef(n2, "FlowN"), PortRef(l12, "port_from"))
     network.connect(PortRef(l12, "port_to"), PortRef(n1, "FlowN"))
     network.connect(PortRef(n1, "FlowN"), PortRef(oil1, "FlowP"))
-    network.connect(PortRef(n2, 'FlowN'), PortRef(coal1, "FlowP"))
+    network.connect(PortRef(n2, "FlowN"), PortRef(coal1, "FlowP"))
     network.connect(PortRef(oil1, "OutCO2"), PortRef(monQuotaCO2, "emissionCO2"))
     network.connect(PortRef(coal1, "OutCO2"), PortRef(monQuotaCO2, "emissionCO2"))
 
@@ -183,9 +197,9 @@ def test_quota_co2():
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
-    oil1_p = output.component('Oil1').var('p').value
-    coal1_p = output.component('Coal1').var('p').value
-    l12_flow = output.component('L12').var('flow').value
+    oil1_p = output.component("Oil1").var("p").value
+    coal1_p = output.component("Coal1").var("p").value
+    l12_flow = output.component("L12").var("flow").value
 
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 5500
