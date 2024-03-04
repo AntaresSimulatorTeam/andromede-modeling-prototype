@@ -10,19 +10,13 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import dataclass, field
-from enum import Enum
+from dataclasses import dataclass
 from typing import Optional
 
 from andromede.expression import ExpressionNode
 from andromede.expression.degree import is_constant
 from andromede.expression.indexing_structure import IndexingStructure
-
-
-class VariableValueType(Enum):
-    FLOAT = "FLOAT"
-    INTEGER = "INTEGER"
-    # Needs more ?
+from andromede.model.common import ProblemContext, ValueType
 
 
 @dataclass
@@ -32,43 +26,36 @@ class Variable:
     """
 
     name: str
-    data_type: VariableValueType
+    data_type: ValueType
     lower_bound: Optional[ExpressionNode]
     upper_bound: Optional[ExpressionNode]
-    structure: IndexingStructure = field(default=IndexingStructure(True, True))
+    structure: IndexingStructure
+    context: ProblemContext
 
     def __post_init__(self) -> None:
         if self.lower_bound and not is_constant(self.lower_bound):
             raise ValueError("Lower bounds of variables must be constant")
         if self.upper_bound and not is_constant(self.upper_bound):
-            raise ValueError("Lower bounds of variables must be constant")
+            raise ValueError("Upper bounds of variables must be constant")
 
 
 def int_variable(
     name: str,
     lower_bound: Optional[ExpressionNode] = None,
     upper_bound: Optional[ExpressionNode] = None,
-    structural_type: Optional[IndexingStructure] = None,
+    structure: IndexingStructure = IndexingStructure(True, True),
+    context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    # Dirty if/else just for MyPy
-    if structural_type is None:
-        return Variable(name, VariableValueType.INTEGER, lower_bound, upper_bound)
-    else:
-        return Variable(
-            name, VariableValueType.INTEGER, lower_bound, upper_bound, structural_type
-        )
+    return Variable(
+        name, ValueType.INTEGER, lower_bound, upper_bound, structure, context
+    )
 
 
 def float_variable(
     name: str,
     lower_bound: Optional[ExpressionNode] = None,
     upper_bound: Optional[ExpressionNode] = None,
-    structure: Optional[IndexingStructure] = None,
+    structure: IndexingStructure = IndexingStructure(True, True),
+    context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    # Dirty if/else just for MyPy
-    if structure is None:
-        return Variable(name, VariableValueType.FLOAT, lower_bound, upper_bound)
-    else:
-        return Variable(
-            name, VariableValueType.FLOAT, lower_bound, upper_bound, structure
-        )
+    return Variable(name, ValueType.FLOAT, lower_bound, upper_bound, structure, context)

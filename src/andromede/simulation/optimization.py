@@ -18,7 +18,7 @@ into a mathematical optimization problem.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Type
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -40,6 +40,7 @@ from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
+from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
@@ -222,10 +223,14 @@ class ComponentContext:
         )
 
     def add_variable(
-        self, block_timestep: int, scenario: int, variable: lp.Variable
+        self,
+        block_timestep: int,
+        scenario: int,
+        model_var_name: str,
+        variable: lp.Variable,
     ) -> None:
         self.opt_context.register_component_variable(
-            block_timestep, scenario, self.component.id, variable.name(), variable
+            block_timestep, scenario, self.component.id, model_var_name, variable
         )
 
     def get_variable(
@@ -271,6 +276,20 @@ class BlockBorderManagement(Enum):
     CYCLE = "CYCLE"
 
 
+@dataclass
+class SolverVariableInfo:
+    """
+    Helper class for constructing the structure file
+    for Benders solver. It keeps track of the corresponding
+    column of the variable in the MPS format as well as if it is
+    present in the objective function or not
+    """
+
+    name: str
+    column_id: int
+    is_in_objective: bool
+
+
 class OptimizationContext:
     """
     Helper class to build the optimization problem.
@@ -292,6 +311,7 @@ class OptimizationContext:
         self._scenarios = scenarios
         self._border_management = border_management
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
+        self._solver_variables: Dict[lp.Variable, SolverVariableInfo] = {}
         self._connection_fields_expressions: Dict[
             PortFieldKey, List[ExpressionNode]
         ] = {}
@@ -370,6 +390,10 @@ class OptimizationContext:
         key = TimestepComponentVariableKey(
             component_id, variable_name, block_timestep, scenario
         )
+        if key not in self._component_variables:
+            self._solver_variables[variable] = SolverVariableInfo(
+                variable.name(), len(self._solver_variables), False
+            )
         self._component_variables[key] = variable
 
     def get_component_context(self, component: Component) -> ComponentContext:
@@ -406,6 +430,23 @@ def _compute_indexing_structure(
     )
     constraint_indexing = _get_indexing(constraint, data_structure_provider)
     return constraint_indexing
+
+
+def _instantiate_model_expression(
+    model_expression: ExpressionNode,
+    component_id: str,
+    optimization_context: OptimizationContext,
+) -> ExpressionNode:
+    """
+    Performs common operations that are necessary on model expressions before their actual use:
+     1. add component ID for variables and parameters of THIS component
+     2. replace port fields by their definition
+    """
+    with_component = add_component_context(component_id, model_expression)
+    with_component_and_ports = resolve_port(
+        with_component, component_id, optimization_context.connection_fields_expressions
+    )
+    return with_component_and_ports
 
 
 def _create_constraint(
@@ -447,6 +488,49 @@ def _create_constraint(
                 constraint_data,
                 instances_per_time_step,
             )
+
+
+def _create_objective(
+    solver: lp.Solver,
+    opt_context: OptimizationContext,
+    component: Component,
+    component_context: ComponentContext,
+    objective_contribution: ExpressionNode,
+) -> None:
+    instantiated_expr = _instantiate_model_expression(
+        objective_contribution, component.id, opt_context
+    )
+    # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
+    linear_expr = component_context.linearize_expression(0, 0, instantiated_expr)
+
+    obj: lp.Objective = solver.Objective()
+    for term in linear_expr.terms.values():
+        # TODO : How to handle the scenario operator in a general manner ?
+        if isinstance(term.scenario_operator, Expectation):
+            weight = 1 / opt_context.scenarios
+            scenario_ids = range(opt_context.scenarios)
+        else:
+            weight = 1
+            scenario_ids = range(1)
+
+        for scenario in scenario_ids:
+            solver_vars = _get_solver_vars(
+                term,
+                opt_context,
+                0,
+                scenario,
+                0,
+            )
+
+            for solver_var in solver_vars:
+                opt_context._solver_variables[solver_var].is_in_objective = True
+                obj.SetCoefficient(
+                    solver_var,
+                    obj.GetCoefficient(solver_var) + weight * term.coefficient,
+                )
+
+    # This should have no effect on the optimization
+    obj.SetOffset(linear_expr.constant + obj.offset())
 
 
 @dataclass
@@ -579,151 +663,147 @@ def make_constraint(
     return solver_constraints
 
 
-def _create_variables(
-    network: Network,
-    opt_context: OptimizationContext,
-    solver: lp.Solver,
-) -> None:
-    for component in network.all_components:
-        component_context = opt_context.get_component_context(component)
-        model = component.model
+class OptimizationProblem:
+    name: str
+    solver: lp.Solver
+    context: OptimizationContext
+    strategy: ModelSelectionStrategy
 
-        for model_var in model.variables.values():
-            var_indexing = IndexingStructure(
-                model_var.structure.time, model_var.structure.scenario
-            )
-            instantiated_lb_expr = None
-            instantiated_ub_expr = None
-            if model_var.lower_bound:
-                instantiated_lb_expr = _instantiate_model_expression(
-                    model_var.lower_bound, component.id, opt_context
-                )
-            if model_var.upper_bound:
-                instantiated_ub_expr = _instantiate_model_expression(
-                    model_var.upper_bound, component.id, opt_context
-                )
-            for block_timestep in opt_context.get_time_indices(var_indexing):
-                for scenario in opt_context.get_scenario_indices(var_indexing):
-                    lower_bound = -solver.infinity()
-                    upper_bound = solver.infinity()
-                    if instantiated_lb_expr:
-                        lower_bound = component_context.get_values(
-                            instantiated_lb_expr
-                        ).get_value(block_timestep, scenario)
-                    if instantiated_ub_expr:
-                        upper_bound = component_context.get_values(
-                            instantiated_ub_expr
-                        ).get_value(block_timestep, scenario)
+    def __init__(
+        self,
+        name: str,
+        solver: lp.Solver,
+        opt_context: OptimizationContext,
+        build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+    ) -> None:
+        self.name = name
+        self.solver = solver
+        self.context = opt_context
+        self.strategy = build_strategy
 
-                    # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
-                    solver_var = solver.NumVar(lower_bound, upper_bound, model_var.name)
-                    component_context.add_variable(block_timestep, scenario, solver_var)
+        self._register_connection_fields_definitions()
+        self._create_variables()
+        self._create_constraints()
+        self._create_objectives()
 
-
-def _register_connection_fields_definitions(
-    network: Network, opt_context: OptimizationContext
-) -> None:
-    for cnx in network.connections:
-        for field_name in list(cnx.master_port.keys()):
-            master_port = cnx.master_port[field_name]
-            port_definition = master_port.component.model.port_fields_definitions.get(
-                PortFieldId(port_name=master_port.port_id, field_name=field_name.name)
-            )
-            expression_node = port_definition.definition  # type: ignore
-            instantiated_expression = add_component_context(
-                master_port.component.id, expression_node
-            )
-            opt_context.register_connection_fields_expressions(
-                component_id=cnx.port1.component.id,
-                port_name=cnx.port1.port_id,
-                field_name=field_name.name,
-                expression=instantiated_expression,
-            )
-            opt_context.register_connection_fields_expressions(
-                component_id=cnx.port2.component.id,
-                port_name=cnx.port2.port_id,
-                field_name=field_name.name,
-                expression=instantiated_expression,
-            )
-
-
-def _create_constraints(
-    network: Network, opt_context: OptimizationContext, solver: lp.Solver
-) -> None:
-    for component in network.all_components:
-        for constraint in component.model.get_all_constraints():
-            instantiated_expr = _instantiate_model_expression(
-                constraint.expression, component.id, opt_context
-            )
-            instantiated_lb = _instantiate_model_expression(
-                constraint.lower_bound, component.id, opt_context
-            )
-            instantiated_ub = _instantiate_model_expression(
-                constraint.upper_bound, component.id, opt_context
-            )
-            instantiated_constraint = Constraint(
-                name=constraint.name,
-                expression=instantiated_expr,
-                lower_bound=instantiated_lb,
-                upper_bound=instantiated_ub,
-            )
-            _create_constraint(
-                solver,
-                opt_context.get_component_context(component),
-                instantiated_constraint,
-            )
-
-
-def _create_objective(
-    network: Network,
-    opt_context: OptimizationContext,
-    solver: lp.Solver,
-) -> None:
-    for component in network.all_components:
-        component_context = opt_context.get_component_context(component)
-        model = component.model
-
-        if model.objective_contribution is not None:
-            instantiated_expr = _instantiate_model_expression(
-                model.objective_contribution, component.id, opt_context
-            )
-            # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
-            linear_expr = component_context.linearize_expression(
-                0, 0, instantiated_expr
-            )
-            obj: lp.Objective = solver.Objective()
-            for term in linear_expr.terms.values():
-                # TODO : Comment gérer de manière générale les opérateurs sur les scénarios ?
-                if isinstance(term.scenario_operator, Expectation):
-                    weight = 1 / opt_context.scenarios
-                    scenario_ids = range(opt_context.scenarios)
-                else:
-                    weight = 1
-                    scenario_ids = range(1)
-
-                for scenario in scenario_ids:
-                    solver_vars = _get_solver_vars(
-                        term,
-                        opt_context,
-                        0,
-                        scenario,
-                        0,
+    def _register_connection_fields_definitions(self) -> None:
+        for cnx in self.context.network.connections:
+            for field_name in list(cnx.master_port.keys()):
+                master_port = cnx.master_port[field_name]
+                port_definition = (
+                    master_port.component.model.port_fields_definitions.get(
+                        PortFieldId(
+                            port_name=master_port.port_id, field_name=field_name.name
+                        )
                     )
+                )
+                expression_node = port_definition.definition  # type: ignore
+                instantiated_expression = add_component_context(
+                    master_port.component.id, expression_node
+                )
+                self.context.register_connection_fields_expressions(
+                    component_id=cnx.port1.component.id,
+                    port_name=cnx.port1.port_id,
+                    field_name=field_name.name,
+                    expression=instantiated_expression,
+                )
+                self.context.register_connection_fields_expressions(
+                    component_id=cnx.port2.component.id,
+                    port_name=cnx.port2.port_id,
+                    field_name=field_name.name,
+                    expression=instantiated_expression,
+                )
 
-                    for solver_var in solver_vars:
-                        obj.SetCoefficient(
-                            solver_var,
-                            obj.GetCoefficient(solver_var) + weight * term.coefficient,
+    def _create_variables(self) -> None:
+        for component in self.context.network.all_components:
+            component_context = self.context.get_component_context(component)
+            model = component.model
+
+            for model_var in self.strategy.get_variables(model):
+                var_indexing = IndexingStructure(
+                    model_var.structure.time, model_var.structure.scenario
+                )
+                instantiated_lb_expr = None
+                instantiated_ub_expr = None
+                if model_var.lower_bound:
+                    instantiated_lb_expr = _instantiate_model_expression(
+                        model_var.lower_bound, component.id, self.context
+                    )
+                if model_var.upper_bound:
+                    instantiated_ub_expr = _instantiate_model_expression(
+                        model_var.upper_bound, component.id, self.context
+                    )
+                for block_timestep in self.context.get_time_indices(var_indexing):
+                    for scenario in self.context.get_scenario_indices(var_indexing):
+                        lower_bound = -self.solver.infinity()
+                        upper_bound = self.solver.infinity()
+                        if instantiated_lb_expr:
+                            lower_bound = component_context.get_values(
+                                instantiated_lb_expr
+                            ).get_value(block_timestep, scenario)
+                        if instantiated_ub_expr:
+                            upper_bound = component_context.get_values(
+                                instantiated_ub_expr
+                            ).get_value(block_timestep, scenario)
+
+                        # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
+                        # Externally, for the Solver, this variable will have a full name
+                        # Internally, it will be indexed by a structure that into account
+                        # the component id, variable name, timestep and scenario separately
+                        solver_var = self.solver.NumVar(
+                            lower_bound,
+                            upper_bound,
+                            f"{component.id}_{model_var.name}_{block_timestep}_{scenario}",
+                        )
+                        component_context.add_variable(
+                            block_timestep, scenario, model_var.name, solver_var
                         )
 
-            # This should have no effect on the optimization
-            obj.SetOffset(linear_expr.constant + obj.offset())
+    def _create_constraints(self) -> None:
+        for component in self.context.network.all_components:
+            for constraint in self.strategy.get_constraints(component.model):
+                instantiated_expr = _instantiate_model_expression(
+                    constraint.expression, component.id, self.context
+                )
+                instantiated_lb = _instantiate_model_expression(
+                    constraint.lower_bound, component.id, self.context
+                )
+                instantiated_ub = _instantiate_model_expression(
+                    constraint.upper_bound, component.id, self.context
+                )
 
+                instantiated_constraint = Constraint(
+                    name=f"{component.id}_{constraint.name}",
+                    expression=instantiated_expr,
+                    lower_bound=instantiated_lb,
+                    upper_bound=instantiated_ub,
+                )
+                _create_constraint(
+                    self.solver,
+                    self.context.get_component_context(component),
+                    instantiated_constraint,
+                )
 
-@dataclass(frozen=True)
-class SolverAndContext:
-    solver: lp.Solver
-    context: "OptimizationContext"
+    def _create_objectives(self) -> None:
+        for component in self.context.network.all_components:
+            component_context = self.context.get_component_context(component)
+            model = component.model
+
+            for objective in self.strategy.get_objectives(model):
+                if objective is not None:
+                    _create_objective(
+                        self.solver,
+                        self.context,
+                        component,
+                        component_context,
+                        objective,
+                    )
+
+    def export_as_mps(self) -> str:
+        return self.solver.ExportModelAsMpsFormat(fixed_format=True, obfuscated=False)
+
+    def export_as_lp(self) -> str:
+        return self.solver.ExportModelAsLpFormat(obfuscated=False)
 
 
 def build_problem(
@@ -731,9 +811,12 @@ def build_problem(
     database: DataBase,
     block: TimeBlock,
     scenarios: int,
+    *,
+    problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-) -> SolverAndContext:
+    problem_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.
     """
@@ -745,25 +828,4 @@ def build_problem(
         network, database, block, scenarios, border_management
     )
 
-    _register_connection_fields_definitions(network, opt_context)
-    _create_variables(network, opt_context, solver)
-    _create_constraints(network, opt_context, solver)
-    _create_objective(network, opt_context, solver)
-    return SolverAndContext(solver, opt_context)
-
-
-def _instantiate_model_expression(
-    model_expression: ExpressionNode,
-    component_id: str,
-    optimization_context: OptimizationContext,
-) -> ExpressionNode:
-    """
-    Performs common operations that are necessary on model expressions before their actual use:
-     1. add component ID for variables and parameters of THIS component
-     2. replace port fields by their definition
-    """
-    with_component = add_component_context(component_id, model_expression)
-    with_component_and_ports = resolve_port(
-        with_component, component_id, optimization_context.connection_fields_expressions
-    )
-    return with_component_and_ports
+    return OptimizationProblem(problem_name, solver, opt_context, problem_strategy)
