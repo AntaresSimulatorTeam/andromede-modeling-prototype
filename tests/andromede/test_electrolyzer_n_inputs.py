@@ -1,25 +1,22 @@
-from andromede.expression import literal, param, var
-from andromede.expression.expression import port_field
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+from andromede.libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
 from andromede.libs.standard_sc import (
     CONVERTOR_MODEL,
     CONVERTOR_MODEL_MOD,
     DECOMPOSE_1_FLOW_INTO_2_FLOW,
-    DEMAND_MODEL,
-    FLOW_PORT,
-    NODE_MODEL,
-    PROD_MODEL,
     TWO_INPUTS_CONVERTOR_MODEL,
 )
-from andromede.model import (
-    Constraint,
-    ModelPort,
-    PortField,
-    PortType,
-    float_parameter,
-    float_variable,
-    model,
-)
-from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -32,16 +29,19 @@ from andromede.study import (
 
 
 def test_electrolyzer_n_inputs_1():
-    elec_node_1 = Node(model=NODE_MODEL, id="e1")
-    electric_prod_1 = create_component(model=PROD_MODEL, id="ep1")
+    """
+    Test with an electrolyzer for each inputs
+    """
+    elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
+    electric_prod_1 = create_component(model=GENERATOR_MODEL, id="ep1")
     electrolyzer1 = create_component(model=CONVERTOR_MODEL, id="ez1")
 
-    elec_node_2 = Node(model=NODE_MODEL, id="e2")
-    electric_prod_2 = create_component(model=PROD_MODEL, id="ep2")
+    elec_node_2 = Node(model=NODE_BALANCE_MODEL, id="e2")
+    electric_prod_2 = create_component(model=GENERATOR_MODEL, id="ep2")
     electrolyzer2 = create_component(model=CONVERTOR_MODEL, id="ez2")
 
-    gaz_node = Node(model=NODE_MODEL, id="g")
-    gaz_prod = create_component(model=PROD_MODEL, id="gp")
+    gaz_node = Node(model=NODE_BALANCE_MODEL, id="g")
+    gaz_prod = create_component(model=GENERATOR_MODEL, id="gp")
     gaz_demand = create_component(model=DEMAND_MODEL, id="gd")
 
     database = DataBase()
@@ -69,14 +69,26 @@ def test_electrolyzer_n_inputs_1():
     network.add_component(gaz_prod)
     network.add_component(gaz_demand)
 
-    network.connect(PortRef(electric_prod_1, "FlowP"), PortRef(elec_node_1, "FlowN"))
-    network.connect(PortRef(elec_node_1, "FlowN"), PortRef(electrolyzer1, "FlowDI"))
-    network.connect(PortRef(electrolyzer1, "FlowDO"), PortRef(gaz_node, "FlowN"))
-    network.connect(PortRef(electric_prod_2, "FlowP"), PortRef(elec_node_2, "FlowN"))
-    network.connect(PortRef(elec_node_2, "FlowN"), PortRef(electrolyzer2, "FlowDI"))
-    network.connect(PortRef(electrolyzer2, "FlowDO"), PortRef(gaz_node, "FlowN"))
-    network.connect(PortRef(gaz_node, "FlowN"), PortRef(gaz_demand, "FlowD"))
-    network.connect(PortRef(gaz_prod, "FlowP"), PortRef(gaz_node, "FlowN"))
+    network.connect(
+        PortRef(electric_prod_1, "balance_port"), PortRef(elec_node_1, "balance_port")
+    )
+    network.connect(
+        PortRef(elec_node_1, "balance_port"), PortRef(electrolyzer1, "FlowDI")
+    )
+    network.connect(PortRef(electrolyzer1, "FlowDO"), PortRef(gaz_node, "balance_port"))
+    network.connect(
+        PortRef(electric_prod_2, "balance_port"), PortRef(elec_node_2, "balance_port")
+    )
+    network.connect(
+        PortRef(elec_node_2, "balance_port"), PortRef(electrolyzer2, "FlowDI")
+    )
+    network.connect(PortRef(electrolyzer2, "FlowDO"), PortRef(gaz_node, "balance_port"))
+    network.connect(
+        PortRef(gaz_node, "balance_port"), PortRef(gaz_demand, "balance_port")
+    )
+    network.connect(
+        PortRef(gaz_prod, "balance_port"), PortRef(gaz_node, "balance_port")
+    )
 
     scenarios = 1
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
@@ -88,17 +100,17 @@ def test_electrolyzer_n_inputs_1():
 
 def test_electrolyzer_n_inputs_2():
     """
-    Test avec un electrolyzer qui prend 2 input
+    Test with one electrolyzer that has two inputs
     """
 
-    elec_node_1 = Node(model=NODE_MODEL, id="e1")
-    elec_node_2 = Node(model=NODE_MODEL, id="e2")
-    gaz_node = Node(model=NODE_MODEL, id="g")
+    elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
+    elec_node_2 = Node(model=NODE_BALANCE_MODEL, id="e2")
+    gaz_node = Node(model=NODE_BALANCE_MODEL, id="g")
 
-    electric_prod_1 = create_component(model=PROD_MODEL, id="ep1")
-    electric_prod_2 = create_component(model=PROD_MODEL, id="ep2")
+    electric_prod_1 = create_component(model=GENERATOR_MODEL, id="ep1")
+    electric_prod_2 = create_component(model=GENERATOR_MODEL, id="ep2")
 
-    gaz_prod = create_component(model=PROD_MODEL, id="gp")
+    gaz_prod = create_component(model=GENERATOR_MODEL, id="gp")
     gaz_demand = create_component(model=DEMAND_MODEL, id="gd")
 
     electrolyzer = create_component(model=TWO_INPUTS_CONVERTOR_MODEL, id="ez")
@@ -124,13 +136,25 @@ def test_electrolyzer_n_inputs_2():
     network.add_component(gaz_demand)
     network.add_component(electrolyzer)
 
-    network.connect(PortRef(electric_prod_1, "FlowP"), PortRef(elec_node_1, "FlowN"))
-    network.connect(PortRef(elec_node_1, "FlowN"), PortRef(electrolyzer, "FlowDI1"))
-    network.connect(PortRef(electric_prod_2, "FlowP"), PortRef(elec_node_2, "FlowN"))
-    network.connect(PortRef(elec_node_2, "FlowN"), PortRef(electrolyzer, "FlowDI2"))
-    network.connect(PortRef(electrolyzer, "FlowDO"), PortRef(gaz_node, "FlowN"))
-    network.connect(PortRef(gaz_node, "FlowN"), PortRef(gaz_demand, "FlowD"))
-    network.connect(PortRef(gaz_prod, "FlowP"), PortRef(gaz_node, "FlowN"))
+    network.connect(
+        PortRef(electric_prod_1, "balance_port"), PortRef(elec_node_1, "balance_port")
+    )
+    network.connect(
+        PortRef(elec_node_1, "balance_port"), PortRef(electrolyzer, "FlowDI1")
+    )
+    network.connect(
+        PortRef(electric_prod_2, "balance_port"), PortRef(elec_node_2, "balance_port")
+    )
+    network.connect(
+        PortRef(elec_node_2, "balance_port"), PortRef(electrolyzer, "FlowDI2")
+    )
+    network.connect(PortRef(electrolyzer, "FlowDO"), PortRef(gaz_node, "balance_port"))
+    network.connect(
+        PortRef(gaz_node, "balance_port"), PortRef(gaz_demand, "balance_port")
+    )
+    network.connect(
+        PortRef(gaz_prod, "balance_port"), PortRef(gaz_node, "balance_port")
+    )
 
     scenarios = 1
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
@@ -141,15 +165,17 @@ def test_electrolyzer_n_inputs_2():
 
 
 def test_electrolyzer_n_inputs_3():
+    """
+    Test with a consumption_electrolyzer with two inputs
+    """
+    elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
+    elec_node_2 = Node(model=NODE_BALANCE_MODEL, id="e2")
+    gaz_node = Node(model=NODE_BALANCE_MODEL, id="g")
 
-    elec_node_1 = Node(model=NODE_MODEL, id="e1")
-    elec_node_2 = Node(model=NODE_MODEL, id="e2")
-    gaz_node = Node(model=NODE_MODEL, id="g")
+    electric_prod_1 = create_component(model=GENERATOR_MODEL, id="ep1")
+    electric_prod_2 = create_component(model=GENERATOR_MODEL, id="ep2")
 
-    electric_prod_1 = create_component(model=PROD_MODEL, id="ep1")
-    electric_prod_2 = create_component(model=PROD_MODEL, id="ep2")
-
-    gaz_prod = create_component(model=PROD_MODEL, id="gp")
+    gaz_prod = create_component(model=GENERATOR_MODEL, id="gp")
     gaz_demand = create_component(model=DEMAND_MODEL, id="gd")
 
     electrolyzer = create_component(model=CONVERTOR_MODEL_MOD, id="ez")
@@ -178,20 +204,30 @@ def test_electrolyzer_n_inputs_3():
     network.add_component(electrolyzer)
     network.add_component(consumption_electrolyzer)
 
-    network.connect(PortRef(electric_prod_1, "FlowP"), PortRef(elec_node_1, "FlowN"))
     network.connect(
-        PortRef(elec_node_1, "FlowN"), PortRef(consumption_electrolyzer, "FlowDI1")
+        PortRef(electric_prod_1, "balance_port"), PortRef(elec_node_1, "balance_port")
     )
-    network.connect(PortRef(electric_prod_2, "FlowP"), PortRef(elec_node_2, "FlowN"))
     network.connect(
-        PortRef(elec_node_2, "FlowN"), PortRef(consumption_electrolyzer, "FlowDI2")
+        PortRef(elec_node_1, "balance_port"),
+        PortRef(consumption_electrolyzer, "FlowDI1"),
+    )
+    network.connect(
+        PortRef(electric_prod_2, "balance_port"), PortRef(elec_node_2, "balance_port")
+    )
+    network.connect(
+        PortRef(elec_node_2, "balance_port"),
+        PortRef(consumption_electrolyzer, "FlowDI2"),
     )
     network.connect(
         PortRef(consumption_electrolyzer, "FlowDO"), PortRef(electrolyzer, "FlowDI")
     )
-    network.connect(PortRef(electrolyzer, "FlowDO"), PortRef(gaz_node, "FlowN"))
-    network.connect(PortRef(gaz_node, "FlowN"), PortRef(gaz_demand, "FlowD"))
-    network.connect(PortRef(gaz_prod, "FlowP"), PortRef(gaz_node, "FlowN"))
+    network.connect(PortRef(electrolyzer, "FlowDO"), PortRef(gaz_node, "balance_port"))
+    network.connect(
+        PortRef(gaz_node, "balance_port"), PortRef(gaz_demand, "balance_port")
+    )
+    network.connect(
+        PortRef(gaz_prod, "balance_port"), PortRef(gaz_node, "balance_port")
+    )
 
     scenarios = 1
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
@@ -202,14 +238,17 @@ def test_electrolyzer_n_inputs_3():
 
 
 def test_electrolyzer_n_inputs_4():
-    elec_node_1 = Node(model=NODE_MODEL, id="e1")
-    elec_node_2 = Node(model=NODE_MODEL, id="e2")
-    gaz_node = Node(model=NODE_MODEL, id="g")
+    """
+    Test with one electrolyzer with one input that takes every inputs
+    """
+    elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
+    elec_node_2 = Node(model=NODE_BALANCE_MODEL, id="e2")
+    gaz_node = Node(model=NODE_BALANCE_MODEL, id="g")
 
-    electric_prod_1 = create_component(model=PROD_MODEL, id="ep1")
-    electric_prod_2 = create_component(model=PROD_MODEL, id="ep2")
+    electric_prod_1 = create_component(model=GENERATOR_MODEL, id="ep1")
+    electric_prod_2 = create_component(model=GENERATOR_MODEL, id="ep2")
 
-    gaz_prod = create_component(model=PROD_MODEL, id="gp")
+    gaz_prod = create_component(model=GENERATOR_MODEL, id="gp")
     gaz_demand = create_component(model=DEMAND_MODEL, id="gd")
 
     electrolyzer = create_component(model=CONVERTOR_MODEL, id="ez")
@@ -234,13 +273,25 @@ def test_electrolyzer_n_inputs_4():
     network.add_component(gaz_demand)
     network.add_component(electrolyzer)
 
-    network.connect(PortRef(electric_prod_1, "FlowP"), PortRef(elec_node_1, "FlowN"))
-    network.connect(PortRef(elec_node_1, "FlowN"), PortRef(electrolyzer, "FlowDI"))
-    network.connect(PortRef(electric_prod_2, "FlowP"), PortRef(elec_node_2, "FlowN"))
-    network.connect(PortRef(elec_node_2, "FlowN"), PortRef(electrolyzer, "FlowDI"))
-    network.connect(PortRef(electrolyzer, "FlowDO"), PortRef(gaz_node, "FlowN"))
-    network.connect(PortRef(gaz_node, "FlowN"), PortRef(gaz_demand, "FlowD"))
-    network.connect(PortRef(gaz_prod, "FlowP"), PortRef(gaz_node, "FlowN"))
+    network.connect(
+        PortRef(electric_prod_1, "balance_port"), PortRef(elec_node_1, "balance_port")
+    )
+    network.connect(
+        PortRef(elec_node_1, "balance_port"), PortRef(electrolyzer, "FlowDI")
+    )
+    network.connect(
+        PortRef(electric_prod_2, "balance_port"), PortRef(elec_node_2, "balance_port")
+    )
+    network.connect(
+        PortRef(elec_node_2, "balance_port"), PortRef(electrolyzer, "FlowDI")
+    )
+    network.connect(PortRef(electrolyzer, "FlowDO"), PortRef(gaz_node, "balance_port"))
+    network.connect(
+        PortRef(gaz_node, "balance_port"), PortRef(gaz_demand, "balance_port")
+    )
+    network.connect(
+        PortRef(gaz_prod, "balance_port"), PortRef(gaz_node, "balance_port")
+    )
 
     scenarios = 1
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
