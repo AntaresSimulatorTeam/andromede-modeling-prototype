@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="Page-1" id="0eeWLhEhAbjt74QTUGkZ">
-        <mxGraphModel dx="3940" dy="2661" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="2797" dy="1915" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -811,10 +811,10 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-429" value="flown_n.F.sum() = Spill - Lol" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-424" vertex="1">
                     <mxGeometry y="90" width="320" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="aWoHtGz9jkfwQIE-XJvv-30" value="&lt;div align=&quot;center&quot;&gt;District 2&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;rotation=-45;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=50;align=center;" parent="1" vertex="1">
+                <mxCell id="aWoHtGz9jkfwQIE-XJvv-30" value="&lt;div align=&quot;center&quot;&gt;District 1&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;rotation=-45;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=50;align=center;" parent="1" vertex="1">
                     <mxGeometry x="-900" y="-210.72469066961918" width="264.23" height="188.64" as="geometry"/>
                 </mxCell>
-                <mxCell id="gQHjPlM2CJMaZ_1cljnZ-16" value="&lt;div align=&quot;center&quot;&gt;District1&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;rotation=-45;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=50;align=center;" parent="1" vertex="1">
+                <mxCell id="gQHjPlM2CJMaZ_1cljnZ-16" value="&lt;div align=&quot;center&quot;&gt;District2&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;rotation=-45;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=50;align=center;" parent="1" vertex="1">
                     <mxGeometry x="-801.29" y="-107.13000000000001" width="488.54" height="267.13" as="geometry"/>
                 </mxCell>
                 <mxCell id="gQHjPlM2CJMaZ_1cljnZ-1" value="N1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
@@ -1398,6 +1398,42 @@
                 </mxCell>
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-986" value="La contribution à la fonction objectif correspond à la sommes du volume de spillage/défaillance des modèles &quot;Node&quot; et des modèles &quot;Reserve district&quot; multiplié par les coûts associés" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-985" vertex="1">
                     <mxGeometry y="30" width="320" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="420" y="1010" as="sourcePoint"/>
+                        <mxPoint x="420" y="820" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="22" value="Un besoin interne au district d1 est défini et peut être satisfait uniquement par les clusters au sein du district. Une partie de la participation aux réserves des clusters peut répondre au besoin échangeable du district d1, ce qui se traduit par un transit fictif via conv_res_int_ext_1." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="290" y="1010" width="234" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="730.27" y="1010" as="sourcePoint"/>
+                        <mxPoint x="730.27" y="820" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="24" value="Un besoin échangeable du district d1 est défini et peut être satisfait par les clusters au sein du district ainsi que par des clusters d'autres districts dans la mesure où de la capacité est réservée sur les interconnections.&lt;br&gt;L'export de réserve à la hausse et l'import de réserve à la baisse diminue la capacité de la ligne dans le sens From-&amp;gt;To. Inversement, l'export de réserve à la baisse et l'import de réserve à la hausse diminue la capacité de la ligne dans le sens To-&amp;gt;From" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="600.27" y="1010" width="234" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1290" y="1010.0000000000005" as="sourcePoint"/>
+                        <mxPoint x="1290" y="820.0000000000005" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="26" value="Un besoin interne au district d2 est défini et peut être satisfait uniquement par les clusters au sein du district. Une partie de la participation aux réserves des clusters peut répondre au besoin échangeable du district d2, ce qui se traduit par un transit fictif via conv_res_int_ext_2." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="1160" y="1010" width="234" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="980.2699999999995" y="1010.0000000000005" as="sourcePoint"/>
+                        <mxPoint x="980.2699999999995" y="820.0000000000005" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="28" value="Un besoin échangeable du district d2 est défini et peut être satisfait par les clusters au sein du district ainsi que par des clusters d'autres districts dans la mesure où de la capacité est réservée sur les interconnections.&lt;br&gt;L'export de réserve à la hausse et l'import de réserve à la baisse diminue la capacité de la ligne dans le sens From-&amp;gt;To. Inversement, l'export de réserve à la baisse et l'import de réserve à la hausse diminue la capacité de la ligne dans le sens To-&amp;gt;From" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="850.27" y="1010" width="234" height="200" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
