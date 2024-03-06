@@ -39,17 +39,25 @@ from andromede.expression.parsing.parse_expression import (
             port_field("port", "f") <= 0,
         ),
         ("sum(x)", var("x").sum()),
-        ("x[-1]", var("x").shift(-1)),
-        ("x[-1..5]", var("x").shift(ExpressionRange(-1, 5))),
+        ("x[-1]", var("x").eval(-literal(1))),
+        ("x[-1..5]", var("x").eval(ExpressionRange(-literal(1), 5))),
+        ("x[1]", var("x").eval(1)),
+        # ("x[t-1]", var("x").shift(-literal(1))),
+        (
+            "x[t-1, t+4]",
+            var("x").shift([-literal(1), literal(4)]),
+        ),
+        ("x[t-1..t+5]", var("x").shift(ExpressionRange(-literal(1), 5))),
+        ("x[t]", var("x")),
         (
             "sum(x[-1..5])",
-            var("x").shift(ExpressionRange(-1, 5)).sum(),
+            var("x").eval(ExpressionRange(-literal(1), 5)).sum(),
         ),
         ("sum_connections(port.f)", port_field("port", "f").sum_connections()),
         (
             "level - level[-1] - efficiency * injection + withdrawal = inflows",
             var("level")
-            - var("level").shift(-1)
+            - var("level").eval(-1)
             - param("efficiency") * var("injection")
             + var("withdrawal")
             == param("inflows"),
@@ -57,7 +65,7 @@ from andromede.expression.parsing.parse_expression import (
         (
             "sum(nb_start[-d_min_up + 1 .. 0]) <= nb_on",
             var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            .eval(ExpressionRange(-param("d_min_up") + 1, literal(0)))
             .sum()
             <= var("nb_on"),
         ),

@@ -1,4 +1,4 @@
-# Generated from /home/leclercsyl/sources/antares/andromede-modeling-prototype/grammar/Expr.g4 by ANTLR 4.13.1
+# Generated from /home/vargastat/andromede-modeling-prototype/grammar/Expr.g4 by ANTLR 4.13.1
 from antlr4 import *
 
 if "." in __name__:
@@ -18,10 +18,6 @@ class ExprVisitor(ParseTreeVisitor):
     def visitIdentifier(self, ctx: ExprParser.IdentifierContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#number.
-    def visitNumber(self, ctx: ExprParser.NumberContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#negation.
     def visitNegation(self, ctx: ExprParser.NegationContext):
         return self.visitChildren(ctx)
@@ -34,18 +30,6 @@ class ExprVisitor(ParseTreeVisitor):
     def visitComparison(self, ctx: ExprParser.ComparisonContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#timeShift.
-    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext):
-        return self.visitChildren(ctx)
-
-    # Visit a parse tree produced by ExprParser#rangeTimeShift.
-    def visitRangeTimeShift(self, ctx: ExprParser.RangeTimeShiftContext):
-        return self.visitChildren(ctx)
-
-    # Visit a parse tree produced by ExprParser#function.
-    def visitFunction(self, ctx: ExprParser.FunctionContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#addsub.
     def visitAddsub(self, ctx: ExprParser.AddsubContext):
         return self.visitChildren(ctx)
@@ -56,6 +40,30 @@ class ExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ExprParser#muldiv.
     def visitMuldiv(self, ctx: ExprParser.MuldivContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#number.
+    def visitNumber(self, ctx: ExprParser.NumberContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeIndex.
+    def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeShift.
+    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#function.
+    def visitFunction(self, ctx: ExprParser.FunctionContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeShiftRange.
+    def visitTimeShiftRange(self, ctx: ExprParser.TimeShiftRangeContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeRange.
+    def visitTimeRange(self, ctx: ExprParser.TimeRangeContext):
         return self.visitChildren(ctx)
 
 

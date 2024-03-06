@@ -118,14 +118,34 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         return ComparisonNode(exp1, exp2, comp)
 
     # Visit a parse tree produced by ExprParser#timeShift.
-    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> ExpressionNode:
+    def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
         time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.shift(time_shifts)
+        return shifted_expr.eval(time_shifts)
 
     # Visit a parse tree produced by ExprParser#rangeTimeShift.
-    def visitRangeTimeShift(
-        self, ctx: ExprParser.RangeTimeShiftContext
+    def visitTimeRange(self, ctx: ExprParser.TimeRangeContext) -> ExpressionNode:
+        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+        expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
+        return shifted_expr.eval(ExpressionRange(expressions[0], expressions[1]))
+
+    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> ExpressionNode:
+        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+        operators = ctx.op  # type: ignore
+
+        time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
+        signed_time_shifts = []
+
+        for i, t in enumerate(time_shifts):
+            if operators[i].text == "-":
+                signed_time_shifts.append(-t)
+            else:
+                signed_time_shifts.append(t)
+
+        return shifted_expr.shift(signed_time_shifts)
+
+    def visitTimeShiftRange(
+        self, ctx: ExprParser.TimeShiftRangeContext
     ) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
         expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore

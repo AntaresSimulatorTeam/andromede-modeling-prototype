@@ -26,15 +26,18 @@ expr: '-' expr                  # negation
     | NUMBER                    # number
     | '(' expr ')'              # expression
     | IDENTIFIER '(' expr ')'   # function
-    | IDENTIFIER '[' expr  (',' expr )* ']'  # timeShift
-    | IDENTIFIER '[' expr '..' expr ']'      # rangeTimeShift
+    | IDENTIFIER '[' TIME op+=('+' | '-') expr (',' TIME op+=('+' | '-') expr )* ']'  # timeShift
+    | IDENTIFIER '[' expr  (',' expr )* ']'  # timeIndex
+    | IDENTIFIER '[' TIME op=('+' | '-') expr '..' TIME op=('+' | '-') expr ']'      # timeShiftRange
+    | IDENTIFIER '[' expr '..' expr ']'      # timeRange
     ;
 
 fragment DIGIT         : [0-9] ;
 fragment CHAR          : [a-zA-Z_];
 fragment CHAR_OR_DIGIT : (CHAR | DIGIT);
 
-NUMBER        : ('-')? DIGIT+ ('.' DIGIT+)?;
+NUMBER        : DIGIT+ ('.' DIGIT+)?;
+TIME          : 't';
 IDENTIFIER    : CHAR CHAR_OR_DIGIT*;
 COMPARISON    : ( '=' | '>=' | '<=' );
 ADDSUB        : ( '+' | '-' );
