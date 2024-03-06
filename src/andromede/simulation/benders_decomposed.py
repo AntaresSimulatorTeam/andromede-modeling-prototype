@@ -148,9 +148,10 @@ class BendersDecomposedProblem:
         is_debug: bool = False,
     ) -> None:
         serialize("master.mps", self.master.export_as_mps(), self.emplacement)
-        serialize(
-            "subproblem.mps", self.subproblems[0].export_as_mps(), self.emplacement
-        )
+        for subproblem in self.subproblems:
+            serialize(
+                f"{subproblem.name}.mps", subproblem.export_as_mps(), self.emplacement
+            )
         serialize("structure.txt", self.export_structure(), self.emplacement)
         serialize_json(
             "options.json",
@@ -160,9 +161,10 @@ class BendersDecomposedProblem:
 
         if is_debug:
             serialize("master.lp", self.master.export_as_lp(), self.emplacement)
-            serialize(
-                "subproblem.lp", self.subproblems[0].export_as_lp(), self.emplacement
-            )
+            for subproblem in self.subproblems:
+                serialize(
+                    f"{subproblem.name}.lp", subproblem.export_as_lp(), self.emplacement
+                )
 
     def read_solution(self) -> None:
         try:
@@ -204,7 +206,7 @@ class BendersDecomposedProblem:
 def build_benders_decomposed_problem(
     network: Network,
     database: DataBase,
-    block: TimeBlock,
+    blocks: List[TimeBlock],
     scenarios: int,
     *,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
@@ -220,8 +222,10 @@ def build_benders_decomposed_problem(
     master = build_problem(
         network,
         database,
-        block,
-        scenarios,
+        null_time_block := TimeBlock(  # Not necessary for master, but list must be non-empty
+            0, [0]
+        ),
+        null_scenario := 0,  # Not necessary for master
         problem_name="master",
         border_management=border_management,
         solver_id=solver_id,
@@ -229,15 +233,19 @@ def build_benders_decomposed_problem(
     )
 
     # Benders Decomposed Sub-problems
-    subproblem = build_problem(
-        network,
-        database,
-        block,
-        scenarios,
-        problem_name="subproblem",
-        border_management=border_management,
-        solver_id=solver_id,
-        problem_strategy=OperationalProblemStrategy(),
-    )
+    subproblems = []
+    for block in blocks:
+        subproblems.append(
+            build_problem(
+                network,
+                database,
+                block,
+                scenarios,
+                problem_name=f"subproblem_{block.id}",
+                border_management=border_management,
+                solver_id=solver_id,
+                problem_strategy=OperationalProblemStrategy(),
+            )
+        )
 
-    return BendersDecomposedProblem(master, [subproblem])
+    return BendersDecomposedProblem(master, subproblems)
