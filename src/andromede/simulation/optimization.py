@@ -631,7 +631,7 @@ def make_constraint(
     Adds constraint to the solver.
     """
     solver_constraints = {}
-    constraint_name = data.name
+    constraint_name = f"{data.name}_t{block_timestep}_s{scenario}"
     for instance in range(instances):
         if instances > 1:
             constraint_name += f"_{instance}"
@@ -753,7 +753,7 @@ class OptimizationProblem:
                         solver_var = self.solver.NumVar(
                             lower_bound,
                             upper_bound,
-                            f"{component.id}_{model_var.name}_{block_timestep}_{scenario}",
+                            f"{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
                         )
                         component_context.add_variable(
                             block_timestep, scenario, model_var.name, solver_var
