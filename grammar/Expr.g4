@@ -17,6 +17,8 @@ grammar Expr;
 /* To match the whole input */
 fullexpr: expr EOF;
 
+shift: TIME (op=('+' | '-') expr)?;
+
 expr: '-' expr                  # negation
     | expr op=('/' | '*') expr  # muldiv
     | expr op=('+' | '-') expr  # addsub
@@ -26,9 +28,9 @@ expr: '-' expr                  # negation
     | NUMBER                    # number
     | '(' expr ')'              # expression
     | IDENTIFIER '(' expr ')'   # function
-    | IDENTIFIER '[' TIME (op+=('+' | '-') expr)? (',' TIME (op+=('+' | '-') expr )?)* ']'  # timeShift
+    | IDENTIFIER '[' shift (',' shift)* ']'  # timeShift
     | IDENTIFIER '[' expr  (',' expr )* ']'  # timeIndex
-    | IDENTIFIER '[' TIME (op1=('+' | '-')* expr1=expr)? '..' TIME (op2=('+' | '-') expr2=expr)? ']'      # timeShiftRange
+    | IDENTIFIER '[' shift1=shift '..' shift2=shift ']'      # timeShiftRange
     | IDENTIFIER '[' expr '..' expr ']'      # timeRange
     ;
 

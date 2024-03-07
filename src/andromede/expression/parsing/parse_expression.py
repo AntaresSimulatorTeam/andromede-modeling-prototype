@@ -15,6 +15,7 @@ from typing import Set
 from antlr4 import CommonTokenStream, InputStream
 
 from andromede.expression import ExpressionNode, literal, param, var
+from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
@@ -131,38 +132,19 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        operators = ctx.op  # type: ignore
-
-        time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        signed_time_shifts = []
-
-        if len(operators) != 0:
-            for i, t in enumerate(time_shifts):
-                if operators[i].text == "-":
-                    signed_time_shifts.append(-t)
-                else:
-                    signed_time_shifts.append(t)
-            return shifted_expr.shift(signed_time_shifts)
-        else:
+        time_shifts = [s.accept(self) for s in ctx.shift()]  # type: ignore
+        # specifics for x[t] ...
+        if len(time_shifts) == 1 and expressions_equal(time_shifts[0], literal(0)):
             return shifted_expr
+        return shifted_expr.shift(time_shifts)
 
     def visitTimeShiftRange(
         self, ctx: ExprParser.TimeShiftRangeContext
     ) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        signed_time_shift_1 = literal(0)
-        signed_time_shift_2 = literal(0)
-        if ctx.expr1 is not None:
-            signed_time_shift_1 = ctx.expr1.accept(self)
-            if ctx.op1.text == "-":
-                signed_time_shift_1 = -signed_time_shift_1
-        if ctx.expr2 is not None:
-            signed_time_shift_2 = ctx.expr2.accept(self)
-            if ctx.op2.text == "-":
-                signed_time_shift_2 = -signed_time_shift_2
-        return shifted_expr.shift(
-            ExpressionRange(signed_time_shift_1, signed_time_shift_2)
-        )
+        shift1 = ctx.shift1.accept(self)
+        shift2 = ctx.shift2.accept(self)
+        return shifted_expr.shift(ExpressionRange(shift1, shift2))
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:
@@ -172,6 +154,15 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         if fn is None:
             raise ValueError(f"Encountered invalid function name {function_name}")
         return fn(operand)
+
+    # Visit a parse tree produced by ExprParser#shift.
+    def visitShift(self, ctx: ExprParser.ShiftContext):
+        if ctx.expr() is None:
+            return literal(0)
+        shift = ctx.expr().accept(self)
+        if ctx.op.text == "-":
+            return -shift
+        return shift
 
 
 _FUNCTIONS = {

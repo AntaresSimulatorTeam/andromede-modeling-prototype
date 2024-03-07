@@ -1,4 +1,4 @@
-# Generated from /home/vargastat/andromede-modeling-prototype/grammar/Expr.g4 by ANTLR 4.13.1
+# Generated from Expr.g4 by ANTLR 4.13.1
 from antlr4 import *
 
 if "." in __name__:
@@ -12,6 +12,10 @@ else:
 class ExprVisitor(ParseTreeVisitor):
     # Visit a parse tree produced by ExprParser#fullexpr.
     def visitFullexpr(self, ctx: ExprParser.FullexprContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#shift.
+    def visitShift(self, ctx: ExprParser.ShiftContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#identifier.

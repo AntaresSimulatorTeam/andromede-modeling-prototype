@@ -1,7 +1,8 @@
-# Generated from /home/vargastat/andromede-modeling-prototype/grammar/Expr.g4 by ANTLR 4.13.1
-from antlr4 import *
-from io import StringIO
+# Generated from Expr.g4 by ANTLR 4.13.1
 import sys
+from io import StringIO
+
+from antlr4 import *
 
 if sys.version_info[1] > 5:
     from typing import TextIO
@@ -564,7 +565,7 @@ def serializedATN():
         43,
         44,
         5,
-        45,
+        43,
         0,
         0,
         44,
@@ -576,7 +577,7 @@ def serializedATN():
         45,
         46,
         5,
-        47,
+        45,
         0,
         0,
         46,
@@ -588,7 +589,7 @@ def serializedATN():
         47,
         48,
         5,
-        42,
+        47,
         0,
         0,
         48,
@@ -600,7 +601,7 @@ def serializedATN():
         49,
         50,
         5,
-        43,
+        42,
         0,
         0,
         50,
@@ -1056,10 +1057,10 @@ class ExprLexer(Lexer):
 
     literalNames = [
         "<INVALID>",
+        "'+'",
         "'-'",
         "'/'",
         "'*'",
-        "'+'",
         "'.'",
         "'('",
         "')'",
