@@ -47,6 +47,10 @@ from andromede.expression.parsing.parse_expression import (
             "x[t-1, t+4]",
             var("x").shift([-literal(1), literal(4)]),
         ),
+        (
+            "x[t-1, t, t+4]",
+            var("x").shift([-literal(1), literal(0), literal(4)]),
+        ),
         ("x[t-1..t+5]", var("x").shift(ExpressionRange(-literal(1), literal(5)))),
         ("x[t-1..t]", var("x").shift(ExpressionRange(-literal(1), literal(0)))),
         ("x[t..t+5]", var("x").shift(ExpressionRange(literal(0), literal(5)))),

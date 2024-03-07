@@ -150,28 +150,19 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         self, ctx: ExprParser.TimeShiftRangeContext
     ) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        operators = ctx.op  # type: ignore
-        signed_time_shifts = []
-        for i, t in enumerate(expressions):
-            if operators[i].text == "-":
-                signed_time_shifts.append(-t)
-            else:
-                signed_time_shifts.append(t)
-
-        if len(operators) > 1:
-            return shifted_expr.shift(
-                ExpressionRange(signed_time_shifts[0], signed_time_shifts[1])
-            )
-        else:
-            if isinstance(ctx.children[4], ExprParser.NumberContext):
-                return shifted_expr.shift(
-                    ExpressionRange(signed_time_shifts[0], literal(0))
-                )
-            else:
-                return shifted_expr.shift(
-                    ExpressionRange(literal(0), signed_time_shifts[0])
-                )
+        signed_time_shift_1 = literal(0)
+        signed_time_shift_2 = literal(0)
+        if ctx.expr1 is not None:
+            signed_time_shift_1 = ctx.expr1.accept(self)
+            if ctx.op1.text == "-":
+                signed_time_shift_1 = -signed_time_shift_1
+        if ctx.expr2 is not None:
+            signed_time_shift_2 = ctx.expr2.accept(self)
+            if ctx.op2.text == "-":
+                signed_time_shift_2 = -signed_time_shift_2
+        return shifted_expr.shift(
+            ExpressionRange(signed_time_shift_1, signed_time_shift_2)
+        )
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:
