@@ -26,9 +26,9 @@ expr: '-' expr                  # negation
     | NUMBER                    # number
     | '(' expr ')'              # expression
     | IDENTIFIER '(' expr ')'   # function
-    | IDENTIFIER '[' TIME (op+=('+' | '-') expr (',' TIME op+=('+' | '-') expr )*)? ']'  # timeShift
+    | IDENTIFIER '[' TIME (op+=('+' | '-') expr)? (',' TIME (op+=('+' | '-') expr )?)* ']'  # timeShift
     | IDENTIFIER '[' expr  (',' expr )* ']'  # timeIndex
-    | IDENTIFIER '[' TIME (op+=('+' | '-')* expr)? '..' TIME (op+=('+' | '-') expr)? ']'      # timeShiftRange
+    | IDENTIFIER '[' TIME (op1=('+' | '-')* expr1=expr)? '..' TIME (op2=('+' | '-') expr2=expr)? ']'      # timeShiftRange
     | IDENTIFIER '[' expr '..' expr ']'      # timeRange
     ;
 
