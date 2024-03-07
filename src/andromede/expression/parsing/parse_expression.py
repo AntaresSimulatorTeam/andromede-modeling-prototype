@@ -136,20 +136,42 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
         signed_time_shifts = []
 
-        for i, t in enumerate(time_shifts):
-            if operators[i].text == "-":
-                signed_time_shifts.append(-t)
-            else:
-                signed_time_shifts.append(t)
-
-        return shifted_expr.shift(signed_time_shifts)
+        if len(operators) != 0:
+            for i, t in enumerate(time_shifts):
+                if operators[i].text == "-":
+                    signed_time_shifts.append(-t)
+                else:
+                    signed_time_shifts.append(t)
+            return shifted_expr.shift(signed_time_shifts)
+        else:
+            return shifted_expr
 
     def visitTimeShiftRange(
         self, ctx: ExprParser.TimeShiftRangeContext
     ) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
         expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.shift(ExpressionRange(expressions[0], expressions[1]))
+        operators = ctx.op  # type: ignore
+        signed_time_shifts = []
+        for i, t in enumerate(expressions):
+            if operators[i].text == "-":
+                signed_time_shifts.append(-t)
+            else:
+                signed_time_shifts.append(t)
+
+        if len(operators) > 1:
+            return shifted_expr.shift(
+                ExpressionRange(signed_time_shifts[0], signed_time_shifts[1])
+            )
+        else:
+            if isinstance(ctx.children[4], ExprParser.NumberContext):
+                return shifted_expr.shift(
+                    ExpressionRange(signed_time_shifts[0], literal(0))
+                )
+            else:
+                return shifted_expr.shift(
+                    ExpressionRange(literal(0), signed_time_shifts[0])
+                )
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:

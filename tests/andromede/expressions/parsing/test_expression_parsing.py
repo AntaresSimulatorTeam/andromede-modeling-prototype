@@ -40,24 +40,26 @@ from andromede.expression.parsing.parse_expression import (
         ),
         ("sum(x)", var("x").sum()),
         ("x[-1]", var("x").eval(-literal(1))),
-        ("x[-1..5]", var("x").eval(ExpressionRange(-literal(1), 5))),
+        ("x[-1..5]", var("x").eval(ExpressionRange(-literal(1), literal(5)))),
         ("x[1]", var("x").eval(1)),
-        # ("x[t-1]", var("x").shift(-literal(1))),
+        ("x[t-1]", var("x").shift(-literal(1))),
         (
             "x[t-1, t+4]",
             var("x").shift([-literal(1), literal(4)]),
         ),
-        ("x[t-1..t+5]", var("x").shift(ExpressionRange(-literal(1), 5))),
+        ("x[t-1..t+5]", var("x").shift(ExpressionRange(-literal(1), literal(5)))),
+        ("x[t-1..t]", var("x").shift(ExpressionRange(-literal(1), literal(0)))),
+        ("x[t..t+5]", var("x").shift(ExpressionRange(literal(0), literal(5)))),
         ("x[t]", var("x")),
         (
             "sum(x[-1..5])",
-            var("x").eval(ExpressionRange(-literal(1), 5)).sum(),
+            var("x").eval(ExpressionRange(-literal(1), literal(5))).sum(),
         ),
         ("sum_connections(port.f)", port_field("port", "f").sum_connections()),
         (
             "level - level[-1] - efficiency * injection + withdrawal = inflows",
             var("level")
-            - var("level").eval(-1)
+            - var("level").eval(-literal(1))
             - param("efficiency") * var("injection")
             + var("withdrawal")
             == param("inflows"),
