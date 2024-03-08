@@ -142,8 +142,8 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         self, ctx: ExprParser.TimeShiftRangeContext
     ) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        shift1 = ctx.shift1.accept(self)
-        shift2 = ctx.shift2.accept(self)
+        shift1 = ctx.shift1.accept(self)  # type: ignore
+        shift2 = ctx.shift2.accept(self)  # type: ignore
         return shifted_expr.shift(ExpressionRange(shift1, shift2))
 
     # Visit a parse tree produced by ExprParser#function.
@@ -156,11 +156,11 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         return fn(operand)
 
     # Visit a parse tree produced by ExprParser#shift.
-    def visitShift(self, ctx: ExprParser.ShiftContext):
-        if ctx.expr() is None:
+    def visitShift(self, ctx: ExprParser.ShiftContext) -> ExpressionNode:
+        if ctx.expr() is None:  # type: ignore
             return literal(0)
-        shift = ctx.expr().accept(self)
-        if ctx.op.text == "-":
+        shift = ctx.expr().accept(self)  # type: ignore
+        if ctx.op.text == "-":  # type: ignore
             return -shift
         return shift
 

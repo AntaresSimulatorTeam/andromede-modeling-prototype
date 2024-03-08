@@ -12,7 +12,7 @@
 import io
 
 from andromede.expression import literal, param, var
-from andromede.libs.standard import CONSTANT
+from andromede.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
 from andromede.model import (
     ModelPort,
     PortField,
@@ -20,6 +20,7 @@ from andromede.model import (
     float_parameter,
     float_variable,
     model,
+    Constraint,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
@@ -96,14 +97,14 @@ library:
         - name: inflows
       variables:
         - name: injection
-          lower_bound: 0
-          upper_bound: p_max_injection
+          lower-bound: 0
+          upper-bound: p_max_injection
         - name: withdrawal
-          lower_bound: 0
-          upper_bound: p_max_withdrawal
+          lower-bound: 0
+          upper-bound: p_max_withdrawal
         - name: level
-          lower_bound: level_min
-          upper_bound: level_max
+          lower-bound: level_min
+          upper-bound: level_max
       ports:
         - name: injection_port
           type: flow
@@ -113,7 +114,7 @@ library:
           definition: "injection - withdrawal"
       constraints:
         - name: Level equation
-          expression: "level - level[-1] - efficiency * injection + withdrawal = inflows"
+          expression: "level[t] - level[t-1] - efficiency * injection + withdrawal = inflows"
           
     - id: thermal-cluster-dhd
       description: DHD model for thermal cluster
@@ -200,4 +201,50 @@ library:
             )
         ],
         objective_contribution=(param("cost") * var("generation")).sum().expec(),
+    )
+    short_term_storage = lib.models["short-term-storage"]
+    assert short_term_storage == model(
+        id="short-term-storage",
+        parameters=[
+            float_parameter("efficiency", structure=CONSTANT),
+            float_parameter("level_min", structure=CONSTANT),
+            float_parameter("level_max", structure=CONSTANT),
+            float_parameter("p_max_withdrawal", structure=CONSTANT),
+            float_parameter("p_max_injection", structure=CONSTANT),
+            float_parameter("inflows", structure=CONSTANT),
+        ],
+        variables=[
+            float_variable(
+                "injection",
+                lower_bound=literal(0),
+                upper_bound=param("p_max_injection"),
+            ),
+            float_variable(
+                "withdrawal",
+                lower_bound=literal(0),
+                upper_bound=param("p_max_withdrawal"),
+            ),
+            float_variable(
+                "level",
+                lower_bound=param("level_min"),
+                upper_bound=param("level_max"),
+            ),
+        ],
+        ports=[ModelPort(port_type=port_type, port_name="injection_port")],
+        port_fields_definitions=[
+            PortFieldDefinition(
+                port_field=PortFieldId(port_name="injection_port", field_name="flow"),
+                definition=var("injection") - var("withdrawal"),
+            )
+        ],
+        constraints=[
+            Constraint(
+                name="Level equation",
+                expression=var("level")
+                - var("level").shift(-literal(1))
+                - param("efficiency") * var("injection")
+                + var("withdrawal")
+                == param("inflows"),
+            )
+        ],
     )
