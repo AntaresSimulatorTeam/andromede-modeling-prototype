@@ -69,20 +69,24 @@ def _generate_tree_variables(
 
 
 def _generate_tree_constraints(
-    constraints: Dict[str, Constraint], tree: TreeNode
+    constraints: Dict[str, Constraint], tree_node: TreeNode
 ) -> Iterable[Constraint]:
+    # Goal is to replace variables in constraint, lower bound and upper bound with node variable
     raise NotImplementedError()
 
 
 def _generate_tree_expression(
-    expression: Optional[ExpressionNode], tree: TreeNode
+    expression: Optional[ExpressionNode], tree_node: TreeNode
 ) -> ExpressionNode:
+    # Goal is to replace variables with node variable
+    # Create a copy visitor to do so
     raise NotImplementedError()
 
 
 def _generate_tree_port_field_definition(
-    port_field_definition: Dict[PortFieldId, PortFieldDefinition], tree: TreeNode
+    port_field_definition: Dict[PortFieldId, PortFieldDefinition], tree_node: TreeNode
 ) -> Iterable[PortFieldDefinition]:
+    # Goal is to replace variables in the expression defining the port by node variable
     raise NotImplementedError()
 
 
@@ -162,5 +166,7 @@ def create_master_network(
     tree_node_to_network: Dict[TreeNode, Network],
     decision_coupling_model: Optional[Model],
 ) -> Network:
+    # Current implementation so that tests pass for trees with one investment nodes (in test_xpansion)
+    # The final implementation should gather all networks from tree nodes and connect the models with the decision coupling model (with ports)
     root = next(iter(tree_node_to_network.keys())).root
     return tree_node_to_network[root]
