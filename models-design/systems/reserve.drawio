@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="Page-1" id="0eeWLhEhAbjt74QTUGkZ">
-        <mxGraphModel dx="2797" dy="1915" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="3294" dy="2262" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -109,7 +109,12 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-465" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="io5GCxzzSzc3zPwwghzN-119" vertex="1">
                     <mxGeometry y="1020" width="551.29" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="EA9z76p3zM__a-H7yWGD-36" value="&lt;font style=&quot;&quot;&gt;&lt;b style=&quot;&quot;&gt;&lt;span style=&quot;font-size: 32px;&quot;&gt;Système Physique&lt;/span&gt;&lt;br&gt;Modélisation de 2 districts dans lesquels sont définis un besoin interne ( à satisfaire au sein du district) et un besoin échangeable (à satisfaire au sein du district ou dans l'autre district en réservant de la capacité) de 2 réserves ( avec une différenciation hausse/baisse). La modélisation est en NTC.&lt;br&gt;&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                <mxCell id="29" style="edgeStyle=none;shape=flexArrow;html=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" parent="1" source="EA9z76p3zM__a-H7yWGD-36" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-707.1111111111113" y="-390" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="EA9z76p3zM__a-H7yWGD-36" value="&lt;font style=&quot;&quot;&gt;&lt;span style=&quot;font-weight: bold; font-size: 32px;&quot;&gt;Système Physique&lt;/span&gt;&lt;br&gt;&lt;b&gt;Modelling of 2 districts in which are defined an internal need (to be met within the district) and an exchangeable need (to be met within the district or in the other district by reserving capacity) of 2 reserves (with a rise/fall differentiation). Modelling is in NTC.&lt;/b&gt;&lt;br&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="-841.9399999999999" y="-370" width="541.29" height="120" as="geometry"/>
                 </mxCell>
                 <mxCell id="EA9z76p3zM__a-H7yWGD-38" value="&lt;font style=&quot;font-size: 32px;&quot;&gt;&lt;b&gt;Données&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
@@ -532,7 +537,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-759" value="r{i}_down_max : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-396" vertex="1">
                     <mxGeometry y="180" width="240" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="5" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-396">
+                <mxCell id="5" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-396" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="209.99999999999977" as="sourcePoint"/>
                         <mxPoint x="200" y="209.99999999999977" as="targetPoint"/>
@@ -550,7 +555,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-762" value="0 &amp;lt;= r{i}_down &amp;lt;= r{i}_down_max" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-396" vertex="1">
                     <mxGeometry y="300" width="240" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="6" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-396">
+                <mxCell id="6" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-396" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="329.99999999999983" as="sourcePoint"/>
                         <mxPoint x="200" y="329.99999999999983" as="targetPoint"/>
@@ -562,7 +567,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-401" value="res_r : Res" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-396" vertex="1">
                     <mxGeometry y="360" width="240" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="7" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-396">
+                <mxCell id="7" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-396" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="389.99999999999983" as="sourcePoint"/>
                         <mxPoint x="200" y="389.99999999999983" as="targetPoint"/>
@@ -601,7 +606,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-795" value="c{i}_imp_up : Variable&amp;nbsp;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-407" vertex="1">
                     <mxGeometry y="150" width="930" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-407">
+                <mxCell id="11" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-407" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="179.99999999999977" as="sourcePoint"/>
                         <mxPoint x="200" y="179.99999999999977" as="targetPoint"/>
@@ -613,7 +618,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-411" value="f_max : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-407" vertex="1">
                     <mxGeometry y="210" width="930" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="18" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-407">
+                <mxCell id="18" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-407" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="239.99999999999977" as="sourcePoint"/>
                         <mxPoint x="200" y="239.99999999999977" as="targetPoint"/>
@@ -625,7 +630,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-413" value="sum(c{i}_exp_down)&amp;nbsp; + sum(c{i}_imp_up) +sum(c{i}_exp_up) + sum(c{i}_imp_down) &amp;lt;= alpha * f_max" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-407" vertex="1">
                     <mxGeometry y="280" width="930" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="16" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-407">
+                <mxCell id="16" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-407" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="309.9999999999998" as="sourcePoint"/>
                         <mxPoint x="200" y="309.9999999999998" as="targetPoint"/>
@@ -643,7 +648,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-794" value="res_to : Res" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-407" vertex="1">
                     <mxGeometry y="400" width="930" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="17" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-407">
+                <mxCell id="17" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-407" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="429.12999999999977" as="sourcePoint"/>
                         <mxPoint x="200" y="429.12999999999977" as="targetPoint"/>
@@ -676,7 +681,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-774" value="r{i}_down: Variable&amp;nbsp;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-430" vertex="1">
                     <mxGeometry y="60" width="270" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-430">
+                <mxCell id="8" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-430" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="89.99999999999983" as="sourcePoint"/>
                         <mxPoint x="200" y="89.99999999999983" as="targetPoint"/>
@@ -688,7 +693,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-789" value="0 &amp;lt;=&amp;nbsp; r{i}_down&amp;nbsp;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-430" vertex="1">
                     <mxGeometry y="120" width="270" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="14" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-430">
+                <mxCell id="14" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-430" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="149.99999999999977" as="sourcePoint"/>
                         <mxPoint x="200" y="149.99999999999977" as="targetPoint"/>
@@ -700,7 +705,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-783" value="res_to : Res" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-430" vertex="1">
                     <mxGeometry y="180" width="270" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="15" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-430">
+                <mxCell id="15" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-430" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="209.12999999999977" as="sourcePoint"/>
                         <mxPoint x="200" y="209.12999999999977" as="targetPoint"/>
@@ -736,7 +741,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-778" value="d_r{i}_down : Parameter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-448" vertex="1">
                     <mxGeometry y="60" width="270" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-448">
+                <mxCell id="12" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-448" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="89.56999999999971" as="sourcePoint"/>
                         <mxPoint x="200" y="89.56999999999971" as="targetPoint"/>
@@ -745,7 +750,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-451" value="res_d: Res" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-448" vertex="1">
                     <mxGeometry y="90" width="270" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="13" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-448">
+                <mxCell id="13" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-448" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="119.99999999999966" as="sourcePoint"/>
                         <mxPoint x="200" y="119.99999999999966" as="targetPoint"/>
@@ -766,7 +771,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-766" value="spill_r{i}_down, lol_r{i}_down : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-454" vertex="1">
                     <mxGeometry y="60" width="320" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="2" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-454">
+                <mxCell id="2" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-454" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="90" as="sourcePoint"/>
                         <mxPoint x="220" y="90" as="targetPoint"/>
@@ -775,7 +780,7 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-457" value="res_di: Res" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-454" vertex="1">
                     <mxGeometry y="90" width="320" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="3" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="W_Fl8U6niNGUEY-Sqnad-454">
+                <mxCell id="3" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="W_Fl8U6niNGUEY-Sqnad-454" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint y="120" as="sourcePoint"/>
                         <mxPoint x="220" y="120" as="targetPoint"/>
@@ -1396,43 +1401,43 @@
                 <mxCell id="W_Fl8U6niNGUEY-Sqnad-985" value="Objective fonction contribution" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#5964FF;" parent="1" vertex="1">
                     <mxGeometry x="210" y="-246.18" width="320" height="140" as="geometry"/>
                 </mxCell>
-                <mxCell id="W_Fl8U6niNGUEY-Sqnad-986" value="La contribution à la fonction objectif correspond à la sommes du volume de spillage/défaillance des modèles &quot;Node&quot; et des modèles &quot;Reserve district&quot; multiplié par les coûts associés" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-985" vertex="1">
+                <mxCell id="W_Fl8U6niNGUEY-Sqnad-986" value="The contribution to the objective function corresponds to the sum of the spillage/defaillance volume of the &quot;Node&quot; and &quot;Reserve district&quot; models multiplied by the associated costs." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="W_Fl8U6niNGUEY-Sqnad-985" vertex="1">
                     <mxGeometry y="30" width="320" height="110" as="geometry"/>
                 </mxCell>
-                <mxCell id="20" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                <mxCell id="20" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="420" y="1010" as="sourcePoint"/>
                         <mxPoint x="420" y="820" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="22" value="Un besoin interne au district d1 est défini et peut être satisfait uniquement par les clusters au sein du district. Une partie de la participation aux réserves des clusters peut répondre au besoin échangeable du district d1, ce qui se traduit par un transit fictif via conv_res_int_ext_1." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="22" value="A need internal to district d1 is defined and can only be met by clusters within the district. Part of the participation in the reserves of the clusters can meet the tradable requirement of district d1, which results in a fictitious transit via conv_res_int_ext_1." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="290" y="1010" width="234" height="110" as="geometry"/>
                 </mxCell>
-                <mxCell id="23" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                <mxCell id="23" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="730.27" y="1010" as="sourcePoint"/>
                         <mxPoint x="730.27" y="820" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="24" value="Un besoin échangeable du district d1 est défini et peut être satisfait par les clusters au sein du district ainsi que par des clusters d'autres districts dans la mesure où de la capacité est réservée sur les interconnections.&lt;br&gt;L'export de réserve à la hausse et l'import de réserve à la baisse diminue la capacité de la ligne dans le sens From-&amp;gt;To. Inversement, l'export de réserve à la baisse et l'import de réserve à la hausse diminue la capacité de la ligne dans le sens To-&amp;gt;From" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="24" value="&lt;div&gt;A tradable requirement for district d1 is defined and can be met by clusters within the district as well as by clusters from other districts, provided that capacity is reserved on the interconnections.&lt;/div&gt;&lt;div&gt;Upward reserve exports and downward reserve imports reduce the capacity of the line in the From-&amp;gt;To direction. Conversely, downward reserve exports and upward reserve imports reduce line capacity in the To-&amp;gt;From direction.&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="600.27" y="1010" width="234" height="200" as="geometry"/>
                 </mxCell>
-                <mxCell id="25" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                <mxCell id="25" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1290" y="1010.0000000000005" as="sourcePoint"/>
                         <mxPoint x="1290" y="820.0000000000005" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="26" value="Un besoin interne au district d2 est défini et peut être satisfait uniquement par les clusters au sein du district. Une partie de la participation aux réserves des clusters peut répondre au besoin échangeable du district d2, ce qui se traduit par un transit fictif via conv_res_int_ext_2." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="26" value="A need internal to district d2 is defined and can only be met by clusters within the district. Part of the participation in the clusters' reserves can meet the tradable requirement of district d2, resulting in a fictitious transit via conv_res_int_ext_2." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="1160" y="1010" width="234" height="110" as="geometry"/>
                 </mxCell>
-                <mxCell id="27" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" edge="1" parent="1">
+                <mxCell id="27" value="" style="endArrow=classic;html=1;rounded=0;shape=flexArrow;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="980.2699999999995" y="1010.0000000000005" as="sourcePoint"/>
                         <mxPoint x="980.2699999999995" y="820.0000000000005" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="28" value="Un besoin échangeable du district d2 est défini et peut être satisfait par les clusters au sein du district ainsi que par des clusters d'autres districts dans la mesure où de la capacité est réservée sur les interconnections.&lt;br&gt;L'export de réserve à la hausse et l'import de réserve à la baisse diminue la capacité de la ligne dans le sens From-&amp;gt;To. Inversement, l'export de réserve à la baisse et l'import de réserve à la hausse diminue la capacité de la ligne dans le sens To-&amp;gt;From" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="28" value="&lt;div&gt;A tradable requirement for district d2 is defined and can be met by clusters within the district as well as by clusters in other districts, provided that capacity is reserved on the interconnections.&lt;/div&gt;&lt;div&gt;Upward reserve exports and downward reserve imports reduce the capacity of the line in the From-&amp;gt;To direction. Conversely, downward reserve exports and upward reserve imports reduce line capacity in the To-&amp;gt;From direction.&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="850.27" y="1010" width="234" height="200" as="geometry"/>
                 </mxCell>
             </root>
