@@ -12,7 +12,8 @@
 from dataclasses import dataclass
 from typing import Set
 
-from antlr4 import CommonTokenStream, InputStream
+from antlr4 import CommonTokenStream, InputStream, DiagnosticErrorListener
+from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from andromede.expression import ExpressionNode, literal, param, var
 from andromede.expression.equality import expressions_equal
@@ -172,12 +173,24 @@ _FUNCTIONS = {
 }
 
 
+class AntaresParseException(Exception):
+    pass
+
+
 def parse_expression(expression: str, identifiers: ModelIdentifiers) -> ExpressionNode:
     """
     Parses a string expression to create the corresponding AST representation.
     """
-    input = InputStream(expression)
-    lexer = ExprLexer(input)
-    stream = CommonTokenStream(lexer)
-    parser = ExprParser(stream)
-    return ExpressionNodeBuilderVisitor(identifiers).visit(parser.fullexpr())  # type: ignore
+    try:
+        input = InputStream(expression)
+        lexer = ExprLexer(input)
+        stream = CommonTokenStream(lexer)
+        parser = ExprParser(stream)
+        parser._errHandler = BailErrorStrategy()
+
+        return ExpressionNodeBuilderVisitor(identifiers).visit(parser.fullexpr())  # type: ignore
+
+    except Exception as e:
+        raise AntaresParseException(
+            f"An error occurred during parsing: {type(e).__name__}"
+        ) from e

@@ -21,6 +21,7 @@ from andromede.expression.parsing.antlr.ExprParser import ExprParser
 from andromede.expression.parsing.parse_expression import (
     ModelIdentifiers,
     parse_expression,
+    AntaresParseException,
 )
 
 
@@ -55,6 +56,7 @@ from andromede.expression.parsing.parse_expression import (
         ("x[t-1..t]", var("x").shift(ExpressionRange(-literal(1), literal(0)))),
         ("x[t..t+5]", var("x").shift(ExpressionRange(literal(0), literal(5)))),
         ("x[t]", var("x")),
+        ("x[t+p]", var("x").shift(param("p"))),
         (
             "sum(x[-1..5])",
             var("x").eval(ExpressionRange(-literal(1), literal(5))).sum(),
@@ -99,3 +101,32 @@ def test_parsing_visitor(expression_str: str, expected: ExpressionNode):
     print()
     print(print_expr(expr))
     assert expressions_equal(expr, expected)
+
+
+def test_parse_cancellation_err():
+    # Console log error is displayed !
+    identifiers = ModelIdentifiers(
+        variables={
+            "x",
+            "level",
+            "injection",
+            "withdrawal",
+            "nb_start",
+            "nb_on",
+            "generation",
+        },
+        parameters={
+            "p",
+            "inflows",
+            "efficiency",
+            "d_min_up",
+            "cost",
+        },
+    )
+    expression_str = "x[t+1-t]"
+
+    with pytest.raises(
+        AntaresParseException,
+        match=r"An error occurred during parsing: ParseCancellationException",
+    ):
+        parse_expression(expression_str, identifiers)
