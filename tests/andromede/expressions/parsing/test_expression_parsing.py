@@ -19,9 +19,9 @@ from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
 from andromede.expression.parsing.antlr.ExprParser import ExprParser
 from andromede.expression.parsing.parse_expression import (
+    AntaresParseException,
     ModelIdentifiers,
     parse_expression,
-    AntaresParseException,
 )
 
 

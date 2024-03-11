@@ -14,13 +14,13 @@ import io
 from andromede.expression import literal, param, var
 from andromede.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
 from andromede.model import (
+    Constraint,
     ModelPort,
     PortField,
     PortType,
     float_parameter,
     float_variable,
     model,
-    Constraint,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
