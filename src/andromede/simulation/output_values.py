@@ -319,7 +319,7 @@ class BendersSolution:
         return self.data["solution"]["problem_status"]
 
     @property
-    def optimality_gap(self) -> float:
+    def absolute_gap(self) -> float:
         return self.data["solution"]["optimality_gap"]
 
     @property
