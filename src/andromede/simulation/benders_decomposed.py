@@ -58,7 +58,7 @@ class BendersDecomposedProblem:
         master: OptimizationProblem,
         subproblems: List[OptimizationProblem],
         emplacement: str = "outputs/lp",
-        output_path: str = "output/xpansion",
+        output_path: str = "expansion",
     ) -> None:
         self.master = master
         self.subproblems = subproblems
