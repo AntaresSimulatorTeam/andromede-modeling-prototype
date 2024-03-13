@@ -37,7 +37,7 @@ from andromede.simulation.strategy import (
     InvestmentProblemStrategy,
     OperationalProblemStrategy,
 )
-from andromede.simulation.time_block import ConfiguredTree, TimeBlock
+from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Network
 from andromede.utils import read_json, serialize, serialize_json
@@ -228,7 +228,6 @@ def build_benders_decomposed_problem(
     master = build_problem(
         master_network,
         database,
-        configured_tree.root,  # Could be any node, given the implmentation of get_nodes()
         null_time_block := TimeBlock(  # Not necessary for master, but list must be non-empty
             0, [0]
         ),
