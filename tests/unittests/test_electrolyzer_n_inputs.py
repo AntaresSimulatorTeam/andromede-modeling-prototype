@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+import math
+
 from andromede.libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
 from andromede.libs.standard_sc import (
     CONVERTOR_MODEL,
@@ -17,7 +19,7 @@ from andromede.libs.standard_sc import (
     DECOMPOSE_1_FLOW_INTO_2_FLOW,
     TWO_INPUTS_CONVERTOR_MODEL,
 )
-from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -27,10 +29,32 @@ from andromede.study import (
     create_component,
 )
 
+"""
+for every following test we have two electrical production with an electrolyzer converting to a gaz flow
+we always have:
+    first electric production:
+        - p_max = 70
+        - cost = 10
+    second electric production:
+        - p_max = 80
+        - cost = 20
+    gaz production:
+        - p_max = 30
+        - cost = 40
+    first production conversion:
+        - alpha = 0.7
+    second production conversion:
+        - alpha = 0.5
+    for a gaz demand of 100
+"""
+
 
 def test_electrolyzer_n_inputs_1():
     """
     Test with an electrolyzer for each inputs
+
+    flow_ep1 * alpha_ez1 + flow_ep2 * alpha_ez2 + flow_gp
+
     """
     elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
     electric_prod_1 = create_component(model=GENERATOR_MODEL, id="ep1")
@@ -46,17 +70,17 @@ def test_electrolyzer_n_inputs_1():
 
     database = DataBase()
 
-    database.add_data("ep1", "p_max", ConstantData(100))
-    database.add_data("ep1", "cost", ConstantData(30))
+    database.add_data("ep1", "p_max", ConstantData(70))
+    database.add_data("ep1", "cost", ConstantData(10))
     database.add_data("ez1", "alpha", ConstantData(0.7))
 
-    database.add_data("ep2", "p_max", ConstantData(100))
-    database.add_data("ep2", "cost", ConstantData(30))
-    database.add_data("ez2", "alpha", ConstantData(0.7))
+    database.add_data("ep2", "p_max", ConstantData(80))
+    database.add_data("ep2", "cost", ConstantData(20))
+    database.add_data("ez2", "alpha", ConstantData(0.5))
 
-    database.add_data("gd", "demand", ConstantData(70))
-    database.add_data("gp", "p_max", ConstantData(10))
-    database.add_data("gp", "cost", ConstantData(40))
+    database.add_data("gd", "demand", ConstantData(100))
+    database.add_data("gp", "p_max", ConstantData(30))
+    database.add_data("gp", "cost", ConstantData(15))
 
     network = Network("test")
     network.add_node(elec_node_1)
@@ -94,13 +118,27 @@ def test_electrolyzer_n_inputs_1():
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()
 
+    output = OutputValues(problem)
+    ep1_gen = output.component("ep1").var("generation").value
+    ep2_gen = output.component("ep2").var("generation").value
+    gp_gen = output.component("gp").var("generation").value
+    print(ep1_gen)
+    print(ep2_gen)
+    print(gp_gen)
+
+    assert math.isclose(ep1_gen, 70)
+    assert math.isclose(ep2_gen, 42)
+    assert math.isclose(gp_gen, 30)
+
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 2971.4285714285716
+    assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
 def test_electrolyzer_n_inputs_2():
     """
     Test with one electrolyzer that has two inputs
+
+    flow_ep1 * alpha1_ez + flow_ep2 * alpha2_ez + flow_gp
     """
 
     elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
@@ -116,15 +154,19 @@ def test_electrolyzer_n_inputs_2():
     electrolyzer = create_component(model=TWO_INPUTS_CONVERTOR_MODEL, id="ez")
 
     database = DataBase()
-    database.add_data("gd", "demand", ConstantData(70))
-    database.add_data("ep1", "p_max", ConstantData(100))
-    database.add_data("ep2", "p_max", ConstantData(100))
-    database.add_data("ep1", "cost", ConstantData(30))
-    database.add_data("ep2", "cost", ConstantData(30))
+
     database.add_data("ez", "alpha1", ConstantData(0.7))
     database.add_data("ez", "alpha2", ConstantData(0.5))
-    database.add_data("gp", "p_max", ConstantData(10))
-    database.add_data("gp", "cost", ConstantData(40))
+
+    database.add_data("ep1", "p_max", ConstantData(70))
+    database.add_data("ep1", "cost", ConstantData(10))
+
+    database.add_data("ep2", "p_max", ConstantData(80))
+    database.add_data("ep2", "cost", ConstantData(20))
+
+    database.add_data("gd", "demand", ConstantData(100))
+    database.add_data("gp", "p_max", ConstantData(30))
+    database.add_data("gp", "cost", ConstantData(15))
 
     network = Network("test")
     network.add_node(elec_node_1)
@@ -160,13 +202,29 @@ def test_electrolyzer_n_inputs_2():
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()
 
+    output = OutputValues(problem)
+    ep1_gen = output.component("ep1").var("generation").value
+    ep2_gen = output.component("ep2").var("generation").value
+    gp_gen = output.component("gp").var("generation").value
+    print(ep1_gen)
+    print(ep2_gen)
+    print(gp_gen)
+
+    assert math.isclose(ep1_gen, 70)
+    assert math.isclose(ep2_gen, 42)
+    assert math.isclose(gp_gen, 30)
+
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 2971.4285714285716
+    assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
 def test_electrolyzer_n_inputs_3():
     """
     Test with a consumption_electrolyzer with two inputs
+
+    (flow_ep1 + flow_ep2) * alpha_ez + flow_gp
+
+    The result is different since we only have one alpha at 0.7
     """
     elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
     elec_node_2 = Node(model=NODE_BALANCE_MODEL, id="e2")
@@ -184,14 +242,18 @@ def test_electrolyzer_n_inputs_3():
     )
 
     database = DataBase()
-    database.add_data("gd", "demand", ConstantData(70))
-    database.add_data("ep1", "p_max", ConstantData(100))
-    database.add_data("ep2", "p_max", ConstantData(100))
-    database.add_data("ep1", "cost", ConstantData(30))
-    database.add_data("ep2", "cost", ConstantData(30))
+
     database.add_data("ez", "alpha", ConstantData(0.7))
-    database.add_data("gp", "p_max", ConstantData(10))
-    database.add_data("gp", "cost", ConstantData(40))
+
+    database.add_data("ep1", "p_max", ConstantData(70))
+    database.add_data("ep1", "cost", ConstantData(10))
+
+    database.add_data("ep2", "p_max", ConstantData(80))
+    database.add_data("ep2", "cost", ConstantData(20))
+
+    database.add_data("gd", "demand", ConstantData(100))
+    database.add_data("gp", "p_max", ConstantData(30))
+    database.add_data("gp", "cost", ConstantData(15))
 
     network = Network("test")
     network.add_node(elec_node_1)
@@ -233,13 +295,26 @@ def test_electrolyzer_n_inputs_3():
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()
 
+    output = OutputValues(problem)
+    ep1_gen = output.component("ep1").var("generation").value
+    ep2_gen = output.component("ep2").var("generation").value
+    gp_gen = output.component("gp").var("generation").value
+
+    assert math.isclose(ep1_gen, 70)
+    assert math.isclose(ep2_gen, 30)
+    assert math.isclose(gp_gen, 30)
+
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 2971.4285714285716
+    assert math.isclose(problem.solver.Objective().Value(), 1750)
 
 
 def test_electrolyzer_n_inputs_4():
     """
     Test with one electrolyzer with one input that takes every inputs
+
+    flow_ep1 + flow_ep2 * alpha_ez + flow_gp
+
+    with the same values this one is infeasible since the electrolyzer model as in the drawio doesn't work with two inputs
     """
     elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
     elec_node_2 = Node(model=NODE_BALANCE_MODEL, id="e2")
@@ -254,14 +329,18 @@ def test_electrolyzer_n_inputs_4():
     electrolyzer = create_component(model=CONVERTOR_MODEL, id="ez")
 
     database = DataBase()
-    database.add_data("gd", "demand", ConstantData(70))
-    database.add_data("ep1", "p_max", ConstantData(100))
-    database.add_data("ep2", "p_max", ConstantData(100))
-    database.add_data("ep1", "cost", ConstantData(30))
-    database.add_data("ep2", "cost", ConstantData(30))
+
     database.add_data("ez", "alpha", ConstantData(0.7))
-    database.add_data("gp", "p_max", ConstantData(10))
-    database.add_data("gp", "cost", ConstantData(40))
+
+    database.add_data("ep1", "p_max", ConstantData(70))
+    database.add_data("ep1", "cost", ConstantData(10))
+
+    database.add_data("ep2", "p_max", ConstantData(80))
+    database.add_data("ep2", "cost", ConstantData(20))
+
+    database.add_data("gd", "demand", ConstantData(100))
+    database.add_data("gp", "p_max", ConstantData(30))
+    database.add_data("gp", "cost", ConstantData(15))
 
     network = Network("test")
     network.add_node(elec_node_1)
@@ -297,5 +376,4 @@ def test_electrolyzer_n_inputs_4():
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()
 
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 2971.4285714285716
+    assert status == problem.solver.INFEASIBLE

@@ -10,20 +10,10 @@
 #
 # This file is part of the Antares project.
 
-from andromede.expression import literal, param, var
-from andromede.expression.expression import port_field
+import math
+
 from andromede.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
 from andromede.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
-from andromede.model import (
-    Constraint,
-    ModelPort,
-    PortField,
-    PortType,
-    float_parameter,
-    float_variable,
-    model,
-)
-from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -98,7 +88,7 @@ def test_quota_co2():
     l12_flow = output.component("L12").var("flow").value
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 5500
-    assert oil1_p == 50
-    assert coal1_p == 50
-    assert l12_flow == -50
+    assert math.isclose(problem.solver.Objective().Value(), 5500)
+    assert math.isclose(oil1_p, 50)
+    assert math.isclose(coal1_p, 50)
+    assert math.isclose(l12_flow, -50)
