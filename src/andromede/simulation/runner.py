@@ -18,21 +18,16 @@ from typing import List
 
 
 class CommandRunner:
-    current_dir: pathlib.Path
-    command: pathlib.Path
-    arguments: List[str]
-    emplacement: pathlib.Path
-
     def __init__(
         self,
         binary_path: pathlib.Path,
         list_arguments: List[str],
         emplacement: pathlib.Path,
     ) -> None:
-        self.current_dir = pathlib.Path().cwd()
-        self.command = binary_path
-        self.emplacement = emplacement
-        self.arguments = list_arguments
+        self.current_dir: pathlib.Path = pathlib.Path().cwd()
+        self.command: pathlib.Path = binary_path
+        self.emplacement: pathlib.Path = emplacement
+        self.arguments: List[str] = list_arguments
 
     def check_command(self) -> bool:
         if not self.command.is_file():
