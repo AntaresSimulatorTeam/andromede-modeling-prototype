@@ -9,14 +9,14 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-import io
+import typing
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 from yaml import safe_load
 
 
-def parse_yaml_library(input: io.StringIO) -> "InputLibrary":
+def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
     tree = safe_load(input)
     return InputLibrary.model_validate(tree["library"])
 
