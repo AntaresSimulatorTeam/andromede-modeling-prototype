@@ -9,7 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from andromede.expression import ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
@@ -22,11 +22,11 @@ from andromede.model import (
     Model,
     ModelPort,
     Parameter,
-    ParameterValueType,
     PortField,
     PortType,
+    ProblemContext,
+    ValueType,
     Variable,
-    VariableValueType,
     model,
 )
 from andromede.model.library import Library, library
@@ -85,7 +85,7 @@ def _resolve_model(input_model: InputModel, port_types: Dict[str, PortType]) -> 
             _to_constraint(c, identifiers) for c in input_model.binding_constraints
         ],
         constraints=[_to_constraint(c, identifiers) for c in input_model.constraints],
-        objective_contribution=_to_expression_if_present(
+        objective_operational_contribution=_to_expression_if_present(
             input_model.objective, identifiers
         ),
     )
@@ -110,7 +110,7 @@ def _resolve_field_definition(
 def _to_parameter(param: InputParameter) -> Parameter:
     return Parameter(
         name=param.name,
-        type=ParameterValueType.FLOAT,
+        type=ValueType.FLOAT,
         structure=IndexingStructure(param.time_dependent, param.scenario_dependent),
     )
 
@@ -126,10 +126,11 @@ def _to_expression_if_present(
 def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
     return Variable(
         name=var.name,
-        data_type=VariableValueType.FLOAT,
+        data_type=ValueType.FLOAT,
         structure=IndexingStructure(var.time_dependent, var.scenario_dependent),
         lower_bound=_to_expression_if_present(var.lower_bound, identifiers),
         upper_bound=_to_expression_if_present(var.upper_bound, identifiers),
+        context=ProblemContext.OPERATIONAL,
     )
 
 
