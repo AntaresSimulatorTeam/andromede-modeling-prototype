@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
-        <mxGraphModel dx="1200" dy="1912" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="1626" dy="2031" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="WIyWlLk6GJQsqaUBKTNV-0"/>
                 <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0"/>
@@ -148,7 +148,7 @@
                 <mxCell id="562" value="flow_n.f.sum() - consumption_e = spillage - ens" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="210" width="290" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="652" value="flow_e.f. = consumption_e" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
+                <mxCell id="652" value="flow_e.f = consumption_e" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="559" vertex="1">
                     <mxGeometry y="240" width="290" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="720" value="ConverterInput(p) : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fontColor=#000000;fillColor=#CCFFCC;" parent="0" vertex="1">
@@ -415,7 +415,7 @@
                         <mxPoint x="317" y="117.99999999999989" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="735" value="e_{1}, ..., e_{n} : Node" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="223">
+                <mxCell id="735" value="e_{1}, ..., e_{n} : Node" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="223" vertex="1">
                     <mxGeometry y="90" width="320" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="242" value="e_{i}.flow_n electrolyzer_{i}.flow_in" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="223" vertex="1">
@@ -556,7 +556,7 @@
                         <mxPoint x="317" y="88.99999999999989" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="736" value="e_{1}, ..., e_{n} : Node" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="305">
+                <mxCell id="736" value="e_{1}, ..., e_{n} : Node" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="305" vertex="1">
                     <mxGeometry y="60" width="320" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="317" value="e_{i}.flow_n electrolyzer_1.flow_in_{i}" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="305" vertex="1">
@@ -670,12 +670,6 @@
                         <mxPoint x="555" y="285" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="497" value="" style="endArrow=none;startArrow=classic;html=1;fontSize=24;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startFill=1;endFill=0;" parent="457" source="489" target="493" edge="1">
-                    <mxGeometry width="50" height="50" relative="1" as="geometry">
-                        <mxPoint x="500" y="195.5" as="sourcePoint"/>
-                        <mxPoint x="555" y="115" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
                 <mxCell id="476" value="" style="group" parent="457" vertex="1" connectable="0">
                     <mxGeometry x="530" y="181" width="524" height="1340" as="geometry"/>
                 </mxCell>
@@ -709,22 +703,28 @@
                 <mxCell id="684" value="i = 1,...,N" style="text;html=1;strokeColor=#4D9900;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=3;" parent="457" vertex="1">
                     <mxGeometry x="610" y="125" width="60" height="30" as="geometry"/>
                 </mxCell>
+                <mxCell id="737" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="457" source="489" target="493">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="474" y="231" as="sourcePoint"/>
+                        <mxPoint x="524" y="181" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
                 <mxCell id="498" value="File &quot;network.txt&quot;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCCCFF;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="1051" y="1769" width="340" height="210" as="geometry"/>
                 </mxCell>
-                <mxCell id="499" value="electrolyzer_1 : ConverterReceiveIn" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="498" vertex="1">
+                <mxCell id="499" value="electrolyzer_1 : ConverterInput(1)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="498" vertex="1">
                     <mxGeometry y="30" width="340" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="500" value="&lt;span style=&quot;text-align: center;&quot;&gt;consumption_electrolyzer : DecomposeFlowIntoMultiFlow(N)&lt;/span&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="498" vertex="1">
                     <mxGeometry y="60" width="340" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="501" value="" style="endArrow=none;dashed=1;html=1;rounded=0;entryX=1.003;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="498" edge="1" target="502">
+                <mxCell id="501" value="" style="endArrow=none;dashed=1;html=1;rounded=0;entryX=1.003;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="498" target="502" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="-1" y="120" as="sourcePoint"/>
                         <mxPoint x="321" y="119.99999999999989" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="734" value="e_{1}, ..., e_{n} : Node" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="498">
+                <mxCell id="734" value="e_{1}, ..., e_{n} : Node" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="498" vertex="1">
                     <mxGeometry y="90" width="340" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="502" value="e_{i}.flow_n&amp;nbsp;&lt;span style=&quot;text-align: center;&quot;&gt;consumption_electrolyzer&lt;/span&gt;.flow_in_{i}" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="498" vertex="1">
@@ -865,7 +865,7 @@
                         <mxPoint x="317" y="88.99999999999989" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="733" value="e_{1}, ..., e_{n} : NodeWithSlack" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="603">
+                <mxCell id="733" value="e_{1}, ..., e_{n} : NodeWithSlack" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="603" vertex="1">
                     <mxGeometry y="60" width="320" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="606" value="e_{i}.flow_e electrolyzer_1.flow_in" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="603" vertex="1">
@@ -883,7 +883,7 @@
                 <mxCell id="656" value="&lt;i&gt;This option is generalizable to any large number of inputs (up to a certain limit) using empty ports.&amp;nbsp;&lt;br&gt;Disadvatange : coupling of variables inside the converter model.&lt;br&gt;The coupling costraint could be implemented by a RepartitionKey model or inside Converter model.&lt;br&gt;&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="1758" y="970" width="619" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="657" value="&lt;i&gt;This option is generalizable to any large number of inputs (up to a certain limit) using empty ports.&amp;nbsp;&lt;br&gt;Disadvatange : the object &quot;consumption_electrolyzer&quot; isn't a physical object&lt;/i&gt;&lt;i style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;The coupling costraint could be implemented by a RepartitionKey model or inside Decompose model.&lt;/i&gt;&lt;i&gt;&lt;br&gt;&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+                <mxCell id="657" value="&lt;i&gt;This option is generalizable to any large number of inputs (up to a certain limit) using empty ports.&amp;nbsp;&lt;br&gt;Disadvatange : the object &quot;consumption_electrolyzer&quot; isn't a physical object&lt;/i&gt;&lt;i style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;The coupling costraint could be implemented by a RepartitionKey model or inside Decompose model.&lt;br&gt;&lt;/i&gt;&lt;i&gt;This representation does not seem natural from a user point of view, regarding the direction of the arrows in the consumption_electrolyzer component.&lt;br&gt;&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
                     <mxGeometry x="930" y="2080" width="619" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="658" value="&lt;i&gt;This option is generalizable to any large number of inputs (up to a certain limit) using empty ports.&amp;nbsp;&lt;br&gt;Disadvatange : demultiplication of variables and ports in the model &quot;Node&quot;&lt;/i&gt;&lt;i style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;The coupling costraint could be implemented by a RepartitionKey model.&lt;/i&gt;&lt;i&gt;&lt;br&gt;&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
@@ -920,28 +920,19 @@
                     <mxGeometry x="556" y="-140" width="271" height="120" as="geometry"/>
                 </mxCell>
                 <mxCell id="701" value="Decompose1FlowIntoMultiFlow(p) : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;fontColor=#000000;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-                    <mxGeometry x="900" y="-630" width="300" height="180" as="geometry"/>
+                    <mxGeometry x="900" y="-630" width="300" height="150" as="geometry"/>
                 </mxCell>
                 <mxCell id="702" value="energy_{1}, ..., energy_{p} : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="701" vertex="1">
                     <mxGeometry y="30" width="300" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="670" value="energy_{1}, ...., energy_{p} &amp;gt;= 0" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="701" vertex="1">
+                <mxCell id="703" value="flow_in_{1}, ..., flow_in_{p}, flow_out : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="701" vertex="1">
                     <mxGeometry y="60" width="300" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="703" value="flow_in_{1}, ..., flow_in_{p}, flow_out : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="701" vertex="1">
+                <mxCell id="704" value="flow_in_{k}.f = energy_{k} forall k in 1..p" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="701" vertex="1">
                     <mxGeometry y="90" width="300" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="704" value="flow_in_{k}.f = -energy_{k} forall k in 1..p" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="701" vertex="1">
-                    <mxGeometry y="120" width="300" height="30" as="geometry"/>
-                </mxCell>
                 <mxCell id="705" value="flow_out.f = energy_{1}+...+energy_{p}" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="701" vertex="1">
-                    <mxGeometry y="150" width="300" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="706" value="" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0.005;exitY=-0.18;exitDx=0;exitDy=0;entryX=1.013;entryY=-0.127;entryDx=0;entryDy=0;entryPerimeter=0;exitPerimeter=0;" parent="701" source="703" target="703" edge="1">
-                    <mxGeometry width="50" height="50" relative="1" as="geometry">
-                        <mxPoint x="-10" y="160" as="sourcePoint"/>
-                        <mxPoint x="190" y="160" as="targetPoint"/>
-                    </mxGeometry>
+                    <mxGeometry y="120" width="300" height="30" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
