@@ -25,27 +25,6 @@ from andromede.model import (
 from andromede.model.model import PortFieldDefinition, PortFieldId
 
 """
-Model of a power generator.
-The power production p is bounded between p_min and p_max.
-An emission factor is used to determine the CO² emission according to the production.
-"""
-PROD_MODEL = model(
-    id="Production",
-    parameters=[float_parameter("p_max", CONSTANT), float_parameter("cost", CONSTANT)],
-    variables=[
-        float_variable("prod", lower_bound=literal(0), upper_bound=param("p_max"))
-    ],
-    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="FlowP")],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("FlowP", "flow"),
-            definition=var("prod"),
-        )
-    ],
-    objective_operational_contribution=(param("cost") * var("prod")).sum().expec(),
-)
-
-"""
 Simple Convertor model.
 """
 CONVERTOR_MODEL = model(
@@ -53,7 +32,6 @@ CONVERTOR_MODEL = model(
     parameters=[float_parameter("alpha")],
     variables=[
         float_variable("input", lower_bound=literal(0)),
-        float_variable("output"),
     ],
     ports=[
         ModelPort(port_type=BALANCE_PORT_TYPE, port_name="FlowDI"),
@@ -66,14 +44,8 @@ CONVERTOR_MODEL = model(
         ),
         PortFieldDefinition(
             port_field=PortFieldId("FlowDO", "flow"),
-            definition=var("output"),
+            definition=var("input") * param("alpha"),
         ),
-    ],
-    constraints=[
-        Constraint(
-            name="Conversion",
-            expression=var("output") == var("input") * param("alpha"),
-        )
     ],
 )
 
@@ -86,7 +58,6 @@ TWO_INPUTS_CONVERTOR_MODEL = model(
     variables=[
         float_variable("input1", lower_bound=literal(0)),
         float_variable("input2", lower_bound=literal(0)),
-        float_variable("output"),
     ],
     ports=[
         ModelPort(port_type=BALANCE_PORT_TYPE, port_name="FlowDI1"),
@@ -104,24 +75,17 @@ TWO_INPUTS_CONVERTOR_MODEL = model(
         ),
         PortFieldDefinition(
             port_field=PortFieldId("FlowDO", "flow"),
-            definition=var("output"),
+            definition=var("input1") * param("alpha1")
+            + var("input2") * param("alpha2"),
         ),
-    ],
-    constraints=[
-        Constraint(
-            name="Conversion",
-            expression=var("output")
-            == var("input1") * param("alpha1") + var("input2") * param("alpha2"),
-        )
     ],
 )
 
 DECOMPOSE_1_FLOW_INTO_2_FLOW = model(
-    id="Consumption electrolyzer model",
+    id="Consumption aggregation model",
     variables=[
-        float_variable("input1", lower_bound=literal(0)),
-        float_variable("input2", lower_bound=literal(0)),
-        float_variable("output"),
+        float_variable("input1"),
+        float_variable("input2"),
     ],
     ports=[
         ModelPort(port_type=BALANCE_PORT_TYPE, port_name="FlowDI1"),
@@ -131,25 +95,23 @@ DECOMPOSE_1_FLOW_INTO_2_FLOW = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("FlowDI1", "flow"),
-            definition=-var("input1"),
+            definition=var("input1"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("FlowDI2", "flow"),
-            definition=-var("input2"),
-        ),
-        PortFieldDefinition(
-            port_field=PortFieldId("FlowDO", "flow"), definition=var("output")
+            definition=var("input2"),
         ),
     ],
-    constraints=[
+    binding_constraints=[
         Constraint(
-            name="output",
-            expression=var("output") == var("input1") + var("input2"),
-        ),
+            name="Conversion",
+            expression=var("input1") + var("input2")
+            == port_field("FlowDO", "flow").sum_connections(),
+        )
     ],
 )
 
-CONVERTOR_MODEL_MOD = model(
+CONVERTOR_RECEIVE_IN = model(
     id="Convertor model",
     parameters=[float_parameter("alpha")],
     variables=[
@@ -165,7 +127,7 @@ CONVERTOR_MODEL_MOD = model(
             definition=var("input") * param("alpha"),
         ),
     ],
-    constraints=[
+    binding_constraints=[
         Constraint(
             name="Conversion",
             expression=var("input") == port_field("FlowDI", "flow").sum_connections(),
@@ -224,6 +186,28 @@ QUOTA_CO2_MODEL = model(
             name="Bound CO2",
             expression=port_field("emissionCO2", "Q").sum_connections()
             <= param("quota"),
+        )
+    ],
+)
+
+NODE_BALANCE_MODEL_MOD = model(
+    id="NODE_BALANCE_MODEL_MOD",
+    variables=[float_variable("p")],
+    ports=[
+        ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port_n"),
+        ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port_e"),
+    ],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port_e", "flow"),
+            definition=var("p"),
+        )
+    ],
+    binding_constraints=[
+        Constraint(
+            name="Balance",
+            expression=var("p")
+            == port_field("balance_port_n", "flow").sum_connections(),
         )
     ],
 )

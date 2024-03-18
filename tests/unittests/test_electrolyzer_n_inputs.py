@@ -15,8 +15,9 @@ import math
 from andromede.libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
 from andromede.libs.standard_sc import (
     CONVERTOR_MODEL,
-    CONVERTOR_MODEL_MOD,
+    CONVERTOR_RECEIVE_IN,
     DECOMPOSE_1_FLOW_INTO_2_FLOW,
+    NODE_BALANCE_MODEL_MOD,
     TWO_INPUTS_CONVERTOR_MODEL,
 )
 from andromede.simulation import OutputValues, TimeBlock, build_problem
@@ -30,7 +31,7 @@ from andromede.study import (
 )
 
 """
-for every following test we have two electrical production with an electrolyzer converting to a gaz flow
+for every following test we have two electrical productions with an electrolyzer converting to a gaz flow
 we always have:
     first electric production:
         - p_max = 70
@@ -40,10 +41,10 @@ we always have:
         - cost = 20
     gaz production:
         - p_max = 30
-        - cost = 40
-    first production conversion:
+        - cost = 15
+    first conversion rate:
         - alpha = 0.7
-    second production conversion:
+    second conversion rate:
         - alpha = 0.5
     for a gaz demand of 100
 """
@@ -51,9 +52,15 @@ we always have:
 
 def test_electrolyzer_n_inputs_1():
     """
-    Test with an electrolyzer for each inputs
+    Test with an electrolyzer for each input
 
-    flow_ep1 * alpha_ez1 + flow_ep2 * alpha_ez2 + flow_gp
+    ep1 = electric production 1
+    ep2 = electric production 2
+    ez1 = electrolyzer 1
+    ez2 = electrolyzer 2
+    gp = gaz production
+
+    total gaz production = flow_ep1 * alpha_ez1 + flow_ep2 * alpha_ez2 + flow_gp
 
     """
     elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
@@ -138,7 +145,12 @@ def test_electrolyzer_n_inputs_2():
     """
     Test with one electrolyzer that has two inputs
 
-    flow_ep1 * alpha1_ez + flow_ep2 * alpha2_ez + flow_gp
+    ep1 = electric production 1
+    ep2 = electric production 2
+    ez = electrolyzer
+    gp = gaz production
+
+    total gaz production = flow_ep1 * alpha1_ez + flow_ep2 * alpha2_ez + flow_gp
     """
 
     elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
@@ -222,7 +234,12 @@ def test_electrolyzer_n_inputs_3():
     """
     Test with a consumption_electrolyzer with two inputs
 
-    (flow_ep1 + flow_ep2) * alpha_ez + flow_gp
+    ep1 = electric production 1
+    ep2 = electric production 2
+    ez = electrolyzer
+    gp = gaz production
+
+    total gaz production = (flow_ep1 + flow_ep2) * alpha_ez + flow_gp
 
     The result is different since we only have one alpha at 0.7
     """
@@ -236,7 +253,7 @@ def test_electrolyzer_n_inputs_3():
     gaz_prod = create_component(model=GENERATOR_MODEL, id="gp")
     gaz_demand = create_component(model=DEMAND_MODEL, id="gd")
 
-    electrolyzer = create_component(model=CONVERTOR_MODEL_MOD, id="ez")
+    electrolyzer = create_component(model=CONVERTOR_MODEL, id="ez")
     consumption_electrolyzer = create_component(
         model=DECOMPOSE_1_FLOW_INTO_2_FLOW, id="ce"
     )
@@ -312,12 +329,17 @@ def test_electrolyzer_n_inputs_4():
     """
     Test with one electrolyzer with one input that takes every inputs
 
-    flow_ep1 + flow_ep2 * alpha_ez + flow_gp
+    ep1 = electric production 1
+    ep2 = electric production 2
+    ez = electrolyzer
+    gp = gaz production
 
-    with the same values this one is infeasible since the electrolyzer model as in the drawio doesn't work with two inputs
+    total gaz production = (flow_ep1 + flow_ep2) * alpha_ez + flow_gp
+
+    same as test 3, the result is different than the first two since we only have one alpha at 0.7
     """
-    elec_node_1 = Node(model=NODE_BALANCE_MODEL, id="e1")
-    elec_node_2 = Node(model=NODE_BALANCE_MODEL, id="e2")
+    elec_node_1 = Node(model=NODE_BALANCE_MODEL_MOD, id="e1")
+    elec_node_2 = Node(model=NODE_BALANCE_MODEL_MOD, id="e2")
     gaz_node = Node(model=NODE_BALANCE_MODEL, id="g")
 
     electric_prod_1 = create_component(model=GENERATOR_MODEL, id="ep1")
@@ -326,7 +348,7 @@ def test_electrolyzer_n_inputs_4():
     gaz_prod = create_component(model=GENERATOR_MODEL, id="gp")
     gaz_demand = create_component(model=DEMAND_MODEL, id="gd")
 
-    electrolyzer = create_component(model=CONVERTOR_MODEL, id="ez")
+    electrolyzer = create_component(model=CONVERTOR_RECEIVE_IN, id="ez")
 
     database = DataBase()
 
@@ -353,16 +375,16 @@ def test_electrolyzer_n_inputs_4():
     network.add_component(electrolyzer)
 
     network.connect(
-        PortRef(electric_prod_1, "balance_port"), PortRef(elec_node_1, "balance_port")
+        PortRef(electric_prod_1, "balance_port"), PortRef(elec_node_1, "balance_port_n")
     )
     network.connect(
-        PortRef(elec_node_1, "balance_port"), PortRef(electrolyzer, "FlowDI")
+        PortRef(elec_node_1, "balance_port_e"), PortRef(electrolyzer, "FlowDI")
     )
     network.connect(
-        PortRef(electric_prod_2, "balance_port"), PortRef(elec_node_2, "balance_port")
+        PortRef(electric_prod_2, "balance_port"), PortRef(elec_node_2, "balance_port_n")
     )
     network.connect(
-        PortRef(elec_node_2, "balance_port"), PortRef(electrolyzer, "FlowDI")
+        PortRef(elec_node_2, "balance_port_e"), PortRef(electrolyzer, "FlowDI")
     )
     network.connect(PortRef(electrolyzer, "FlowDO"), PortRef(gaz_node, "balance_port"))
     network.connect(
@@ -376,4 +398,16 @@ def test_electrolyzer_n_inputs_4():
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()
 
-    assert status == problem.solver.INFEASIBLE
+    assert status == problem.solver.OPTIMAL
+
+    output = OutputValues(problem)
+    ep1_gen = output.component("ep1").var("generation").value
+    ep2_gen = output.component("ep2").var("generation").value
+    gp_gen = output.component("gp").var("generation").value
+
+    assert math.isclose(ep1_gen, 70)
+    assert math.isclose(ep2_gen, 30)
+    assert math.isclose(gp_gen, 30)
+
+    assert status == problem.solver.OPTIMAL
+    assert math.isclose(problem.solver.Objective().Value(), 1750)

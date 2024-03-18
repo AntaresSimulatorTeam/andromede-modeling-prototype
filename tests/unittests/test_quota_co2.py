@@ -33,7 +33,7 @@ build the quota CO² test system.
     |       |
     ---------
         |
-    MonQuotaCO2
+    QuotaCO2
 
 """
 """ Test of a generation of energy and co2 with a quota to limit the emission"""
