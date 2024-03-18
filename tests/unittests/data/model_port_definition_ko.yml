@@ -1,0 +1,53 @@
+library:
+  id: basic
+  description: Basic library
+
+  port-types:
+    - id:  1er_flow
+      description: first flow
+      fields:
+        - name: 1er_flow
+    - id: flow
+      description: second flow
+      fields:
+        - name: flow
+  models:
+
+    - id: short-term-storage
+      description: A short term storage
+      parameters:
+        - name: p_max_withdrawal
+        - name: p_max_injection
+      variables:
+        - name: injection
+          lower-bound: 0
+          upper-bound: p_max_injection
+        - name: withdrawal
+          lower-bound: 0
+          upper-bound: p_max_withdrawal
+      ports:
+        - name: injection_port_1
+          type: 1er_flow
+      constraints:
+        - name: Level equation
+          expression: "injection_port.1er_flow = withdrawal"
+
+    - id: short-term-storage-2
+      description: A short term storage
+      parameters:
+        - name: p_max_withdrawal
+        - name: p_max_injection
+      variables:
+        - name: injection
+          lower-bound: 0
+          upper-bound: p_max_injection
+        - name: withdrawal
+          lower-bound: 0
+          upper-bound: p_max_withdrawal
+      ports:
+        - name: injection_port_1
+          type: flow
+      constraints:
+        - name: Level equation
+          expression: "injection_port.flow = withdrawal"
+

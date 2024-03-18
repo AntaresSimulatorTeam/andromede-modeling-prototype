@@ -15,7 +15,9 @@ from pathlib import Path
 import pytest
 
 from andromede.expression import literal, param, var
-from andromede.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
+from andromede.expression.expression import port_field
+from andromede.expression.parsing.parse_expression import AntaresParseException
+from andromede.libs.standard import CONSTANT
 from andromede.model import (
     Constraint,
     ModelPort,
@@ -110,6 +112,58 @@ def test_library_parsing(data_dir: Path):
                 - param("efficiency") * var("injection")
                 + var("withdrawal")
                 == param("inflows"),
+            )
+        ],
+    )
+
+
+def test_library_error_parsing(data_dir: Path):
+    lib_file = data_dir / "model_port_definition_ko.yml"
+
+    with lib_file.open() as f:
+        input_lib = parse_yaml_library(f)
+    assert input_lib.id == "basic"
+    with pytest.raises(
+        AntaresParseException,
+        match=r"An error occurred during parsing: ParseCancellationException",
+    ):
+        resolve_library(input_lib)
+
+
+def test_library_port_model_ok_parsing(data_dir: Path):
+    lib_file = data_dir / "model_port_definition_ok.yml"
+
+    with lib_file.open() as f:
+        input_lib = parse_yaml_library(f)
+    assert input_lib.id == "basic"
+
+    lib = resolve_library(input_lib)
+    port_type = lib.port_types["flow"]
+    assert port_type == PortType(id="flow", fields=[PortField(name="flow")])
+    short_term_storage = lib.models["short-term-storage-2"]
+    assert short_term_storage == model(
+        id="short-term-storage-2",
+        parameters=[
+            float_parameter("p_max_withdrawal", structure=CONSTANT),
+            float_parameter("p_max_injection", structure=CONSTANT),
+        ],
+        variables=[
+            float_variable(
+                "injection",
+                lower_bound=literal(0),
+                upper_bound=param("p_max_injection"),
+            ),
+            float_variable(
+                "withdrawal",
+                lower_bound=literal(0),
+                upper_bound=param("p_max_withdrawal"),
+            ),
+        ],
+        ports=[ModelPort(port_type=port_type, port_name="injection_port")],
+        constraints=[
+            Constraint(
+                name="Level equation",
+                expression=port_field("injection_port", "flow") == var("withdrawal"),
             )
         ],
     )
