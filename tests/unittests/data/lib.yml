@@ -64,7 +64,7 @@ library:
       port-field-definitions:
         - port: injection_port
           field: flow
-          definition: "-demand"
+          definition: -demand
 
     - id: short-term-storage
       description: A short term storage
