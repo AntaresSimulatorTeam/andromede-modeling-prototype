@@ -13,7 +13,10 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from andromede.expression.degree import is_constant
-from andromede.expression.equality import expressions_equal
+from andromede.expression.equality import (
+    expressions_equal,
+    expressions_equal_if_present,
+)
 from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
@@ -93,17 +96,6 @@ class Constraint:
         return (
             self.name == other.name
             and expressions_equal(self.expression, other.expression)
-            and _expressions_equal_if_present(self.lower_bound, other.lower_bound)
-            and _expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
         )
-
-
-def _expressions_equal_if_present(
-    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
-) -> bool:
-    if lhs is None and rhs is None:
-        return True
-    elif lhs is None or rhs is None:
-        return False
-    else:
-        return expressions_equal(lhs, rhs)
