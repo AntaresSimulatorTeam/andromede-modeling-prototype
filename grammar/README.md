@@ -4,8 +4,8 @@
 use for defining constraints, objective, etc.
 
 [ANTLR](https://www.antlr.org) needs to be used to generate the associated
-parser code, which must be placed in [andromede.expression.parsing.antlr](/src/andromede/expression/parsing/antlr)
-package.
+parser code, which must be written to [andromede.expression.parsing.antlr](/src/andromede/expression/parsing/antlr)
+package. **No other files are expected to be present in that package**.
 
 To achieve this you may use the provided `generate-parser.sh` script after having installed
 antlr4-tools (`pip install -r requirements-dev.txt` in root directory).

@@ -189,3 +189,14 @@ def expressions_equal(
     True if both expression nodes are equal. Literal values may be compared with absolute or relative tolerance.
     """
     return EqualityVisitor(abs_tol, rel_tol).visit(left, right)
+
+
+def expressions_equal_if_present(
+    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
+) -> bool:
+    if lhs is None and rhs is None:
+        return True
+    elif lhs is None or rhs is None:
+        return False
+    else:
+        return expressions_equal(lhs, rhs)
