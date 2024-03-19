@@ -26,5 +26,5 @@ library:
           type: flow
       constraints:
         - name: Level equation
-          expression: "injection_port.flow = withdrawal"
+          expression: injection_port.flow = withdrawal
 
