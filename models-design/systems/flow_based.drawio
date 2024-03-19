@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="fb_on_links" id="0eeWLhEhAbjt74QTUGkZ">
-        <mxGraphModel dx="2092" dy="1793" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="2029" dy="1762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -295,19 +295,19 @@
                 <mxCell id="131" value="f_fr_be" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFCCE6;strokeColor=#82b366;" parent="1" vertex="1">
                     <mxGeometry x="2005" y="710" width="49" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="132" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" parent="1" source="220" target="141" edge="1">
+                <mxCell id="132" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" parent="1" source="221" target="141" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1800.7299999999996" y="870" as="sourcePoint"/>
                         <mxPoint x="1860" y="700" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="133" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="210" target="131" edge="1">
+                <mxCell id="133" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="211" target="131" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1445" y="870" as="sourcePoint"/>
                         <mxPoint x="2010" y="740" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="134" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" parent="1" source="215" edge="1">
+                <mxCell id="134" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" parent="1" source="216" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1610.7299999999996" y="870" as="sourcePoint"/>
                         <mxPoint x="2004" y="750" as="targetPoint"/>
@@ -343,7 +343,7 @@
                 <mxCell id="jZK0nrupG1GRHjHEZKaM-185" value="FlowBasedFrBeDE : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;" parent="1" vertex="1">
                     <mxGeometry x="2068" y="-70" width="590" height="90" as="geometry"/>
                 </mxCell>
-                <mxCell id="195" value="f_fr_be, f_fr_de, f_be_de : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="jZK0nrupG1GRHjHEZKaM-185">
+                <mxCell id="195" value="f_fr_be, f_fr_de, f_be_de : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="jZK0nrupG1GRHjHEZKaM-185" vertex="1">
                     <mxGeometry y="30" width="590" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="jZK0nrupG1GRHjHEZKaM-187" value="a_fr_be[j]*f_fr_be.f.sum()&amp;nbsp;+ a_fr_de[j]*f_fr_de.f.sum()+ a_be_de[j]*f_be_de.f.sum()&amp;nbsp;&amp;lt;= b[j] for j in 1..nb_cons" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="jZK0nrupG1GRHjHEZKaM-185" vertex="1">
@@ -352,133 +352,133 @@
                 <mxCell id="jZK0nrupG1GRHjHEZKaM-192" value="&lt;font style=&quot;&quot;&gt;&lt;b style=&quot;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;Option 3 variant&lt;/font&gt;&lt;br&gt;&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="2228" y="-110" width="220" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="186" value="&lt;i&gt;The difference between option 1 and option 2 is that in option 2, variables and coeffecients are named after physical nodes whereas in option 1, the model could be applied to any system with 3 variables. The aim of option 2 is to discourage users from using the model to model something other than flow based constraints. In option 3, coefficients are already in the model and not given by the user.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+                <mxCell id="186" value="&lt;i&gt;The difference between option 1 and option 2 is that in option 2, variables and coeffecients are named after physical nodes whereas in option 1, the model could be applied to any system with 3 variables. The aim of option 2 is to discourage users from using the model to model something other than flow based constraints. In option 3, coefficients are already in the model and not given by the user.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" parent="1" vertex="1">
                     <mxGeometry x="880" y="199.6" width="534" height="70.4" as="geometry"/>
                 </mxCell>
-                <mxCell id="187" value="FlowBasedFrBeDe : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;" vertex="1" parent="1">
+                <mxCell id="187" value="FlowBasedFrBeDe : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;" parent="1" vertex="1">
                     <mxGeometry x="1624" y="-70" width="420" height="210" as="geometry"/>
                 </mxCell>
-                <mxCell id="188" value="x_fr_be, x_fr_de, x_be_de : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="187">
+                <mxCell id="188" value="x_fr_be, x_fr_de, x_be_de : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="187" vertex="1">
                     <mxGeometry y="30" width="420" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="190" value="a_fr_be[j]*x_fr_be + a_fr_de[j]*x_fr_de + a_be_de[j]*x_be_de &amp;lt;= b[j] for j in 1..nb_cons" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="187">
+                <mxCell id="190" value="a_fr_be[j]*x_fr_be + a_fr_de[j]*x_fr_de + a_be_de[j]*x_be_de &amp;lt;= b[j] for j in 1..nb_cons" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="187" vertex="1">
                     <mxGeometry y="60" width="420" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="191" value="f_fr_be, f_fr_de, f_be_de : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="187">
+                <mxCell id="191" value="f_fr_be, f_fr_de, f_be_de : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="187" vertex="1">
                     <mxGeometry y="90" width="420" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="192" value="f_fr_be.f.sum() = x_fr_be" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="187">
+                <mxCell id="192" value="f_fr_be.f.sum() = x_fr_be" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="187" vertex="1">
                     <mxGeometry y="120" width="420" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="193" value="f_fr_de.f.sum() = x_fr_de" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="187">
+                <mxCell id="193" value="f_fr_de.f.sum() = x_fr_de" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="187" vertex="1">
                     <mxGeometry y="150" width="420" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="194" value="f_be_de.f.sum() = x_be_de" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="187">
+                <mxCell id="194" value="f_be_de.f.sum() = x_be_de" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="187" vertex="1">
                     <mxGeometry y="180" width="420" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="196" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="210">
+                <mxCell id="196" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="210" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1291" y="740" as="sourcePoint"/>
                         <mxPoint x="1464" y="650" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="197" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="216" target="206">
+                <mxCell id="197" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" parent="1" source="216" target="206" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1643" y="840" as="sourcePoint"/>
                         <mxPoint x="1774" y="640" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="198" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="198" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="1414" y="540" width="80" height="110" as="geometry"/>
                 </mxCell>
-                <mxCell id="199" value="fr" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="198">
+                <mxCell id="199" value="fr" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="198" vertex="1">
                     <mxGeometry width="80" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="200" value="flow_n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="198">
+                <mxCell id="200" value="flow_n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="198" vertex="1">
                     <mxGeometry x="15" y="80" width="50" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="201" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="201" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="1584" y="540" width="80" height="110" as="geometry"/>
                 </mxCell>
-                <mxCell id="202" value="be" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="201">
+                <mxCell id="202" value="be" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="201" vertex="1">
                     <mxGeometry width="80" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="203" value="flow_n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="201">
+                <mxCell id="203" value="flow_n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="201" vertex="1">
                     <mxGeometry x="15" y="80" width="50" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="204" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="204" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="1744" y="540" width="80" height="110" as="geometry"/>
                 </mxCell>
-                <mxCell id="205" value="de" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="204">
+                <mxCell id="205" value="de" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="204" vertex="1">
                     <mxGeometry width="80" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="206" value="flow_n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="204">
+                <mxCell id="206" value="flow_n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="204" vertex="1">
                     <mxGeometry x="15" y="80" width="50" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="207" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="207" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="1400" y="830" width="121.73000000000002" height="150" as="geometry"/>
                 </mxCell>
-                <mxCell id="208" value="l_fr_be" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="207">
+                <mxCell id="208" value="l_fr_be" style="ellipse;whiteSpace=wrap;html=1;" parent="207" vertex="1">
                     <mxGeometry y="30" width="120" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="209" value="" style="group;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" connectable="0" parent="207">
+                <mxCell id="209" value="" style="group;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="207" vertex="1" connectable="0">
                     <mxGeometry x="10" width="100" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="210" value="flow_from" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="209">
+                <mxCell id="210" value="flow_from" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="209" vertex="1">
                     <mxGeometry x="-10" width="60" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="211" value="flow_to" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="209">
+                <mxCell id="211" value="flow_to" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="209" vertex="1">
                     <mxGeometry x="50" width="50" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="212" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="212" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="1565.73" y="830" width="121.73000000000002" height="140" as="geometry"/>
                 </mxCell>
-                <mxCell id="213" value="l_fr_de" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="212">
+                <mxCell id="213" value="l_fr_de" style="ellipse;whiteSpace=wrap;html=1;" parent="212" vertex="1">
                     <mxGeometry y="30" width="120" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="214" value="" style="group;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" connectable="0" parent="212">
+                <mxCell id="214" value="" style="group;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="212" vertex="1" connectable="0">
                     <mxGeometry x="10" width="100" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="215" value="flow_from" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="214">
+                <mxCell id="215" value="flow_from" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="214" vertex="1">
                     <mxGeometry x="-10" width="60" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="216" value="flow_to" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="214">
+                <mxCell id="216" value="flow_to" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="214" vertex="1">
                     <mxGeometry x="50" width="50" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="217" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="217" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="1755.73" y="830" width="121.73000000000002" height="140" as="geometry"/>
                 </mxCell>
-                <mxCell id="218" value="l_be_de" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="217">
+                <mxCell id="218" value="l_be_de" style="ellipse;whiteSpace=wrap;html=1;" parent="217" vertex="1">
                     <mxGeometry y="30" width="120" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="219" value="" style="group;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" connectable="0" parent="217">
+                <mxCell id="219" value="" style="group;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="217" vertex="1" connectable="0">
                     <mxGeometry x="10" width="100" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="220" value="flow_from" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="219">
+                <mxCell id="220" value="flow_from" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="219" vertex="1">
                     <mxGeometry x="-10" width="60" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="221" value="flow_to" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="219">
+                <mxCell id="221" value="flow_to" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="219" vertex="1">
                     <mxGeometry x="50" width="50" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="222" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" target="203">
+                <mxCell id="222" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" parent="1" target="203" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1474" y="830" as="sourcePoint"/>
                         <mxPoint x="1460" y="660" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="223" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="215" target="200">
+                <mxCell id="223" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" parent="1" source="215" target="200" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1463" y="840" as="sourcePoint"/>
                         <mxPoint x="1460" y="660" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="224" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="220" target="203">
+                <mxCell id="224" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" parent="1" source="220" target="203" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1679" y="840" as="sourcePoint"/>
                         <mxPoint x="1770" y="650" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="225" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="221" target="206">
+                <mxCell id="225" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" parent="1" source="221" target="206" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="1870" y="830" as="sourcePoint"/>
                         <mxPoint x="1647" y="660" as="targetPoint"/>
@@ -636,7 +636,7 @@
                 <mxCell id="kZnKKsp3IthQduX6qkqC-1" value="min&amp;nbsp;&amp;nbsp;&lt;span style=&quot;&quot;&gt;&lt;/span&gt;production costs + balance costs&lt;br&gt;s.t.&amp;nbsp;&lt;span style=&quot;&quot;&gt;&amp;nbsp; a_1[i] * net_pos_1 + a_2[i] * net_pos_2 + a_3[i] * net_pos_3 &amp;lt;= b[i] forall i in 1,...,nb_constraints_flow_based&lt;/span&gt;&amp;nbsp; &amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production - consumption + energy_not_served - spillage + net_position = 0 for each node&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production constraints" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="Bg-Rxr5FVEn5OVDiF5Hx-1" vertex="1">
                     <mxGeometry x="-46" y="-130" width="620" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="kZnKKsp3IthQduX6qkqC-2" value="&lt;i&gt;We represent a network with flow based constraints. Constraints are applied on net position of nodes. The number of constraints depends on time and scenario.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" parent="Bg-Rxr5FVEn5OVDiF5Hx-1" vertex="1">
+                <mxCell id="kZnKKsp3IthQduX6qkqC-2" value="&lt;i&gt;We represent a network with flow based constraints. Constraints are applied on net position of nodes. The net position of a node is positive when a node imports and is negative when a node exports.The number of constraints depends on time and scenario.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" parent="Bg-Rxr5FVEn5OVDiF5Hx-1" vertex="1">
                     <mxGeometry x="-80" y="-270" width="534" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="kZnKKsp3IthQduX6qkqC-4" value="flow_net_pos" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="Bg-Rxr5FVEn5OVDiF5Hx-1" vertex="1">
@@ -797,10 +797,10 @@
                 <mxCell id="_pwFU1IKq931jEZq_aMM-35" value="x_1, x_2, x_3 : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="_pwFU1IKq931jEZq_aMM-34" vertex="1">
                     <mxGeometry y="30" width="369" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="NI_5Qp6HD2xiK-_MmoJP-2" value="a_1, a_2, a_3, b : Parameter (vector)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="_pwFU1IKq931jEZq_aMM-34">
+                <mxCell id="NI_5Qp6HD2xiK-_MmoJP-2" value="a_1, a_2, a_3, b : Parameter (vector)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="_pwFU1IKq931jEZq_aMM-34" vertex="1">
                     <mxGeometry y="60" width="369" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="Kj8s6QURqRJs6zVIcdEm-0" value="a_1[j]*x_1 + a_2[j]*x_2 + a_3[j]*x_3 &amp;lt;= b[j] for j in 1..nb_cons" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="_pwFU1IKq931jEZq_aMM-34">
+                <mxCell id="Kj8s6QURqRJs6zVIcdEm-0" value="a_1[j]*x_1 + a_2[j]*x_2 + a_3[j]*x_3 &amp;lt;= b[j] for j in 1..nb_cons" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="_pwFU1IKq931jEZq_aMM-34" vertex="1">
                     <mxGeometry y="90" width="369" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="_pwFU1IKq931jEZq_aMM-38" value="f_1, f_2, f_3 : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="_pwFU1IKq931jEZq_aMM-34" vertex="1">
@@ -818,17 +818,17 @@
                 <mxCell id="_pwFU1IKq931jEZq_aMM-42" value="&lt;font style=&quot;font-size: 32px;&quot;&gt;&lt;b&gt;Physical system&lt;br&gt;&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="_pwFU1IKq931jEZq_aMM-1" vertex="1">
                     <mxGeometry x="87" y="-260" width="380" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="_pwFU1IKq931jEZq_aMM-44" value="&lt;i&gt;We represent a network with flow based constraints. Constraints are applied on net position of nodes. The number of constraints depends on time and scenario.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" parent="_pwFU1IKq931jEZq_aMM-1" vertex="1">
-                    <mxGeometry x="-80" y="-270" width="534" height="40" as="geometry"/>
-                </mxCell>
                 <mxCell id="NZMho0ibdByreSbmLhFO-0" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="_pwFU1IKq931jEZq_aMM-1" source="_pwFU1IKq931jEZq_aMM-15" target="_pwFU1IKq931jEZq_aMM-6" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="887.5" y="735" as="sourcePoint"/>
                         <mxPoint x="1231" y="605" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="Q2pFkaruDGls3waAeg-X-0" value="min&amp;nbsp;&amp;nbsp;&lt;span style=&quot;&quot;&gt;&lt;/span&gt;production costs + balance costs&lt;br&gt;s.t.&amp;nbsp;&lt;span style=&quot;&quot;&gt;&amp;nbsp; a_1[i] * net_pos_1 + a_2[i] * net_pos_2 + a_3[i] * net_pos_3 &amp;lt;= b[i] forall i in 1,...,nb_constraints_flow_based&lt;/span&gt;&amp;nbsp; &amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production - consumption + energy_not_served - spillage + net_position = 0 for each node&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production constraints" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" vertex="1" parent="_pwFU1IKq931jEZq_aMM-1">
+                <mxCell id="Q2pFkaruDGls3waAeg-X-0" value="min&amp;nbsp;&amp;nbsp;&lt;span style=&quot;&quot;&gt;&lt;/span&gt;production costs + balance costs&lt;br&gt;s.t.&amp;nbsp;&lt;span style=&quot;&quot;&gt;&amp;nbsp; a_1[i] * net_pos_1 + a_2[i] * net_pos_2 + a_3[i] * net_pos_3 &amp;lt;= b[i] forall i in 1,...,nb_constraints_flow_based&lt;/span&gt;&amp;nbsp; &amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production - consumption + energy_not_served - spillage + net_position = 0 for each node&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production constraints" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="_pwFU1IKq931jEZq_aMM-1" vertex="1">
                     <mxGeometry x="-46" y="-130" width="620" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="FnxrhPL8AjD4yrmpbQMX-0" value="&lt;i&gt;We represent a network with flow based constraints. Constraints are applied on net position of nodes. The net position of a node is positive when a node imports and is negative when a node exports.The number of constraints depends on time and scenario.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" vertex="1" parent="_pwFU1IKq931jEZq_aMM-1">
+                    <mxGeometry x="-80" y="-270" width="534" height="40" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
@@ -1051,9 +1051,6 @@
                 <mxCell id="BXUiZ0yOkoqidZfhe6nn-64" value="&lt;font style=&quot;font-size: 32px;&quot;&gt;&lt;b&gt;Physical system&lt;br&gt;&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="BXUiZ0yOkoqidZfhe6nn-1" vertex="1">
                     <mxGeometry x="87" y="-260" width="380" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="BXUiZ0yOkoqidZfhe6nn-66" value="&lt;i&gt;We represent a network with flow based constraints. Constraints are applied on net position of nodes. The number of constraints depends on time and scenario.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" parent="BXUiZ0yOkoqidZfhe6nn-1" vertex="1">
-                    <mxGeometry x="-80" y="-270" width="534" height="40" as="geometry"/>
-                </mxCell>
                 <mxCell id="BXUiZ0yOkoqidZfhe6nn-95" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="BXUiZ0yOkoqidZfhe6nn-1" source="BXUiZ0yOkoqidZfhe6nn-23" target="BXUiZ0yOkoqidZfhe6nn-102" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="641" y="860" as="sourcePoint"/>
@@ -1084,32 +1081,35 @@
                 <mxCell id="BXUiZ0yOkoqidZfhe6nn-104" value="f_3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFCCE6;strokeColor=#82b366;" parent="BXUiZ0yOkoqidZfhe6nn-1" vertex="1">
                     <mxGeometry x="1535" y="690" width="49" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="Scc5W7JseVekch0buWAR-8" value="FlowBased3Nodes : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;" vertex="1" parent="BXUiZ0yOkoqidZfhe6nn-1">
+                <mxCell id="Scc5W7JseVekch0buWAR-8" value="FlowBased3Nodes : Model" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#CCFFCC;" parent="BXUiZ0yOkoqidZfhe6nn-1" vertex="1">
                     <mxGeometry x="1141" y="-70" width="350" height="240" as="geometry"/>
                 </mxCell>
-                <mxCell id="Scc5W7JseVekch0buWAR-9" value="x_1, x_2, x_3 : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Scc5W7JseVekch0buWAR-8">
+                <mxCell id="Scc5W7JseVekch0buWAR-9" value="x_1, x_2, x_3 : Variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="Scc5W7JseVekch0buWAR-8" vertex="1">
                     <mxGeometry y="30" width="350" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="Scc5W7JseVekch0buWAR-10" value="a_1, a_2, a_3, b : Parameter (vector)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Scc5W7JseVekch0buWAR-8">
+                <mxCell id="Scc5W7JseVekch0buWAR-10" value="a_1, a_2, a_3, b : Parameter (vector)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="Scc5W7JseVekch0buWAR-8" vertex="1">
                     <mxGeometry y="60" width="350" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="6LgOr-HU_K4hutOZqZEF-0" value="a_1[j]*x_1 + a_2[j]*x_2 + a_3[j]*x_3 &amp;lt;= b[j] for j in 1..nb_cons" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Scc5W7JseVekch0buWAR-8">
+                <mxCell id="6LgOr-HU_K4hutOZqZEF-0" value="a_1[j]*x_1 + a_2[j]*x_2 + a_3[j]*x_3 &amp;lt;= b[j] for j in 1..nb_cons" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="Scc5W7JseVekch0buWAR-8" vertex="1">
                     <mxGeometry y="90" width="350" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="Scc5W7JseVekch0buWAR-12" value="f_1, f_2, f_3 : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Scc5W7JseVekch0buWAR-8">
+                <mxCell id="Scc5W7JseVekch0buWAR-12" value="f_1, f_2, f_3 : Flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="Scc5W7JseVekch0buWAR-8" vertex="1">
                     <mxGeometry y="120" width="350" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="Scc5W7JseVekch0buWAR-13" value="f_1.f.sum() = x_1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Scc5W7JseVekch0buWAR-8">
+                <mxCell id="Scc5W7JseVekch0buWAR-13" value="f_1.f.sum() = x_1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="Scc5W7JseVekch0buWAR-8" vertex="1">
                     <mxGeometry y="150" width="350" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="Scc5W7JseVekch0buWAR-14" value="f_3.f.sum() = x_3" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Scc5W7JseVekch0buWAR-8">
+                <mxCell id="Scc5W7JseVekch0buWAR-14" value="f_3.f.sum() = x_3" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="Scc5W7JseVekch0buWAR-8" vertex="1">
                     <mxGeometry y="180" width="350" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="Scc5W7JseVekch0buWAR-15" value="f_2.f.sum() = x_2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Scc5W7JseVekch0buWAR-8">
+                <mxCell id="Scc5W7JseVekch0buWAR-15" value="f_2.f.sum() = x_2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="Scc5W7JseVekch0buWAR-8" vertex="1">
                     <mxGeometry y="210" width="350" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="6wHW_qKqvZcvhFBKRmqW-0" value="min&amp;nbsp;&amp;nbsp;&lt;span style=&quot;&quot;&gt;&lt;/span&gt;production costs + balance costs&lt;br&gt;s.t.&amp;nbsp;&lt;span style=&quot;&quot;&gt;&amp;nbsp; a_1[i] * net_pos_1 + a_2[i] * net_pos_2 + a_3[i] * net_pos_3 &amp;lt;= b[i] forall i in 1,...,nb_constraints_flow_based&lt;/span&gt;&amp;nbsp; &amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production - consumption + energy_not_served - spillage + net_position = 0 for each node&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production constraints" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" vertex="1" parent="BXUiZ0yOkoqidZfhe6nn-1">
+                <mxCell id="6wHW_qKqvZcvhFBKRmqW-0" value="min&amp;nbsp;&amp;nbsp;&lt;span style=&quot;&quot;&gt;&lt;/span&gt;production costs + balance costs&lt;br&gt;s.t.&amp;nbsp;&lt;span style=&quot;&quot;&gt;&amp;nbsp; a_1[i] * net_pos_1 + a_2[i] * net_pos_2 + a_3[i] * net_pos_3 &amp;lt;= b[i] forall i in 1,...,nb_constraints_flow_based&lt;/span&gt;&amp;nbsp; &amp;nbsp;&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production - consumption + energy_not_served - spillage + net_position = 0 for each node&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;production constraints" style="text;html=1;strokeColor=#CCCCFF;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=2;" parent="BXUiZ0yOkoqidZfhe6nn-1" vertex="1">
                     <mxGeometry x="-46" y="-130" width="620" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="_m76zSgiMyrVGOjGM4Gf-0" value="&lt;i&gt;We represent a network with flow based constraints. Constraints are applied on net position of nodes. The net position of a node is positive when a node imports and is negative when a node exports.The number of constraints depends on time and scenario.&lt;/i&gt;" style="text;html=1;strokeColor=#FFCCCC;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;strokeWidth=2;" vertex="1" parent="BXUiZ0yOkoqidZfhe6nn-1">
+                    <mxGeometry x="-80" y="-270" width="534" height="40" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
