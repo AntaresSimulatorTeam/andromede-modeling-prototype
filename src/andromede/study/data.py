@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Mapping, Optional
 
 from andromede.study.network import Network
 
@@ -35,8 +35,17 @@ class ScenarioIndex:
 
 @dataclass(frozen=True)
 class AbstractDataStructure(ABC):
-    def get_value(self, timestep: int, scenario: int) -> float:
-        return NotImplemented
+    @abstractmethod
+    def get_value(
+        self, timestep: int, scenario: int, node_id: Optional[int] = None
+    ) -> (
+        float
+    ):  # Is it necessary to add node_id as arguement here ? Yes if TreeData is to be considered as a child class
+        """
+        Get the data value for a given timestep and scenario at a given node
+        Implement this method in subclasses as needed.
+        """
+        pass
 
     @abstractmethod
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -51,7 +60,9 @@ class AbstractDataStructure(ABC):
 class ConstantData(AbstractDataStructure):
     value: float
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(
+        self, timestep: int, scenario: int, node_id: Optional[int] = None
+    ) -> float:
         return self.value
 
     # ConstantData can be used for time varying or constant models
@@ -69,9 +80,11 @@ class TimeSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_series: Dict[TimeIndex, float]
+    time_series: Mapping[TimeIndex, float]
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(
+        self, timestep: int, scenario: int, node_id: Optional[int] = None
+    ) -> float:
         return self.time_series[TimeIndex(timestep)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -89,9 +102,11 @@ class ScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    scenario_series: Dict[ScenarioIndex, float]
+    scenario_series: Mapping[ScenarioIndex, float]
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(
+        self, timestep: int, scenario: int, node_id: Optional[int] = None
+    ) -> float:
         return self.scenario_series[ScenarioIndex(scenario)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -109,9 +124,11 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_scenario_series: Dict[TimeScenarioIndex, float]
+    time_scenario_series: Mapping[TimeScenarioIndex, float]
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(
+        self, timestep: int, scenario: int, node_id: Optional[int] = None
+    ) -> float:
         return self.time_scenario_series[TimeScenarioIndex(timestep, scenario)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -119,6 +136,28 @@ class TimeScenarioSeriesData(AbstractDataStructure):
             raise ValueError("Invalid data type for TimeScenarioSeriesData")
 
         return time and scenario
+
+
+@dataclass(frozen=True)
+class TreeData(AbstractDataStructure):
+    data: Mapping[int, AbstractDataStructure]
+
+    def get_value(
+        self, timestep: int, scenario: int, node_id: Optional[int] = None
+    ) -> float:
+        if (
+            not node_id
+        ):  # TODO : Could we remove the default None argument for node_id ?
+            raise ValueError(
+                "A node_id must be specified to retrieve a value in TreeData."
+            )
+        return self.data[node_id].get_value(timestep, scenario)
+
+    def check_requirement(self, time: bool, scenario: bool) -> bool:
+        return all(
+            node_data.check_requirement(time, scenario)
+            for node_data in self.data.values()
+        )
 
 
 @dataclass(frozen=True)

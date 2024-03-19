@@ -19,6 +19,9 @@ import itertools
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional
 
+from anytree import LevelOrderIter
+from anytree import Node as TreeNode
+
 from andromede.expression import (
     AdditionNode,
     ComparisonNode,
