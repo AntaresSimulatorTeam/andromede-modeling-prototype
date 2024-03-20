@@ -30,6 +30,8 @@ from andromede.expression.expression import (
     BinaryOperatorNode,
     ExpressionRange,
     InstancesTimeIndex,
+    PortFieldAggregatorNode,
+    PortFieldNode,
     ScenarioOperatorNode,
     TimeAggregatorNode,
     TimeOperatorNode,
@@ -84,6 +86,12 @@ class EqualityVisitor:
             right, ScenarioOperatorNode
         ):
             return self.scenario_operator(left, right)
+        if isinstance(left, PortFieldNode) and isinstance(right, PortFieldNode):
+            return self.port_field(left, right)
+        if isinstance(left, PortFieldAggregatorNode) and isinstance(
+            right, PortFieldAggregatorNode
+        ):
+            return self.port_field_aggregator(left, right)
         raise NotImplementedError(f"Equality not implemented for {left.__class__}")
 
     def literal(self, left: LiteralNode, right: LiteralNode) -> bool:
@@ -163,6 +171,16 @@ class EqualityVisitor:
     ) -> bool:
         return left.name == right.name and self.visit(left.operand, right.operand)
 
+    def port_field(self, left: PortFieldNode, right: PortFieldNode) -> bool:
+        return left.port_name == right.port_name and left.field_name == right.field_name
+
+    def port_field_aggregator(
+        self, left: PortFieldAggregatorNode, right: PortFieldAggregatorNode
+    ) -> bool:
+        return left.aggregator == right.aggregator and self.visit(
+            left.operand, right.operand
+        )
+
 
 def expressions_equal(
     left: ExpressionNode, right: ExpressionNode, abs_tol: float = 0, rel_tol: float = 0
@@ -171,3 +189,14 @@ def expressions_equal(
     True if both expression nodes are equal. Literal values may be compared with absolute or relative tolerance.
     """
     return EqualityVisitor(abs_tol, rel_tol).visit(left, right)
+
+
+def expressions_equal_if_present(
+    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
+) -> bool:
+    if lhs is None and rhs is None:
+        return True
+    elif lhs is None or rhs is None:
+        return False
+    else:
+        return expressions_equal(lhs, rhs)

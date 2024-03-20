@@ -11,10 +11,14 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from andromede.expression import ExpressionNode
 from andromede.expression.degree import is_constant
+from andromede.expression.equality import (
+    expressions_equal,
+    expressions_equal_if_present,
+)
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ProblemContext, ValueType
 
@@ -37,6 +41,17 @@ class Variable:
             raise ValueError("Lower bounds of variables must be constant")
         if self.upper_bound and not is_constant(self.upper_bound):
             raise ValueError("Upper bounds of variables must be constant")
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Variable):
+            return False
+        return (
+            self.name == other.name
+            and self.data_type == other.data_type
+            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and self.structure == other.structure
+        )
 
 
 def int_variable(
