@@ -11,25 +11,34 @@
 # This file is part of the Antares project.
 
 
-from anytree import Node as TreeNode
-
-from andromede.libs.standard import THERMAL_CLUSTER_MODEL_HD
-from andromede.simulation.decision_tree import _generate_tree_model
-from andromede.study.network import create_component
+from andromede.simulation import TimeBlock
+from andromede.simulation.decision_tree import (
+    DecisionTreeNode,
+    InterDecisionTimeScenarioConfig,
+    replicate_network_from_root,
+)
+from andromede.study.network import Network
 
 
 def test_generate_model_on_node() -> None:
-    thermal = create_component(model=THERMAL_CLUSTER_MODEL_HD, id="thermal")
+    scenarios = 1
+    blocks = [TimeBlock(1, [0])]
+    config = InterDecisionTimeScenarioConfig(blocks, scenarios)
 
-    tree_node_id = "2030"
-    tree_node_model = _generate_tree_model(TreeNode(tree_node_id), thermal)
+    network = Network("network_id")
+    tree_root = DecisionTreeNode("root", config, network)
 
-    # How to compare model efficiently with only change in name ?
-    assert tree_node_model.id == f"{tree_node_id}_{thermal.id}"
+    assert tree_root.id == "root"
+    assert tree_root.parent is None
+    assert not tree_root.children  # No children
 
-    for variable in thermal.model.variables.values():
-        assert f"{tree_node_id}_{variable.name}" in tree_node_model.variables
+    child = DecisionTreeNode("child", config, parent=tree_root)
 
-        # Create dedicated function
-        tree_variable = tree_node_model.variables[f"{tree_node_id}_{variable.name}"]
-        # assert
+    print(child.parent)
+
+    assert child.parent == tree_root
+    assert child in tree_root.children
+
+    replicate_network_from_root(tree_root)
+
+    assert child.network.id == "child_network_id"

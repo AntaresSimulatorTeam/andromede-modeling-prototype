@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 from anytree import Node as TreeNode
 
 from andromede.model.model import Model
-from andromede.simulation.decision_tree import ConfiguredTree, create_master_network
+from andromede.simulation.decision_tree import DecisionTreeNode, create_master_network
 from andromede.simulation.optimization import (
     BlockBorderManagement,
     OptimizationProblem,
@@ -208,9 +208,8 @@ class BendersDecomposedProblem:
 
 
 def build_benders_decomposed_problem(
-    network_on_tree: Dict[TreeNode, Network],
+    decision_tree_root: DecisionTreeNode,
     database: DataBase,
-    configured_tree: ConfiguredTree,
     *,
     decision_coupling_model: Optional[Model] = None,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
@@ -222,7 +221,7 @@ def build_benders_decomposed_problem(
     Returns a Benders Decomposed problem
     """
 
-    master_network = create_master_network(network_on_tree, decision_coupling_model)
+    master_network = create_master_network(decision_tree_root, decision_coupling_model)
 
     # Benders Decomposed Master Problem
     master = build_problem(
@@ -240,19 +239,16 @@ def build_benders_decomposed_problem(
 
     # Benders Decomposed Sub-problems
     subproblems = []
-    for (
-        tree_node,
-        time_scenario_config,
-    ) in configured_tree.node_to_config.items():
-        for block in time_scenario_config.blocks:
+    for tree_node in decision_tree_root.traverse():
+        for block in tree_node.config.blocks:
             # Xpansion Sub-problems
             subproblems.append(
                 build_problem(
-                    network_on_tree[tree_node],
+                    tree_node.network,
                     database,
                     block,
-                    time_scenario_config.scenarios,
-                    problem_name=f"subproblem_{tree_node.name}_{block.id}",
+                    tree_node.config.scenarios,
+                    problem_name=f"subproblem_{tree_node.id}_{block.id}",
                     solver_id=solver_id,
                     problem_strategy=OperationalProblemStrategy(),
                 )

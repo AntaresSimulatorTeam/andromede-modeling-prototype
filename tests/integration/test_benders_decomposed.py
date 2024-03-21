@@ -38,8 +38,8 @@ from andromede.simulation import (
     build_benders_decomposed_problem,
 )
 from andromede.simulation.decision_tree import (
-    create_network_on_tree,
-    create_single_node_decision_tree,
+    DecisionTreeNode,
+    InterDecisionTimeScenarioConfig,
 )
 from andromede.study import (
     Component,
@@ -233,12 +233,10 @@ def test_benders_decomposed_integration(
     scenarios = 1
     blocks = [TimeBlock(1, [0])]
 
-    configured_tree = create_single_node_decision_tree(blocks, scenarios)
-    tree_node_to_network = create_network_on_tree(network, configured_tree.root)
+    config = InterDecisionTimeScenarioConfig(blocks, scenarios)
+    decision_tree_root = DecisionTreeNode("root", config, network)
 
-    xpansion = build_benders_decomposed_problem(
-        tree_node_to_network, database, configured_tree
-    )
+    xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
     data = {
         "solution": {
@@ -325,12 +323,10 @@ def test_benders_decomposed_multi_time_block_single_scenario(
     scenarios = 1
     blocks = [TimeBlock(1, [0]), TimeBlock(2, [1])]
 
-    configured_tree = create_single_node_decision_tree(blocks, scenarios)
-    tree_node_to_network = create_network_on_tree(network, configured_tree.root)
+    config = InterDecisionTimeScenarioConfig(blocks, scenarios)
+    decision_tree_root = DecisionTreeNode("root", config, network)
 
-    xpansion = build_benders_decomposed_problem(
-        tree_node_to_network, database, configured_tree
-    )
+    xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
     data = {
         "solution": {
