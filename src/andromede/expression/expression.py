@@ -222,6 +222,10 @@ def literal(value: float) -> LiteralNode:
     return LiteralNode(value)
 
 
+def is_unbound(expr: ExpressionNode) -> bool:
+    return isinstance(expr, LiteralNode) and (abs(expr.value) == float("inf"))
+
+
 @dataclass(frozen=True, eq=False)
 class UnaryOperatorNode(ExpressionNode):
     operand: ExpressionNode
