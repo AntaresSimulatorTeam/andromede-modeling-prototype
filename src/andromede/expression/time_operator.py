@@ -76,7 +76,7 @@ class TimeEvaluation(TimeOperator):
     Absolute time evalaution of variables
 
     Examples:
-        >>> x.evaluate([1, 2, 4]) represents the vector of variables (x[1], x[2], x[4])
+        >>> x.eval([1, 2, 4]) represents the vector of variables (x[1], x[2], x[4])
     """
 
     def __str__(self) -> str:
