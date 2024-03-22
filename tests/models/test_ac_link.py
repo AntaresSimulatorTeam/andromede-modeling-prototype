@@ -9,23 +9,14 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+from pathlib import Path
 
 import pytest
 
-from andromede.expression import param, var
-from andromede.expression.expression import literal, port_field
-from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import BALANCE_PORT_TYPE, DEMAND_MODEL, GENERATOR_MODEL
-from andromede.model import (
-    Constraint,
-    ModelPort,
-    PortField,
-    PortType,
-    float_parameter,
-    float_variable,
-    model,
-)
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.library import Library, library
+from andromede.model.parsing import parse_yaml_library
+from andromede.model.resolve_library import resolve_library
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -36,154 +27,41 @@ from andromede.study import (
     create_component,
 )
 
-"""
-Port transfers flow and voltage angle.
-"""
-AC_PORT = PortType(id="AC_LINK", fields=[PortField("angle"), PortField("flow")])
 
-"""
-Node has 2 ports: one for angle dependent connections,
-one for power-only connections.
-Should we relax constraints on ports compatibility to allow to have only one here?
-"""
-AC_NODE_MODEL = model(
-    id="AC_NODE",
-    variables=[float_variable("angle")],
-    ports=[
-        ModelPort(port_type=BALANCE_PORT_TYPE, port_name="injections"),
-        ModelPort(port_type=AC_PORT, port_name="links"),
-    ],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("links", "angle"), definition=var("angle")
-        )
-    ],
-    binding_constraints=[
-        Constraint(
-            name="Balance",
-            expression=port_field("injections", "flow").sum_connections()
-            + port_field("links", "flow").sum_connections()
-            == literal(0),
-        )
-    ],
-)
-
-"""
-Flow on the line is proportional to angle difference between extremities,
-and inverse of impedance.
-"""
-AC_LINK_MODEL = model(
-    id="LINK",
-    parameters=[float_parameter("reactance", IndexingStructure(False, False))],
-    variables=[float_variable("flow")],
-    ports=[
-        ModelPort(port_type=AC_PORT, port_name="port1"),
-        ModelPort(port_type=AC_PORT, port_name="port2"),
-    ],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("port1", "flow"),
-            definition=-var("flow"),
-        ),
-        PortFieldDefinition(
-            port_field=PortFieldId("port2", "flow"),
-            definition=var("flow"),
-        ),
-    ],
-    binding_constraints=[
-        Constraint(
-            name="AC flow",
-            expression=var("flow")
-            == 1
-            / param("reactance")
-            * (port_field("port1", "angle") - port_field("port2", "angle")),
-        )
-    ],
-)
-
-"""
-Flow on the line is proportional to angle difference between extremities,
-and inverse of impedance.
-"""
-AC_LINK_WITH_LIMIT = model(
-    id="LINK",
-    parameters=[
-        float_parameter("reactance", IndexingStructure(False, False)),
-        float_parameter("flow_limit", IndexingStructure(False, False)),
-    ],
-    variables=[float_variable("flow", -param("flow_limit"), param("flow_limit"))],
-    ports=[
-        ModelPort(port_type=AC_PORT, port_name="port1"),
-        ModelPort(port_type=AC_PORT, port_name="port2"),
-    ],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("port1", "flow"),
-            definition=-var("flow"),
-        ),
-        PortFieldDefinition(
-            port_field=PortFieldId("port2", "flow"),
-            definition=var("flow"),
-        ),
-    ],
-    binding_constraints=[
-        Constraint(
-            name="AC flow",
-            expression=var("flow")
-            == 1
-            / param("reactance")
-            * (port_field("port1", "angle") - port_field("port2", "angle")),
-        )
-    ],
-)
-
-"""
-Flow on the line is proportional to angle difference between extremities,
-and inverse of impedance.
-A shift angle is applied on side 1, allowing to control the flow.
-"""
-AC_LINK_WITH_PST = model(
-    id="LINK_WITH_PST",
-    parameters=[float_parameter("reactance", IndexingStructure(False, False))],
-    variables=[float_variable("flow"), float_variable("shift")],
-    ports=[
-        ModelPort(port_type=AC_PORT, port_name="port1"),
-        ModelPort(port_type=AC_PORT, port_name="port2"),
-    ],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("port1", "flow"),
-            definition=-var("flow"),
-        ),
-        PortFieldDefinition(
-            port_field=PortFieldId("port2", "flow"),
-            definition=var("flow"),
-        ),
-    ],
-    binding_constraints=[
-        Constraint(
-            name="AC flow",
-            expression=var("flow")
-            == 1
-            / param("reactance")
-            * (
-                port_field("port1", "angle")
-                + var("shift")
-                - port_field("port2", "angle")
-            ),
-        )
-    ],
-)
+@pytest.fixture
+def std_lib() -> Library:
+    return library(
+        port_types=[BALANCE_PORT_TYPE], models=[GENERATOR_MODEL, DEMAND_MODEL]
+    )
 
 
-def test_ac_network_no_links():
+@pytest.fixture
+def ac_lib(libs_dir: Path, std_lib: Library) -> Library:
+    lib_file = libs_dir / "ac.yml"
+    with lib_file.open() as f:
+        input_lib = parse_yaml_library(f)
+        return resolve_library(input_lib, preloaded_libraries=[std_lib])
+
+
+def test_ac_network_no_links(ac_lib: Library):
+    """
+    The network only has one AC node where a generator and a demand are connected.
+
+    There is actually no AC link connected to it, we just check that
+    generation matches demand on this node:
+     - demand = 100
+     - cost = 30
+     --> objective = 30 * 100 = 3000
+    """
+    ac_node_model = ac_lib.models["ac-node"]
+
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))
 
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))
 
-    node = Node(model=AC_NODE_MODEL, id="N")
+    node = Node(model=ac_node_model, id="N")
     demand = create_component(
         model=DEMAND_MODEL,
         id="D",
@@ -206,10 +84,22 @@ def test_ac_network_no_links():
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 3000
+    assert problem.solver.Objective().Value() == pytest.approx(3000, abs=0.01)
 
 
-def test_ac_network():
+def test_ac_network(ac_lib: Library):
+    """
+    The network only has 2 AC nodes connected by 1 AC link.
+
+    Node 1 carries the demand of 100 MW,
+    node 2 carries the generator with a cost of 35 per MWh.
+
+    We check that final cost matches the demand: 100 * 35 = 3500,
+    and that flow on the line is -100 MW.
+    """
+    ac_node_model = ac_lib.models["ac-node"]
+    ac_link_model = ac_lib.models["ac-link"]
+
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))
 
@@ -218,8 +108,8 @@ def test_ac_network():
 
     database.add_data("L", "reactance", ConstantData(1))
 
-    node1 = Node(model=AC_NODE_MODEL, id="1")
-    node2 = Node(model=AC_NODE_MODEL, id="2")
+    node1 = Node(model=ac_node_model, id="1")
+    node2 = Node(model=ac_node_model, id="2")
     demand = create_component(
         model=DEMAND_MODEL,
         id="D",
@@ -231,7 +121,7 @@ def test_ac_network():
     )
 
     link = create_component(
-        model=AC_LINK_MODEL,
+        model=ac_link_model,
         id="L",
     )
 
@@ -251,16 +141,28 @@ def test_ac_network():
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 3500
+    assert problem.solver.Objective().Value() == pytest.approx(3500, abs=0.01)
 
-    for variable in problem.solver.variables():
-        if "balance_port_from" in variable.name():
-            assert variable.solution_value() == 100
-        if "balance_port_to" in variable.name():
-            assert variable.solution_value() == -100
+    assert OutputValues(problem).component("L").var("flow").value == pytest.approx(
+        -100, abs=0.01
+    )
 
 
-def test_parallel_ac_links():
+def test_parallel_ac_links(ac_lib: Library):
+    """
+    The network has 2 AC nodes connected by 2 parallel links,
+    where reactance is 1 for line L1, and 2 for line L2.
+    We expect flow to be te twice bigger on L1 than on L2.
+
+    Node 1 carries the demand of 100 MW,
+    node 2 carries the generator with a cost of 35 per MWh.
+
+    We check that final cost matches the demand: 100 * 35 = 3500,
+    and that flow on L1 is -66. MW while flow on L2 is only -33.3 MW.
+    """
+    ac_node_model = ac_lib.models["ac-node"]
+    ac_link_model = ac_lib.models["ac-link"]
+
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))
 
@@ -270,8 +172,8 @@ def test_parallel_ac_links():
     database.add_data("L1", "reactance", ConstantData(1))
     database.add_data("L2", "reactance", ConstantData(2))
 
-    node1 = Node(model=AC_NODE_MODEL, id="1")
-    node2 = Node(model=AC_NODE_MODEL, id="2")
+    node1 = Node(model=ac_node_model, id="1")
+    node2 = Node(model=ac_node_model, id="2")
     demand = create_component(
         model=DEMAND_MODEL,
         id="D",
@@ -281,11 +183,11 @@ def test_parallel_ac_links():
         id="G",
     )
     link1 = create_component(
-        model=AC_LINK_MODEL,
+        model=ac_link_model,
         id="L1",
     )
     link2 = create_component(
-        model=AC_LINK_MODEL,
+        model=ac_link_model,
         id="L2",
     )
 
@@ -308,7 +210,7 @@ def test_parallel_ac_links():
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 3500
+    assert problem.solver.Objective().Value() == pytest.approx(3500, abs=0.01)
 
     assert OutputValues(problem).component("L1").var("flow").value == pytest.approx(
         -66.67, abs=0.01
@@ -318,11 +220,21 @@ def test_parallel_ac_links():
     )
 
 
-def test_parallel_ac_links_with_pst():
+def test_parallel_ac_links_with_pst(ac_lib: Library):
     """
-    2 parallel links constrained by a flow limit of 50 MW.
-    The PST allows to balance the flow between the 2 links.
+    Same case as in parallel_ac_links but:
+     - flow is restricted to 50 MW on line L1, so it cannot
+       anymore transfer 66,7MW
+     - flow can be influenced by a phase shifter on line L2
+
+    We expect the case to be feasible thanks to the phase shifter,
+    which will allow to balance the flow between the 2 lines.
+    Therefore we expect flows to be 50 MW on both lines.
     """
+    ac_node_model = ac_lib.models["ac-node"]
+    ac_link_model = ac_lib.models["ac-link-with-limit"]
+    pst_model = ac_lib.models["ac-link-with-pst"]
+
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))
 
@@ -334,8 +246,8 @@ def test_parallel_ac_links_with_pst():
     database.add_data("T", "reactance", ConstantData(2))
     database.add_data("T", "flow_limit", ConstantData(50))
 
-    node1 = Node(model=AC_NODE_MODEL, id="1")
-    node2 = Node(model=AC_NODE_MODEL, id="2")
+    node1 = Node(model=ac_node_model, id="1")
+    node2 = Node(model=ac_node_model, id="2")
     demand = create_component(
         model=DEMAND_MODEL,
         id="D",
@@ -345,11 +257,11 @@ def test_parallel_ac_links_with_pst():
         id="G",
     )
     link1 = create_component(
-        model=AC_LINK_WITH_LIMIT,
+        model=ac_link_model,
         id="L",
     )
     link2 = create_component(
-        model=AC_LINK_WITH_PST,
+        model=pst_model,
         id="T",
     )
 
@@ -372,7 +284,7 @@ def test_parallel_ac_links_with_pst():
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 3500
+    assert problem.solver.Objective().Value() == pytest.approx(3500, abs=0.01)
 
     assert OutputValues(problem).component("L").var("flow").value == pytest.approx(
         -50, abs=0.01
@@ -380,6 +292,6 @@ def test_parallel_ac_links_with_pst():
     assert OutputValues(problem).component("T").var("flow").value == pytest.approx(
         -50, abs=0.01
     )
-    assert OutputValues(problem).component("T").var("shift").value == pytest.approx(
-        -50, abs=0.01
-    )
+    assert OutputValues(problem).component("T").var(
+        "phase_shift"
+    ).value == pytest.approx(-50, abs=0.01)
