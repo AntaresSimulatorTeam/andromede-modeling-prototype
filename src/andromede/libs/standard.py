@@ -231,7 +231,7 @@ THERMAL_CLUSTER_MODEL_HD = model(
             .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
             .sum()
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
-        )
+        ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
