@@ -16,11 +16,8 @@ A model allows to define the behaviour for components, by
 defining parameters, variables, and equations.
 """
 import itertools
-from dataclasses import dataclass, field
-from typing import Dict, Iterable, Optional
-
-from anytree import LevelOrderIter
-from anytree import Node as TreeNode
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, Iterable, Optional
 
 from andromede.expression import (
     AdditionNode,
@@ -110,11 +107,17 @@ class ModelPort:
     port_type: PortType
     port_name: str
 
+    def replicate(self, /, **changes: Any) -> "ModelPort":
+        return replace(self, **changes)
+
 
 @dataclass(frozen=True)
 class PortFieldId:
     port_name: str
     field_name: str
+
+    def replicate(self, /, **changes: Any) -> "PortFieldId":
+        return replace(self, **changes)
 
 
 @dataclass(frozen=True)
@@ -128,6 +131,9 @@ class PortFieldDefinition:
 
     def __post_init__(self) -> None:
         _validate_port_field_expression(self)
+
+    def replicate(self, /, **changes: Any) -> "PortFieldDefinition":
+        return replace(self, **changes)
 
 
 def port_field_def(
@@ -185,6 +191,10 @@ class Model:
         return itertools.chain(
             self.binding_constraints.values(), self.constraints.values()
         )
+
+    def replicate(self, /, **changes: Any) -> "Model":
+        # Shallow copy
+        return replace(self, **changes)
 
 
 def model(

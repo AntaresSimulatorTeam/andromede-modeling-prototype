@@ -22,9 +22,9 @@ from andromede.libs.standard import (
 from andromede.model.model import model
 from andromede.simulation.benders_decomposed import build_benders_decomposed_problem
 from andromede.simulation.decision_tree import (
-    ConfiguredTree,
+    DecisionTreeNode,
     InterDecisionTimeScenarioConfig,
-    create_network_on_tree,
+    replicate_network_from_root,
 )
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import ConstantData, DataBase, TreeData
@@ -176,11 +176,6 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
     database.add_data("BASE", "cost", ConstantData(5))
 
-    # Fonction qui crée les composants / noeud en fonction de l'arbre et du Database initial / modèles + générer les contraintes couplantes temporelles trajectoire + actualisation +
-    # contraintes industrielles liées à l'arbre ?
-    # Test mode peigne
-    # Générer le modèle "couplant"
-
     network = Network("test")
     network.add_node(node)
     network.add_component(demand)
@@ -195,26 +190,17 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         [TimeBlock(0, [0])], scenarios
     )
 
-    root = TreeNode("2030")
-    new_base = TreeNode("2040_new_base", parent=root)
-    no_base = TreeNode("2040_no_base", parent=root)
-    configured_tree = ConfiguredTree(
-        {
-            root: time_scenario_config,
-            new_base: time_scenario_config,
-            no_base: time_scenario_config,
-        },
+    decision_tree_root = DecisionTreeNode("2030", time_scenario_config, network)
+    decision_tree_new_base = DecisionTreeNode(
+        "2040_new_base", time_scenario_config, parent=decision_tree_root
+    )
+    decision_tree_no_base = DecisionTreeNode(
+        "2040_no_base", time_scenario_config, parent=decision_tree_root
     )
 
+    replicate_network_from_root(decision_tree_root)
     decision_coupling_model = model("DECISION_COUPLING")
 
-    tree_node_to_network = create_network_on_tree(network, configured_tree.root)
-
-    problems = build_benders_decomposed_problem(
-        tree_node_to_network,
-        database,
-        configured_tree,
-        decision_coupling_model=decision_coupling_model,
+    xpansion = build_benders_decomposed_problem(
+        decision_tree_root, database, decision_coupling_model=decision_coupling_model
     )
-
-    # Réfléchir à la représentation des variables dans l'arbre
