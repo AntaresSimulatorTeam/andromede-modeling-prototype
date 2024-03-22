@@ -211,3 +211,81 @@ NODE_BALANCE_MODEL_MOD = model(
         )
     ],
 )
+
+SHORT_TERM_STORAGE_COMPLEX = model(
+    id="STS_COMPLEX",
+    parameters=[
+        float_parameter("p_max_injection"),
+        float_parameter("p_max_withdrawal"),
+        float_parameter("level_min"),
+        float_parameter("level_max"),
+        float_parameter("inflows"),
+        float_parameter(
+            "efficiency"
+        ),  # Should be constant, but time-dependent values should work as well
+        float_parameter("withdrawal_penality"),
+        float_parameter("level_penality"),
+        float_parameter("Pgrad+i_penality"),
+        float_parameter("Pgrad-i_penality"),
+        float_parameter("Pgrad+s_penality"),
+        float_parameter("Pgrad-s_penality"),
+    ],
+    variables=[
+        float_variable(
+            "injection", lower_bound=literal(0), upper_bound=param("p_max_injection")
+        ),
+        float_variable(
+            "withdrawal", lower_bound=literal(0), upper_bound=param("p_max_withdrawal")
+        ),
+        float_variable(
+            "level", lower_bound=param("level_min"), upper_bound=param("level_max")
+        ),
+        float_variable("Pgrad+i", lower_bound=literal(0)),
+        float_variable("Pgrad-i", lower_bound=literal(0)),
+        float_variable("Pgrad+s", lower_bound=literal(0)),
+        float_variable("Pgrad-s", lower_bound=literal(0)),
+    ],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "flow"),
+            definition=var("withdrawal") - var("injection"),
+        )
+    ],
+    constraints=[
+        Constraint(
+            name="Level",
+            expression=var("level")
+            - var("level").shift(-1)
+            - param("efficiency") * var("injection")
+            + var("withdrawal")
+            == param("inflows"),
+        ),
+        Constraint(
+            "Pgrad+i min",
+            var("Pgrad+i") >= var("injection") - var("injection").shift(-1),
+        ),
+        Constraint(
+            "Pgrad-i min",
+            var("Pgrad-i") >= var("injection").shift(-1) - var("injection"),
+        ),
+        Constraint(
+            "Pgrad+s min",
+            var("Pgrad+s") >= var("withdrawal") - var("withdrawal").shift(-1),
+        ),
+        Constraint(
+            "Pgrad-s min",
+            var("Pgrad-s") >= var("withdrawal").shift(-1) - var("withdrawal"),
+        ),
+    ],
+    objective_operational_contribution=(
+        param("level_penality") * var("level")
+        + param("withdrawal_penality") * var("withdrawal")
+        + param("Pgrad+i_penality") * var("Pgrad+i")
+        + param("Pgrad-i_penality") * var("Pgrad-i")
+        + param("Pgrad+s_penality") * var("Pgrad+s")
+        + param("Pgrad-s_penality") * var("Pgrad-s")
+    )
+    .sum()
+    .expec(),
+)
