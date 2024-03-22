@@ -16,6 +16,7 @@ from typing import Generator, Iterable, List, Optional
 from anytree import LevelOrderIter, NodeMixin
 
 from andromede.model.model import Model
+from andromede.simulation.strategy import InvestmentProblemStrategy
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.network import Network
 
@@ -68,5 +69,52 @@ def create_master_network(
     root: DecisionTreeNode,
     decision_coupling_model: Optional[Model],
 ) -> Network:
-    # TODO
+    # TODO Use ports for coupling different models across the decision tree
+    """
+    Each candidate model should have one of these ports.
+    As for balance, they all should  have a common name like "investment" and they could be defined as:
+
+    ports=[ModelPort(port_type=INVESTMENT_PORT_TYPE, port_name="investment_port")],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("investment_port", "investment"),
+            definition=param("p_max"), ---> p_max if we are investing the p_max for instance
+        )
+    ],
+
+    Then, here, we would traverse the tree and create a Network that only keeps
+    variables allowed in the InvestmentProblemStrategy (we would need to change their names to something like
+    p_max_root, p_max_child_id, p_max_child_id2, ...)
+    We would connect them by some constraints using these ports to the decision_coupling_model (a parameter here),
+    so we could have something like:
+
+    master_network.connect(PortRef(candidate_on_root, "investment_port"), PortRef(coupling_model, "investment_port"))
+    master_network.connect(PortRef(candidate_on_child, "investment_port"), PortRef(coupling_model, "investment_port"))
+
+    On the coupling model, we would have something like for the nodes:
+    ports=[ModelPort(port_type=INVESTMENT_PORT_TYPE, port_name="investment_port")],
+    binding_constraints=[
+        Constraint(
+            name="Pathway_Investment",
+            expression=port_field("investment_port", "flow").some_operator(),
+        )
+    ],
+
+    Maybe we would have to define a operator to represent consecutive inequalities ?
+    Or create one coupling model per pair parent-child so the expression would become
+    port_field("investment_port", "flow").sum_connections() <= 0 ? In this case, we would have to define
+    a negative and a positive value
+
+    To resume, a network here would need:
+     - All candidates on all tree nodes (so we don't make great changes on build_problem)
+        - Update investment variable names to show their corresponding tree node;
+        - Add a investment port to each model
+     - A coupling model with the good ports to connect to
+        - The binding constraint that ties everything
+    """
+
+    strategy = InvestmentProblemStrategy()
+    for tree_node in root.traverse():
+        ...
+
     return root.network
