@@ -86,6 +86,14 @@ class ExpressionVisitor(ABC, Generic[T]):
         ...
 
     @abstractmethod
+    def comp_parameter(self, node: ComponentParameterNode) -> T:
+        ...
+
+    @abstractmethod
+    def comp_variable(self, node: ComponentVariableNode) -> T:
+        ...
+
+    @abstractmethod
     def time_operator(self, node: TimeOperatorNode) -> T:
         ...
 
@@ -103,14 +111,6 @@ class ExpressionVisitor(ABC, Generic[T]):
 
     @abstractmethod
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> T:
-        ...
-
-    @abstractmethod
-    def comp_parameter(self, node: ComponentParameterNode) -> T:
-        ...
-
-    @abstractmethod
-    def comp_variable(self, node: ComponentVariableNode) -> T:
         ...
 
 

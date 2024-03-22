@@ -21,7 +21,6 @@ from .data import (
     TimeSeriesData,
 )
 from .network import (
-    Arc,
     Component,
     Network,
     Node,

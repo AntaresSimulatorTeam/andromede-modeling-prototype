@@ -19,14 +19,33 @@ import itertools
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional
 
-from andromede.expression import ExpressionNode
+from andromede.expression import (
+    AdditionNode,
+    ComparisonNode,
+    DivisionNode,
+    ExpressionNode,
+    ExpressionVisitor,
+    LiteralNode,
+    MultiplicationNode,
+    NegationNode,
+    ParameterNode,
+    SubstractionNode,
+    VariableNode,
+)
 from andromede.expression.degree import is_linear
 from andromede.expression.expression import (
+    BinaryOperatorNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
+    ScenarioOperatorNode,
+    TimeAggregatorNode,
+    TimeOperatorNode,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.visitor import T, visit
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
@@ -45,14 +64,35 @@ def _make_structure_provider(model: "Model") -> IndexingStructureProvider:
         def get_component_parameter_structure(
             self, component_id: str, name: str
         ) -> IndexingStructure:
-            raise NotImplementedError("Cannot have instantiated parameters in models.")
+            raise NotImplementedError(
+                "Cannot have parameters associated to components in models."
+            )
 
         def get_component_variable_structure(
             self, component_id: str, name: str
         ) -> IndexingStructure:
-            raise NotImplementedError("Cannot have instantiated parameters in models.")
+            raise NotImplementedError(
+                "Cannot have variables associated to components in models."
+            )
 
     return Provider()
+
+
+def _is_objective_contribution_valid(
+    model: "Model", objective_contribution: ExpressionNode
+) -> bool:
+    if not is_linear(objective_contribution):
+        raise ValueError("Objective contribution must be a linear expression.")
+
+    data_structure_provider = _make_structure_provider(model)
+    objective_structure = compute_indexation(
+        objective_contribution, data_structure_provider
+    )
+
+    if objective_structure != IndexingStructure(time=False, scenario=False):
+        raise ValueError("Objective contribution should be a real-valued expression.")
+    # TODO: We should also check that the number of instances is equal to 1, but this would require a linearization here, do not want to do that for now...
+    return True
 
 
 @dataclass(frozen=True)
@@ -83,6 +123,15 @@ class PortFieldDefinition:
     port_field: PortFieldId
     definition: ExpressionNode
 
+    def __post_init__(self) -> None:
+        _validate_port_field_expression(self)
+
+
+def port_field_def(
+    port_name: str, field_name: str, definition: ExpressionNode
+) -> PortFieldDefinition:
+    return PortFieldDefinition(PortFieldId(port_name, field_name), definition)
+
 
 @dataclass(frozen=True)
 class Model:
@@ -97,26 +146,23 @@ class Model:
     inter_block_dyn: bool = False
     parameters: Dict[str, Parameter] = field(default_factory=dict)
     variables: Dict[str, Variable] = field(default_factory=dict)
-    objective_contribution: Optional[ExpressionNode] = None
+    objective_operational_contribution: Optional[ExpressionNode] = None
+    objective_investment_contribution: Optional[ExpressionNode] = None
     ports: Dict[str, ModelPort] = field(default_factory=dict)  # key = port name
     port_fields_definitions: Dict[PortFieldId, PortFieldDefinition] = field(
         default_factory=dict
     )
 
     def __post_init__(self) -> None:
-        if self.objective_contribution:
-            if not is_linear(self.objective_contribution):
-                raise ValueError("Objective contribution must be a linear expression.")
-
-            data_structure_provider = _make_structure_provider(self)
-            objective_structure = compute_indexation(
-                self.objective_contribution, data_structure_provider
+        if self.objective_operational_contribution:
+            _is_objective_contribution_valid(
+                self, self.objective_operational_contribution
             )
-            if objective_structure != IndexingStructure(time=False, scenario=False):
-                raise ValueError(
-                    "Objective contribution should be a real-valued expression."
-                )
-            # TODO: We should also check that the number of instances is equal to 1, but this would require a linearization here, do not want to do that for now...
+
+        if self.objective_investment_contribution:
+            _is_objective_contribution_valid(
+                self, self.objective_investment_contribution
+            )
 
         for definition in self.port_fields_definitions.values():
             port_name = definition.port_field.port_name
@@ -128,7 +174,6 @@ class Model:
                 raise ValueError(
                     f"Invalid port field in port field definition: {port_field}"
                 )
-            # TODO: should we check something on the expression ? (comparison...)
 
     def get_all_constraints(self) -> Iterable[Constraint]:
         """
@@ -145,7 +190,8 @@ def model(
     binding_constraints: Optional[Iterable[Constraint]] = None,
     parameters: Optional[Iterable[Parameter]] = None,
     variables: Optional[Iterable[Variable]] = None,
-    objective_contribution: Optional[ExpressionNode] = None,
+    objective_operational_contribution: Optional[ExpressionNode] = None,
+    objective_investment_contribution: Optional[ExpressionNode] = None,
     inter_block_dyn: bool = False,
     ports: Optional[Iterable[ModelPort]] = None,
     port_fields_definitions: Optional[Iterable[PortFieldDefinition]] = None,
@@ -171,10 +217,78 @@ def model(
         else {},
         parameters={p.name: p for p in parameters} if parameters else {},
         variables={v.name: v for v in variables} if variables else {},
-        objective_contribution=objective_contribution,
+        objective_operational_contribution=objective_operational_contribution,
+        objective_investment_contribution=objective_investment_contribution,
         inter_block_dyn=inter_block_dyn,
         ports=existing_port_names,
         port_fields_definitions={d.port_field: d for d in port_fields_definitions}
         if port_fields_definitions
         else {},
     )
+
+
+class _PortFieldExpressionChecker(ExpressionVisitor[None]):
+    """
+    Visits the whole expression to check there is no:
+    comparison, other port field, component-associated parametrs or variables...
+    """
+
+    def literal(self, node: LiteralNode) -> None:
+        pass
+
+    def negation(self, node: NegationNode) -> None:
+        visit(node.operand, self)
+
+    def _visit_binary_op(self, node: BinaryOperatorNode) -> None:
+        visit(node.left, self)
+        visit(node.right, self)
+
+    def addition(self, node: AdditionNode) -> None:
+        self._visit_binary_op(node)
+
+    def substraction(self, node: SubstractionNode) -> None:
+        self._visit_binary_op(node)
+
+    def multiplication(self, node: MultiplicationNode) -> None:
+        self._visit_binary_op(node)
+
+    def division(self, node: DivisionNode) -> None:
+        self._visit_binary_op(node)
+
+    def comparison(self, node: ComparisonNode) -> None:
+        raise ValueError("Port definition cannot contain a comparison operator.")
+
+    def variable(self, node: VariableNode) -> None:
+        pass
+
+    def parameter(self, node: ParameterNode) -> None:
+        pass
+
+    def comp_parameter(self, node: ComponentParameterNode) -> None:
+        raise ValueError(
+            "Port definition must not contain a parameter associated to a component."
+        )
+
+    def comp_variable(self, node: ComponentVariableNode) -> None:
+        raise ValueError(
+            "Port definition must not contain a variable associated to a component."
+        )
+
+    def time_operator(self, node: TimeOperatorNode) -> None:
+        visit(node.operand, self)
+
+    def time_aggregator(self, node: TimeAggregatorNode) -> None:
+        visit(node.operand, self)
+
+    def scenario_operator(self, node: ScenarioOperatorNode) -> None:
+        visit(node.operand, self)
+
+    def port_field(self, node: PortFieldNode) -> None:
+        raise ValueError("Port definition cannot reference another port field.")
+
+    def port_field_aggregator(self, node: PortFieldAggregatorNode) -> None:
+        raise ValueError("Port definition cannot contain port field aggregation.")
+
+
+def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
+    visit(definition.definition, _PortFieldExpressionChecker())

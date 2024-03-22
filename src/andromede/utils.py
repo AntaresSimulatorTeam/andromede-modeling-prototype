@@ -13,7 +13,9 @@
 """
 Module for technical utilities.
 """
-from typing import Any, Callable, Dict, Generic, Optional, TypeVar
+import json
+import pathlib
+from typing import Any, Callable, Dict, Optional, TypeVar
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -41,3 +43,28 @@ def get_or_add(dictionary: Dict[K, V], key: K, default_factory: Supplier[V]) -> 
         value = default_factory()
         dictionary[key] = value
     return value
+
+
+def serialize(filename: str, message: str, path: pathlib.Path) -> None:
+    """
+    Write message to path/filename
+
+    Will throw an exception if it fails to create dir or ro open file
+    """
+    path.mkdir(parents=True, exist_ok=True)
+    file = (path / filename).open(mode="w")
+
+    with file:
+        file.write(message)
+
+
+def serialize_json(
+    filename: str, message: Dict[str, Any], path: pathlib.Path, indentation: int = 4
+) -> None:
+    serialize(filename, json.dumps(message, indent=indentation), path)
+
+
+def read_json(filename: str, path: pathlib.Path) -> Dict[str, Any]:
+    with (path / filename).open() as file:
+        data = json.load(file)
+    return data

@@ -9,10 +9,14 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
-from typing import Optional
+from dataclasses import dataclass
+from typing import Any, Optional
 
 from andromede.expression.degree import is_constant
+from andromede.expression.equality import (
+    expressions_equal,
+    expressions_equal_if_present,
+)
 from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
@@ -20,8 +24,10 @@ from andromede.expression.expression import (
     literal,
 )
 from andromede.expression.print import print_expr
+from andromede.model.common import ProblemContext
 
 
+@dataclass
 class Constraint:
     """
     A constraint linking variables and parameters of a model together.
@@ -33,6 +39,7 @@ class Constraint:
     expression: ExpressionNode
     lower_bound: ExpressionNode
     upper_bound: ExpressionNode
+    context: ProblemContext
 
     def __init__(
         self,
@@ -40,8 +47,11 @@ class Constraint:
         expression: ExpressionNode,
         lower_bound: Optional[ExpressionNode] = None,
         upper_bound: Optional[ExpressionNode] = None,
+        context: ProblemContext = ProblemContext.OPERATIONAL,
     ) -> None:
         self.name = name
+        self.context = context
+
         if isinstance(expression, ComparisonNode):
             if lower_bound is not None or upper_bound is not None:
                 raise ValueError(
@@ -79,3 +89,13 @@ class Constraint:
                 self.upper_bound = upper_bound
             else:
                 self.upper_bound = literal(float("inf"))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Constraint):
+            return False
+        return (
+            self.name == other.name
+            and expressions_equal(self.expression, other.expression)
+            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
+        )

@@ -29,7 +29,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.andromede.test_utils import generate_data
+from tests.unittests.test_utils import generate_data
 
 
 @pytest.fixture

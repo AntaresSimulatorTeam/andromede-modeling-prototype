@@ -179,6 +179,14 @@ def param(name: str) -> ParameterNode:
 
 @dataclass(frozen=True, eq=False)
 class ComponentParameterNode(ExpressionNode):
+    """
+    Represents one parameter of one component.
+
+    When building actual equations for a system,
+    we need to associated each parameter to its
+    actual component, at some point.
+    """
+
     component_id: str
     name: str
 
@@ -189,6 +197,14 @@ def comp_param(component_id: str, name: str) -> ComponentParameterNode:
 
 @dataclass(frozen=True, eq=False)
 class ComponentVariableNode(ExpressionNode):
+    """
+    Represents one variable of one component.
+
+    When building actual equations for a system,
+    we need to associated each variable to its
+    actual component, at some point.
+    """
+
     component_id: str
     name: str
 
@@ -320,7 +336,17 @@ def expression_range(
     )
 
 
+@dataclass
 class InstancesTimeIndex:
+    """
+    Defines a set of time indices on which a time operator operates.
+
+    In particular, it defines time indices created by the shift operator.
+
+    The actual indices can either be defined as a time range defined by
+    2 expression, or as a list of expressions.
+    """
+
     expressions: Union[List[ExpressionNode], ExpressionRange]
 
     def __init__(

@@ -42,7 +42,6 @@ def test_port_field_resolution_sum():
     ports_expressions[key] = [var("flow1"), var("flow2")]
 
     expression_2 = port_field("port", "field").sum_connections()
-    # TODO remove 0 from sum()
     assert expressions_equal(
         resolve_port(expression_2, "com_id", ports_expressions),
         var("flow1") + var("flow2"),

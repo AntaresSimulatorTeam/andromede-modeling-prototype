@@ -13,7 +13,6 @@
 import pytest
 
 from andromede.expression import literal, param, var
-from andromede.expression.expression import port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -27,14 +26,7 @@ from andromede.libs.standard import (
     THERMAL_CLUSTER_MODEL_HD,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from andromede.model import (
-    Constraint,
-    Model,
-    ModelPort,
-    float_parameter,
-    float_variable,
-    model,
-)
+from andromede.model import Model, ModelPort, float_parameter, float_variable, model
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
     BlockBorderManagement,
@@ -43,7 +35,6 @@ from andromede.simulation import (
     build_problem,
 )
 from andromede.study import (
-    Arc,
     ConstantData,
     DataBase,
     Network,
@@ -59,13 +50,12 @@ def test_network() -> None:
     network = Network("test")
     assert network.id == "test"
     assert list(network.nodes) == []
-    assert list(network.arcs) == []
     assert list(network.components) == []
+    assert list(network.all_components) == []
+    assert list(network.connections) == []
 
     with pytest.raises(KeyError):
         network.get_node("N")
-    with pytest.raises(KeyError):
-        network.get_arc("L")
 
     N1 = Node(model=NODE_BALANCE_MODEL, id="N1")
     N2 = Node(model=NODE_BALANCE_MODEL, id="N2")
@@ -73,12 +63,6 @@ def test_network() -> None:
     network.add_node(N2)
     assert list(network.nodes) == [N1, N2]
     assert network.get_node(N1.id) == N1
-
-    with pytest.raises(ValueError):
-        network.add_arc(Arc("L", "N", "N2"))
-    network.add_arc(Arc("L", "N1", "N2"))
-    assert list(network.arcs) == [Arc("L", "N1", "N2")]
-    assert network.get_arc("L") == Arc("L", "N1", "N2")
     assert network.get_component("N1") == Node(model=NODE_BALANCE_MODEL, id="N1")
     with pytest.raises(KeyError):
         network.get_component("unknown")
@@ -323,7 +307,9 @@ def test_variable_bound() -> None:
                 definition=var("generation"),
             )
         ],
-        objective_contribution=(param("cost") * var("generation")).sum().expec(),
+        objective_operational_contribution=(param("cost") * var("generation"))
+        .sum()
+        .expec(),
     )
 
     network = create_one_node_network(generator_model)
@@ -449,9 +435,13 @@ def test_min_up_down_times() -> None:
         PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
     )
 
-    border_management = BlockBorderManagement.CYCLE
-
-    problem = build_problem(network, database, time_block, scenarios, border_management)
+    problem = build_problem(
+        network,
+        database,
+        time_block,
+        scenarios,
+        border_management=BlockBorderManagement.CYCLE,
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -527,9 +517,12 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
     network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(unsupplied, "balance_port"), PortRef(node, "balance_port"))
 
-    border_management = BlockBorderManagement.CYCLE
     problem = build_problem(
-        network, database, time_blocks[0], scenarios, border_management
+        network,
+        database,
+        time_blocks[0],
+        scenarios,
+        border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()
 
