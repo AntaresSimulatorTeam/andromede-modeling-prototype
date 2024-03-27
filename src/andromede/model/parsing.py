@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 import typing
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from yaml import safe_load
@@ -19,6 +19,29 @@ from yaml import safe_load
 def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
     tree = safe_load(input)
     return InputLibrary.model_validate(tree["library"])
+
+
+def parse_yaml_components(input_components: typing.TextIO) -> "InputComponents":
+    tree = safe_load(input_components)
+    return InputComponents.model_validate(tree["component"])
+
+
+# def components_model_consistency(
+#     input_model: typing.TextIO, input_components: typing.TextIO
+# ) -> typing.Tuple["InputLibrary", "InputComponents"]:
+#     library = parse_yaml_library(input_model)
+#     components = parse_yaml_components(input_components)
+#
+#     # Check if models used by components are defined in the library
+#     library_models = {model.id for model in library.models}
+#     component_models = {comp.model.id for comp in components}
+#
+#     # Ensure all component models are present in the library
+#     invalid_models = component_models - library_models
+#     if invalid_models:
+#         raise ValueError(f"Components use undefined models: {invalid_models}")
+#
+#     return library, components
 
 
 # Design note: actual parsing and validation is delegated to pydantic models
@@ -89,6 +112,22 @@ class InputModel(BaseModel):
 
     class Config:
         alias_generator = _to_kebab
+
+
+class InputComponents(BaseModel):
+    id: str
+    models: List[InputModel] = Field(default_factory=list)
+
+
+class InputPortRef(BaseModel):
+    component: InputComponents
+    port_id: str
+
+
+class InputPortConnections(BaseModel):
+    port1: InputPortRef
+    port2: InputPortRef
+    master_port: Dict[InputField, InputPortRef]
 
 
 class InputLibrary(BaseModel):
