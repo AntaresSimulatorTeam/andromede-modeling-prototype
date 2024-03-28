@@ -26,24 +26,6 @@ def parse_yaml_components(input_components: typing.TextIO) -> "InputComponents":
     return InputComponents.model_validate(tree["component"])
 
 
-# def components_model_consistency(
-#     input_model: typing.TextIO, input_components: typing.TextIO
-# ) -> typing.Tuple["InputLibrary", "InputComponents"]:
-#     library = parse_yaml_library(input_model)
-#     components = parse_yaml_components(input_components)
-#
-#     # Check if models used by components are defined in the library
-#     library_models = {model.id for model in library.models}
-#     component_models = {comp.model.id for comp in components}
-#
-#     # Ensure all component models are present in the library
-#     invalid_models = component_models - library_models
-#     if invalid_models:
-#         raise ValueError(f"Components use undefined models: {invalid_models}")
-#
-#     return library, components
-
-
 # Design note: actual parsing and validation is delegated to pydantic models
 def _to_kebab(snake: str) -> str:
     return snake.replace("_", "-")
@@ -116,7 +98,7 @@ class InputModel(BaseModel):
 
 class InputComponents(BaseModel):
     id: str
-    models: List[InputModel] = Field(default_factory=list)
+    components: List[InputModel] = Field(default_factory=list)
 
 
 class InputPortRef(BaseModel):
