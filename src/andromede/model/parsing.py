@@ -21,9 +21,9 @@ def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
     return InputLibrary.model_validate(tree["library"])
 
 
-def parse_yaml_components(input_components: typing.TextIO) -> "InputComponents":
+def parse_yaml_components(input_components: typing.TextIO) -> "InputComponent":
     tree = safe_load(input_components)
-    return InputComponents.model_validate(tree["component"])
+    return InputComponent.model_validate(tree["component"])
 
 
 # Design note: actual parsing and validation is delegated to pydantic models
@@ -96,20 +96,19 @@ class InputModel(BaseModel):
         alias_generator = _to_kebab
 
 
-class InputComponents(BaseModel):
+class InputPortConnections(BaseModel):
+    id: str
+    port_1: str
+    port_2: str
+
+
+class InputComponent(BaseModel):
     id: str
     components: List[InputModel] = Field(default_factory=list)
+    ports_connections: List[InputPortConnections] = Field(default_factory=list)
 
-
-class InputPortRef(BaseModel):
-    component: InputComponents
-    port_id: str
-
-
-class InputPortConnections(BaseModel):
-    port1: InputPortRef
-    port2: InputPortRef
-    master_port: Dict[InputField, InputPortRef]
+    class Config:
+        alias_generator = _to_kebab
 
 
 class InputLibrary(BaseModel):

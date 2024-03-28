@@ -27,3 +27,9 @@ component:
           - name: demand
             value: 1400
 
+  ports-connections:
+    - id: cnx_1
+      port_1: generator.injection_port
+      port_2: demand.injection_port
+
+

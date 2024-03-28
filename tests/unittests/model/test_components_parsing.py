@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from andromede.model.parsing import parse_yaml_components
+from andromede.model.resolve_library import resolve_components
 
 
 def test_parsing_components_ok(data_dir: Path):
@@ -10,3 +11,5 @@ def test_parsing_components_ok(data_dir: Path):
         input_compo = parse_yaml_components(c)
     assert input_compo.id == "components"
     assert len(input_compo.components) == 2
+
+    components = resolve_components(input_compo)
