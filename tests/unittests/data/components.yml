@@ -17,8 +17,13 @@ component:
     - id: components_1
       model: generator
       parameters:
-          - name: cost
-            value: 100
-          - name: p_max
-            value: 500
+            - name: cost
+              value: 100
+            - name: p_max
+              value: 500
+    - id: components_2
+      model: demand
+      parameters:
+          - name: demand
+            value: 1400
 
