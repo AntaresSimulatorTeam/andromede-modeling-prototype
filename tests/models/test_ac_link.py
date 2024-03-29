@@ -230,6 +230,8 @@ def test_parallel_ac_links_with_pst(ac_lib: Library):
     We expect the case to be feasible thanks to the phase shifter,
     which will allow to balance the flow between the 2 lines.
     Therefore we expect flows to be 50 MW on both lines.
+
+    Objective value is 3500 (for generation) + 50 (for phase shift).
     """
     ac_node_model = ac_lib.models["ac-node"]
     ac_link_model = ac_lib.models["ac-link-with-limit"]
@@ -245,6 +247,7 @@ def test_parallel_ac_links_with_pst(ac_lib: Library):
     database.add_data("L", "flow_limit", ConstantData(50))
     database.add_data("T", "reactance", ConstantData(2))
     database.add_data("T", "flow_limit", ConstantData(50))
+    database.add_data("T", "phase_shift_cost", ConstantData(1))
 
     node1 = Node(model=ac_node_model, id="1")
     node2 = Node(model=ac_node_model, id="2")
@@ -284,7 +287,7 @@ def test_parallel_ac_links_with_pst(ac_lib: Library):
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == pytest.approx(3500, abs=0.01)
+    assert problem.solver.Objective().Value() == pytest.approx(3550, abs=0.01)
 
     assert OutputValues(problem).component("L").var("flow").value == pytest.approx(
         -50, abs=0.01

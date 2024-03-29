@@ -110,15 +110,24 @@ library:
     # Flow on the line is proportional to angle difference between extremities,
     # and inverse of impedance.
     # A shift angle is applied on side 1, allowing to control the flow.
+    # We associate a cost to the absolute value of phase shift,
+    # which may be useful to remove equivalent solutions.
     - id: ac-link-with-pst
       description: An AC link with a phase shifter
       parameters:
         - name: reactance
           time-dependent: false
           scenario-dependent: false
+        - name: phase_shift_cost
+          time-dependent: false
+          scenario-dependent: false
       variables:
         - name: flow
         - name: phase_shift
+        - name: phase_shift_pos
+          lower-bound: 0
+        - name: phase_shift_neg
+          lower-bound: 0
       ports:
         - name: port1
           type: ac-port
@@ -131,6 +140,10 @@ library:
         - port: port2
           field: flow
           definition: flow
+      constraints:
+        - name: Phase shift
+          expression: phase_shift = phase_shift_pos - phase_shift_neg
       binding-constraints:
         - name: AC flow
           expression: flow = 1 / reactance * (port1.angle + phase_shift - port2.angle)
+      objective: expec(sum(phase_shift_cost * (phase_shift_pos + phase_shift_neg)))
