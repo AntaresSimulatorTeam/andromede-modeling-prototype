@@ -18,6 +18,10 @@ library:
       description: A port which transfers power flow
       fields:
         - name: flow
+    - id: emission
+      description: A port which transfers co2 emission
+      fields:
+        - name: emission
 
   models:
     - id: convertor
@@ -135,3 +139,72 @@ library:
       binding-constraints:
         - name: balance
           expression:  sum_connections(injection_port_n.flow) = p
+
+    - id: generator_with_co2
+      description: generator model that emits CO2
+      parameters:
+        - name: pmin
+          time-dependent: false
+          scenario-dependent: false
+        - name: pmax
+          time-dependent: false
+          scenario-dependent: false
+        - name: cost
+          time-dependent: false
+          scenario-dependent: false
+        - name: emission_rate
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: p
+          lower-bound: pmin
+          upper-bound: pmax
+      ports:
+        - name: injection_port
+          type: flow
+        - name: co2_port
+          type: emission
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: p
+        - port: co2_port
+          field: emission
+          definition: p * emission_rate
+      objective: expec(sum(cost * p))
+
+    - id: quota_co2
+      description: A CO2 quota model
+      parameters:
+        - name: quota
+          time-dependent: false
+          scenario-dependent: false
+      ports:
+        - name: emission_port
+          type: emission
+      binding-constraints:
+        - name: bound_co2
+          expression:  sum_connections(emission_port.emission) <= quota
+
+    - id: link
+      description: A link model
+      parameters:
+        - name: f_max
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: flow
+          lower-bound: -f_max
+          upper-bound: f_max
+      ports:
+        - name: injection_port_from
+          type: flow
+        - name: injection_port_to
+          type: flow
+      port-field-definitions:
+        - port: injection_port_from
+          field: flow
+          definition: -flow
+        - port: injection_port_to
+          field: flow
+          definition: flow
