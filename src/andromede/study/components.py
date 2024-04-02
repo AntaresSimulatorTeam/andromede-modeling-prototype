@@ -19,14 +19,14 @@ from andromede.study import Component, PortRef, PortsConnection
 @dataclass(frozen=True)
 class Components:
     components: Dict[str, Component]
-    ports_to_connect: List[PortRef]
+    connections: List[PortRef]
 
 
 def components(
     components_list: Iterable[Component],
-    ports_to_connect: Iterable[PortRef],
+    connections: Iterable[PortRef],
 ) -> Components:
     return Components(
         components=dict((m.id, m) for m in components_list),
-        ports_to_connect=list(p for p in ports_to_connect),
+        connections=list(p for p in connections),
     )

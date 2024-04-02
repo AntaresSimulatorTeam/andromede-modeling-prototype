@@ -9,6 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+
 from typing import Dict, Optional
 
 from andromede.expression import ExpressionNode
@@ -29,23 +30,19 @@ from andromede.model import (
     Variable,
     model,
 )
-from andromede.model.components import Components, components
 from andromede.model.library import Library, library
 from andromede.model.model import PortFieldDefinition, port_field_def
 from andromede.model.parsing import (
-    InputComponent,
     InputConstraint,
     InputField,
     InputLibrary,
     InputModel,
     InputModelPort,
     InputParameter,
-    InputPortConnections,
     InputPortFieldDefinition,
     InputPortType,
     InputVariable,
 )
-from andromede.study import Component, PortRef, PortsConnection
 
 
 def resolve_library(input_lib: InputLibrary) -> Library:
@@ -58,18 +55,8 @@ def resolve_library(input_lib: InputLibrary) -> Library:
     port_types = [_convert_port_type(p) for p in input_lib.port_types]
     port_types_dict = dict((p.id, p) for p in port_types)
     models = [_resolve_model(m, port_types_dict) for m in input_lib.models]
+
     return library(port_types, models)
-
-
-def resolve_components_and_cnx(input_comp: InputComponent) -> Components:
-    components_list = [_resolve_component(m, m.id) for m in input_comp.components]
-
-    connections = []
-    for c in input_comp.connections:
-        resolved_cnx = _resolve_connections(c, components_list)
-        connections.extend(resolved_cnx)
-
-    return components(components_list, connections)
 
 
 def _convert_field(field: InputField) -> PortField:
@@ -164,30 +151,3 @@ def _to_constraint(
         lower_bound=_to_expression_if_present(constraint.lower_bound, identifiers),
         upper_bound=_to_expression_if_present(constraint.upper_bound, identifiers),
     )
-
-
-def _resolve_component(model_for_component: InputModel, component_id: str) -> Component:
-    return Component(
-        model=_resolve_model_identifier(model_for_component), id=component_id
-    )
-
-
-def _resolve_connections(
-    connection: InputPortConnections,
-    components_list: List[Component],
-) -> List[PortRef]:
-    component1 = connection.component1
-    component2 = connection.component2
-    port1 = connection.port_1
-    port2 = connection.port_2
-
-    port_ref_1 = PortRef(_get_component_by_id(components_list, component1), port1)
-    port_ref_2 = PortRef(_get_component_by_id(components_list, component2), port2)
-    return [port_ref_1, port_ref_2]
-
-
-def _get_component_by_id(
-    components_list: List[Component], component_id: str
-) -> Optional[Component]:
-    components_dict = {component.id: component for component in components_list}
-    return components_dict.get(component_id)

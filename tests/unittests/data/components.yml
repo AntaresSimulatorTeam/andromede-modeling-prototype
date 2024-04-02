@@ -38,5 +38,11 @@ study:
       component2: D
       port_2: injection_port
 
+    - id: cnx2
+      component1: N
+      port_1: injection_port
+      component2: G
+      port_2: injection_port
+
 
 

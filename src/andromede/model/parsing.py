@@ -21,11 +21,6 @@ def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
     return InputLibrary.model_validate(tree["library"])
 
 
-def parse_yaml_components(input_components: typing.TextIO) -> "InputComponent":
-    tree = safe_load(input_components)
-    return InputComponent.model_validate(tree["study"])
-
-
 # Design note: actual parsing and validation is delegated to pydantic models
 def _to_kebab(snake: str) -> str:
     return snake.replace("_", "-")
@@ -91,23 +86,6 @@ class InputModel(BaseModel):
     binding_constraints: List[InputConstraint] = Field(default_factory=list)
     constraints: List[InputConstraint] = Field(default_factory=list)
     objective: Optional[str] = None
-
-    class Config:
-        alias_generator = _to_kebab
-
-
-class InputPortConnections(BaseModel):
-    id: str
-    component1: str
-    port_1: str
-    component2: str
-    port_2: str
-
-
-class InputComponent(BaseModel):
-    nodes: List[InputModel] = Field(default_factory=list)
-    components: List[InputModel] = Field(default_factory=list)
-    connections: List[InputPortConnections] = Field(default_factory=list)
 
     class Config:
         alias_generator = _to_kebab
