@@ -11,6 +11,7 @@
 # This file is part of the Antares project.
 
 import math
+import os
 from pathlib import Path
 
 from andromede.libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
@@ -66,9 +67,8 @@ def test_electrolyzer_n_inputs_1(data_dir: Path):
     total gaz production = flow_ep1 * alpha_ez1 + flow_ep2 * alpha_ez2 + flow_gp
 
     """
-    libs_path = Path("../../src/andromede/libs/")
+    libs_path = Path(os.path.join(os.getcwd(), "../../src/andromede/libs/"))
     lib_file = data_dir / "lib.yml"
-    print(lib_file)
     lib_sc_file = libs_path / "standard_sc.yml"
 
     with lib_file.open() as f:
