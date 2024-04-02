@@ -68,6 +68,7 @@ def test_electrolyzer_n_inputs_1(data_dir: Path):
     """
     libs_path = Path("../../src/andromede/libs/")
     lib_file = data_dir / "lib.yml"
+    print(lib_file)
     lib_sc_file = libs_path / "standard_sc.yml"
 
     with lib_file.open() as f:
