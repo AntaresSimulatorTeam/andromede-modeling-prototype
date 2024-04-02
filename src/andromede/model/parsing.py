@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 import typing
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 from yaml import safe_load
@@ -23,7 +23,7 @@ def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
 
 def parse_yaml_components(input_components: typing.TextIO) -> "InputComponent":
     tree = safe_load(input_components)
-    return InputComponent.model_validate(tree["component"])
+    return InputComponent.model_validate(tree["study"])
 
 
 # Design note: actual parsing and validation is delegated to pydantic models
@@ -98,14 +98,16 @@ class InputModel(BaseModel):
 
 class InputPortConnections(BaseModel):
     id: str
+    component1: str
     port_1: str
+    component2: str
     port_2: str
 
 
 class InputComponent(BaseModel):
-    id: str
+    nodes: List[InputModel] = Field(default_factory=list)
     components: List[InputModel] = Field(default_factory=list)
-    ports_connections: List[InputPortConnections] = Field(default_factory=list)
+    connections: List[InputPortConnections] = Field(default_factory=list)
 
     class Config:
         alias_generator = _to_kebab
