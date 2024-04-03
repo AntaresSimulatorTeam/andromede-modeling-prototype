@@ -211,3 +211,56 @@ NODE_BALANCE_MODEL_MOD = model(
         )
     ],
 )
+
+LINK_WITH_STORAGE = model(
+    id="Link with storage model",
+    parameters=[
+        float_parameter("f_from_max", CONSTANT),
+        float_parameter("f_to_max", CONSTANT),
+        float_parameter("capacity", CONSTANT),
+        float_parameter("initial_level", CONSTANT),
+    ],
+    variables=[
+        float_variable("r", lower_bound=literal(0), upper_bound=param("capacity")),
+        float_variable(
+            "f_from", lower_bound=-param("f_from_max"), upper_bound=param("f_from_max")
+        ),
+        float_variable(
+            "f_to", lower_bound=-param("f_to_max"), upper_bound=param("f_to_max")
+        ),
+        float_variable("f_from+", lower_bound=literal(0)),
+        float_variable("f_from-", lower_bound=literal(0)),
+        float_variable("f_to+", lower_bound=literal(0)),
+        float_variable("f_to-", lower_bound=literal(0)),
+    ],
+    ports=[
+        ModelPort(port_type=BALANCE_PORT_TYPE, port_name="flow_from"),
+        ModelPort(port_type=BALANCE_PORT_TYPE, port_name="flow_to"),
+        ModelPort(port_type=BALANCE_PORT_TYPE, port_name="flow_from_pos"),
+        ModelPort(port_type=BALANCE_PORT_TYPE, port_name="flow_to_pos"),
+    ],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("flow_from", "flow"),
+            definition=-var("f_from"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("flow_to", "flow"),
+            definition=var("f_to"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("flow_from_pos", "flow"),
+            definition=var("f_from+"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("flow_to_pos", "flow"),
+            definition=var("f_to+"),
+        ),
+    ],
+    constraints=[
+        Constraint(
+            name="Level",
+            expression=var("f_from") == (var("f_from+") - var("f_from-")),
+        ),
+    ],
+)
