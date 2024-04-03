@@ -1,0 +1,80 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+library:
+  id: basic
+  description: Basic library
+
+  port-types:
+    - id: flow
+      description: A port which transfers power flow
+      fields:
+        - name: flow
+
+  models:
+    - id: link_with_storage
+      description: A link with energy storage
+      parameters:
+        - name: f_from_max
+          time-dependent: false
+          scenario-dependent: false
+        - name: f_to_max
+          time-dependent: false
+          scenario-dependent: false
+        - name: capacity
+          time-dependent: false
+          scenario-dependent: false
+        - name: initial_level
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: r
+          lower-bound: 0
+          upper-bound: capacity
+        - name: f_from
+          lower-bound: -f_from_max
+          upper-bound: f_from_max
+        - name: f_to
+          lower-bound: -f_to_max
+          upper-bound: f_to_max
+        - name: f_from_p
+          lower-bound: 0
+        - name: f_from_m
+          lower-bound: 0
+        - name: f_to_p
+          lower-bound: 0
+        - name: f_to_m
+          lower-bound: 0
+      ports:
+        - name: flow_from
+          type: flow
+        - name: flow_to
+          type: flow
+        - name: flow_from_pos
+          type: flow
+        - name: flow_to_pos
+          type: flow
+      port-field-definitions:
+        - port: flow_from
+          field: flow
+          definition: -f_from
+        - port: flow_to
+          field: flow
+          definition: f_to
+        - port: flow_from_pos
+          field: flow
+          definition: f_from_m
+        - port: flow_to_pos
+          field: flow
+          definition: f_to_p
+      constraints:
+        - name: Level
+          expression: f_from = f_from_p - f_from_m
