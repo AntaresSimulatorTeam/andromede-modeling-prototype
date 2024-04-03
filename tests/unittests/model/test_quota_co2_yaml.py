@@ -43,7 +43,7 @@ build the quota CO² test system.
 
 
 def test_quota_co2(data_dir: Path):
-    libs_path = Path("../../src/andromede/libs/")
+    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
     lib_file = data_dir / "lib.yml"
     lib_sc_file = libs_path / "standard_sc.yml"
 

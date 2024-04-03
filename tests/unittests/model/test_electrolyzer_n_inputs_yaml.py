@@ -67,7 +67,7 @@ def test_electrolyzer_n_inputs_1(data_dir: Path):
     total gaz production = flow_ep1 * alpha_ez1 + flow_ep2 * alpha_ez2 + flow_gp
 
     """
-    libs_path = Path(os.path.join(os.getcwd(), "../../src/andromede/libs/"))
+    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
     lib_file = data_dir / "lib.yml"
     lib_sc_file = libs_path / "standard_sc.yml"
 
@@ -180,7 +180,7 @@ def test_electrolyzer_n_inputs_2(data_dir: Path):
     total gaz production = flow_ep1 * alpha1_ez + flow_ep2 * alpha2_ez + flow_gp
     """
 
-    libs_path = Path("../../src/andromede/libs/")
+    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
     lib_file = data_dir / "lib.yml"
     lib_sc_file = libs_path / "standard_sc.yml"
 
@@ -291,7 +291,7 @@ def test_electrolyzer_n_inputs_3(data_dir: Path):
 
     The result is different since we only have one alpha at 0.7
     """
-    libs_path = Path("../../src/andromede/libs/")
+    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
     lib_file = data_dir / "lib.yml"
     lib_sc_file = libs_path / "standard_sc.yml"
 
@@ -407,7 +407,7 @@ def test_electrolyzer_n_inputs_4(data_dir: Path):
 
     same as test 3, the result is different than the first two since we only have one alpha at 0.7
     """
-    libs_path = Path("../../src/andromede/libs/")
+    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
     lib_file = data_dir / "lib.yml"
     lib_sc_file = libs_path / "standard_sc.yml"
 
