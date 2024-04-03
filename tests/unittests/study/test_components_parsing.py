@@ -16,4 +16,4 @@ def test_parsing_components_ok(data_dir: Path):
     result = resolve_components_and_cnx(input_compo)
 
     assert len(result.components) == 3
-    assert len(result.connections) == 4
+    assert len(result.connections) == 2

@@ -9,7 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from andromede.model.parsing import InputModel
 from andromede.model.resolve_library import _resolve_model_identifier
@@ -25,11 +25,11 @@ def resolve_components_and_cnx(input_comp: InputComponent) -> Components:
     - connections between components"""
     components_list = [_resolve_component(m, m.id) for m in input_comp.components]
     components_list.extend(_resolve_component(n, n.id) for n in input_comp.nodes)
-    connections = []
+    connections = {}
 
     for cnx in input_comp.connections:
         resolved_cnx = _resolve_connections(cnx, components_list)
-        connections.extend(resolved_cnx)
+        connections.update(resolved_cnx)
 
     return components(components_list, connections)
 
@@ -43,7 +43,7 @@ def _resolve_component(model_for_component: InputModel, component_id: str) -> Co
 def _resolve_connections(
     connection: InputPortConnections,
     components_list: List[Component],
-) -> List[PortRef]:
+) -> Dict[str, List[PortRef]]:
     cnx_component1 = connection.component1
     cnx_component2 = connection.component2
     port1 = connection.port_1
@@ -54,7 +54,7 @@ def _resolve_connections(
     assert component_1 is not None and component_2 is not None
     port_ref_1 = PortRef(component_1, port1)
     port_ref_2 = PortRef(component_2, port2)
-    return [port_ref_1, port_ref_2]
+    return {connection.id: [port_ref_1, port_ref_2]}
 
 
 def _get_component_by_id(
