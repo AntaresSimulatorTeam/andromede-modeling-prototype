@@ -11,20 +11,22 @@
 # This file is part of the Antares project.
 from typing import Dict, List, Optional
 
+from andromede.model import Model
+from andromede.model.library import Library
 from andromede.model.parsing import InputModel
 from andromede.model.resolve_library import _resolve_model_identifier
 from andromede.study import Component, PortRef
 from andromede.study.components import Components, components
-from andromede.study.parsing import InputComponent, InputPortConnections
+from andromede.study.parsing import InputComponents, InputPortConnections
 
 
-def resolve_components_and_cnx(input_comp: InputComponent) -> Components:
+def resolve_components_and_cnx(input_comp: InputComponents) -> Components:
     """
     Resolves:
     - components to be used for study
     - connections between components"""
-    components_list = [_resolve_component(m, m.id) for m in input_comp.components]
-    components_list.extend(_resolve_component(n, n.id) for n in input_comp.nodes)
+    components_list = [_resolve_component(m.model, m.id) for m in input_comp.components]
+    components_list.extend(_resolve_component(n.model, n.id) for n in input_comp.nodes)
     connections = {}
 
     for cnx in input_comp.connections:
@@ -62,3 +64,19 @@ def _get_component_by_id(
 ) -> Optional[Component]:
     components_dict = {component.id: component for component in components_list}
     return components_dict.get(component_id)
+
+
+def consistency_check(
+    input_components: Dict[str, Component], input_models: Dict[str, Model]
+) -> bool:
+    """
+    Checks if all components in the Components instances have a valid model from the library.
+    Returns True if all components are consistent, raises ValueError otherwis.
+    """
+    model_ids_set = input_models.keys()
+    for component_id, component in input_components.items():
+        if component.model.id not in model_ids_set:
+            raise ValueError(
+                f"Error: Component {component_id} has invalid model ID: {component.model.id}"
+            )
+    return True

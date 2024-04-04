@@ -18,9 +18,9 @@ from yaml import safe_load
 from andromede.model.parsing import InputModel
 
 
-def parse_yaml_components(input_components: typing.TextIO) -> "InputComponent":
+def parse_yaml_components(input_components: typing.TextIO) -> "InputComponents":
     tree = safe_load(input_components)
-    return InputComponent.model_validate(tree["study"])
+    return InputComponents.model_validate(tree["study"])
 
 
 # Design note: actual parsing and validation is delegated to pydantic models
@@ -37,8 +37,13 @@ class InputPortConnections(BaseModel):
 
 
 class InputComponent(BaseModel):
-    nodes: List[InputModel] = Field(default_factory=list)
-    components: List[InputModel] = Field(default_factory=list)
+    id: str
+    model: InputModel
+
+
+class InputComponents(BaseModel):
+    nodes: List[InputComponent] = Field(default_factory=list)
+    components: List[InputComponent] = Field(default_factory=list)
     connections: List[InputPortConnections] = Field(default_factory=list)
 
     class Config:
