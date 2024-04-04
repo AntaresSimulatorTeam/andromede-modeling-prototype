@@ -36,9 +36,17 @@ class InputPortConnections(BaseModel):
     port_2: str
 
 
+class InputComponentParameter(BaseModel):
+    name: str
+    type: str
+    value: Optional[int] = None
+    timeseries: Optional[str] = None
+
+
 class InputComponent(BaseModel):
     id: str
-    model: InputModel
+    model: str
+    parameters: Optional[List[InputComponentParameter]] = None
 
 
 class InputComponents(BaseModel):

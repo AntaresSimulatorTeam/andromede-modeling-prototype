@@ -12,31 +12,28 @@
 study:
   nodes:
     - id: N
-      model:
-        id: node
+      model: node
 
   components:
     - id: G
-      model:
-        id: generator
-        parameters:
-          - name: cost
-            type: constant
-            value: 100
-          - name: p_max
-            type: timeseries
-            timeseries: costs
+      model: generator
+      parameters:
+        - name: cost
+          type: constant
+          value: 100
+        - name: p_max
+          type: timeseries
+          timeseries: costs
     - id: D
-      model:
-        id: demand
-        parameters:
-          - name: demand
-            type: constant
-            value: 1400
+      model: demand
+      parameters:
+        - name: demand
+          type: constant
+          value: 1400
 
   connections:
     - id: cnx1
-      component1: G
+      component1: N
       port_1: injection_port
       component2: D
       port_2: injection_port

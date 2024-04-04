@@ -13,20 +13,30 @@ from typing import Dict, List, Optional
 
 from andromede.model import Model
 from andromede.model.library import Library
-from andromede.model.parsing import InputModel
+from andromede.model.parsing import InputLibrary, InputModel
 from andromede.model.resolve_library import _resolve_model_identifier
 from andromede.study import Component, PortRef
 from andromede.study.components import Components, components
-from andromede.study.parsing import InputComponents, InputPortConnections
+from andromede.study.parsing import (
+    InputComponent,
+    InputComponents,
+    InputPortConnections,
+)
 
 
-def resolve_components_and_cnx(input_comp: InputComponents) -> Components:
+def resolve_components_and_cnx(
+    input_comp: InputComponents, input_library: InputLibrary
+) -> Components:
     """
     Resolves:
     - components to be used for study
     - connections between components"""
-    components_list = [_resolve_component(m.model, m.id) for m in input_comp.components]
-    components_list.extend(_resolve_component(n.model, n.id) for n in input_comp.nodes)
+    components_list = [
+        _resolve_component(input_library, m) for m in input_comp.components
+    ]
+    components_list.extend(
+        _resolve_component(input_library, n) for n in input_comp.nodes
+    )
     connections = {}
 
     for cnx in input_comp.connections:
@@ -36,9 +46,15 @@ def resolve_components_and_cnx(input_comp: InputComponents) -> Components:
     return components(components_list, connections)
 
 
-def _resolve_component(model_for_component: InputModel, component_id: str) -> Component:
+def _resolve_component(
+    models_for_component: InputLibrary, component: InputComponent
+) -> Component:
+    model_to_instantiate = None
+    for model in models_for_component.models:
+        if model.id == component.model:
+            model_to_instantiate = model
     return Component(
-        model=_resolve_model_identifier(model_for_component), id=component_id
+        model=_resolve_model_identifier(model_to_instantiate), id=component.id
     )
 
 
