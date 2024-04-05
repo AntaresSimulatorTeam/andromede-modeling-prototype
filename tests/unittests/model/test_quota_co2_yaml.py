@@ -13,10 +13,6 @@
 import math
 from pathlib import Path
 
-from andromede.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
-from andromede.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
-from andromede.model.parsing import parse_yaml_library
-from andromede.model.resolve_library import resolve_library
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -42,18 +38,7 @@ build the quota CO² test system.
 """ Test of a generation of energy and co2 with a quota to limit the emission"""
 
 
-def test_quota_co2(data_dir: Path):
-    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
-    lib_file = data_dir / "lib.yml"
-    lib_sc_file = libs_path / "standard_sc.yml"
-
-    with lib_file.open() as f:
-        input_lib = parse_yaml_library(f)
-    with lib_sc_file.open() as f:
-        input_lib_sc = parse_yaml_library(f)
-
-    lib = resolve_library(input_lib)
-    lib_sc = resolve_library(input_lib_sc)
+def test_quota_co2(data_dir: Path, lib, lib_sc):
 
     gen_model = lib_sc.models["generator_with_co2"]
     node_model = lib.models["node"]

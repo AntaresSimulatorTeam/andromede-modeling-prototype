@@ -11,19 +11,8 @@
 # This file is part of the Antares project.
 
 import math
-import os
 from pathlib import Path
 
-from andromede.libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
-from andromede.libs.standard_sc import (
-    CONVERTOR_MODEL,
-    CONVERTOR_RECEIVE_IN,
-    DECOMPOSE_1_FLOW_INTO_2_FLOW,
-    NODE_BALANCE_MODEL_MOD,
-    TWO_INPUTS_CONVERTOR_MODEL,
-)
-from andromede.model.parsing import parse_yaml_library
-from andromede.model.resolve_library import resolve_library
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -54,7 +43,7 @@ we always have:
 """
 
 
-def test_electrolyzer_n_inputs_1(data_dir: Path):
+def test_electrolyzer_n_inputs_1(data_dir: Path, lib, lib_sc):
     """
     Test with an electrolyzer for each input
 
@@ -67,17 +56,6 @@ def test_electrolyzer_n_inputs_1(data_dir: Path):
     total gaz production = flow_ep1 * alpha_ez1 + flow_ep2 * alpha_ez2 + flow_gp
 
     """
-    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
-    lib_file = data_dir / "lib.yml"
-    lib_sc_file = libs_path / "standard_sc.yml"
-
-    with lib_file.open() as f:
-        input_lib = parse_yaml_library(f)
-    with lib_sc_file.open() as f:
-        input_lib_sc = parse_yaml_library(f)
-
-    lib = resolve_library(input_lib)
-    lib_sc = resolve_library(input_lib_sc)
 
     gen_model = lib.models["generator"]
     node_model = lib.models["node"]
@@ -168,7 +146,7 @@ def test_electrolyzer_n_inputs_1(data_dir: Path):
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_2(data_dir: Path):
+def test_electrolyzer_n_inputs_2(data_dir: Path, lib, lib_sc):
     """
     Test with one electrolyzer that has two inputs
 
@@ -179,18 +157,6 @@ def test_electrolyzer_n_inputs_2(data_dir: Path):
 
     total gaz production = flow_ep1 * alpha1_ez + flow_ep2 * alpha2_ez + flow_gp
     """
-
-    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
-    lib_file = data_dir / "lib.yml"
-    lib_sc_file = libs_path / "standard_sc.yml"
-
-    with lib_file.open() as f:
-        input_lib = parse_yaml_library(f)
-    with lib_sc_file.open() as f:
-        input_lib_sc = parse_yaml_library(f)
-
-    lib = resolve_library(input_lib)
-    lib_sc = resolve_library(input_lib_sc)
 
     gen_model = lib.models["generator"]
     node_model = lib.models["node"]
@@ -278,7 +244,7 @@ def test_electrolyzer_n_inputs_2(data_dir: Path):
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_3(data_dir: Path):
+def test_electrolyzer_n_inputs_3(data_dir: Path, lib, lib_sc):
     """
     Test with a consumption_electrolyzer with two inputs
 
@@ -291,17 +257,6 @@ def test_electrolyzer_n_inputs_3(data_dir: Path):
 
     The result is different since we only have one alpha at 0.7
     """
-    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
-    lib_file = data_dir / "lib.yml"
-    lib_sc_file = libs_path / "standard_sc.yml"
-
-    with lib_file.open() as f:
-        input_lib = parse_yaml_library(f)
-    with lib_sc_file.open() as f:
-        input_lib_sc = parse_yaml_library(f)
-
-    lib = resolve_library(input_lib)
-    lib_sc = resolve_library(input_lib_sc)
 
     gen_model = lib.models["generator"]
     node_model = lib.models["node"]
@@ -394,7 +349,7 @@ def test_electrolyzer_n_inputs_3(data_dir: Path):
     assert math.isclose(problem.solver.Objective().Value(), 1750)
 
 
-def test_electrolyzer_n_inputs_4(data_dir: Path):
+def test_electrolyzer_n_inputs_4(data_dir: Path, lib, lib_sc):
     """
     Test with one electrolyzer with one input that takes every inputs
 
@@ -407,17 +362,6 @@ def test_electrolyzer_n_inputs_4(data_dir: Path):
 
     same as test 3, the result is different than the first two since we only have one alpha at 0.7
     """
-    libs_path = Path(__file__).parents[3] / "src/andromede/libs/"
-    lib_file = data_dir / "lib.yml"
-    lib_sc_file = libs_path / "standard_sc.yml"
-
-    with lib_file.open() as f:
-        input_lib = parse_yaml_library(f)
-    with lib_sc_file.open() as f:
-        input_lib_sc = parse_yaml_library(f)
-
-    lib = resolve_library(input_lib)
-    lib_sc = resolve_library(input_lib_sc)
 
     gen_model = lib.models["generator"]
     node_model = lib.models["node"]
