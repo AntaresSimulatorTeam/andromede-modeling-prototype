@@ -14,7 +14,7 @@ from typing import Dict, List, Optional
 
 from andromede.model import Model
 from andromede.model.library import Library
-from andromede.study import Component, PortRef
+from andromede.study import Component, ConstantData, DataBase, Network, PortRef
 from andromede.study.components import Components, components
 from andromede.study.parsing import (
     InputComponent,
@@ -93,3 +93,23 @@ def consistency_check(
                 f"Error: Component {component_id} has invalid model ID: {component.model.id}"
             )
     return True
+
+
+def build_network(comp_network: Components) -> Network:
+    network = Network("study")
+    for component_id, component in comp_network.components.items():
+        network.add_component(component)
+
+    for key_int, connection_list in comp_network.connections.items():
+        network.connect(connection_list[0], connection_list[1])
+    return network
+
+
+# TODO only working with ConstantData
+def build_data_base(input_comp: InputComponents) -> DataBase:
+    database = DataBase()
+    for comp in input_comp.components:
+        for param in comp.parameters or []:
+            database.add_data(comp.id, param.name, ConstantData(param.value))
+
+    return database

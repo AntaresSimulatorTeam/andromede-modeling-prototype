@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 
-from andromede.libs.standard import NODE_BALANCE_MODEL
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
@@ -13,6 +12,8 @@ from andromede.study.parsing import (
     parse_yaml_components,
 )
 from andromede.study.resolve_components import (
+    build_data_base,
+    build_network,
     consistency_check,
     resolve_components_and_cnx,
 )
@@ -73,28 +74,14 @@ def test_basic_balance_using_yaml(input_component, input_library) -> None:
     components_input = resolve_components_and_cnx(input_component, result_lib)
     consistency_check(components_input.components, result_lib.models)
 
-    database.add_data("D", "demand", ConstantData(100))
-
-    database.add_data("G", "p_max", ConstantData(100))
-    database.add_data("G", "cost", ConstantData(30))
-
+    database = build_data_base(input_component)
     node = Node(
         model=components_input.components["N"].model,
         id=components_input.components["N"].id,
     )
 
-    network = Network("test")
+    network = build_network(components_input)
     network.add_node(node)
-    network.add_component(components_input.components["D"])
-    network.add_component(components_input.components["G"])
-    network.connect(
-        components_input.connections[0][0], components_input.connections[0][1]
-    )
-    network.connect(
-        components_input.connections[1][0],
-        components_input.connections[1][1],
-    )
-
     scenarios = 1
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()

@@ -20,16 +20,16 @@ study:
       parameters:
         - name: cost
           type: constant
-          value: 100
+          value: 30
         - name: p_max
-          type: timeseries
-          timeseries: costs
+          type: constant
+          value: 100
     - id: D
       model: demand
       parameters:
         - name: demand
           type: constant
-          value: 1400
+          value: 100
 
   connections:
       - component1: N
