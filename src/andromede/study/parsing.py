@@ -29,7 +29,6 @@ def _to_kebab(snake: str) -> str:
 
 
 class InputPortConnections(BaseModel):
-    id: str
     component1: str
     port_1: str
     component2: str

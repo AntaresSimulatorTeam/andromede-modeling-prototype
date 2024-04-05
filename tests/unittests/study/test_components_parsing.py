@@ -2,10 +2,11 @@ from pathlib import Path
 
 import pytest
 
+from andromede.libs.standard import NODE_BALANCE_MODEL
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
-from andromede.study import ConstantData, DataBase, Network, Node
+from andromede.study import ConstantData, DataBase, Network, Node, PortRef
 from andromede.study.parsing import (
     InputComponent,
     InputComponents,
@@ -41,22 +42,22 @@ def test_parsing_components_ok(input_component, input_library):
     assert len(input_component.components) == 2
     assert len(input_component.nodes) == 1
     assert len(input_component.connections) == 2
-
-    result = resolve_components_and_cnx(input_component, input_library)
+    lib = resolve_library(input_library)
+    result = resolve_components_and_cnx(input_component, lib)
 
     assert len(result.components) == 3
     assert len(result.connections) == 2
 
 
 def test_consistency_check_ok(input_component, input_library):
-    result_comp = resolve_components_and_cnx(input_component, input_library)
     result_lib = resolve_library(input_library)
+    result_comp = resolve_components_and_cnx(input_component, result_lib)
     consistency_check(result_comp.components, result_lib.models)
 
 
 def test_consistency_check_ko(input_component, input_library):
-    result_comp = resolve_components_and_cnx(input_component, input_library)
     result_lib = resolve_library(input_library)
+    result_comp = resolve_components_and_cnx(input_component, result_lib)
     result_lib.models.pop("generator")
     with pytest.raises(
         ValueError,
@@ -65,35 +66,37 @@ def test_consistency_check_ko(input_component, input_library):
         consistency_check(result_comp.components, result_lib.models)
 
 
-# def test_basic_balance_using_yaml(input_component, input_library) -> None:
-#     database = DataBase()
-#
-#     components_input = resolve_components_and_cnx(input_component, input_library)
-#     result_lib = resolve_library(input_library)
-#     consistency_check(components_input.components, result_lib.models)
-#
-#     database.add_data("D", "demand", ConstantData(100))
-#
-#     database.add_data("G", "p_max", ConstantData(100))
-#     database.add_data("G", "cost", ConstantData(30))
-#
-#     node = Node(model=components_input.components.get("N").model, id="1")
-#
-#     network = Network("test")
-#     network.add_node(node)
-#     network.add_component(components_input.components.get("demand"))
-#     network.add_component(components_input.components.get("generator"))
-#     network.connect(
-#         components_input.connections.get("cnx1")[0],
-#         components_input.connections.get("cnx1")[1],
-#     )
-#     network.connect(
-#         components_input.connections.get("cnx2")[0],
-#         components_input.connections.get("cnx2")[1],
-#     )
-#
-#     scenarios = 1
-#     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
-#     status = problem.solver.Solve()
-#     assert status == problem.solver.OPTIMAL
-#     assert problem.solver.Objective().Value() == 3000
+def test_basic_balance_using_yaml(input_component, input_library) -> None:
+    database = DataBase()
+
+    result_lib = resolve_library(input_library)
+    components_input = resolve_components_and_cnx(input_component, result_lib)
+    consistency_check(components_input.components, result_lib.models)
+
+    database.add_data("D", "demand", ConstantData(100))
+
+    database.add_data("G", "p_max", ConstantData(100))
+    database.add_data("G", "cost", ConstantData(30))
+
+    node = Node(
+        model=components_input.components["N"].model,
+        id=components_input.components["N"].id,
+    )
+
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(components_input.components["D"])
+    network.add_component(components_input.components["G"])
+    network.connect(
+        components_input.connections[0][0], components_input.connections[0][1]
+    )
+    network.connect(
+        components_input.connections[1][0],
+        components_input.connections[1][1],
+    )
+
+    scenarios = 1
+    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    status = problem.solver.Solve()
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 3000

@@ -69,12 +69,6 @@ def _convert_port_type(port_type: InputPortType) -> PortType:
     )
 
 
-def _resolve_model_identifier(model_instance: InputModel) -> Model:
-    return Model(
-        id=model_instance.id,
-    )
-
-
 def _resolve_model(input_model: InputModel, port_types: Dict[str, PortType]) -> Model:
     identifiers = ModelIdentifiers(
         variables={v.name for v in input_model.variables},
