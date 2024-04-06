@@ -10,12 +10,21 @@
 #
 # This file is part of the Antares project.
 from itertools import count
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from andromede.model import Model
 from andromede.model.library import Library
-from andromede.study import Component, ConstantData, DataBase, Network, PortRef
+from andromede.study import (
+    Component,
+    ConstantData,
+    DataBase,
+    Network,
+    PortRef,
+    PortsConnection,
+)
 from andromede.study.components import Components, components
+from andromede.study.data import AbstractDataStructure, TimeIndex, TimeSeriesData
 from andromede.study.parsing import (
     InputComponent,
     InputComponents,
@@ -32,11 +41,10 @@ def resolve_components_and_cnx(
     - connections between components"""
     components_list = [_resolve_component(library, m) for m in input_comp.components]
     components_list.extend(_resolve_component(library, n) for n in input_comp.nodes)
-    connections = {}
-
+    connections = []
     for cnx in input_comp.connections:
         resolved_cnx = _resolve_connections(cnx, components_list)
-        connections.update(resolved_cnx)
+        connections.append(resolved_cnx)
 
     return components(components_list, connections)
 
@@ -50,13 +58,10 @@ def _resolve_component(library: Library, component: InputComponent) -> Component
     )
 
 
-_key_counter = count()
-
-
 def _resolve_connections(
     connection: InputPortConnections,
     components_list: List[Component],
-) -> Dict[int, List[PortRef]]:
+) -> PortsConnection:
     cnx_component1 = connection.component1
     cnx_component2 = connection.component2
     port1 = connection.port_1
@@ -68,8 +73,7 @@ def _resolve_connections(
     port_ref_1 = PortRef(component_1, port1)
     port_ref_2 = PortRef(component_2, port2)
 
-    key = next(_key_counter)
-    return {key: [port_ref_1, port_ref_2]}
+    return PortsConnection(port_ref_1, port_ref_2)
 
 
 def _get_component_by_id(
@@ -100,16 +104,52 @@ def build_network(comp_network: Components) -> Network:
     for component_id, component in comp_network.components.items():
         network.add_component(component)
 
-    for key_int, connection_list in comp_network.connections.items():
-        network.connect(connection_list[0], connection_list[1])
+    for connection in comp_network.connections:
+        network.connect(connection.port1, connection.port2)
     return network
 
 
-# TODO only working with ConstantData
 def build_data_base(input_comp: InputComponents) -> DataBase:
     database = DataBase()
     for comp in input_comp.components:
         for param in comp.parameters or []:
-            database.add_data(comp.id, param.name, ConstantData(param.value))
+            param_value = _evaluate_param_type(
+                param.type, param.value, param.timeseries
+            )
+            database.add_data(comp.id, param.name, param_value)
 
     return database
+
+
+def _evaluate_param_type(
+    param_type: str, param_value: Optional[float], timeseries: Optional[str]
+) -> AbstractDataStructure:
+    if param_type == "constant" and param_value is not None:
+        return ConstantData(float(param_value))
+
+    elif param_type == "timeseries":
+        return TimeSeriesData(_evaluate_time_series(timeseries))
+
+    raise ValueError(f"Data should be either constant or timeseries ")
+
+
+def _evaluate_time_series(file_ts: Optional[str]) -> Dict[TimeIndex, float]:
+    """Read times series .txt file delimited by tab"""
+    time_series = {}
+    try:
+        if file_ts is not None:
+            path = Path(file_ts)
+            with open(path, "r") as file:
+                for line in file:
+                    columns = line.strip().split("\t")
+                    column_number = 0
+                    for column_value in columns:
+                        numbers_as_strings = column_value.split()
+                        for n in numbers_as_strings:
+                            value = float(n)
+                            time_series[TimeIndex(column_number)] = value
+                            column_number += 1
+    except FileNotFoundError:
+        print(f"Error: File {file_ts} does not exists")
+
+    return time_series

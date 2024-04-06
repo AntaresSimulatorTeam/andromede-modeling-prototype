@@ -12,18 +12,20 @@
 from dataclasses import dataclass
 from typing import Dict, Iterable, List
 
-from andromede.study import Component, PortRef
+from andromede.study import Component, PortRef, PortsConnection
 
 
 @dataclass(frozen=True)
 class Components:
     components: Dict[str, Component]
-    connections: Dict[int, List[PortRef]]
+    # connections: Dict[int, List[PortRef]]
+    connections: List[PortsConnection]
 
 
 def components(
-    components_list: Iterable[Component], connections: Dict[int, List[PortRef]]
+    components_list: Iterable[Component], connections: Iterable[PortsConnection]
 ) -> Components:
     return Components(
-        components=dict((m.id, m) for m in components_list), connections=connections
+        components=dict((m.id, m) for m in components_list),
+        connections=list(connections),
     )

@@ -15,8 +15,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from yaml import safe_load
 
-from andromede.model.parsing import InputModel
-
 
 def parse_yaml_components(input_components: typing.TextIO) -> "InputComponents":
     tree = safe_load(input_components)
@@ -38,7 +36,7 @@ class InputPortConnections(BaseModel):
 class InputComponentParameter(BaseModel):
     name: str
     type: str
-    value: Optional[int] = None
+    value: Optional[float] = None
     timeseries: Optional[str] = None
 
 
