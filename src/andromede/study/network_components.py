@@ -16,16 +16,19 @@ from andromede.study import Component, PortRef, PortsConnection
 
 
 @dataclass(frozen=True)
-class Components:
+class NetworkComponents:
     components: Dict[str, Component]
-    # connections: Dict[int, List[PortRef]]
+    nodes: Dict[str, Component]
     connections: List[PortsConnection]
 
 
-def components(
-    components_list: Iterable[Component], connections: Iterable[PortsConnection]
-) -> Components:
-    return Components(
+def network_components(
+    components_list: Iterable[Component],
+    nodes: Iterable[Component],
+    connections: Iterable[PortsConnection],
+) -> NetworkComponents:
+    return NetworkComponents(
         components=dict((m.id, m) for m in components_list),
+        nodes=dict((n.id, n) for n in nodes),
         connections=list(connections),
     )

@@ -13,6 +13,8 @@ from itertools import count
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import pandas as pd
+
 from andromede.model import Model
 from andromede.model.library import Library
 from andromede.study import (
@@ -20,11 +22,16 @@ from andromede.study import (
     ConstantData,
     DataBase,
     Network,
+    Node,
     PortRef,
     PortsConnection,
 )
-from andromede.study.components import Components, components
-from andromede.study.data import AbstractDataStructure, TimeIndex, TimeSeriesData
+from andromede.study.data import (
+    AbstractDataStructure,
+    TimeScenarioIndex,
+    TimeScenarioSeriesData,
+)
+from andromede.study.network_components import NetworkComponents, network_components
 from andromede.study.parsing import (
     InputComponent,
     InputComponents,
@@ -34,19 +41,20 @@ from andromede.study.parsing import (
 
 def resolve_components_and_cnx(
     input_comp: InputComponents, library: Library
-) -> Components:
+) -> NetworkComponents:
     """
     Resolves:
     - components to be used for study
     - connections between components"""
     components_list = [_resolve_component(library, m) for m in input_comp.components]
-    components_list.extend(_resolve_component(library, n) for n in input_comp.nodes)
+    nodes = [_resolve_component(library, n) for n in input_comp.nodes]
+    all_components: List[Component] = components_list + nodes
     connections = []
     for cnx in input_comp.connections:
-        resolved_cnx = _resolve_connections(cnx, components_list)
+        resolved_cnx = _resolve_connections(cnx, all_components)
         connections.append(resolved_cnx)
 
-    return components(components_list, connections)
+    return network_components(components_list, nodes, connections)
 
 
 def _resolve_component(library: Library, component: InputComponent) -> Component:
@@ -60,15 +68,15 @@ def _resolve_component(library: Library, component: InputComponent) -> Component
 
 def _resolve_connections(
     connection: InputPortConnections,
-    components_list: List[Component],
+    all_components: List[Component],
 ) -> PortsConnection:
     cnx_component1 = connection.component1
     cnx_component2 = connection.component2
     port1 = connection.port_1
     port2 = connection.port_2
 
-    component_1 = _get_component_by_id(components_list, cnx_component1)
-    component_2 = _get_component_by_id(components_list, cnx_component2)
+    component_1 = _get_component_by_id(all_components, cnx_component1)
+    component_2 = _get_component_by_id(all_components, cnx_component2)
     assert component_1 is not None and component_2 is not None
     port_ref_1 = PortRef(component_1, port1)
     port_ref_2 = PortRef(component_2, port2)
@@ -77,9 +85,9 @@ def _resolve_connections(
 
 
 def _get_component_by_id(
-    components_list: List[Component], component_id: str
+    all_components: List[Component], component_id: str
 ) -> Optional[Component]:
-    components_dict = {component.id: component for component in components_list}
+    components_dict = {component.id: component for component in all_components}
     return components_dict.get(component_id)
 
 
@@ -88,7 +96,7 @@ def consistency_check(
 ) -> bool:
     """
     Checks if all components in the Components instances have a valid model from the library.
-    Returns True if all components are consistent, raises ValueError otherwis.
+    Returns True if all components are consistent, raises ValueError otherwise.
     """
     model_ids_set = input_models.keys()
     for component_id, component in input_components.items():
@@ -99,8 +107,13 @@ def consistency_check(
     return True
 
 
-def build_network(comp_network: Components) -> Network:
+def build_network(comp_network: NetworkComponents) -> Network:
     network = Network("study")
+
+    for node_id, node in comp_network.nodes.items():
+        node = Node(model=node.model, id=node_id)
+        network.add_node(node)
+
     for component_id, component in comp_network.components.items():
         network.add_component(component)
 
@@ -128,28 +141,24 @@ def _evaluate_param_type(
         return ConstantData(float(param_value))
 
     elif param_type == "timeseries":
-        return TimeSeriesData(_evaluate_time_series(timeseries))
+        return TimeScenarioSeriesData(_evaluate_time_series(timeseries))
 
     raise ValueError(f"Data should be either constant or timeseries ")
 
 
-def _evaluate_time_series(file_ts: Optional[str]) -> Dict[TimeIndex, float]:
-    """Read times series .txt file delimited by tab"""
+def _evaluate_time_series(file_ts: Optional[str]) -> Dict[TimeScenarioIndex, float]:
+    """Read time series .txt file delimited by tab"""
     time_series = {}
     try:
         if file_ts is not None:
             path = Path(file_ts)
-            with open(path, "r") as file:
-                for line in file:
-                    columns = line.strip().split("\t")
-                    column_number = 0
-                    for column_value in columns:
-                        numbers_as_strings = column_value.split()
-                        for n in numbers_as_strings:
-                            value = float(n)
-                            time_series[TimeIndex(column_number)] = value
-                            column_number += 1
+            df = pd.read_csv(path, header=None)
+            values = df.values
+            arr_split = [x[0].split() for x in values]
+            for i, sublist in enumerate(arr_split):
+                for j, element in enumerate(sublist):
+                    index = TimeScenarioIndex(time=j, scenario=i)
+                    time_series[index] = float(element)
     except FileNotFoundError:
         print(f"Error: File {file_ts} does not exists")
-
     return time_series
