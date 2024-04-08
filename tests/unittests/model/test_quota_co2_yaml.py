@@ -26,7 +26,7 @@ from andromede.study import (
 """
 build the quota CO² test system.
 
-    N1 -----N2----Demand         ^
+    N1 -----N2----Demand
     |       |
     Oil1    Coal1
     |       |
