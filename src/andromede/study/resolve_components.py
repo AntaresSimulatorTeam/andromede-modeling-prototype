@@ -154,10 +154,12 @@ def _evaluate_time_series(file_ts: Optional[str]) -> Dict[TimeScenarioIndex, flo
             df = pd.read_csv(path, header=None)
             values = df.values
             arr_split = [x[0].split() for x in values]
-            for i, sublist in enumerate(arr_split):
-                for j, element in enumerate(sublist):
-                    index = TimeScenarioIndex(time=j, scenario=i)
-                    time_series[index] = float(element)
+            num_rows = len(arr_split)
+            num_cols = len(arr_split[0])
+            for time in range(num_rows):
+                for scenario in range(num_cols):
+                    index = TimeScenarioIndex(time=time, scenario=scenario)
+                    time_series[index] = float(arr_split[time][scenario])
     except FileNotFoundError:
         print(f"Error: File {file_ts} does not exists")
     return time_series

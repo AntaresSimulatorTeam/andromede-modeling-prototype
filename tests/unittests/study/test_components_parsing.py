@@ -86,8 +86,8 @@ def test_evaluate_time_series(data_dir: Path):
     gen_costs = _evaluate_time_series(str(txt_file))
     expected_timeseries = {
         TimeScenarioIndex(0, 0): 100,
-        TimeScenarioIndex(0, 1): 50,
-        TimeScenarioIndex(1, 0): 200,
+        TimeScenarioIndex(1, 0): 50,
+        TimeScenarioIndex(0, 1): 200,
         TimeScenarioIndex(1, 1): 100,
     }
     assert gen_costs == expected_timeseries
