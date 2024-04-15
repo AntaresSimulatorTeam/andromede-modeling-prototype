@@ -39,7 +39,7 @@ def lib(data_dir: Path):
 
 
 @pytest.fixture(scope="session")
-def lib_sc(data_dir: Path):
+def lib_sc():
     libs_path = Path(__file__).parents[2] / "src/andromede/libs/"
     lib_sc_file = libs_path / "standard_sc.yml"
 

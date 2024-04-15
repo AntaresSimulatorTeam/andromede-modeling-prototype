@@ -43,7 +43,7 @@ we always have:
 """
 
 
-def test_electrolyzer_n_inputs_1(data_dir: Path, lib, lib_sc):
+def test_electrolyzer_n_inputs_1(data_dir: Path, lib: Path, lib_sc: Path):
     """
     Test with an electrolyzer for each input
 
@@ -146,7 +146,7 @@ def test_electrolyzer_n_inputs_1(data_dir: Path, lib, lib_sc):
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_2(data_dir: Path, lib, lib_sc):
+def test_electrolyzer_n_inputs_2(data_dir: Path, lib: Path, lib_sc: Path):
     """
     Test with one electrolyzer that has two inputs
 
@@ -244,7 +244,7 @@ def test_electrolyzer_n_inputs_2(data_dir: Path, lib, lib_sc):
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_3(data_dir: Path, lib, lib_sc):
+def test_electrolyzer_n_inputs_3(data_dir: Path, lib: Path, lib_sc: Path):
     """
     Test with a consumption_electrolyzer with two inputs
 
@@ -349,7 +349,7 @@ def test_electrolyzer_n_inputs_3(data_dir: Path, lib, lib_sc):
     assert math.isclose(problem.solver.Objective().Value(), 1750)
 
 
-def test_electrolyzer_n_inputs_4(data_dir: Path, lib, lib_sc):
+def test_electrolyzer_n_inputs_4(data_dir: Path, lib: Path, lib_sc: Path):
     """
     Test with one electrolyzer with one input that takes every inputs
 

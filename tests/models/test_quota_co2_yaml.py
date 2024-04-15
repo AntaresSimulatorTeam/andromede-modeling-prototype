@@ -38,7 +38,7 @@ build the quota CO² test system.
 """ Test of a generation of energy and co2 with a quota to limit the emission"""
 
 
-def test_quota_co2(data_dir: Path, lib, lib_sc):
+def test_quota_co2(data_dir: Path, lib: Path, lib_sc: Path):
     gen_model = lib_sc.models["generator_with_co2"]
     node_model = lib.models["node"]
     quota_co2_model = lib_sc.models["quota_co2"]
