@@ -9,8 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from andromede.expression import ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
@@ -45,17 +44,22 @@ from andromede.model.parsing import (
 )
 
 
-def resolve_library(input_lib: InputLibrary) -> Library:
+def resolve_library(
+    input_lib: InputLibrary, preloaded_libraries: Optional[List[Library]] = None
+) -> Library:
     """
     Converts parsed data into an actually usable library of models.
 
      - resolves references between models and ports
      - parses expressions and resolves references to variables/params
     """
+    if preloaded_libraries is None:
+        preloaded_libraries = []
     port_types = [_convert_port_type(p) for p in input_lib.port_types]
+    for lib in preloaded_libraries:
+        port_types.extend(lib.port_types.values())
     port_types_dict = dict((p.id, p) for p in port_types)
     models = [_resolve_model(m, port_types_dict) for m in input_lib.models]
-
     return library(port_types, models)
 
 
