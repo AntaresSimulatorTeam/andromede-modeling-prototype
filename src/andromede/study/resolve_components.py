@@ -9,8 +9,9 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -29,13 +30,32 @@ from andromede.study.data import (
     AbstractDataStructure,
     TimeScenarioIndex,
     TimeScenarioSeriesData,
+    load_ts_from_txt,
 )
-from andromede.study.network_components import NetworkComponents, network_components
 from andromede.study.parsing import (
     InputComponent,
     InputComponents,
     InputPortConnections,
 )
+
+
+@dataclass(frozen=True)
+class NetworkComponents:
+    components: Dict[str, Component]
+    nodes: Dict[str, Component]
+    connections: List[PortsConnection]
+
+
+def network_components(
+    components_list: Iterable[Component],
+    nodes: Iterable[Component],
+    connections: Iterable[PortsConnection],
+) -> NetworkComponents:
+    return NetworkComponents(
+        components=dict((m.id, m) for m in components_list),
+        nodes=dict((n.id, n) for n in nodes),
+        connections=list(connections),
+    )
 
 
 def resolve_components_and_cnx(
@@ -140,26 +160,6 @@ def _evaluate_param_type(
         return ConstantData(float(param_value))
 
     elif param_type == "timeseries":
-        return TimeScenarioSeriesData(_evaluate_time_series(timeseries))
+        return TimeScenarioSeriesData(load_ts_from_txt(timeseries))
 
     raise ValueError(f"Data should be either constant or timeseries ")
-
-
-def _evaluate_time_series(file_ts: Optional[str]) -> Dict[TimeScenarioIndex, float]:
-    """Read time series .txt file delimited by tab"""
-    time_series = {}
-    try:
-        if file_ts is not None:
-            path = Path(file_ts)
-            df = pd.read_csv(path, header=None)
-            values = df.values
-            arr_split = [x[0].split() for x in values]
-            num_rows = len(arr_split)
-            num_cols = len(arr_split[0])
-            for time in range(num_rows):
-                for scenario in range(num_cols):
-                    index = TimeScenarioIndex(time=time, scenario=scenario)
-                    time_series[index] = float(arr_split[time][scenario])
-    except FileNotFoundError:
-        print(f"Error: File {file_ts} does not exists")
-    return time_series

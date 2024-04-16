@@ -12,7 +12,10 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict
+from pathlib import Path
+from typing import Dict, Optional
+
+import pandas as pd
 
 from andromede.study.network import Network
 
@@ -101,6 +104,51 @@ class ScenarioSeriesData(AbstractDataStructure):
         return scenario
 
 
+# def load_ts_from_txt(file_ts: str) -> Dict[TimeScenarioIndex, float]:
+#     time_series = {}
+#     try:
+#         if file_ts is not None:
+#             path = Path(file_ts)
+#             df = pd.read_csv(path, header=None, sep="\s+")
+#             num_rows, num_cols = df.shape
+#             for time in range(num_rows):
+#                 for scenario in range(num_cols):
+#                     index = TimeScenarioIndex(time=time, scenario=scenario)
+#                     cell_value = str(df.iloc[time, scenario])
+#                     time_series[index] = float(cell_value)
+#     except FileNotFoundError:
+#         print(f"Error: File {file_ts} does not exists")
+#     return time_series
+#
+#
+# @dataclass(frozen=True)
+# class TimeScenarioSeriesData(AbstractDataStructure):
+#     """
+#     Container for identifiable timeseries data.
+#     When a model is instantiated as a component, property values
+#     can be defined by referencing one of those timeseries by its ID.
+#     """
+#
+#     time_scenario_series: Dict[TimeScenarioIndex, float]
+#
+#     def get_value(self, timestep: int, scenario: int) -> float:
+#         return self.time_scenario_series[TimeScenarioIndex(timestep, scenario)]
+#
+#     def check_requirement(self, time: bool, scenario: bool) -> bool:
+#         if not isinstance(self, TimeScenarioSeriesData):
+#             raise ValueError("Invalid data type for TimeScenarioSeriesData")
+#
+#         return time and scenario
+
+
+def load_ts_from_txt(file_ts: Optional[str]) -> pd.DataFrame:
+    path = Path(str(file_ts))
+    try:
+        return pd.read_csv(path, header=None, sep="\s+")
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File '{file_ts}' does not exist")
+
+
 @dataclass(frozen=True)
 class TimeScenarioSeriesData(AbstractDataStructure):
     """
@@ -109,10 +157,16 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_scenario_series: Dict[TimeScenarioIndex, float]
+    time_scenario_series: pd.DataFrame
 
     def get_value(self, timestep: int, scenario: int) -> float:
-        return self.time_scenario_series[TimeScenarioIndex(timestep, scenario)]
+        value = str(self.time_scenario_series.iloc[timestep, scenario])
+        return float(value)
+
+    @classmethod
+    def from_txt(cls, file_ts: str) -> "TimeScenarioSeriesData":
+        time_series_df = load_ts_from_txt(file_ts)
+        return cls(time_series_df)
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
         if not isinstance(self, TimeScenarioSeriesData):

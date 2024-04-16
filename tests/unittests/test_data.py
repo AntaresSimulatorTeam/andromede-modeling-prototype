@@ -9,9 +9,10 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
+from pathlib import Path
 from typing import Union
 
+import pandas as pd
 import pytest
 
 from andromede.expression import param, var
@@ -48,6 +49,7 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
+from andromede.study.data import load_ts_from_txt
 
 
 @pytest.fixture
@@ -270,12 +272,7 @@ def test_requirements_consistency_time_varying_parameter_with_scenario_varying_d
         (TimeSeriesData({TimeIndex(0): 100, TimeIndex(1): 50})),
         (
             TimeScenarioSeriesData(
-                {
-                    TimeScenarioIndex(0, 0): 100,
-                    TimeScenarioIndex(0, 1): 50,
-                    TimeScenarioIndex(1, 0): 500,
-                    TimeScenarioIndex(1, 1): 540,
-                }
+                pd.DataFrame({(0, 0): [100, 500], (0, 1): [50, 540]}, index=[0, 1])
             )
         ),
     ],
@@ -328,3 +325,13 @@ def test_requirements_consistency_scenario_varying_parameter_with_correct_data_p
 
     # No ValueError should be raised
     database.requirements_consistency(network)
+
+
+def test_load_data_from_txt(data_dir: Path):
+    txt_file = data_dir / "gen-costs.txt"
+
+    gen_costs = load_ts_from_txt(str(txt_file))
+    expected_timeseries = pd.DataFrame(
+        [[100, 200], [50, 100]], index=[0, 1], columns=[0, 1]
+    )
+    assert gen_costs.equals(expected_timeseries)

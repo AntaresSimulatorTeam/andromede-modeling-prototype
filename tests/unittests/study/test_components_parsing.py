@@ -5,10 +5,8 @@ import pytest
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
-from andromede.study import Node, TimeIndex, TimeScenarioIndex
 from andromede.study.parsing import InputComponents, parse_yaml_components
 from andromede.study.resolve_components import (
-    _evaluate_time_series,
     build_data_base,
     build_network,
     consistency_check,
@@ -78,16 +76,3 @@ def test_basic_balance_using_yaml(input_component, input_library) -> None:
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 3000
-
-
-def test_evaluate_time_series(data_dir: Path):
-    txt_file = data_dir / "gen-costs.txt"
-
-    gen_costs = _evaluate_time_series(str(txt_file))
-    expected_timeseries = {
-        TimeScenarioIndex(0, 0): 100,
-        TimeScenarioIndex(1, 0): 50,
-        TimeScenarioIndex(0, 1): 200,
-        TimeScenarioIndex(1, 1): 100,
-    }
-    assert gen_costs == expected_timeseries
