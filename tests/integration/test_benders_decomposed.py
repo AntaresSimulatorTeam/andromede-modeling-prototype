@@ -241,7 +241,7 @@ def test_benders_decomposed_integration(
     data = {
         "solution": {
             "overall_cost": 80_000,
-            "values": {"CAND_p_max_t0_s0": 100, "DISCRETE_p_max_t0_s0": 100},
+            "values": {"_CAND_p_max_t0_s0": 100, "_DISCRETE_p_max_t0_s0": 100},
         }
     }
     solution = BendersSolution(data)

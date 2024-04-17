@@ -24,7 +24,7 @@ from andromede.simulation.benders_decomposed import build_benders_decomposed_pro
 from andromede.simulation.decision_tree import (
     DecisionTreeNode,
     InterDecisionTimeScenarioConfig,
-    replicate_network_from_root,
+    replicate_network_from,
 )
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import ConstantData, DataBase, TreeData
@@ -147,13 +147,19 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     # or we index all data, parameters, variables by the resolution node : Make the data struture dependent of the resolution tree...
 
     database = DataBase()
-    database.add_data("N", "spillage", ConstantData(10))
-    database.add_data("N", "unsupplied_energy", ConstantData(10000))
+    database.add_data("N", "spillage_cost", ConstantData(10))
+    database.add_data("N", "ens_cost", ConstantData(10000))
 
     database.add_data(
         "D",
         "demand",
-        TreeData({0: ConstantData(300), 1: ConstantData(600), 2: ConstantData(600)}),
+        TreeData(
+            {
+                "2030": ConstantData(300),
+                "2040_new_base": ConstantData(600),
+                "2040_no_base": ConstantData(600),
+            }
+        ),
     )
 
     database.add_data("CAND", "op_cost", ConstantData(10))
@@ -161,18 +167,36 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     database.add_data(
         "CAND",
         "invest_cost",
-        TreeData({0: ConstantData(100), 1: ConstantData(50), 2: ConstantData(50)}),
+        TreeData(
+            {
+                "2030": ConstantData(100),
+                "2040_new_base": ConstantData(50),
+                "2040_no_base": ConstantData(50),
+            }
+        ),
     )
     database.add_data(
         "CAND",
         "max_invest",
-        TreeData({0: ConstantData(400), 1: ConstantData(100), 2: ConstantData(100)}),
+        TreeData(
+            {
+                "2030": ConstantData(400),
+                "2040_new_base": ConstantData(100),
+                "2040_no_base": ConstantData(100),
+            }
+        ),
     )
 
     database.add_data(
         "BASE",
         "p_max",
-        TreeData({0: ConstantData(0), 1: ConstantData(200), 2: ConstantData(0)}),
+        TreeData(
+            {
+                "2030": ConstantData(0),
+                "2040_new_base": ConstantData(200),
+                "2040_no_base": ConstantData(0),
+            }
+        ),
     )
     database.add_data("BASE", "cost", ConstantData(5))
 
@@ -198,9 +222,11 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         "2040_no_base", time_scenario_config, parent=decision_tree_root
     )
 
-    replicate_network_from_root(decision_tree_root)
+    replicate_network_from(decision_tree_root)
     decision_coupling_model = model("DECISION_COUPLING")
 
     xpansion = build_benders_decomposed_problem(
         decision_tree_root, database, decision_coupling_model=decision_coupling_model
     )
+
+    xpansion.prepare(is_debug=True)

@@ -68,22 +68,7 @@ def _get_parameter_value(
 ) -> float:
     data = context.database.get_data(component_id, name)
     absolute_timestep = context.block_timestep_to_absolute_timestep(block_timestep)
-    return data.get_value(absolute_timestep, scenario)
-
-
-# TODO: Maybe add the notion of constant parameter in the model
-# TODO : And constant over scenarios ?
-def _parameter_is_constant_over_time(
-    component: Component,
-    name: str,
-    context: "OptimizationContext",
-    block_timestep: int,
-    scenario: int,
-) -> bool:
-    data = context.database.get_data(component.id, name)
-    return data.get_value(block_timestep, scenario) == IndexingStructure(
-        time=False, scenario=False
-    )
+    return data.get_value(absolute_timestep, scenario, context.tree_node)
 
 
 class TimestepValueProvider(ABC):
@@ -304,12 +289,15 @@ class OptimizationContext:
         block: TimeBlock,
         scenarios: int,
         border_management: BlockBorderManagement,
+        tree_node: str,
     ):
         self._network = network
         self._database = database
         self._block = block
         self._scenarios = scenarios
         self._border_management = border_management
+        self.tree_node = tree_node
+
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
         self._solver_variables: Dict[lp.Variable, SolverVariableInfo] = {}
         self._connection_fields_expressions: Dict[
@@ -715,6 +703,7 @@ class OptimizationProblem:
                 )
 
     def _create_variables(self) -> None:
+        tree_node = self.context.tree_node
         for component in self.context.network.all_components:
             component_context = self.context.get_component_context(component)
             model = component.model
@@ -753,7 +742,7 @@ class OptimizationProblem:
                         solver_var = self.solver.NumVar(
                             lower_bound,
                             upper_bound,
-                            f"{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
+                            f"{tree_node}_{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
                         )
                         component_context.add_variable(
                             block_timestep, scenario, model_var.name, solver_var
@@ -816,6 +805,7 @@ def build_problem(
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
     problem_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+    decision_tree_node: str = "",
 ) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.
@@ -825,7 +815,7 @@ def build_problem(
     database.requirements_consistency(network)
 
     opt_context = OptimizationContext(
-        network, database, block, scenarios, border_management
+        network, database, block, scenarios, border_management, decision_tree_node
     )
 
     return OptimizationProblem(problem_name, solver, opt_context, problem_strategy)

@@ -51,7 +51,7 @@ class DecisionTreeNode(NodeMixin):
         yield from LevelOrderIter(self)
 
 
-def replicate_network_from_root(root: DecisionTreeNode) -> None:
+def replicate_network_from(root: DecisionTreeNode) -> None:
     if root.size == 1:
         # Nothing to replicate. Just past down the network
         return
@@ -59,7 +59,7 @@ def replicate_network_from_root(root: DecisionTreeNode) -> None:
     else:
         # Replicates the network and updates their id to take into account the tree node's id
         original_network_id = root.network.id
-        for tree_node in LevelOrderIter(root):
+        for tree_node in root.traverse():
             tree_node.network = root.network.replicate(
                 id=f"{tree_node.id}_{original_network_id}"
             )
@@ -112,9 +112,18 @@ def create_master_network(
      - A coupling model with the good ports to connect to
         - The binding constraint that ties everything
     """
+    if root.size == 1:
+        # Nothing to replicate. Just past down the network
+        return root.network
 
-    strategy = InvestmentProblemStrategy()
-    for tree_node in root.traverse():
-        ...
+    master_network = Network(f"{root.id}_{root.network.id}")
 
-    return root.network
+    # # We assume that the network was copied already
+    # # TODO add a guard to verify it
+
+    # for tree_node in root.traverse():
+    #     for component_on_node in tree_node.network.components:
+    #         component = component_on_node.replicate(id=f"{tree_node.id}_{component_on_node.id}")
+    #         master_network.add_component(component)
+
+    return master_network

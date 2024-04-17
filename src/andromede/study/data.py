@@ -36,11 +36,7 @@ class ScenarioIndex:
 @dataclass(frozen=True)
 class AbstractDataStructure(ABC):
     @abstractmethod
-    def get_value(
-        self, timestep: int, scenario: int, node_id: Optional[int] = None
-    ) -> (
-        float
-    ):  # Is it necessary to add node_id as arguement here ? Yes if TreeData is to be considered as a child class
+    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
         """
         Get the data value for a given timestep and scenario at a given node
         Implement this method in subclasses as needed.
@@ -60,9 +56,7 @@ class AbstractDataStructure(ABC):
 class ConstantData(AbstractDataStructure):
     value: float
 
-    def get_value(
-        self, timestep: int, scenario: int, node_id: Optional[int] = None
-    ) -> float:
+    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
         return self.value
 
     # ConstantData can be used for time varying or constant models
@@ -82,9 +76,7 @@ class TimeSeriesData(AbstractDataStructure):
 
     time_series: Mapping[TimeIndex, float]
 
-    def get_value(
-        self, timestep: int, scenario: int, node_id: Optional[int] = None
-    ) -> float:
+    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
         return self.time_series[TimeIndex(timestep)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -104,9 +96,7 @@ class ScenarioSeriesData(AbstractDataStructure):
 
     scenario_series: Mapping[ScenarioIndex, float]
 
-    def get_value(
-        self, timestep: int, scenario: int, node_id: Optional[int] = None
-    ) -> float:
+    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
         return self.scenario_series[ScenarioIndex(scenario)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -126,9 +116,7 @@ class TimeScenarioSeriesData(AbstractDataStructure):
 
     time_scenario_series: Mapping[TimeScenarioIndex, float]
 
-    def get_value(
-        self, timestep: int, scenario: int, node_id: Optional[int] = None
-    ) -> float:
+    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
         return self.time_scenario_series[TimeScenarioIndex(timestep, scenario)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -140,17 +128,9 @@ class TimeScenarioSeriesData(AbstractDataStructure):
 
 @dataclass(frozen=True)
 class TreeData(AbstractDataStructure):
-    data: Mapping[int, AbstractDataStructure]
+    data: Mapping[str, AbstractDataStructure]
 
-    def get_value(
-        self, timestep: int, scenario: int, node_id: Optional[int] = None
-    ) -> float:
-        if (
-            not node_id
-        ):  # TODO : Could we remove the default None argument for node_id ?
-            raise ValueError(
-                "A node_id must be specified to retrieve a value in TreeData."
-            )
+    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
         return self.data[node_id].get_value(timestep, scenario)
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -161,7 +141,7 @@ class TreeData(AbstractDataStructure):
 
 
 @dataclass(frozen=True)
-class ComponentParameterIndex:
+class DatabaseIndex:
     component_id: str
     parameter_name: str
 
@@ -174,22 +154,20 @@ class DataBase:
     Data can have different structure : constant, varying in time or scenarios.
     """
 
-    _data: Dict[ComponentParameterIndex, AbstractDataStructure]
+    _data: Dict[DatabaseIndex, AbstractDataStructure]
 
     def __init__(self) -> None:
-        self._data: Dict[ComponentParameterIndex, AbstractDataStructure] = {}
+        self._data: Dict[DatabaseIndex, AbstractDataStructure] = {}
 
     def get_data(self, component_id: str, parameter_name: str) -> AbstractDataStructure:
-        return self._data[ComponentParameterIndex(component_id, parameter_name)]
+        return self._data[DatabaseIndex(component_id, parameter_name)]
 
     def add_data(
         self, component_id: str, parameter_name: str, data: AbstractDataStructure
     ) -> None:
-        self._data[ComponentParameterIndex(component_id, parameter_name)] = data
+        self._data[DatabaseIndex(component_id, parameter_name)] = data
 
-    def get_value(
-        self, index: ComponentParameterIndex, timestep: int, scenario: int
-    ) -> float:
+    def get_value(self, index: DatabaseIndex, timestep: int, scenario: int) -> float:
         if index in self._data:
             return self._data[index].get_value(timestep, scenario)
         else:

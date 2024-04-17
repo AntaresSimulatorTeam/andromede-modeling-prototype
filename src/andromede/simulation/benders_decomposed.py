@@ -251,6 +251,7 @@ def build_benders_decomposed_problem(
                     problem_name=f"subproblem_{tree_node.id}_{block.id}",
                     solver_id=solver_id,
                     problem_strategy=OperationalProblemStrategy(),
+                    decision_tree_node=tree_node.id,
                 )
             )
 

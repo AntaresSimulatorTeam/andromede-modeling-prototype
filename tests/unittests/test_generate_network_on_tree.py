@@ -15,7 +15,7 @@ from andromede.simulation import TimeBlock
 from andromede.simulation.decision_tree import (
     DecisionTreeNode,
     InterDecisionTimeScenarioConfig,
-    replicate_network_from_root,
+    replicate_network_from,
 )
 from andromede.study.network import Network
 
@@ -26,19 +26,23 @@ def test_generate_model_on_node() -> None:
     config = InterDecisionTimeScenarioConfig(blocks, scenarios)
 
     network = Network("network_id")
-    tree_root = DecisionTreeNode("root", config, network)
+    root = DecisionTreeNode("root", config, network)
 
-    assert tree_root.id == "root"
-    assert tree_root.parent is None
-    assert not tree_root.children  # No children
+    assert root.id == "root"
+    assert root.parent is None
+    assert not root.children  # No children
 
-    child = DecisionTreeNode("child", config, parent=tree_root)
+    child = DecisionTreeNode("child", config, parent=root)
 
-    print(child.parent)
+    assert child.parent == root
+    assert child in root.children
 
-    assert child.parent == tree_root
-    assert child in tree_root.children
+    grandchild = DecisionTreeNode("grandchild", config, parent=child)
 
-    replicate_network_from_root(tree_root)
+    assert grandchild.parent == child
+    assert (grandchild not in root.children) and (grandchild in child.children)
+
+    replicate_network_from(root)
 
     assert child.network.id == "child_network_id"
+    assert grandchild.network.id == "grandchild_network_id"
