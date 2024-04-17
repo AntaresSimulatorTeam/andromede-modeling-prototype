@@ -16,7 +16,6 @@ import pandas as pd
 import pytest
 
 from andromede.expression import param, var
-from andromede.expression.expression import port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -44,7 +43,6 @@ from andromede.study import (
     ScenarioIndex,
     ScenarioSeriesData,
     TimeIndex,
-    TimeScenarioIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
     create_component,
@@ -125,7 +123,23 @@ def mock_generator_with_scenario_varying_fixed_time_param() -> Model:
     return scenario_varying_fixed_time_generator
 
 
-def test_requirements_consistency_demand_model_fix_ok(mock_network: Network) -> None:
+@pytest.fixture
+def demand_data() -> TimeScenarioSeriesData:
+    demand_data = pd.DataFrame(
+        [
+            [100],
+            [50],
+        ],
+        index=[0, 1],
+        columns=[0],
+    )
+
+    return TimeScenarioSeriesData(demand_data)
+
+
+def test_requirements_consistency_demand_model_fix_ok(
+    mock_network: Network, demand_data: TimeScenarioSeriesData
+) -> None:
     # Given
     # database data for "demand" defined as Time varying
     # and model "D" DEMAND_MODEL is TIME_AND_SCENARIO_FREE
@@ -133,9 +147,6 @@ def test_requirements_consistency_demand_model_fix_ok(mock_network: Network) -> 
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))
 
-    demand_data = TimeScenarioSeriesData(
-        {TimeScenarioIndex(0, 0): 100, TimeScenarioIndex(1, 0): 50}
-    )
     database.add_data("D", "demand", demand_data)
 
     # When
@@ -157,7 +168,7 @@ def test_requirements_consistency_generator_model_ok(mock_network: Network) -> N
 
 
 def test_consistency_generation_time_free_for_constant_model_raises_exception(
-    mock_network: Network,
+    mock_network: Network, demand_data: TimeScenarioSeriesData
 ) -> None:
     # Given
     # database data for "p_max" defined as time varying
@@ -167,9 +178,6 @@ def test_consistency_generation_time_free_for_constant_model_raises_exception(
 
     database.add_data("G", "cost", ConstantData(30))
 
-    demand_data = TimeScenarioSeriesData(
-        {TimeScenarioIndex(0, 0): 100, TimeScenarioIndex(1, 0): 50}
-    )
     database.add_data("D", "demand", demand_data)
     database.add_data("G", "p_max", demand_data)
 
@@ -179,7 +187,7 @@ def test_consistency_generation_time_free_for_constant_model_raises_exception(
 
 
 def test_requirements_consistency_demand_model_time_varying_ok(
-    mock_network: Network,
+    mock_network: Network, demand_data: TimeScenarioSeriesData
 ) -> None:
     # Given
     # database data for "demand" defined as constant
@@ -187,10 +195,6 @@ def test_requirements_consistency_demand_model_time_varying_ok(
     database = DataBase()
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))
-
-    demand_data = TimeScenarioSeriesData(
-        {TimeScenarioIndex(0, 0): 100, TimeScenarioIndex(1, 0): 50}
-    )
     database.add_data("D", "demand", demand_data)
 
     # When
@@ -229,12 +233,14 @@ def test_requirements_consistency_time_varying_parameter_with_correct_data_passe
         (ScenarioSeriesData({ScenarioIndex(0): 100, ScenarioIndex(1): 50})),
         (
             TimeScenarioSeriesData(
-                {
-                    TimeScenarioIndex(0, 0): 100,
-                    TimeScenarioIndex(0, 1): 50,
-                    TimeScenarioIndex(1, 0): 500,
-                    TimeScenarioIndex(1, 1): 540,
-                }
+                pd.DataFrame(
+                    [
+                        [100, 500],
+                        [500, 540],
+                    ],
+                    index=[0, 1],
+                    columns=[0, 1],
+                )
             )
         ),
     ],

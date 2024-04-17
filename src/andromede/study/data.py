@@ -104,43 +104,6 @@ class ScenarioSeriesData(AbstractDataStructure):
         return scenario
 
 
-# def load_ts_from_txt(file_ts: str) -> Dict[TimeScenarioIndex, float]:
-#     time_series = {}
-#     try:
-#         if file_ts is not None:
-#             path = Path(file_ts)
-#             df = pd.read_csv(path, header=None, sep="\s+")
-#             num_rows, num_cols = df.shape
-#             for time in range(num_rows):
-#                 for scenario in range(num_cols):
-#                     index = TimeScenarioIndex(time=time, scenario=scenario)
-#                     cell_value = str(df.iloc[time, scenario])
-#                     time_series[index] = float(cell_value)
-#     except FileNotFoundError:
-#         print(f"Error: File {file_ts} does not exists")
-#     return time_series
-#
-#
-# @dataclass(frozen=True)
-# class TimeScenarioSeriesData(AbstractDataStructure):
-#     """
-#     Container for identifiable timeseries data.
-#     When a model is instantiated as a component, property values
-#     can be defined by referencing one of those timeseries by its ID.
-#     """
-#
-#     time_scenario_series: Dict[TimeScenarioIndex, float]
-#
-#     def get_value(self, timestep: int, scenario: int) -> float:
-#         return self.time_scenario_series[TimeScenarioIndex(timestep, scenario)]
-#
-#     def check_requirement(self, time: bool, scenario: bool) -> bool:
-#         if not isinstance(self, TimeScenarioSeriesData):
-#             raise ValueError("Invalid data type for TimeScenarioSeriesData")
-#
-#         return time and scenario
-
-
 def load_ts_from_txt(file_ts: Optional[str]) -> pd.DataFrame:
     path = Path(str(file_ts))
     try:
