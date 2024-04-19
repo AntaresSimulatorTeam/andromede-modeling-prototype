@@ -73,15 +73,14 @@ library:
         - port: flow_to
           field: flow
           definition: f_to
-        - port: flow_from_pos
-          field: flow
-          definition: f_from_m
-        - port: flow_to_pos
-          field: flow
-          definition: f_to_p
       constraints:
         - name: Level
           expression: f_from = f_from_p - f_from_m
+      binding-constraints:
+        - name: FlowFromPos
+          expression: sum_connections(flow_from_pos.flow) = f_from_m
+        - name: FlowToPos
+          expression: sum_connections(flow_to_pos.flow) = f_to_p
 
     - id: convertor
       description: A basic convertor model
