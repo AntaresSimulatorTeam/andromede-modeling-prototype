@@ -105,7 +105,9 @@ class ScenarioSeriesData(AbstractDataStructure):
 
 
 def load_ts_from_txt(file_ts: Optional[str]) -> pd.DataFrame:
-    path = Path(str(file_ts))
+    base_path = Path.cwd().resolve().parent / "data"
+    if file_ts is not None:
+        path = base_path / file_ts
     try:
         return pd.read_csv(path, header=None, sep="\s+")
     except FileNotFoundError:
