@@ -20,7 +20,7 @@ study:
       parameters:
         - name: demand
           type: timeseries
-          timeseries: demand-ts.txt
+          timeseries: demand-ts
     - id: S
       model: spillage
       parameters:

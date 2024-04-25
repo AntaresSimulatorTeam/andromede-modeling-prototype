@@ -334,9 +334,9 @@ def test_requirements_consistency_scenario_varying_parameter_with_correct_data_p
 
 
 def test_load_data_from_txt(data_dir: Path):
-    txt_file = data_dir / "gen-costs.txt"
+    txt_file = "gen-costs"
 
-    gen_costs = load_ts_from_txt(str(txt_file))
+    gen_costs = load_ts_from_txt(txt_file, data_dir)
     expected_timeseries = pd.DataFrame(
         [[100, 200], [50, 100]], index=[0, 1], columns=[0, 1]
     )

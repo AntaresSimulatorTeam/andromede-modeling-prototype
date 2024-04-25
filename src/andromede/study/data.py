@@ -9,7 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
@@ -104,14 +104,16 @@ class ScenarioSeriesData(AbstractDataStructure):
         return scenario
 
 
-def load_ts_from_txt(file_ts: Optional[str]) -> pd.DataFrame:
-    base_path = Path.cwd().resolve().parent / "data"
-    if file_ts is not None:
-        path = base_path / file_ts
+def load_ts_from_txt(
+    timeseries_name: Optional[str], path_to_file: Optional[Path]
+) -> pd.DataFrame:
+    if path_to_file is not None and timeseries_name is not None:
+        timeseries_with_extension = timeseries_name + ".txt"
+        ts_path = path_to_file / timeseries_with_extension
     try:
-        return pd.read_csv(path, header=None, sep="\s+")
+        return pd.read_csv(ts_path, header=None, sep="\s+")
     except FileNotFoundError:
-        raise FileNotFoundError(f"File '{file_ts}' does not exist")
+        raise FileNotFoundError(f"File '{timeseries_name}' does not exist")
 
 
 @dataclass(frozen=True)
@@ -127,11 +129,6 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     def get_value(self, timestep: int, scenario: int) -> float:
         value = str(self.time_scenario_series.iloc[timestep, scenario])
         return float(value)
-
-    @classmethod
-    def from_txt(cls, file_ts: str) -> "TimeScenarioSeriesData":
-        time_series_df = load_ts_from_txt(file_ts)
-        return cls(time_series_df)
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
         if not isinstance(self, TimeScenarioSeriesData):

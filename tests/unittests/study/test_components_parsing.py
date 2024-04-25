@@ -70,7 +70,7 @@ def test_basic_balance_using_yaml(input_component, input_library) -> None:
     components_input = resolve_components_and_cnx(input_component, result_lib)
     consistency_check(components_input.components, result_lib.models)
 
-    database = build_data_base(input_component)
+    database = build_data_base(input_component, None)
     network = build_network(components_input)
 
     scenarios = 1
@@ -99,7 +99,6 @@ def generate_data_for_short_term_storage_test(scenarios: int) -> TimeScenarioSer
 def test_short_term_storage_base_with_yaml(data_dir: Path) -> None:
     compo_file = data_dir / "components_for_short_term_storage.yml"
     lib_file = data_dir / "lib.yml"
-
     with lib_file.open() as lib:
         input_library = parse_yaml_library(lib)
 
@@ -112,7 +111,7 @@ def test_short_term_storage_base_with_yaml(data_dir: Path) -> None:
     horizon = 10
     time_blocks = [TimeBlock(0, list(range(horizon)))]
 
-    database = build_data_base(components_file)
+    database = build_data_base(components_file, data_dir)
     network = build_network(components_input)
 
     problem = build_problem(
