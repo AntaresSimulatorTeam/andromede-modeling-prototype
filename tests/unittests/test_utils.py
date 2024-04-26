@@ -10,9 +10,17 @@
 #
 # This file is part of the Antares project.
 
-import pytest
+from typing import List, Optional
 
-from andromede.study import TimeScenarioIndex, TimeScenarioSeriesData
+import pytest
+from scipy.stats import truncnorm
+
+from andromede.study import (
+    TimeIndex,
+    TimeScenarioIndex,
+    TimeScenarioSeriesData,
+    TimeSeriesData,
+)
 from andromede.utils import get_or_add
 
 
@@ -32,9 +40,40 @@ def test_get_or_add_should_evaluate_lazily() -> None:
     assert get_or_add(d, "key2", value_factory) == "value2"
 
 
-def generate_data(value: float, horizon: int, scenarios: int) -> TimeScenarioSeriesData:
+def generate_const_data(
+    value: float, horizon: int, scenarios: int
+) -> TimeScenarioSeriesData:
     data = {}
     for absolute_timestep in range(horizon):
         for scenario in range(scenarios):
             data[TimeScenarioIndex(absolute_timestep, scenario)] = value
+    return TimeScenarioSeriesData(time_scenario_series=data)
+
+
+def generate_time_series_data(values: List[float]) -> TimeSeriesData:
+    return TimeSeriesData(
+        time_series={TimeIndex(t): value for t, value in enumerate(values)}
+    )
+
+
+def generate_random_data(
+    mean: float,
+    std: float,
+    horizon: int,
+    scenarios: int,
+    *,
+    seed: Optional[int] = 2024,
+    upper: float = float("inf"),
+    lower: float = float("-inf")
+) -> TimeScenarioSeriesData:
+    X = truncnorm((lower - mean) / std, (upper - mean) / std, loc=mean, scale=std)
+
+    sample = X.rvs(horizon * scenarios, random_state=seed)
+
+    data = {}
+    for absolute_timestep in range(horizon):
+        for scenario in range(scenarios):
+            data[TimeScenarioIndex(absolute_timestep, scenario)] = sample[
+                scenario + absolute_timestep * scenarios
+            ]
     return TimeScenarioSeriesData(time_scenario_series=data)
