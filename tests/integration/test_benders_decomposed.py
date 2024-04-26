@@ -234,14 +234,18 @@ def test_benders_decomposed_integration(
     blocks = [TimeBlock(1, [0])]
 
     config = InterDecisionTimeScenarioConfig(blocks, scenarios)
-    decision_tree_root = DecisionTreeNode("root", config, network)
+    decision_tree_root = DecisionTreeNode("", config, network)
 
     xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
     data = {
         "solution": {
             "overall_cost": 80_000,
-            "values": {"_CAND_p_max_t0_s0": 100, "_DISCRETE_p_max_t0_s0": 100},
+            "values": {
+                "CAND_p_max": 100,
+                "DISCRETE_p_max": 100,
+                "DISCRETE_nb_units": 10,
+            },
         }
     }
     solution = BendersSolution(data)
@@ -324,7 +328,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
     blocks = [TimeBlock(1, [0]), TimeBlock(2, [1])]
 
     config = InterDecisionTimeScenarioConfig(blocks, scenarios)
-    decision_tree_root = DecisionTreeNode("root", config, network)
+    decision_tree_root = DecisionTreeNode("", config, network)
 
     xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
@@ -332,7 +336,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
         "solution": {
             "overall_cost": 62_000,
             "values": {
-                "CAND_p_max_t0_s0": 100,
+                "CAND_p_max": 100,
             },
         }
     }

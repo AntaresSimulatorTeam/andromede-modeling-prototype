@@ -185,7 +185,7 @@ def test_generation_xpansion_single_time_step_single_scenario(
         database,
         TimeBlock(1, [0]),
         scenarios,
-        problem_strategy=MergedProblemStrategy(),
+        build_strategy=MergedProblemStrategy(),
     )
     status = problem.solver.Solve()
 
