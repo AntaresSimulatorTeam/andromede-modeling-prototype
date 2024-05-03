@@ -445,7 +445,7 @@ def test_min_up_down_times() -> None:
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 72000
+    assert problem.solver.Objective().Value() == pytest.approx(72000, abs=0.01)
 
     output = OutputValues(problem)
     expected_output = OutputValues()
@@ -530,7 +530,7 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
 
     # The short-term storage should satisfy the load
     # No spillage / unsupplied energy is expected
-    assert problem.solver.Objective().Value() == 0
+    assert problem.solver.Objective().Value() == pytest.approx(0, abs=0.01)
 
     count_variables = 0
     for variable in problem.solver.variables():

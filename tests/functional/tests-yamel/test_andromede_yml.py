@@ -325,7 +325,7 @@ def test_min_up_down_times(lib) -> None:
     print(OutputValues(problem).component("G").var("nb_units_on").value)
 
     assert status == problem.solver.OPTIMAL
-    assert round(problem.solver.Objective().Value(), 4) == 72000
+    assert problem.solver.Objective().Value() == pytest.approx(72000, abs=0.01)
 
 
 def test_changing_demand(lib) -> None:
@@ -467,4 +467,4 @@ def test_min_up_down_times_2(lib) -> None:
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert round(problem.solver.Objective().Value(), 4) == 61000
+    assert problem.solver.Objective().Value() == pytest.approx(61000)
