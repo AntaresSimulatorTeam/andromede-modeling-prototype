@@ -110,23 +110,23 @@ library:
           scenario-dependent: true
       variables:
         - name: generation
-          lower_bound: 0
-          upper_bound: nb_units_max * p_max
+          lower-bound: 0
+          upper-bound: nb_units_max * p_max
           time-dependent: true
           scenario-dependent: true
         - name: nb_on
-          lower_bound: 0
-          upper_bound: nb_units_max
+          lower-bound: 0
+          upper-bound: nb_units_max
           time-dependent: true
           scenario-dependent: false
         - name: nb_stop
-          lower_bound: 0
-          upper_bound: nb_units_max
+          lower-bound: 0
+          upper-bound: nb_units_max
           time-dependent: true
           scenario-dependent: false
         - name: nb_start
-          lower_bound: 0
-          upper_bound: nb_units_max
+          lower-bound: 0
+          upper-bound: nb_units_max
           time-dependent: true
           scenario-dependent: false
       ports:
