@@ -191,9 +191,7 @@ def parse_expression(expression: str, identifiers: ModelIdentifiers) -> Expressi
         return ExpressionNodeBuilderVisitor(identifiers).visit(parser.fullexpr())  # type: ignore
 
     except ValueError as e:
-        raise AntaresParseException(
-            f"An error occurred during parsing: {e}"
-        ) from e
+        raise AntaresParseException(f"An error occurred during parsing: {e}") from e
     except Exception as e:
         raise AntaresParseException(
             f"An error occurred during parsing: {type(e).__name__}"

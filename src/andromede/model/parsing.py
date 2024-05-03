@@ -28,8 +28,10 @@ def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
 def _to_kebab(snake: str) -> str:
     return snake.replace("_", "-")
 
+
 class ModifiedBaseModel(BaseModel):
     description: Optional[str] = None
+
     class Config:
         alias_generator = _to_kebab
         extra = "forbid"

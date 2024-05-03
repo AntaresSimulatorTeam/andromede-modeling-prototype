@@ -21,6 +21,7 @@ from andromede.model.resolve_library import resolve_library
 def libs_dir() -> Path:
     return Path(__file__).parent / "libs"
 
+
 @pytest.fixture(scope="session")
 def lib(libs_dir: Path):
     lib_file = libs_dir / "lib.yml"
