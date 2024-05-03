@@ -12,72 +12,77 @@
 import typing
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from yaml import safe_load
 
 
 def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
     tree = safe_load(input)
-    return InputLibrary.model_validate(tree["library"])
+    try:
+        return InputLibrary.model_validate(tree["library"])
+    except ValidationError as e:
+        raise ValueError(f"An error occurred during parsing: {e}")
 
 
 # Design note: actual parsing and validation is delegated to pydantic models
 def _to_kebab(snake: str) -> str:
     return snake.replace("_", "-")
 
+class ModifiedBaseModel(BaseModel):
+    description: Optional[str] = None
+    class Config:
+        alias_generator = _to_kebab
+        extra = "forbid"
 
-class InputParameter(BaseModel):
+
+class InputParameter(ModifiedBaseModel):
     name: str
     time_dependent: bool = False
     scenario_dependent: bool = False
 
-    class Config:
-        alias_generator = _to_kebab
 
-
-class InputVariable(BaseModel):
+class InputVariable(ModifiedBaseModel):
     name: str
     time_dependent: bool = True
     scenario_dependent: bool = True
     lower_bound: Optional[str] = None
     upper_bound: Optional[str] = None
+    variable_type: str = "float"
 
     class Config:
         alias_generator = _to_kebab
         coerce_numbers_to_str = True
+        extra = "forbid"
 
 
-class InputConstraint(BaseModel):
+class InputConstraint(ModifiedBaseModel):
     name: str
     expression: str
     lower_bound: Optional[str] = None
     upper_bound: Optional[str] = None
 
-    class Config:
-        alias_generator = _to_kebab
 
-
-class InputField(BaseModel):
+class InputField(ModifiedBaseModel):
     name: str
 
 
-class InputPortType(BaseModel):
+class InputPortType(ModifiedBaseModel):
     id: str
     fields: List[InputField] = Field(default_factory=list)
 
 
-class InputModelPort(BaseModel):
+class InputModelPort(ModifiedBaseModel):
     name: str
     type: str
 
 
-class InputPortFieldDefinition(BaseModel):
+class InputPortFieldDefinition(ModifiedBaseModel):
     port: str
     field: str
     definition: str
 
 
-class InputModel(BaseModel):
+class InputModel(ModifiedBaseModel):
     id: str
     parameters: List[InputParameter] = Field(default_factory=list)
     variables: List[InputVariable] = Field(default_factory=list)
@@ -87,14 +92,8 @@ class InputModel(BaseModel):
     constraints: List[InputConstraint] = Field(default_factory=list)
     objective: Optional[str] = None
 
-    class Config:
-        alias_generator = _to_kebab
 
-
-class InputLibrary(BaseModel):
+class InputLibrary(ModifiedBaseModel):
     id: str
     port_types: List[InputPortType] = Field(default_factory=list)
     models: List[InputModel] = Field(default_factory=list)
-
-    class Config:
-        alias_generator = _to_kebab

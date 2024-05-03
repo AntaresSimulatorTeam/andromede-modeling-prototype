@@ -38,6 +38,7 @@ from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
+from andromede.model.common import ValueType
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
@@ -750,11 +751,19 @@ class OptimizationProblem:
                         # Externally, for the Solver, this variable will have a full name
                         # Internally, it will be indexed by a structure that into account
                         # the component id, variable name, timestep and scenario separately
-                        solver_var = self.solver.NumVar(
-                            lower_bound,
-                            upper_bound,
-                            f"{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
-                        )
+                        solver_var = None
+                        if model_var.data_type == ValueType.FLOAT:
+                            solver_var = self.solver.NumVar(
+                                lower_bound,
+                                upper_bound,
+                                f"{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
+                            )
+                        elif model_var.data_type == ValueType.INTEGER:
+                            solver_var = self.solver.IntVar(
+                                lower_bound,
+                                upper_bound,
+                                f"{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
+                            )
                         component_context.add_variable(
                             block_timestep, scenario, model_var.name, solver_var
                         )
@@ -814,7 +823,7 @@ def build_problem(
     *,
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
-    solver_id: str = "GLOP",
+    solver_id: str = "SCIP",
     problem_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
 ) -> OptimizationProblem:
     """
