@@ -61,6 +61,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--duration", type=int, help="duration of the simulation", default=1
     )
+    parser.add_argument(
+        "--scenario", type=int, help="number of scenario of the simulation", default=1
+    )
 
     args = parser.parse_args()
 
@@ -76,12 +79,18 @@ if __name__ == "__main__":
         )
     network = build_network(components)
 
-    scenarios = 1
-    timeblock = TimeBlock(1, list(range(args.duration)))
-    problem = build_problem(network, database, timeblock, scenarios)
+    for scenario in range(1, args.scenario + 1):
+        timeblock = TimeBlock(1, list(range(args.duration)))
+        try:
+            problem = build_problem(network, database, timeblock, scenario)
+        except IndexError as e:
+            raise IndexError(
+                str(e)
+                + ". Did you correctly use the '--duration' and '--scenario' parameters ?"
+            )
 
-    status = problem.solver.Solve()
-    print(status)
-    print(problem.solver.Objective().Value())
+        status = problem.solver.Solve()
+        print("scenario ", scenario)
+        print("status : ", status)
 
-    output = OutputValues(problem)
+    print("avarage final cost : ", problem.solver.Objective().Value())
