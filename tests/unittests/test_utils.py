@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import pandas as pd
 import pytest
 
 from andromede.study import TimeScenarioIndex, TimeScenarioSeriesData
@@ -33,8 +34,8 @@ def test_get_or_add_should_evaluate_lazily() -> None:
 
 
 def generate_data(value: float, horizon: int, scenarios: int) -> TimeScenarioSeriesData:
-    data = {}
-    for absolute_timestep in range(horizon):
-        for scenario in range(scenarios):
-            data[TimeScenarioIndex(absolute_timestep, scenario)] = value
+    data = pd.DataFrame(index=range(horizon), columns=range(scenarios))
+
+    data.fillna(value, inplace=True)
+
     return TimeScenarioSeriesData(time_scenario_series=data)
