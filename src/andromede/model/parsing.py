@@ -30,8 +30,6 @@ def _to_kebab(snake: str) -> str:
 
 
 class ModifiedBaseModel(BaseModel):
-    description: Optional[str] = None
-
     class Config:
         alias_generator = _to_kebab
         extra = "forbid"
@@ -71,6 +69,7 @@ class InputField(ModifiedBaseModel):
 class InputPortType(ModifiedBaseModel):
     id: str
     fields: List[InputField] = Field(default_factory=list)
+    description: Optional[str] = None
 
 
 class InputModelPort(ModifiedBaseModel):
@@ -93,9 +92,11 @@ class InputModel(ModifiedBaseModel):
     binding_constraints: List[InputConstraint] = Field(default_factory=list)
     constraints: List[InputConstraint] = Field(default_factory=list)
     objective: Optional[str] = None
+    description: Optional[str] = None
 
 
 class InputLibrary(ModifiedBaseModel):
     id: str
     port_types: List[InputPortType] = Field(default_factory=list)
     models: List[InputModel] = Field(default_factory=list)
+    description: Optional[str] = None
