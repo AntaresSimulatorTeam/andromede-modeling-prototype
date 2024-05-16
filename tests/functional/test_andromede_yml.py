@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from andromede.expression import literal, param, var
@@ -273,14 +274,17 @@ def test_min_up_down_times(lib) -> None:
     database.add_data("U", "cost", ConstantData(3000))
     database.add_data("S", "cost", ConstantData(10))
 
-    demand_data = TimeScenarioSeriesData(
-        {
-            TimeScenarioIndex(0, 0): 500,
-            TimeScenarioIndex(1, 0): 0,
-            TimeScenarioIndex(2, 0): 0,
-        }
+    demand_data = pd.DataFrame(
+        [
+            [500],
+            [0],
+            [0],
+        ],
+        index=[0, 1, 2],
+        columns=[0],
     )
-    database.add_data("D", "demand", demand_data)
+    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
+    database.add_data("D", "demand", demand_time_scenario_series)
 
     time_block = TimeBlock(1, [0, 1, 2])
     scenarios = 1
@@ -340,14 +344,17 @@ def test_changing_demand(lib) -> None:
     database.add_data("G", "p_max", ConstantData(500))
     database.add_data("G", "cost", ConstantData(100))
 
-    demand_data = TimeScenarioSeriesData(
-        {
-            TimeScenarioIndex(0, 0): 300,
-            TimeScenarioIndex(1, 0): 100,
-            TimeScenarioIndex(2, 0): 0,
-        }
+    demand_data = pd.DataFrame(
+        [
+            [300],
+            [100],
+            [0],
+        ],
+        index=[0, 1, 2],
+        columns=[0],
     )
-    database.add_data("D", "demand", demand_data)
+    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
+    database.add_data("D", "demand", demand_time_scenario_series)
 
     time_block = TimeBlock(1, [0, 1, 2])
     scenarios = 1
@@ -417,14 +424,17 @@ def test_min_up_down_times_2(lib) -> None:
     database.add_data("U", "cost", ConstantData(3000))
     database.add_data("S", "cost", ConstantData(10))
 
-    demand_data = TimeScenarioSeriesData(
-        {
-            TimeScenarioIndex(0, 0): 500,
-            TimeScenarioIndex(1, 0): 0,
-            TimeScenarioIndex(2, 0): 0,
-        }
+    demand_data = pd.DataFrame(
+        [
+            [500],
+            [0],
+            [0],
+        ],
+        index=[0, 1, 2],
+        columns=[0],
     )
-    database.add_data("D", "demand", demand_data)
+    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
+    database.add_data("D", "demand", demand_time_scenario_series)
 
     time_block = TimeBlock(1, [0, 1, 2])
     scenarios = 1
