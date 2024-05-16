@@ -174,7 +174,6 @@ def test_variable_bound() -> None:
     assert status == problem.solver.INFEASIBLE  # Infeasible
 
 
-
 def generate_data(
     efficiency: float, horizon: int, scenarios: int
 ) -> TimeScenarioSeriesData:
