@@ -31,7 +31,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.unittests.test_utils import generate_const_data
+from tests.unittests.test_utils import generate_scalar_matrix_data
 
 
 def test_large_sum_inside_model_with_loop() -> None:
@@ -112,7 +112,7 @@ def test_large_sum_outside_model_with_loop() -> None:
 def test_large_sum_inside_model_with_sum_operator() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
-    Here the objective function is the sum over nb_terms terms withe the sum() operator inside the model
+    Here the objective function is the sum over nb_terms terms with the sum() operator inside the model
     """
     nb_terms = 10_000
 
@@ -154,6 +154,51 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
     assert problem.solver.Objective().Value() == 3 * nb_terms
 
 
+def test_large_sum_of_port_connections() -> None:
+    """
+    Test performance when the problem involves a model where several generators are connected to a node.
+
+    This test pass with 470 terms but fails with 471 locally due to recursion depth,
+    and possibly even less terms are possible with Jenkins...
+    """
+    nb_generators = 100
+
+    time_block = TimeBlock(0, [0])
+    scenarios = 1
+
+    database = DataBase()
+    database.add_data("D", "demand", ConstantData(nb_generators))
+
+    for gen_id in range(nb_generators):
+        database.add_data(f"G_{gen_id}", "p_max", ConstantData(1))
+        database.add_data(f"G_{gen_id}", "cost", ConstantData(5))
+
+    node = Node(model=NODE_BALANCE_MODEL, id="N")
+    demand = create_component(model=DEMAND_MODEL, id="D")
+    generators = [
+        create_component(model=GENERATOR_MODEL, id=f"G_{gen_id}")
+        for gen_id in range(nb_generators)
+    ]
+
+    network = Network("test")
+    network.add_node(node)
+
+    network.add_component(demand)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+
+    for gen_id in range(nb_generators):
+        network.add_component(generators[gen_id])
+        network.connect(
+            PortRef(generators[gen_id], "balance_port"), PortRef(node, "balance_port")
+        )
+
+    problem = build_problem(network, database, time_block, scenarios)
+    status = problem.solver.Solve()
+
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 5 * nb_generators
+
+
 def test_basic_balance_on_whole_year() -> None:
     """
     Balance on one node with one fixed demand and one generation, on 8760 timestep.
@@ -164,7 +209,9 @@ def test_basic_balance_on_whole_year() -> None:
     time_block = TimeBlock(1, list(range(horizon)))
 
     database = DataBase()
-    database.add_data("D", "demand", generate_const_data(100, horizon, scenarios))
+    database.add_data(
+        "D", "demand", generate_scalar_matrix_data(100, horizon, scenarios)
+    )
 
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))
@@ -198,7 +245,9 @@ def test_basic_balance_on_whole_year_with_large_sum() -> None:
     time_block = TimeBlock(1, list(range(horizon)))
 
     database = DataBase()
-    database.add_data("D", "demand", generate_const_data(100, horizon, scenarios))
+    database.add_data(
+        "D", "demand", generate_scalar_matrix_data(100, horizon, scenarios)
+    )
 
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))

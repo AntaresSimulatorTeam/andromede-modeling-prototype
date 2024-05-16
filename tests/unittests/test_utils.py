@@ -40,7 +40,7 @@ def test_get_or_add_should_evaluate_lazily() -> None:
     assert get_or_add(d, "key2", value_factory) == "value2"
 
 
-def generate_const_data(
+def generate_scalar_matrix_data(
     value: float, horizon: int, scenarios: int
 ) -> TimeScenarioSeriesData:
     data = {}
@@ -68,12 +68,12 @@ def generate_random_data(
 ) -> TimeScenarioSeriesData:
     X = truncnorm((lower - mean) / std, (upper - mean) / std, loc=mean, scale=std)
 
-    sample = X.rvs(horizon * scenarios, random_state=seed)
+    sample = X.rvs(size=(horizon, scenarios), random_state=seed)
 
     data = {}
     for absolute_timestep in range(horizon):
         for scenario in range(scenarios):
             data[TimeScenarioIndex(absolute_timestep, scenario)] = sample[
-                scenario + absolute_timestep * scenarios
+                absolute_timestep, scenario
             ]
     return TimeScenarioSeriesData(time_scenario_series=data)
