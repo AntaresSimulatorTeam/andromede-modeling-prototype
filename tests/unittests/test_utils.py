@@ -10,10 +10,9 @@
 #
 # This file is part of the Antares project.
 
-from typing import List, Optional
+from typing import List
 
 import pytest
-from scipy.stats import truncnorm
 
 from andromede.study import (
     TimeIndex,
@@ -54,26 +53,3 @@ def generate_time_series_data(values: List[float]) -> TimeSeriesData:
     return TimeSeriesData(
         time_series={TimeIndex(t): value for t, value in enumerate(values)}
     )
-
-
-def generate_random_data(
-    mean: float,
-    std: float,
-    horizon: int,
-    scenarios: int,
-    *,
-    seed: Optional[int] = 2024,
-    upper: float = float("inf"),
-    lower: float = float("-inf")
-) -> TimeScenarioSeriesData:
-    X = truncnorm((lower - mean) / std, (upper - mean) / std, loc=mean, scale=std)
-
-    sample = X.rvs(size=(horizon, scenarios), random_state=seed)
-
-    data = {}
-    for absolute_timestep in range(horizon):
-        for scenario in range(scenarios):
-            data[TimeScenarioIndex(absolute_timestep, scenario)] = sample[
-                absolute_timestep, scenario
-            ]
-    return TimeScenarioSeriesData(time_scenario_series=data)
