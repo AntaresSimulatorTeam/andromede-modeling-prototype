@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import pandas as pd
 import pytest
 
 from andromede.expression import literal, param, var
@@ -55,11 +56,17 @@ def test_timeseries() -> None:
 
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))
-
-    demand_data = TimeScenarioSeriesData(
-        {TimeScenarioIndex(0, 0): 100, TimeScenarioIndex(1, 0): 50}
+    demand_data = pd.DataFrame(
+        [
+            [100],
+            [50],
+        ],
+        index=[0, 1],
+        columns=[0],
     )
-    database.add_data("D", "demand", demand_data)
+
+    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
+    database.add_data("D", "demand", demand_time_scenario_series)
 
     node = Node(model=NODE_BALANCE_MODEL, id="1")
     demand = create_component(
@@ -167,6 +174,7 @@ def test_variable_bound() -> None:
     assert status == problem.solver.INFEASIBLE  # Infeasible
 
 
+
 def generate_data(
     efficiency: float, horizon: int, scenarios: int
 ) -> TimeScenarioSeriesData:
@@ -177,7 +185,10 @@ def generate_data(
                 data[TimeScenarioIndex(absolute_timestep, scenario)] = -18
             else:
                 data[TimeScenarioIndex(absolute_timestep, scenario)] = 2 * efficiency
-    return TimeScenarioSeriesData(time_scenario_series=data)
+
+    values = [value for value in data.values()]
+    data_df = pd.DataFrame(values, columns=["Value"])
+    return TimeScenarioSeriesData(data_df)
 
 
 def short_term_storage_base(efficiency: float, horizon: int) -> None:

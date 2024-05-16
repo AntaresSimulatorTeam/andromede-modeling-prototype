@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import pandas as pd
 import pytest
 
 from andromede.expression.expression import literal, param, port_field, var
@@ -47,7 +48,6 @@ from andromede.study import (
     Network,
     Node,
     PortRef,
-    TimeScenarioIndex,
     TimeScenarioSeriesData,
     create_component,
 )
@@ -347,11 +347,7 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
     horizon = 2
     time_block = TimeBlock(1, list(range(horizon)))
 
-    data = {}
-    data[TimeScenarioIndex(0, 0)] = 300
-    data[TimeScenarioIndex(1, 0)] = 500
-    data[TimeScenarioIndex(0, 1)] = 200
-    data[TimeScenarioIndex(1, 1)] = 400
+    data = pd.DataFrame([[300, 200], [500, 400]], index=[0, 1], columns=[0, 1])
 
     demand_data = TimeScenarioSeriesData(time_scenario_series=data)
 
