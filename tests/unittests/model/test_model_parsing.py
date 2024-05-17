@@ -38,11 +38,11 @@ def test_library_parsing(data_dir: Path):
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
     assert input_lib.id == "basic"
-    assert len(input_lib.models) == 5
+    assert len(input_lib.models) == 7
     assert len(input_lib.port_types) == 1
 
     lib = resolve_library(input_lib)
-    assert len(lib.models) == 5
+    assert len(lib.models) == 7
     assert len(lib.port_types) == 1
     port_type = lib.port_types["flow"]
     assert port_type == PortType(id="flow", fields=[PortField(name="flow")])

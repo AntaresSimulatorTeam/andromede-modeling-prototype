@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import pandas as pd
 import pytest
 
 from andromede.expression import literal, param, var
@@ -215,11 +216,17 @@ def test_timeseries() -> None:
 
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))
-
-    demand_data = TimeScenarioSeriesData(
-        {TimeScenarioIndex(0, 0): 100, TimeScenarioIndex(1, 0): 50}
+    demand_data = pd.DataFrame(
+        [
+            [100],
+            [50],
+        ],
+        index=[0, 1],
+        columns=[0],
     )
-    database.add_data("D", "demand", demand_data)
+
+    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
+    database.add_data("D", "demand", demand_time_scenario_series)
 
     node = Node(model=NODE_BALANCE_MODEL, id="1")
     demand = create_component(
@@ -401,14 +408,18 @@ def test_min_up_down_times() -> None:
     database.add_data("U", "cost", ConstantData(3000))
     database.add_data("S", "cost", ConstantData(10))
 
-    demand_data = TimeScenarioSeriesData(
-        {
-            TimeScenarioIndex(0, 0): 500,
-            TimeScenarioIndex(1, 0): 0,
-            TimeScenarioIndex(2, 0): 0,
-        }
+    demand_data = pd.DataFrame(
+        [
+            [500],
+            [0],
+            [0],
+        ],
+        index=[0, 1, 2],
+        columns=[0],
     )
-    database.add_data("D", "demand", demand_data)
+
+    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
+    database.add_data("D", "demand", demand_time_scenario_series)
 
     time_block = TimeBlock(1, [0, 1, 2])
     scenarios = 1
@@ -473,7 +484,10 @@ def generate_data(
                 data[TimeScenarioIndex(absolute_timestep, scenario)] = -18
             else:
                 data[TimeScenarioIndex(absolute_timestep, scenario)] = 2 * efficiency
-    return TimeScenarioSeriesData(time_scenario_series=data)
+
+    values = [value for value in data.values()]
+    data_df = pd.DataFrame(values, columns=["Value"])
+    return TimeScenarioSeriesData(data_df)
 
 
 def short_term_storage_base(efficiency: float, horizon: int) -> None:

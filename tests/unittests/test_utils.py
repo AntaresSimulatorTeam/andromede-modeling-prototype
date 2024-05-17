@@ -12,6 +12,7 @@
 
 from typing import List
 
+import pandas as pd
 import pytest
 
 from andromede.study import (
@@ -42,14 +43,8 @@ def test_get_or_add_should_evaluate_lazily() -> None:
 def generate_scalar_matrix_data(
     value: float, horizon: int, scenarios: int
 ) -> TimeScenarioSeriesData:
-    data = {}
-    for absolute_timestep in range(horizon):
-        for scenario in range(scenarios):
-            data[TimeScenarioIndex(absolute_timestep, scenario)] = value
+    data = pd.DataFrame(index=range(horizon), columns=range(scenarios))
+
+    data.fillna(value, inplace=True)
+
     return TimeScenarioSeriesData(time_scenario_series=data)
-
-
-def generate_time_series_data(values: List[float]) -> TimeSeriesData:
-    return TimeSeriesData(
-        time_series={TimeIndex(t): value for t, value in enumerate(values)}
-    )
