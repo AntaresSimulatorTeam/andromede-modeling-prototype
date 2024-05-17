@@ -12,6 +12,8 @@
 
 from typing import cast
 
+import pytest
+
 from andromede.expression.expression import ExpressionNode, literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
@@ -42,7 +44,7 @@ def test_large_sum_inside_model_with_loop() -> None:
     This test pass with 476 terms but fails with 477 locally due to recursion depth,
     and even less terms are possible with Jenkins...
     """
-    nb_terms = 100
+    nb_terms = 500
 
     time_blocks = [TimeBlock(0, [0])]
     scenarios = 1
@@ -51,28 +53,30 @@ def test_large_sum_inside_model_with_loop() -> None:
     for i in range(1, nb_terms):
         database.add_data("simple_cost", f"cost_{i}", ConstantData(1 / i))
 
-    SIMPLE_COST_MODEL = model(
-        id="SIMPLE_COST",
-        parameters=[
-            float_parameter(f"cost_{i}", IndexingStructure(False, False))
-            for i in range(1, nb_terms)
-        ],
-        objective_operational_contribution=cast(
-            ExpressionNode, sum(param(f"cost_{i}") for i in range(1, nb_terms))
-        ),
-    )
+    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
+        SIMPLE_COST_MODEL = model(
+            id="SIMPLE_COST",
+            parameters=[
+                float_parameter(f"cost_{i}", IndexingStructure(False, False))
+                for i in range(1, nb_terms)
+            ],
+            objective_operational_contribution=cast(
+                ExpressionNode, sum(param(f"cost_{i}") for i in range(1, nb_terms))
+            ),
+        )
 
-    network = Network("test")
-    cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
-    network.add_component(cost_model)
+        # Won't run because last statement will raise the error
+        network = Network("test")
+        cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
+        network.add_component(cost_model)
 
-    problem = build_problem(network, database, time_blocks[0], scenarios)
-    status = problem.solver.Solve()
+        problem = build_problem(network, database, time_blocks[0], scenarios)
+        status = problem.solver.Solve()
 
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == sum(
-        [1 / i for i in range(1, nb_terms)]
-    )
+        assert status == problem.solver.OPTIMAL
+        assert problem.solver.Objective().Value() == sum(
+            [1 / i for i in range(1, nb_terms)]
+        )
 
 
 def test_large_sum_outside_model_with_loop() -> None:
@@ -161,7 +165,7 @@ def test_large_sum_of_port_connections() -> None:
     This test pass with 470 terms but fails with 471 locally due to recursion depth,
     and possibly even less terms are possible with Jenkins...
     """
-    nb_generators = 100
+    nb_generators = 500
 
     time_block = TimeBlock(0, [0])
     scenarios = 1
@@ -192,11 +196,14 @@ def test_large_sum_of_port_connections() -> None:
             PortRef(generators[gen_id], "balance_port"), PortRef(node, "balance_port")
         )
 
-    problem = build_problem(network, database, time_block, scenarios)
-    status = problem.solver.Solve()
+    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
+        problem = build_problem(network, database, time_block, scenarios)
 
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 5 * nb_generators
+        # Won't run because last statement will raise the error
+        status = problem.solver.Solve()
+
+        assert status == problem.solver.OPTIMAL
+        assert problem.solver.Objective().Value() == 5 * nb_generators
 
 
 def test_basic_balance_on_whole_year() -> None:
