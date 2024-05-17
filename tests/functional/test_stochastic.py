@@ -29,7 +29,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.unittests.test_utils import generate_data
+from tests.unittests.test_utils import generate_scalar_matrix_data
 
 
 @pytest.fixture
@@ -46,11 +46,19 @@ def scenarios() -> int:
 def database(horizon: int, scenarios: int) -> DataBase:
     database = DataBase()
 
-    database.add_data("D", "demand", generate_data(500, horizon, scenarios))
+    database.add_data(
+        "D", "demand", generate_scalar_matrix_data(500, horizon, scenarios)
+    )
 
-    database.add_data("BASE", "nb_failures", generate_data(1, horizon, scenarios))
-    database.add_data("SEMIBASE", "nb_failures", generate_data(1, horizon, scenarios))
-    database.add_data("PEAK", "nb_failures", generate_data(1, horizon, scenarios))
+    database.add_data(
+        "BASE", "nb_failures", generate_scalar_matrix_data(1, horizon, scenarios)
+    )
+    database.add_data(
+        "SEMIBASE", "nb_failures", generate_scalar_matrix_data(1, horizon, scenarios)
+    )
+    database.add_data(
+        "PEAK", "nb_failures", generate_scalar_matrix_data(1, horizon, scenarios)
+    )
 
     database.add_data("BASE", "p_max", ConstantData(250))
     database.add_data("BASE", "p_min", ConstantData(100))
