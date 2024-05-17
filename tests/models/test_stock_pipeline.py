@@ -20,8 +20,79 @@ from andromede.study import (
     Network,
     Node,
     PortRef,
+    TimeIndex,
+    TimeSeriesData,
     create_component,
 )
+
+
+def test_stock_pipeline_as_link(data_dir: Path, lib: Path, lib_sc: Path):
+    """
+    Test of the stock pipeline without using the stock to see if it work as a simple link
+
+    The pipeline is between two nodes with a gaz production on a node and a demand on the other
+    we have the following values:
+    gaz production:
+        - p_max = 100
+        - cost = 10
+    gaz demand:
+        - demand = 50
+    pipeline:
+        - f_from_max = 100
+        - f_to_max = 100
+        - capacity = 0
+        - initial_level = 0
+    """
+    gen_model = lib.models["generator"]
+    node_model = lib.models["node"]
+    demand_model = lib.models["demand"]
+    link_with_storage_model = lib_sc.models["link_with_storage_2"]
+
+    gaz_node_1 = Node(model=node_model, id="g1")
+    gaz_node_2 = Node(model=node_model, id="g2")
+    gaz_prod = create_component(model=gen_model, id="pg")
+    gaz_demand = create_component(model=demand_model, id="dg")
+    pipeline = create_component(model=link_with_storage_model, id="pipeline")
+
+    database = DataBase()
+
+    database.add_data("pg", "p_max", ConstantData(100))
+    database.add_data("pg", "cost", ConstantData(10))
+    database.add_data("dg", "demand", ConstantData(50))
+    database.add_data("pipeline", "f_from_max", ConstantData(100))
+    database.add_data("pipeline", "f_to_max", ConstantData(100))
+    database.add_data("pipeline", "capacity", ConstantData(0))
+    database.add_data("pipeline", "initial_level", ConstantData(0))
+
+    network = Network("test")
+    network.add_node(gaz_node_1)
+    network.add_node(gaz_node_2)
+    network.add_component(gaz_prod)
+    network.add_component(gaz_demand)
+    network.add_component(pipeline)
+
+    network.connect(
+        PortRef(gaz_prod, "injection_port"), PortRef(gaz_node_1, "injection_port")
+    )
+    network.connect(PortRef(gaz_node_1, "injection_port"), PortRef(pipeline, "flow_to"))
+    network.connect(
+        PortRef(gaz_node_2, "injection_port"), PortRef(gaz_demand, "injection_port")
+    )
+    network.connect(
+        PortRef(gaz_node_2, "injection_port"), PortRef(pipeline, "flow_from")
+    )
+
+    scenarios = 1
+    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    status = problem.solver.Solve()
+
+    output = OutputValues(problem)
+    generation1 = output.component("pg").var("generation").value
+    print("generation")
+    print(generation1)
+
+    assert status == problem.solver.OPTIMAL
+    assert math.isclose(problem.solver.Objective().Value(), 500)
 
 
 def test_stock_pipeline(data_dir: Path, lib: Path, lib_sc: Path):
@@ -53,7 +124,7 @@ def test_stock_pipeline(data_dir: Path, lib: Path, lib_sc: Path):
     gen_model = lib.models["generator"]
     node_model = lib.models["node"]
     demand_model = lib.models["demand"]
-    link_with_storage_model = lib_sc.models["link_with_storage"]
+    link_with_storage_model = lib_sc.models["link_with_storage_2"]
 
     gaz_node_1 = Node(model=node_model, id="g1")
     gaz_node_2 = Node(model=node_model, id="g2")
@@ -69,8 +140,8 @@ def test_stock_pipeline(data_dir: Path, lib: Path, lib_sc: Path):
     database.add_data("prodg1", "cost", ConstantData(30))
     database.add_data("prodg2", "p_max", ConstantData(50))
     database.add_data("prodg2", "cost", ConstantData(10))
-    database.add_data("demandg1", "demand", ConstantData(50))
-    database.add_data("demandg2", "demand", ConstantData(50))
+    database.add_data("demandg1", "demand", ConstantData(100))
+    database.add_data("demandg2", "demand", ConstantData(100))
     database.add_data("pipeline", "f_from_max", ConstantData(100))
     database.add_data("pipeline", "f_to_max", ConstantData(100))
     database.add_data("pipeline", "capacity", ConstantData(100))
@@ -107,7 +178,7 @@ def test_stock_pipeline(data_dir: Path, lib: Path, lib_sc: Path):
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert math.isclose(problem.solver.Objective().Value(), 2000)
+    assert math.isclose(problem.solver.Objective().Value(), 5000)
 
     output = OutputValues(problem)
     r_value = output.component("pipeline").var("r").value
@@ -117,4 +188,77 @@ def test_stock_pipeline(data_dir: Path, lib: Path, lib_sc: Path):
     print(generation1)
     print(generation2)
 
-    assert math.isclose(r_value, 100)
+    assert math.isclose(r_value, 50)
+
+
+def test_stock_pipeline_time(data_dir: Path, lib: Path, lib_sc: Path):
+    """
+    Test of a pipeline for 2 time unit
+
+    The pipeline is between two nodes with a gaz production on a node and a demand on the other
+    we have the following values:
+        gaz production:
+        - p_max = 50
+        - cost = 10
+    gaz demand:
+        - demand = 0 then 100
+    pipeline:
+        - f_from_max = 100
+        - f_to_max = 100
+        - capacity = 100
+        - initial_level = 50
+    """
+    gen_model = lib.models["generator"]
+    node_model = lib.models["node"]
+    demand_model = lib.models["demand"]
+    link_with_storage_model = lib_sc.models["link_with_storage_2"]
+
+    gaz_node_1 = Node(model=node_model, id="g1")
+    gaz_node_2 = Node(model=node_model, id="g2")
+    gaz_prod_1 = create_component(model=gen_model, id="prodg1")
+    gaz_demand_2 = create_component(model=demand_model, id="demandg2")
+    pipeline = create_component(model=link_with_storage_model, id="pipeline")
+
+    database = DataBase()
+
+    demand_data = TimeSeriesData({TimeIndex(0): 0, TimeIndex(1): 50})
+
+    database.add_data("prodg1", "p_max", ConstantData(50))
+    database.add_data("prodg1", "cost", ConstantData(10))
+    database.add_data("demandg2", "demand", demand_data)
+    database.add_data("pipeline", "f_from_max", ConstantData(100))
+    database.add_data("pipeline", "f_to_max", ConstantData(100))
+    database.add_data("pipeline", "capacity", ConstantData(100))
+    database.add_data("pipeline", "initial_level", ConstantData(50))
+
+    network = Network("test")
+    network.add_node(gaz_node_1)
+    network.add_node(gaz_node_2)
+    network.add_component(gaz_prod_1)
+    network.add_component(gaz_demand_2)
+    network.add_component(pipeline)
+
+    network.connect(
+        PortRef(gaz_prod_1, "injection_port"), PortRef(gaz_node_1, "injection_port")
+    )
+    network.connect(
+        PortRef(gaz_node_1, "injection_port"), PortRef(pipeline, "flow_from")
+    )
+    network.connect(
+        PortRef(gaz_node_2, "injection_port"), PortRef(gaz_demand_2, "injection_port")
+    )
+    network.connect(PortRef(gaz_node_2, "injection_port"), PortRef(pipeline, "flow_to"))
+
+    scenarios = 1
+    problem = build_problem(network, database, TimeBlock(1, [0, 1]), scenarios)
+    status = problem.solver.Solve()
+
+    output = OutputValues(problem)
+    r_value = output.component("pipeline").var("r").value
+    generation1 = output.component("prodg1").var("generation").value
+    print("generation")
+    print(generation1)
+    print(r_value)
+
+    assert status == problem.solver.OPTIMAL
+    assert math.isclose(problem.solver.Objective().Value(), 500)
