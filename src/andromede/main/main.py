@@ -47,7 +47,7 @@ def input_components(study_path: Path, model: Library) -> NetworkComponents:
         return resolve_components_and_cnx(parse_yaml_components(comp), model)
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model", type=Path, help="path to the model file, *.yml", required=True
@@ -94,3 +94,7 @@ if __name__ == "__main__":
         print("status : ", status)
 
     print("avarage final cost : ", problem.solver.Objective().Value())
+
+
+if __name__ == "__main__":
+    main()
