@@ -417,7 +417,7 @@ def test_min_up_down_times_2(lib) -> None:
     database.add_data("G", "p_min", ConstantData(100))
     database.add_data("G", "cost", ConstantData(100))
     database.add_data("G", "d_min_up", ConstantData(2))
-    database.add_data("G", "d_min_down", ConstantData(2))
+    database.add_data("G", "d_min_down", ConstantData(1))
     database.add_data("G", "nb_units_max", ConstantData(1))
     database.add_data("G", "nb_failures", ConstantData(0))
 
@@ -475,6 +475,9 @@ def test_min_up_down_times_2(lib) -> None:
         border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()
+
+    print(problem.solver.ExportModelAsMpsFormat(fixed_format=False, obfuscated=False))
+    print(OutputValues(problem).component("G").var("nb_units_on").value)
 
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == pytest.approx(61000)

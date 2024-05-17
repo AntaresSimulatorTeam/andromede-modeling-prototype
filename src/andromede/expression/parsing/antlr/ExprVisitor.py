@@ -18,6 +18,34 @@ class ExprVisitor(ParseTreeVisitor):
     def visitShift(self, ctx: ExprParser.ShiftContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by ExprParser#signedIdentifier.
+    def visitSignedIdentifier(self, ctx: ExprParser.SignedIdentifierContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#signedExpression.
+    def visitSignedExpression(self, ctx: ExprParser.SignedExpressionContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#signedPortField.
+    def visitSignedPortField(self, ctx: ExprParser.SignedPortFieldContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#signedNumber.
+    def visitSignedNumber(self, ctx: ExprParser.SignedNumberContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#signedFunction.
+    def visitSignedFunction(self, ctx: ExprParser.SignedFunctionContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#shiftAddsub.
+    def visitShiftAddsub(self, ctx: ExprParser.ShiftAddsubContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#shiftMuldiv.
+    def visitShiftMuldiv(self, ctx: ExprParser.ShiftMuldivContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by ExprParser#identifier.
     def visitIdentifier(self, ctx: ExprParser.IdentifierContext):
         return self.visitChildren(ctx)

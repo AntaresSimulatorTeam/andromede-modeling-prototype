@@ -60,6 +60,18 @@ from andromede.expression.parsing.parse_expression import (
         (
             {"x"},
             {},
+            "x[t-1+1]",
+            var("x").shift(-literal(1) + literal(1)),
+        ),
+        (
+            {"x"},
+            {"d"},
+            "x[t-d+1]",
+            var("x").shift(-param("d") + literal(1)),
+        ),
+        (
+            {"x"},
+            {},
             "x[t-1, t, t+4]",
             var("x").shift([-literal(1), literal(0), literal(4)]),
         ),
