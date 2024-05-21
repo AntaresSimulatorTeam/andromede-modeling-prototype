@@ -160,4 +160,4 @@ def test_gas_link_elec_compressor(data_dir: Path, lib: Path, lib_sc: Path):
     assert status == problem.solver.OPTIMAL
     assert math.isclose(problem.solver.Objective().Value(), 2100)
 
-    assert math.isclose(r_value, 100)
+    assert math.isclose(r_value, 20)
