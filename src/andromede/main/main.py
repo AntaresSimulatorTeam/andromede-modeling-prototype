@@ -10,8 +10,9 @@
 #
 # This file is part of the Antares project.
 import argparse
+from os import listdir
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from andromede.model.library import Library
 from andromede.model.parsing import parse_yaml_library
@@ -32,9 +33,13 @@ class AntaresTimeSeriesImportError(Exception):
     pass
 
 
-def input_models(model_path: Path) -> Library:
-    with model_path.open() as lib:
-        return resolve_library(parse_yaml_library(lib))
+def input_models(model_path: List[Path]) -> Library:
+    with model_path[0].open("r") as file:
+        lib = resolve_library(parse_yaml_library(file))
+    for path in model_path[1:]:
+        with path.open("r") as file:
+            lib = resolve_library(parse_yaml_library(file), [lib])
+    return lib
 
 
 def input_database(study_path: Path, timeseries_path: Optional[Path]) -> DataBase:
@@ -50,13 +55,16 @@ def input_components(study_path: Path, model: Library) -> NetworkComponents:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model", type=Path, help="path to the model file, *.yml", required=True
+        "--study", type=Path, help="path to the root dirertory of the study"
     )
     parser.add_argument(
-        "--study", type=Path, help="path to the study file, *.yml", required=True
+        "--models", nargs="+", type=Path, help="list of path to model file, *.yml"
     )
     parser.add_argument(
-        "--timeseries", type=Path, help="path to the timeseries repertory"
+        "--component", type=Path, help="path to the component file, *.yml"
+    )
+    parser.add_argument(
+        "--timeseries", type=Path, help="path to the timeseries dirertory"
     )
     parser.add_argument(
         "--duration", type=int, help="duration of the simulation", default=1
@@ -67,16 +75,46 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    models = input_models(args.model)
-    components = input_components(args.study, models)
-    consistency_check(components.components, models.models)
+    components = None
+    database = None
 
-    try:
-        database = input_database(args.study, args.timeseries)
-    except UnboundLocalError:
-        raise AntaresTimeSeriesImportError(
-            "An error occurred while importing time series. Did you correctly use the '--timeseries' parameter ?"
-        )
+    if args.study:
+        if args.models or args.component or args.timeseries:
+            parser.error(
+                "--study flag can't be use with --models, --component and --timeseries"
+            )
+        components_path = args.study / "input" / "components" / "components.yml"
+        timeseries_dir = args.study / "input" / "components" / "series"
+        model_paths = [
+            args.study / "input" / "models" / file
+            for file in listdir(args.study / "input" / "models")
+        ]
+
+        models = input_models(model_paths)
+        components = input_components(components_path, models)
+        consistency_check(components.components, models.models)
+        try:
+            database = input_database(components_path, timeseries_dir)
+        except UnboundLocalError:
+            raise AntaresTimeSeriesImportError(
+                f"An error occurred while importing time series. Are all timeseries files in {timeseries_dir} ?"
+            )
+
+    else:
+        if not args.models or not args.component:
+            parser.error("--models and --component must be entered")
+
+        models = input_models(args.models)
+        components = input_components(args.component, models)
+        consistency_check(components.components, models.models)
+
+        try:
+            database = input_database(args.component, args.timeseries)
+        except UnboundLocalError:
+            raise AntaresTimeSeriesImportError(
+                "An error occurred while importing time series. Did you correctly use the '--timeseries' parameter ?"
+            )
+
     network = build_network(components)
 
     for scenario in range(1, args.scenario + 1):
