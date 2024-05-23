@@ -33,6 +33,10 @@ def serializedATN():
         3,
         7,
         3,
+        2,
+        4,
+        7,
+        4,
         1,
         0,
         1,
@@ -43,575 +47,539 @@ def serializedATN():
         1,
         1,
         1,
-        3,
-        1,
-        14,
-        8,
         1,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
-        3,
-        2,
-        32,
-        8,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
         1,
-        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
         5,
-        2,
-        49,
+        1,
+        35,
         8,
-        2,
+        1,
         10,
-        2,
+        1,
         12,
-        2,
-        52,
+        1,
+        38,
         9,
-        2,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
         1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
         5,
-        3,
-        76,
+        1,
+        47,
         8,
-        3,
+        1,
         10,
-        3,
+        1,
         12,
+        1,
+        50,
+        9,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
         3,
+        1,
+        68,
+        8,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        5,
+        1,
         79,
-        9,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        5,
-        3,
-        88,
         8,
-        3,
+        1,
         10,
-        3,
+        1,
         12,
-        3,
-        91,
+        1,
+        82,
         9,
-        3,
         1,
-        3,
         1,
-        3,
+        2,
         1,
+        2,
         3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
-        1,
-        3,
+        2,
+        86,
+        8,
+        2,
         1,
         3,
         1,
         3,
         3,
         3,
-        109,
+        90,
         8,
         3,
         1,
-        3,
+        4,
         1,
-        3,
+        4,
         1,
-        3,
+        4,
         1,
-        3,
+        4,
         1,
-        3,
+        4,
         1,
-        3,
+        4,
         1,
-        3,
+        4,
         1,
+        4,
         3,
+        4,
+        100,
+        8,
+        4,
         1,
-        3,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
+        1,
+        4,
         5,
-        3,
+        4,
         120,
         8,
-        3,
+        4,
         10,
-        3,
+        4,
         12,
-        3,
+        4,
         123,
         9,
-        3,
+        4,
         1,
-        3,
+        4,
+        0,
+        2,
+        2,
+        8,
+        5,
         0,
         2,
         4,
         6,
-        4,
+        8,
         0,
-        2,
-        4,
-        6,
-        0,
-        2,
-        1,
-        0,
-        1,
         2,
         1,
         0,
         5,
         6,
-        142,
-        0,
-        8,
-        1,
-        0,
-        0,
+        2,
         0,
         2,
-        11,
-        1,
+        2,
+        7,
+        7,
+        139,
         0,
-        0,
-        0,
-        4,
-        31,
-        1,
-        0,
-        0,
-        0,
-        6,
-        108,
-        1,
-        0,
-        0,
-        0,
-        8,
-        9,
-        3,
-        6,
-        3,
-        0,
-        9,
-        10,
-        5,
-        0,
-        0,
-        1,
         10,
         1,
+        0,
+        0,
+        0,
+        2,
+        67,
         1,
         0,
         0,
         0,
-        11,
-        13,
-        5,
-        11,
-        0,
-        0,
-        12,
-        14,
-        3,
         4,
-        2,
+        85,
+        1,
         0,
-        13,
+        0,
+        0,
+        6,
+        87,
+        1,
+        0,
+        0,
+        0,
+        8,
+        99,
+        1,
+        0,
+        0,
+        0,
+        10,
+        11,
+        3,
+        2,
+        1,
+        0,
+        11,
+        12,
+        5,
+        0,
+        0,
+        1,
         12,
         1,
+        1,
         0,
         0,
         0,
         13,
         14,
-        1,
-        0,
-        0,
-        0,
-        14,
-        3,
-        1,
-        0,
-        0,
-        0,
-        15,
-        16,
         6,
-        2,
+        1,
         -1,
         0,
+        14,
+        68,
+        3,
+        4,
+        2,
+        0,
+        15,
+        16,
+        5,
+        12,
+        0,
+        0,
         16,
         17,
-        7,
-        0,
+        5,
+        1,
         0,
         0,
         17,
-        32,
+        68,
         5,
-        10,
+        12,
         0,
         0,
         18,
         19,
-        7,
-        0,
-        0,
-        0,
-        19,
-        32,
         5,
-        12,
-        0,
-        0,
-        20,
-        21,
-        7,
-        0,
-        0,
-        0,
-        21,
-        22,
-        5,
-        3,
-        0,
-        0,
-        22,
-        23,
-        3,
-        6,
-        3,
-        0,
-        23,
-        24,
-        5,
-        4,
-        0,
-        0,
-        24,
-        32,
-        1,
-        0,
-        0,
-        0,
-        25,
-        26,
-        7,
-        0,
-        0,
-        0,
-        26,
-        27,
-        5,
-        12,
-        0,
-        0,
-        27,
-        28,
-        5,
-        3,
-        0,
-        0,
-        28,
-        29,
-        3,
-        6,
-        3,
-        0,
-        29,
-        30,
-        5,
-        4,
-        0,
-        0,
-        30,
-        32,
-        1,
-        0,
-        0,
-        0,
-        31,
-        15,
-        1,
-        0,
-        0,
-        0,
-        31,
-        18,
-        1,
-        0,
-        0,
-        0,
-        31,
-        20,
-        1,
-        0,
-        0,
-        0,
-        31,
-        25,
-        1,
-        0,
-        0,
-        0,
-        32,
-        50,
-        1,
-        0,
-        0,
-        0,
-        33,
-        34,
-        10,
-        4,
-        0,
-        0,
-        34,
-        35,
-        7,
-        1,
-        0,
-        0,
-        35,
-        49,
-        5,
-        10,
-        0,
-        0,
-        36,
-        37,
-        10,
-        3,
-        0,
-        0,
-        37,
-        38,
-        7,
-        1,
-        0,
-        0,
-        38,
-        49,
-        5,
-        12,
-        0,
-        0,
-        39,
-        40,
-        10,
         2,
         0,
         0,
-        40,
-        41,
-        7,
+        19,
+        68,
+        3,
+        2,
         1,
-        0,
-        0,
-        41,
-        42,
+        10,
+        20,
+        21,
         5,
         3,
         0,
         0,
-        42,
-        43,
+        21,
+        22,
         3,
-        6,
-        3,
+        2,
+        1,
         0,
-        43,
-        44,
+        22,
+        23,
         5,
         4,
         0,
         0,
-        44,
-        49,
+        23,
+        68,
         1,
         0,
         0,
         0,
-        45,
-        46,
-        10,
+        24,
+        25,
+        5,
+        12,
+        0,
+        0,
+        25,
+        26,
+        5,
+        3,
+        0,
+        0,
+        26,
+        27,
+        3,
+        2,
+        1,
+        0,
+        27,
+        28,
+        5,
+        4,
+        0,
+        0,
+        28,
+        68,
         1,
         0,
         0,
-        46,
-        47,
-        7,
+        0,
+        29,
+        30,
+        5,
+        12,
         0,
         0,
+        30,
+        31,
+        5,
+        16,
         0,
-        47,
-        49,
+        0,
+        31,
+        36,
         3,
         6,
         3,
         0,
-        48,
+        32,
         33,
+        5,
+        8,
+        0,
+        0,
+        33,
+        35,
+        3,
+        6,
+        3,
+        0,
+        34,
+        32,
         1,
         0,
         0,
         0,
-        48,
+        35,
+        38,
+        1,
+        0,
+        0,
+        0,
         36,
+        34,
         1,
         0,
         0,
         0,
-        48,
+        36,
+        37,
+        1,
+        0,
+        0,
+        0,
+        37,
         39,
         1,
         0,
         0,
         0,
+        38,
+        36,
+        1,
+        0,
+        0,
+        0,
+        39,
+        40,
+        5,
+        17,
+        0,
+        0,
+        40,
+        68,
+        1,
+        0,
+        0,
+        0,
+        41,
+        42,
+        5,
+        12,
+        0,
+        0,
+        42,
+        43,
+        5,
+        16,
+        0,
+        0,
+        43,
         48,
+        3,
+        2,
+        1,
+        0,
+        44,
         45,
+        5,
+        8,
+        0,
+        0,
+        45,
+        47,
+        3,
+        2,
+        1,
+        0,
+        46,
+        44,
+        1,
+        0,
+        0,
+        0,
+        47,
+        50,
+        1,
+        0,
+        0,
+        0,
+        48,
+        46,
+        1,
+        0,
+        0,
+        0,
+        48,
+        49,
         1,
         0,
         0,
         0,
         49,
-        52,
+        51,
         1,
         0,
         0,
@@ -622,248 +590,308 @@ def serializedATN():
         0,
         0,
         0,
-        50,
         51,
-        1,
-        0,
-        0,
-        0,
-        51,
+        52,
         5,
-        1,
-        0,
+        17,
         0,
         0,
         52,
-        50,
+        68,
         1,
         0,
         0,
         0,
         53,
         54,
-        6,
-        3,
-        -1,
+        5,
+        12,
+        0,
         0,
         54,
         55,
         5,
-        2,
+        16,
         0,
         0,
         55,
-        109,
+        56,
         3,
         6,
         3,
-        13,
+        0,
         56,
-        109,
+        57,
         5,
-        12,
+        9,
         0,
         0,
         57,
         58,
-        5,
-        12,
-        0,
+        3,
+        6,
+        3,
         0,
         58,
         59,
         5,
-        7,
+        17,
         0,
         0,
         59,
-        109,
-        5,
-        12,
+        68,
+        1,
+        0,
         0,
         0,
         60,
-        109,
+        61,
         5,
-        10,
+        12,
         0,
         0,
         61,
         62,
         5,
-        3,
+        16,
         0,
         0,
         62,
         63,
         3,
-        6,
-        3,
+        2,
+        1,
         0,
         63,
         64,
         5,
-        4,
+        9,
         0,
         0,
         64,
-        109,
+        65,
+        3,
+        2,
         1,
-        0,
-        0,
         0,
         65,
         66,
         5,
-        12,
+        17,
         0,
         0,
         66,
-        67,
-        5,
-        3,
-        0,
-        0,
-        67,
         68,
-        3,
-        6,
-        3,
-        0,
-        68,
-        69,
-        5,
-        4,
-        0,
-        0,
-        69,
-        109,
         1,
         0,
+        0,
+        0,
+        67,
+        13,
+        1,
+        0,
+        0,
+        0,
+        67,
+        15,
+        1,
+        0,
+        0,
+        0,
+        67,
+        18,
+        1,
+        0,
+        0,
+        0,
+        67,
+        20,
+        1,
+        0,
+        0,
+        0,
+        67,
+        24,
+        1,
+        0,
+        0,
+        0,
+        67,
+        29,
+        1,
+        0,
+        0,
+        0,
+        67,
+        41,
+        1,
+        0,
+        0,
+        0,
+        67,
+        53,
+        1,
+        0,
+        0,
+        0,
+        67,
+        60,
+        1,
+        0,
+        0,
+        0,
+        68,
+        80,
+        1,
+        0,
+        0,
+        0,
+        69,
+        70,
+        10,
+        8,
         0,
         0,
         70,
         71,
-        5,
-        12,
+        7,
+        0,
         0,
         0,
         71,
-        72,
-        5,
-        16,
-        0,
-        0,
-        72,
-        77,
+        79,
         3,
         2,
         1,
+        9,
+        72,
+        73,
+        10,
+        7,
+        0,
         0,
         73,
         74,
-        5,
+        7,
+        1,
+        0,
+        0,
+        74,
+        79,
+        3,
+        2,
+        1,
         8,
-        0,
-        0,
-        74,
+        75,
         76,
+        10,
+        6,
+        0,
+        0,
+        76,
+        77,
+        5,
+        13,
+        0,
+        0,
+        77,
+        79,
         3,
         2,
         1,
-        0,
-        75,
-        73,
+        7,
+        78,
+        69,
         1,
         0,
         0,
         0,
-        76,
+        78,
+        72,
+        1,
+        0,
+        0,
+        0,
+        78,
+        75,
+        1,
+        0,
+        0,
+        0,
         79,
+        82,
         1,
         0,
         0,
         0,
-        77,
-        75,
-        1,
-        0,
-        0,
-        0,
-        77,
-        78,
-        1,
-        0,
-        0,
-        0,
-        78,
         80,
-        1,
-        0,
-        0,
-        0,
-        79,
-        77,
+        78,
         1,
         0,
         0,
         0,
         80,
         81,
-        5,
-        17,
+        1,
+        0,
         0,
         0,
         81,
-        109,
+        3,
         1,
         0,
         0,
         0,
         82,
+        80,
+        1,
+        0,
+        0,
+        0,
         83,
+        86,
+        5,
+        10,
+        0,
+        0,
+        84,
+        86,
         5,
         12,
         0,
         0,
+        85,
         83,
-        84,
-        5,
-        16,
+        1,
         0,
         0,
-        84,
-        89,
-        3,
-        6,
-        3,
         0,
         85,
+        84,
+        1,
+        0,
+        0,
+        0,
         86,
         5,
+        1,
+        0,
+        0,
+        0,
+        87,
+        89,
+        5,
+        11,
+        0,
+        0,
+        88,
+        90,
+        3,
         8,
-        0,
-        0,
-        86,
-        88,
-        3,
-        6,
-        3,
-        0,
-        87,
-        85,
-        1,
-        0,
-        0,
-        0,
-        88,
-        91,
-        1,
-        0,
-        0,
+        4,
         0,
         89,
-        87,
+        88,
         1,
         0,
         0,
@@ -875,39 +903,39 @@ def serializedATN():
         0,
         0,
         90,
-        92,
+        7,
         1,
         0,
         0,
         0,
         91,
-        89,
-        1,
-        0,
-        0,
+        92,
+        6,
+        4,
+        -1,
         0,
         92,
         93,
-        5,
-        17,
+        7,
+        1,
         0,
         0,
         93,
-        109,
-        1,
-        0,
-        0,
+        100,
+        3,
+        4,
+        2,
         0,
         94,
         95,
-        5,
-        12,
+        7,
+        1,
         0,
         0,
         95,
         96,
         5,
-        16,
+        3,
         0,
         0,
         96,
@@ -919,139 +947,91 @@ def serializedATN():
         97,
         98,
         5,
-        9,
+        4,
         0,
         0,
         98,
-        99,
-        3,
-        2,
-        1,
-        0,
-        99,
         100,
-        5,
-        17,
-        0,
-        0,
-        100,
-        109,
         1,
         0,
         0,
         0,
-        101,
-        102,
-        5,
-        12,
-        0,
-        0,
-        102,
-        103,
-        5,
-        16,
-        0,
-        0,
-        103,
-        104,
-        3,
-        6,
-        3,
-        0,
-        104,
-        105,
-        5,
-        9,
-        0,
-        0,
-        105,
-        106,
-        3,
-        6,
-        3,
-        0,
-        106,
-        107,
-        5,
-        17,
-        0,
-        0,
-        107,
-        109,
+        99,
+        91,
         1,
         0,
         0,
         0,
-        108,
-        53,
-        1,
-        0,
-        0,
-        0,
-        108,
-        56,
-        1,
-        0,
-        0,
-        0,
-        108,
-        57,
-        1,
-        0,
-        0,
-        0,
-        108,
-        60,
-        1,
-        0,
-        0,
-        0,
-        108,
-        61,
-        1,
-        0,
-        0,
-        0,
-        108,
-        65,
-        1,
-        0,
-        0,
-        0,
-        108,
-        70,
-        1,
-        0,
-        0,
-        0,
-        108,
-        82,
-        1,
-        0,
-        0,
-        0,
-        108,
+        99,
         94,
         1,
         0,
         0,
         0,
-        108,
-        101,
-        1,
-        0,
-        0,
-        0,
-        109,
+        100,
         121,
         1,
         0,
         0,
         0,
+        101,
+        102,
+        10,
+        4,
+        0,
+        0,
+        102,
+        103,
+        7,
+        0,
+        0,
+        0,
+        103,
+        120,
+        3,
+        4,
+        2,
+        0,
+        104,
+        105,
+        10,
+        3,
+        0,
+        0,
+        105,
+        106,
+        7,
+        0,
+        0,
+        0,
+        106,
+        107,
+        5,
+        3,
+        0,
+        0,
+        107,
+        108,
+        3,
+        2,
+        1,
+        0,
+        108,
+        109,
+        5,
+        4,
+        0,
+        0,
+        109,
+        120,
+        1,
+        0,
+        0,
+        0,
         110,
         111,
         10,
-        12,
+        2,
         0,
         0,
         111,
@@ -1063,45 +1043,57 @@ def serializedATN():
         112,
         120,
         3,
-        6,
-        3,
-        13,
+        4,
+        2,
+        0,
         113,
         114,
         10,
-        11,
+        1,
         0,
         0,
         114,
         115,
         7,
-        0,
+        1,
         0,
         0,
         115,
-        120,
+        116,
+        5,
         3,
-        6,
-        3,
-        12,
+        0,
+        0,
         116,
         117,
-        10,
-        10,
-        0,
+        3,
+        2,
+        1,
         0,
         117,
         118,
         5,
-        13,
+        4,
         0,
         0,
         118,
         120,
-        3,
-        6,
-        3,
-        11,
+        1,
+        0,
+        0,
+        0,
+        119,
+        101,
+        1,
+        0,
+        0,
+        0,
+        119,
+        104,
+        1,
+        0,
+        0,
+        0,
         119,
         110,
         1,
@@ -1110,12 +1102,6 @@ def serializedATN():
         0,
         119,
         113,
-        1,
-        0,
-        0,
-        0,
-        119,
-        116,
         1,
         0,
         0,
@@ -1139,7 +1125,7 @@ def serializedATN():
         0,
         0,
         122,
-        7,
+        9,
         1,
         0,
         0,
@@ -1150,14 +1136,15 @@ def serializedATN():
         0,
         0,
         0,
-        9,
-        13,
-        31,
+        10,
+        36,
         48,
-        50,
-        77,
+        67,
+        78,
+        80,
+        85,
         89,
-        108,
+        99,
         119,
         121,
     ]
@@ -1174,13 +1161,13 @@ class ExprParser(Parser):
 
     literalNames = [
         "<INVALID>",
-        "'+'",
+        "'.'",
         "'-'",
         "'('",
         "')'",
         "'/'",
         "'*'",
-        "'.'",
+        "'+'",
         "','",
         "'..'",
         "<INVALID>",
@@ -1216,11 +1203,12 @@ class ExprParser(Parser):
     ]
 
     RULE_fullexpr = 0
-    RULE_shift = 1
-    RULE_shift_expr = 2
-    RULE_expr = 3
+    RULE_expr = 1
+    RULE_atom = 2
+    RULE_shift = 3
+    RULE_shift_expr = 4
 
-    ruleNames = ["fullexpr", "shift", "shift_expr", "expr"]
+    ruleNames = ["fullexpr", "expr", "atom", "shift", "shift_expr"]
 
     EOF = Token.EOF
     T__0 = 1
@@ -1279,9 +1267,9 @@ class ExprParser(Parser):
         self.enterRule(localctx, 0, self.RULE_fullexpr)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 8
+            self.state = 10
             self.expr(0)
-            self.state = 9
+            self.state = 11
             self.match(ExprParser.EOF)
         except RecognitionException as re:
             localctx.exception = re
@@ -1289,451 +1277,6 @@ class ExprParser(Parser):
             self._errHandler.recover(self, re)
         finally:
             self.exitRule()
-        return localctx
-
-    class ShiftContext(ParserRuleContext):
-        __slots__ = "parser"
-
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
-            super().__init__(parent, invokingState)
-            self.parser = parser
-
-        def TIME(self):
-            return self.getToken(ExprParser.TIME, 0)
-
-        def shift_expr(self):
-            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
-
-        def getRuleIndex(self):
-            return ExprParser.RULE_shift
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitShift"):
-                return visitor.visitShift(self)
-            else:
-                return visitor.visitChildren(self)
-
-    def shift(self):
-        localctx = ExprParser.ShiftContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 2, self.RULE_shift)
-        self._la = 0  # Token type
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 11
-            self.match(ExprParser.TIME)
-            self.state = 13
-            self._errHandler.sync(self)
-            _la = self._input.LA(1)
-            if _la == 1 or _la == 2:
-                self.state = 12
-                self.shift_expr(0)
-
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-    class Shift_exprContext(ParserRuleContext):
-        __slots__ = "parser"
-
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
-            super().__init__(parent, invokingState)
-            self.parser = parser
-
-        def getRuleIndex(self):
-            return ExprParser.RULE_shift_expr
-
-        def copyFrom(self, ctx: ParserRuleContext):
-            super().copyFrom(ctx)
-
-    class ShiftMuldivIdentifierContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def shift_expr(self):
-            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
-
-        def IDENTIFIER(self):
-            return self.getToken(ExprParser.IDENTIFIER, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitShiftMuldivIdentifier"):
-                return visitor.visitShiftMuldivIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class SignedIdentifierContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def IDENTIFIER(self):
-            return self.getToken(ExprParser.IDENTIFIER, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSignedIdentifier"):
-                return visitor.visitSignedIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class SignedExpressionContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def expr(self):
-            return self.getTypedRuleContext(ExprParser.ExprContext, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSignedExpression"):
-                return visitor.visitSignedExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class SignedNumberContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def NUMBER(self):
-            return self.getToken(ExprParser.NUMBER, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSignedNumber"):
-                return visitor.visitSignedNumber(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class SignedFunctionContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def IDENTIFIER(self):
-            return self.getToken(ExprParser.IDENTIFIER, 0)
-
-        def expr(self):
-            return self.getTypedRuleContext(ExprParser.ExprContext, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSignedFunction"):
-                return visitor.visitSignedFunction(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class ShiftMuldivNumberContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def shift_expr(self):
-            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
-
-        def NUMBER(self):
-            return self.getToken(ExprParser.NUMBER, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitShiftMuldivNumber"):
-                return visitor.visitShiftMuldivNumber(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class ShiftMuldivContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def shift_expr(self):
-            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
-
-        def expr(self):
-            return self.getTypedRuleContext(ExprParser.ExprContext, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitShiftMuldiv"):
-                return visitor.visitShiftMuldiv(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class ShiftAddsubContext(Shift_exprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.Shift_exprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def shift_expr(self):
-            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
-
-        def expr(self):
-            return self.getTypedRuleContext(ExprParser.ExprContext, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitShiftAddsub"):
-                return visitor.visitShiftAddsub(self)
-            else:
-                return visitor.visitChildren(self)
-
-    def shift_expr(self, _p: int = 0):
-        _parentctx = self._ctx
-        _parentState = self.state
-        localctx = ExprParser.Shift_exprContext(self, self._ctx, _parentState)
-        _prevctx = localctx
-        _startState = 4
-        self.enterRecursionRule(localctx, 4, self.RULE_shift_expr, _p)
-        self._la = 0  # Token type
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 31
-            self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 1, self._ctx)
-            if la_ == 1:
-                localctx = ExprParser.SignedNumberContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-
-                self.state = 16
-                localctx.op = self._input.LT(1)
-                _la = self._input.LA(1)
-                if not (_la == 1 or _la == 2):
-                    localctx.op = self._errHandler.recoverInline(self)
-                else:
-                    self._errHandler.reportMatch(self)
-                    self.consume()
-                self.state = 17
-                self.match(ExprParser.NUMBER)
-                pass
-
-            elif la_ == 2:
-                localctx = ExprParser.SignedIdentifierContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 18
-                localctx.op = self._input.LT(1)
-                _la = self._input.LA(1)
-                if not (_la == 1 or _la == 2):
-                    localctx.op = self._errHandler.recoverInline(self)
-                else:
-                    self._errHandler.reportMatch(self)
-                    self.consume()
-                self.state = 19
-                self.match(ExprParser.IDENTIFIER)
-                pass
-
-            elif la_ == 3:
-                localctx = ExprParser.SignedExpressionContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 20
-                localctx.op = self._input.LT(1)
-                _la = self._input.LA(1)
-                if not (_la == 1 or _la == 2):
-                    localctx.op = self._errHandler.recoverInline(self)
-                else:
-                    self._errHandler.reportMatch(self)
-                    self.consume()
-                self.state = 21
-                self.match(ExprParser.T__2)
-                self.state = 22
-                self.expr(0)
-                self.state = 23
-                self.match(ExprParser.T__3)
-                pass
-
-            elif la_ == 4:
-                localctx = ExprParser.SignedFunctionContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 25
-                localctx.op = self._input.LT(1)
-                _la = self._input.LA(1)
-                if not (_la == 1 or _la == 2):
-                    localctx.op = self._errHandler.recoverInline(self)
-                else:
-                    self._errHandler.reportMatch(self)
-                    self.consume()
-                self.state = 26
-                self.match(ExprParser.IDENTIFIER)
-                self.state = 27
-                self.match(ExprParser.T__2)
-                self.state = 28
-                self.expr(0)
-                self.state = 29
-                self.match(ExprParser.T__3)
-                pass
-
-            self._ctx.stop = self._input.LT(-1)
-            self.state = 50
-            self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 3, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
-                    if self._parseListeners is not None:
-                        self.triggerExitRuleEvent()
-                    _prevctx = localctx
-                    self.state = 48
-                    self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input, 2, self._ctx)
-                    if la_ == 1:
-                        localctx = ExprParser.ShiftMuldivNumberContext(
-                            self,
-                            ExprParser.Shift_exprContext(
-                                self, _parentctx, _parentState
-                            ),
-                        )
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_shift_expr
-                        )
-                        self.state = 33
-                        if not self.precpred(self._ctx, 4):
-                            from antlr4.error.Errors import FailedPredicateException
-
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 4)"
-                            )
-                        self.state = 34
-                        localctx.op = self._input.LT(1)
-                        _la = self._input.LA(1)
-                        if not (_la == 5 or _la == 6):
-                            localctx.op = self._errHandler.recoverInline(self)
-                        else:
-                            self._errHandler.reportMatch(self)
-                            self.consume()
-                        self.state = 35
-                        self.match(ExprParser.NUMBER)
-                        pass
-
-                    elif la_ == 2:
-                        localctx = ExprParser.ShiftMuldivIdentifierContext(
-                            self,
-                            ExprParser.Shift_exprContext(
-                                self, _parentctx, _parentState
-                            ),
-                        )
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_shift_expr
-                        )
-                        self.state = 36
-                        if not self.precpred(self._ctx, 3):
-                            from antlr4.error.Errors import FailedPredicateException
-
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 3)"
-                            )
-                        self.state = 37
-                        localctx.op = self._input.LT(1)
-                        _la = self._input.LA(1)
-                        if not (_la == 5 or _la == 6):
-                            localctx.op = self._errHandler.recoverInline(self)
-                        else:
-                            self._errHandler.reportMatch(self)
-                            self.consume()
-                        self.state = 38
-                        self.match(ExprParser.IDENTIFIER)
-                        pass
-
-                    elif la_ == 3:
-                        localctx = ExprParser.ShiftMuldivContext(
-                            self,
-                            ExprParser.Shift_exprContext(
-                                self, _parentctx, _parentState
-                            ),
-                        )
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_shift_expr
-                        )
-                        self.state = 39
-                        if not self.precpred(self._ctx, 2):
-                            from antlr4.error.Errors import FailedPredicateException
-
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 2)"
-                            )
-                        self.state = 40
-                        localctx.op = self._input.LT(1)
-                        _la = self._input.LA(1)
-                        if not (_la == 5 or _la == 6):
-                            localctx.op = self._errHandler.recoverInline(self)
-                        else:
-                            self._errHandler.reportMatch(self)
-                            self.consume()
-                        self.state = 41
-                        self.match(ExprParser.T__2)
-                        self.state = 42
-                        self.expr(0)
-                        self.state = 43
-                        self.match(ExprParser.T__3)
-                        pass
-
-                    elif la_ == 4:
-                        localctx = ExprParser.ShiftAddsubContext(
-                            self,
-                            ExprParser.Shift_exprContext(
-                                self, _parentctx, _parentState
-                            ),
-                        )
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_shift_expr
-                        )
-                        self.state = 45
-                        if not self.precpred(self._ctx, 1):
-                            from antlr4.error.Errors import FailedPredicateException
-
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 1)"
-                            )
-                        self.state = 46
-                        localctx.op = self._input.LT(1)
-                        _la = self._input.LA(1)
-                        if not (_la == 1 or _la == 2):
-                            localctx.op = self._errHandler.recoverInline(self)
-                        else:
-                            self._errHandler.reportMatch(self)
-                            self.consume()
-                        self.state = 47
-                        self.expr(0)
-                        pass
-
-                self.state = 52
-                self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 3, self._ctx)
-
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.unrollRecursionContexts(_parentctx)
         return localctx
 
     class ExprContext(ParserRuleContext):
@@ -1751,22 +1294,6 @@ class ExprParser(Parser):
         def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-    class IdentifierContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.ExprContext
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def IDENTIFIER(self):
-            return self.getToken(ExprParser.IDENTIFIER, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIdentifier"):
-                return visitor.visitIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
-
     class NegationContext(ExprContext):
         def __init__(
             self, parser, ctx: ParserRuleContext
@@ -1783,6 +1310,22 @@ class ExprParser(Parser):
             else:
                 return visitor.visitChildren(self)
 
+    class UnsignedAtomContext(ExprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def atom(self):
+            return self.getTypedRuleContext(ExprParser.AtomContext, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnsignedAtom"):
+                return visitor.visitUnsignedAtom(self)
+            else:
+                return visitor.visitChildren(self)
+
     class ExpressionContext(ExprContext):
         def __init__(
             self, parser, ctx: ParserRuleContext
@@ -1796,103 +1339,6 @@ class ExprParser(Parser):
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitExpression"):
                 return visitor.visitExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class ComparisonContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.ExprContext
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def expr(self, i: int = None):
-            if i is None:
-                return self.getTypedRuleContexts(ExprParser.ExprContext)
-            else:
-                return self.getTypedRuleContext(ExprParser.ExprContext, i)
-
-        def COMPARISON(self):
-            return self.getToken(ExprParser.COMPARISON, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitComparison"):
-                return visitor.visitComparison(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class AddsubContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.ExprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def expr(self, i: int = None):
-            if i is None:
-                return self.getTypedRuleContexts(ExprParser.ExprContext)
-            else:
-                return self.getTypedRuleContext(ExprParser.ExprContext, i)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAddsub"):
-                return visitor.visitAddsub(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class PortFieldContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.ExprContext
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def IDENTIFIER(self, i: int = None):
-            if i is None:
-                return self.getTokens(ExprParser.IDENTIFIER)
-            else:
-                return self.getToken(ExprParser.IDENTIFIER, i)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPortField"):
-                return visitor.visitPortField(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class MuldivContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.ExprContext
-            super().__init__(parser)
-            self.op = None  # Token
-            self.copyFrom(ctx)
-
-        def expr(self, i: int = None):
-            if i is None:
-                return self.getTypedRuleContexts(ExprParser.ExprContext)
-            else:
-                return self.getTypedRuleContext(ExprParser.ExprContext, i)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMuldiv"):
-                return visitor.visitMuldiv(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class NumberContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a ExprParser.ExprContext
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def NUMBER(self):
-            return self.getToken(ExprParser.NUMBER, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitNumber"):
-                return visitor.visitNumber(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1921,6 +1367,28 @@ class ExprParser(Parser):
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitTimeIndex"):
                 return visitor.visitTimeIndex(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class ComparisonContext(ExprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def expr(self, i: int = None):
+            if i is None:
+                return self.getTypedRuleContexts(ExprParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(ExprParser.ExprContext, i)
+
+        def COMPARISON(self):
+            return self.getToken(ExprParser.COMPARISON, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComparison"):
+                return visitor.visitComparison(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1971,6 +1439,26 @@ class ExprParser(Parser):
             else:
                 return visitor.visitChildren(self)
 
+    class AddsubContext(ExprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.ExprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def expr(self, i: int = None):
+            if i is None:
+                return self.getTypedRuleContexts(ExprParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(ExprParser.ExprContext, i)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAddsub"):
+                return visitor.visitAddsub(self)
+            else:
+                return visitor.visitChildren(self)
+
     class TimeShiftRangeContext(ExprContext):
         def __init__(
             self, parser, ctx: ParserRuleContext
@@ -1998,6 +1486,45 @@ class ExprParser(Parser):
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitTimeShiftRange"):
                 return visitor.visitTimeShiftRange(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class PortFieldContext(ExprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def IDENTIFIER(self, i: int = None):
+            if i is None:
+                return self.getTokens(ExprParser.IDENTIFIER)
+            else:
+                return self.getToken(ExprParser.IDENTIFIER, i)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPortField"):
+                return visitor.visitPortField(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class MuldivContext(ExprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.ExprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def expr(self, i: int = None):
+            if i is None:
+                return self.getTypedRuleContexts(ExprParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(ExprParser.ExprContext, i)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMuldiv"):
+                return visitor.visitMuldiv(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -2034,179 +1561,171 @@ class ExprParser(Parser):
         _parentState = self.state
         localctx = ExprParser.ExprContext(self, self._ctx, _parentState)
         _prevctx = localctx
-        _startState = 6
-        self.enterRecursionRule(localctx, 6, self.RULE_expr, _p)
+        _startState = 2
+        self.enterRecursionRule(localctx, 2, self.RULE_expr, _p)
         self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 108
+            self.state = 67
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 6, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 2, self._ctx)
             if la_ == 1:
-                localctx = ExprParser.NegationContext(self, localctx)
+                localctx = ExprParser.UnsignedAtomContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
 
-                self.state = 54
-                self.match(ExprParser.T__1)
-                self.state = 55
-                self.expr(13)
+                self.state = 14
+                self.atom()
                 pass
 
             elif la_ == 2:
-                localctx = ExprParser.IdentifierContext(self, localctx)
+                localctx = ExprParser.PortFieldContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 56
+                self.state = 15
+                self.match(ExprParser.IDENTIFIER)
+                self.state = 16
+                self.match(ExprParser.T__0)
+                self.state = 17
                 self.match(ExprParser.IDENTIFIER)
                 pass
 
             elif la_ == 3:
-                localctx = ExprParser.PortFieldContext(self, localctx)
+                localctx = ExprParser.NegationContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 57
-                self.match(ExprParser.IDENTIFIER)
-                self.state = 58
-                self.match(ExprParser.T__6)
-                self.state = 59
-                self.match(ExprParser.IDENTIFIER)
+                self.state = 18
+                self.match(ExprParser.T__1)
+                self.state = 19
+                self.expr(10)
                 pass
 
             elif la_ == 4:
-                localctx = ExprParser.NumberContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 60
-                self.match(ExprParser.NUMBER)
-                pass
-
-            elif la_ == 5:
                 localctx = ExprParser.ExpressionContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 61
+                self.state = 20
                 self.match(ExprParser.T__2)
-                self.state = 62
+                self.state = 21
                 self.expr(0)
-                self.state = 63
+                self.state = 22
+                self.match(ExprParser.T__3)
+                pass
+
+            elif la_ == 5:
+                localctx = ExprParser.FunctionContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 24
+                self.match(ExprParser.IDENTIFIER)
+                self.state = 25
+                self.match(ExprParser.T__2)
+                self.state = 26
+                self.expr(0)
+                self.state = 27
                 self.match(ExprParser.T__3)
                 pass
 
             elif la_ == 6:
-                localctx = ExprParser.FunctionContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 65
-                self.match(ExprParser.IDENTIFIER)
-                self.state = 66
-                self.match(ExprParser.T__2)
-                self.state = 67
-                self.expr(0)
-                self.state = 68
-                self.match(ExprParser.T__3)
-                pass
-
-            elif la_ == 7:
                 localctx = ExprParser.TimeShiftContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 70
+                self.state = 29
                 self.match(ExprParser.IDENTIFIER)
-                self.state = 71
+                self.state = 30
                 self.match(ExprParser.LBRACKET)
-                self.state = 72
+                self.state = 31
                 self.shift()
-                self.state = 77
+                self.state = 36
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while _la == 8:
-                    self.state = 73
+                    self.state = 32
                     self.match(ExprParser.T__7)
-                    self.state = 74
+                    self.state = 33
                     self.shift()
-                    self.state = 79
+                    self.state = 38
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 80
+                self.state = 39
+                self.match(ExprParser.RBRACKET)
+                pass
+
+            elif la_ == 7:
+                localctx = ExprParser.TimeIndexContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 41
+                self.match(ExprParser.IDENTIFIER)
+                self.state = 42
+                self.match(ExprParser.LBRACKET)
+                self.state = 43
+                self.expr(0)
+                self.state = 48
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+                while _la == 8:
+                    self.state = 44
+                    self.match(ExprParser.T__7)
+                    self.state = 45
+                    self.expr(0)
+                    self.state = 50
+                    self._errHandler.sync(self)
+                    _la = self._input.LA(1)
+
+                self.state = 51
                 self.match(ExprParser.RBRACKET)
                 pass
 
             elif la_ == 8:
-                localctx = ExprParser.TimeIndexContext(self, localctx)
+                localctx = ExprParser.TimeShiftRangeContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 82
+                self.state = 53
                 self.match(ExprParser.IDENTIFIER)
-                self.state = 83
+                self.state = 54
                 self.match(ExprParser.LBRACKET)
-                self.state = 84
-                self.expr(0)
-                self.state = 89
-                self._errHandler.sync(self)
-                _la = self._input.LA(1)
-                while _la == 8:
-                    self.state = 85
-                    self.match(ExprParser.T__7)
-                    self.state = 86
-                    self.expr(0)
-                    self.state = 91
-                    self._errHandler.sync(self)
-                    _la = self._input.LA(1)
-
-                self.state = 92
+                self.state = 55
+                localctx.shift1 = self.shift()
+                self.state = 56
+                self.match(ExprParser.T__8)
+                self.state = 57
+                localctx.shift2 = self.shift()
+                self.state = 58
                 self.match(ExprParser.RBRACKET)
                 pass
 
             elif la_ == 9:
-                localctx = ExprParser.TimeShiftRangeContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 94
-                self.match(ExprParser.IDENTIFIER)
-                self.state = 95
-                self.match(ExprParser.LBRACKET)
-                self.state = 96
-                localctx.shift1 = self.shift()
-                self.state = 97
-                self.match(ExprParser.T__8)
-                self.state = 98
-                localctx.shift2 = self.shift()
-                self.state = 99
-                self.match(ExprParser.RBRACKET)
-                pass
-
-            elif la_ == 10:
                 localctx = ExprParser.TimeRangeContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 101
+                self.state = 60
                 self.match(ExprParser.IDENTIFIER)
-                self.state = 102
+                self.state = 61
                 self.match(ExprParser.LBRACKET)
-                self.state = 103
+                self.state = 62
                 self.expr(0)
-                self.state = 104
+                self.state = 63
                 self.match(ExprParser.T__8)
-                self.state = 105
+                self.state = 64
                 self.expr(0)
-                self.state = 106
+                self.state = 65
                 self.match(ExprParser.RBRACKET)
                 pass
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 121
+            self.state = 80
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 8, self._ctx)
+            _alt = self._interp.adaptivePredict(self._input, 4, self._ctx)
             while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
                 if _alt == 1:
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 119
+                    self.state = 78
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input, 7, self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input, 3, self._ctx)
                     if la_ == 1:
                         localctx = ExprParser.MuldivContext(
                             self, ExprParser.ExprContext(self, _parentctx, _parentState)
@@ -2214,14 +1733,14 @@ class ExprParser(Parser):
                         self.pushNewRecursionContext(
                             localctx, _startState, self.RULE_expr
                         )
-                        self.state = 110
-                        if not self.precpred(self._ctx, 12):
+                        self.state = 69
+                        if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
 
                             raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 12)"
+                                self, "self.precpred(self._ctx, 8)"
                             )
-                        self.state = 111
+                        self.state = 70
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
                         if not (_la == 5 or _la == 6):
@@ -2229,8 +1748,8 @@ class ExprParser(Parser):
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 112
-                        self.expr(13)
+                        self.state = 71
+                        self.expr(9)
                         pass
 
                     elif la_ == 2:
@@ -2240,23 +1759,23 @@ class ExprParser(Parser):
                         self.pushNewRecursionContext(
                             localctx, _startState, self.RULE_expr
                         )
-                        self.state = 113
-                        if not self.precpred(self._ctx, 11):
+                        self.state = 72
+                        if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
 
                             raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 11)"
+                                self, "self.precpred(self._ctx, 7)"
                             )
-                        self.state = 114
+                        self.state = 73
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (_la == 1 or _la == 2):
+                        if not (_la == 2 or _la == 7):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 115
-                        self.expr(12)
+                        self.state = 74
+                        self.expr(8)
                         pass
 
                     elif la_ == 3:
@@ -2266,22 +1785,473 @@ class ExprParser(Parser):
                         self.pushNewRecursionContext(
                             localctx, _startState, self.RULE_expr
                         )
-                        self.state = 116
-                        if not self.precpred(self._ctx, 10):
+                        self.state = 75
+                        if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
 
                             raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 10)"
+                                self, "self.precpred(self._ctx, 6)"
                             )
-                        self.state = 117
+                        self.state = 76
                         self.match(ExprParser.COMPARISON)
-                        self.state = 118
-                        self.expr(11)
+                        self.state = 77
+                        self.expr(7)
+                        pass
+
+                self.state = 82
+                self._errHandler.sync(self)
+                _alt = self._interp.adaptivePredict(self._input, 4, self._ctx)
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.unrollRecursionContexts(_parentctx)
+        return localctx
+
+    class AtomContext(ParserRuleContext):
+        __slots__ = "parser"
+
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def getRuleIndex(self):
+            return ExprParser.RULE_atom
+
+        def copyFrom(self, ctx: ParserRuleContext):
+            super().copyFrom(ctx)
+
+    class NumberContext(AtomContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.AtomContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def NUMBER(self):
+            return self.getToken(ExprParser.NUMBER, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitNumber"):
+                return visitor.visitNumber(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class IdentifierContext(AtomContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.AtomContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def IDENTIFIER(self):
+            return self.getToken(ExprParser.IDENTIFIER, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitIdentifier"):
+                return visitor.visitIdentifier(self)
+            else:
+                return visitor.visitChildren(self)
+
+    def atom(self):
+        localctx = ExprParser.AtomContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 4, self.RULE_atom)
+        try:
+            self.state = 85
+            self._errHandler.sync(self)
+            token = self._input.LA(1)
+            if token in [10]:
+                localctx = ExprParser.NumberContext(self, localctx)
+                self.enterOuterAlt(localctx, 1)
+                self.state = 83
+                self.match(ExprParser.NUMBER)
+                pass
+            elif token in [12]:
+                localctx = ExprParser.IdentifierContext(self, localctx)
+                self.enterOuterAlt(localctx, 2)
+                self.state = 84
+                self.match(ExprParser.IDENTIFIER)
+                pass
+            else:
+                raise NoViableAltException(self)
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+    class ShiftContext(ParserRuleContext):
+        __slots__ = "parser"
+
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def TIME(self):
+            return self.getToken(ExprParser.TIME, 0)
+
+        def shift_expr(self):
+            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
+
+        def getRuleIndex(self):
+            return ExprParser.RULE_shift
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitShift"):
+                return visitor.visitShift(self)
+            else:
+                return visitor.visitChildren(self)
+
+    def shift(self):
+        localctx = ExprParser.ShiftContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 6, self.RULE_shift)
+        self._la = 0  # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 87
+            self.match(ExprParser.TIME)
+            self.state = 89
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            if _la == 2 or _la == 7:
+                self.state = 88
+                self.shift_expr(0)
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+    class Shift_exprContext(ParserRuleContext):
+        __slots__ = "parser"
+
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def getRuleIndex(self):
+            return ExprParser.RULE_shift_expr
+
+        def copyFrom(self, ctx: ParserRuleContext):
+            super().copyFrom(ctx)
+
+    class SignedAtomContext(Shift_exprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.Shift_exprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def atom(self):
+            return self.getTypedRuleContext(ExprParser.AtomContext, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSignedAtom"):
+                return visitor.visitSignedAtom(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class SignedExpressionContext(Shift_exprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.Shift_exprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def expr(self):
+            return self.getTypedRuleContext(ExprParser.ExprContext, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSignedExpression"):
+                return visitor.visitSignedExpression(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class ShiftMuldivAtomContext(Shift_exprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.Shift_exprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def shift_expr(self):
+            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
+
+        def atom(self):
+            return self.getTypedRuleContext(ExprParser.AtomContext, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitShiftMuldivAtom"):
+                return visitor.visitShiftMuldivAtom(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class ShiftMuldivContext(Shift_exprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.Shift_exprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def shift_expr(self):
+            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
+
+        def expr(self):
+            return self.getTypedRuleContext(ExprParser.ExprContext, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitShiftMuldiv"):
+                return visitor.visitShiftMuldiv(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class ShiftAddsubContext(Shift_exprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.Shift_exprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def shift_expr(self):
+            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
+
+        def expr(self):
+            return self.getTypedRuleContext(ExprParser.ExprContext, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitShiftAddsub"):
+                return visitor.visitShiftAddsub(self)
+            else:
+                return visitor.visitChildren(self)
+
+    class ShiftAddsubAtomContext(Shift_exprContext):
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a ExprParser.Shift_exprContext
+            super().__init__(parser)
+            self.op = None  # Token
+            self.copyFrom(ctx)
+
+        def shift_expr(self):
+            return self.getTypedRuleContext(ExprParser.Shift_exprContext, 0)
+
+        def atom(self):
+            return self.getTypedRuleContext(ExprParser.AtomContext, 0)
+
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitShiftAddsubAtom"):
+                return visitor.visitShiftAddsubAtom(self)
+            else:
+                return visitor.visitChildren(self)
+
+    def shift_expr(self, _p: int = 0):
+        _parentctx = self._ctx
+        _parentState = self.state
+        localctx = ExprParser.Shift_exprContext(self, self._ctx, _parentState)
+        _prevctx = localctx
+        _startState = 8
+        self.enterRecursionRule(localctx, 8, self.RULE_shift_expr, _p)
+        self._la = 0  # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 99
+            self._errHandler.sync(self)
+            la_ = self._interp.adaptivePredict(self._input, 7, self._ctx)
+            if la_ == 1:
+                localctx = ExprParser.SignedAtomContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+
+                self.state = 92
+                localctx.op = self._input.LT(1)
+                _la = self._input.LA(1)
+                if not (_la == 2 or _la == 7):
+                    localctx.op = self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                self.state = 93
+                self.atom()
+                pass
+
+            elif la_ == 2:
+                localctx = ExprParser.SignedExpressionContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 94
+                localctx.op = self._input.LT(1)
+                _la = self._input.LA(1)
+                if not (_la == 2 or _la == 7):
+                    localctx.op = self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                self.state = 95
+                self.match(ExprParser.T__2)
+                self.state = 96
+                self.expr(0)
+                self.state = 97
+                self.match(ExprParser.T__3)
+                pass
+
+            self._ctx.stop = self._input.LT(-1)
+            self.state = 121
+            self._errHandler.sync(self)
+            _alt = self._interp.adaptivePredict(self._input, 9, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
+                    if self._parseListeners is not None:
+                        self.triggerExitRuleEvent()
+                    _prevctx = localctx
+                    self.state = 119
+                    self._errHandler.sync(self)
+                    la_ = self._interp.adaptivePredict(self._input, 8, self._ctx)
+                    if la_ == 1:
+                        localctx = ExprParser.ShiftMuldivAtomContext(
+                            self,
+                            ExprParser.Shift_exprContext(
+                                self, _parentctx, _parentState
+                            ),
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_shift_expr
+                        )
+                        self.state = 101
+                        if not self.precpred(self._ctx, 4):
+                            from antlr4.error.Errors import FailedPredicateException
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 4)"
+                            )
+                        self.state = 102
+                        localctx.op = self._input.LT(1)
+                        _la = self._input.LA(1)
+                        if not (_la == 5 or _la == 6):
+                            localctx.op = self._errHandler.recoverInline(self)
+                        else:
+                            self._errHandler.reportMatch(self)
+                            self.consume()
+                        self.state = 103
+                        self.atom()
+                        pass
+
+                    elif la_ == 2:
+                        localctx = ExprParser.ShiftMuldivContext(
+                            self,
+                            ExprParser.Shift_exprContext(
+                                self, _parentctx, _parentState
+                            ),
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_shift_expr
+                        )
+                        self.state = 104
+                        if not self.precpred(self._ctx, 3):
+                            from antlr4.error.Errors import FailedPredicateException
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 3)"
+                            )
+                        self.state = 105
+                        localctx.op = self._input.LT(1)
+                        _la = self._input.LA(1)
+                        if not (_la == 5 or _la == 6):
+                            localctx.op = self._errHandler.recoverInline(self)
+                        else:
+                            self._errHandler.reportMatch(self)
+                            self.consume()
+                        self.state = 106
+                        self.match(ExprParser.T__2)
+                        self.state = 107
+                        self.expr(0)
+                        self.state = 108
+                        self.match(ExprParser.T__3)
+                        pass
+
+                    elif la_ == 3:
+                        localctx = ExprParser.ShiftAddsubAtomContext(
+                            self,
+                            ExprParser.Shift_exprContext(
+                                self, _parentctx, _parentState
+                            ),
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_shift_expr
+                        )
+                        self.state = 110
+                        if not self.precpred(self._ctx, 2):
+                            from antlr4.error.Errors import FailedPredicateException
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 2)"
+                            )
+                        self.state = 111
+                        localctx.op = self._input.LT(1)
+                        _la = self._input.LA(1)
+                        if not (_la == 2 or _la == 7):
+                            localctx.op = self._errHandler.recoverInline(self)
+                        else:
+                            self._errHandler.reportMatch(self)
+                            self.consume()
+                        self.state = 112
+                        self.atom()
+                        pass
+
+                    elif la_ == 4:
+                        localctx = ExprParser.ShiftAddsubContext(
+                            self,
+                            ExprParser.Shift_exprContext(
+                                self, _parentctx, _parentState
+                            ),
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_shift_expr
+                        )
+                        self.state = 113
+                        if not self.precpred(self._ctx, 1):
+                            from antlr4.error.Errors import FailedPredicateException
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 1)"
+                            )
+                        self.state = 114
+                        localctx.op = self._input.LT(1)
+                        _la = self._input.LA(1)
+                        if not (_la == 2 or _la == 7):
+                            localctx.op = self._errHandler.recoverInline(self)
+                        else:
+                            self._errHandler.reportMatch(self)
+                            self.consume()
+                        self.state = 115
+                        self.match(ExprParser.T__2)
+                        self.state = 116
+                        self.expr(0)
+                        self.state = 117
+                        self.match(ExprParser.T__3)
                         pass
 
                 self.state = 123
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 8, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 9, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -2294,33 +2264,33 @@ class ExprParser(Parser):
     def sempred(self, localctx: RuleContext, ruleIndex: int, predIndex: int):
         if self._predicates == None:
             self._predicates = dict()
-        self._predicates[2] = self.shift_expr_sempred
-        self._predicates[3] = self.expr_sempred
+        self._predicates[1] = self.expr_sempred
+        self._predicates[4] = self.shift_expr_sempred
         pred = self._predicates.get(ruleIndex, None)
         if pred is None:
             raise Exception("No predicate with index:" + str(ruleIndex))
         else:
             return pred(localctx, predIndex)
 
-    def shift_expr_sempred(self, localctx: Shift_exprContext, predIndex: int):
+    def expr_sempred(self, localctx: ExprContext, predIndex: int):
         if predIndex == 0:
-            return self.precpred(self._ctx, 4)
+            return self.precpred(self._ctx, 8)
 
         if predIndex == 1:
-            return self.precpred(self._ctx, 3)
+            return self.precpred(self._ctx, 7)
 
         if predIndex == 2:
-            return self.precpred(self._ctx, 2)
+            return self.precpred(self._ctx, 6)
 
+    def shift_expr_sempred(self, localctx: Shift_exprContext, predIndex: int):
         if predIndex == 3:
-            return self.precpred(self._ctx, 1)
+            return self.precpred(self._ctx, 4)
 
-    def expr_sempred(self, localctx: ExprContext, predIndex: int):
         if predIndex == 4:
-            return self.precpred(self._ctx, 12)
+            return self.precpred(self._ctx, 3)
 
         if predIndex == 5:
-            return self.precpred(self._ctx, 11)
+            return self.precpred(self._ctx, 2)
 
         if predIndex == 6:
-            return self.precpred(self._ctx, 10)
+            return self.precpred(self._ctx, 1)

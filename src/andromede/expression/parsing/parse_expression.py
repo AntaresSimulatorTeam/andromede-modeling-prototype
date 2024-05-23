@@ -55,6 +55,14 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     def visitFullexpr(self, ctx: ExprParser.FullexprContext) -> ExpressionNode:
         return ctx.expr().accept(self)  # type: ignore
 
+    # Visit a parse tree produced by ExprParser#number.
+    def visitNumber(self, ctx: ExprParser.NumberContext) -> ExpressionNode:
+        return literal(float(ctx.NUMBER().getText()))  # type: ignore
+
+    # Visit a parse tree produced by ExprParser#identifier.
+    def visitIdentifier(self, ctx: ExprParser.IdentifierContext) -> ExpressionNode:
+        return self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+
     # Visit a parse tree produced by ExprParser#division.
     def visitMuldiv(self, ctx: ExprParser.MuldivContext) -> ExpressionNode:
         left = ctx.expr(0).accept(self)  # type: ignore
@@ -77,10 +85,6 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
             return left - right
         raise ValueError(f"Invalid operator {op}")
 
-    # Visit a parse tree produced by ExprParser#number.
-    def visitNumber(self, ctx: ExprParser.NumberContext) -> ExpressionNode:
-        return literal(float(ctx.getText()))
-
     # Visit a parse tree produced by ExprParser#negation.
     def visitNegation(self, ctx: ExprParser.NegationContext) -> ExpressionNode:
         return -ctx.expr().accept(self)  # type: ignore
@@ -89,9 +93,9 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     def visitExpression(self, ctx: ExprParser.ExpressionContext) -> ExpressionNode:
         return ctx.expr().accept(self)  # type: ignore
 
-    # Visit a parse tree produced by ExprParser#identifier.
-    def visitIdentifier(self, ctx: ExprParser.IdentifierContext) -> ExpressionNode:
-        return self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+    # Visit a parse tree produced by ExprParser#unsignedAtom.
+    def visitUnsignedAtom(self, ctx: ExprParser.UnsignedAtomContext) -> ExpressionNode:
+        return ctx.atom().accept(self)  # type: ignore
 
     def _convert_identifier(self, identifier: str) -> ExpressionNode:
         if self.identifiers.is_variable(identifier):
@@ -163,13 +167,6 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         shift = ctx.shift_expr().accept(self)  # type: ignore
         return shift
 
-    # Visit a parse tree produced by ExprParser#signedNumber.
-    def visitSignedNumber(self, ctx: ExprParser.SignedNumberContext) -> ExpressionNode:
-        if ctx.op.text == "-":  # type: ignore
-            return -literal(float(ctx.NUMBER().getText()))  # type: ignore
-        else:
-            return literal(float(ctx.NUMBER().getText()))  # type: ignore
-
     # Visit a parse tree produced by ExprParser#shiftAddsub.
     def visitShiftAddsub(self, ctx: ExprParser.ShiftAddsubContext) -> ExpressionNode:
         left = ctx.shift_expr().accept(self)  # type: ignore
@@ -181,45 +178,36 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
             return left - right
         raise ValueError(f"Invalid operator {op}")
 
-    # Visit a parse tree produced by ExprParser#signedIdentifier.
-    def visitSignedIdentifier(
-        self, ctx: ExprParser.SignedIdentifierContext
-    ) -> ExpressionNode:
-        if ctx.op.text == "-":  # type: ignore
-            return -self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        else:
-            return self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-
-    # Visit a parse tree produced by ExprParser#shiftMuldivIdentifier.
-    def visitShiftMuldivIdentifier(
-        self, ctx: ExprParser.ShiftMuldivIdentifierContext
+    # Visit a parse tree produced by ExprParser#shiftAddsubAtom.
+    def visitShiftAddsubAtom(
+        self, ctx: ExprParser.ShiftAddsubAtomContext
     ) -> ExpressionNode:
         left = ctx.shift_expr().accept(self)  # type: ignore
-        right = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+        right = ctx.atom().accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
-        if op == "*":
-            return left * right
-        elif op == "/":
-            return left / right
-        raise ValueError(f"Invalid operator {op}")
-
-    # Visit a parse tree produced by ExprParser#shiftMuldivNumber.
-    def visitShiftMuldivNumber(
-        self, ctx: ExprParser.ShiftMuldivNumberContext
-    ) -> ExpressionNode:
-        left = ctx.shift_expr().accept(self)  # type: ignore
-        right = literal(float(ctx.NUMBER().getText()))  # type: ignore
-        op = ctx.op.text  # type: ignore
-        if op == "*":
-            return left * right
-        elif op == "/":
-            return left / right
+        if op == "+":
+            return left + right
+        elif op == "-":
+            return left - right
         raise ValueError(f"Invalid operator {op}")
 
     # Visit a parse tree produced by ExprParser#shiftMuldiv.
     def visitShiftMuldiv(self, ctx: ExprParser.ShiftMuldivContext) -> ExpressionNode:
         left = ctx.shift_expr().accept(self)  # type: ignore
         right = ctx.expr().accept(self)  # type: ignore
+        op = ctx.op.text  # type: ignore
+        if op == "*":
+            return left * right
+        elif op == "/":
+            return left / right
+        raise ValueError(f"Invalid operator {op}")
+
+    # Visit a parse tree produced by ExprParser#shiftMuldivAtom.
+    def visitShiftMuldivAtom(
+        self, ctx: ExprParser.ShiftMuldivAtomContext
+    ) -> ExpressionNode:
+        left = ctx.shift_expr().accept(self)  # type: ignore
+        right = ctx.atom().accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
         if op == "*":
             return left * right
@@ -236,20 +224,12 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         else:
             return ctx.expr().accept(self)  # type: ignore
 
-    # Visit a parse tree produced by ExprParser#signedFunction.
-    def visitSignedFunction(
-        self, ctx: ExprParser.SignedFunctionContext
-    ) -> ExpressionNode:
-        function_name: str = ctx.IDENTIFIER().getText()  # type: ignore
-        operand: ExpressionNode = ctx.expr().accept(self)  # type: ignore
-        op = ctx.op.text  # type: ignore
-        fn = _FUNCTIONS.get(function_name, None)
-        if fn is None:
-            raise ValueError(f"Encountered invalid function name {function_name}")
+    # Visit a parse tree produced by ExprParser#signedAtom.
+    def visitSignedAtom(self, ctx: ExprParser.SignedAtomContext) -> ExpressionNode:
         if ctx.op.text == "-":  # type: ignore
-            return -fn(operand)
+            return -ctx.atom().accept(self)  # type: ignore
         else:
-            return fn(operand)
+            return ctx.atom().accept(self)  # type: ignore
 
 
 _FUNCTIONS = {

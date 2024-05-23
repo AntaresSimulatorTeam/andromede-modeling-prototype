@@ -17,33 +17,35 @@ grammar Expr;
 /* To match the whole input */
 fullexpr: expr EOF;
 
+expr
+    : atom                                     # unsignedAtom
+    | IDENTIFIER '.' IDENTIFIER                # portField
+    | '-' expr                                 # negation
+    | '(' expr ')'                             # expression
+    | expr op=('/' | '*') expr                 # muldiv
+    | expr op=('+' | '-') expr                 # addsub
+    | expr COMPARISON expr                     # comparison
+    | IDENTIFIER '(' expr ')'                  # function
+    | IDENTIFIER '[' shift (',' shift)* ']'    # timeShift
+    | IDENTIFIER '[' expr  (',' expr )* ']'    # timeIndex
+    | IDENTIFIER '[' shift1=shift '..' shift2=shift ']'     # timeShiftRange
+    | IDENTIFIER '[' expr '..' expr ']'        # timeRange
+    ;
+
+atom
+    : NUMBER                                   # number
+    | IDENTIFIER                               # identifier
+    ;
+
 shift: TIME shift_expr?;
 
 shift_expr
-    : op=('+' | '-') NUMBER                    # signedNumber
-    | op=('+' | '-') IDENTIFIER                # signedIdentifier
+    : op=('+' | '-') atom                      # signedAtom
     | op=('+' | '-') '(' expr ')'              # signedExpression
-    | op=('+' | '-') IDENTIFIER '(' expr ')'   # signedFunction
-    | shift_expr op=('/' | '*') NUMBER         # shiftMuldivNumber
-    | shift_expr op=('/' | '*') IDENTIFIER     # shiftMuldivIdentifier
+    | shift_expr op=('/' | '*') atom           # shiftMuldivAtom
     | shift_expr op=('/' | '*') '(' expr ')'   # shiftMuldiv
-    | shift_expr op=('+' | '-') expr           # shiftAddsub
-    ;
-
-expr
-    : '-' expr                  # negation
-    | expr op=('/' | '*') expr  # muldiv
-    | expr op=('+' | '-') expr  # addsub
-    | expr COMPARISON expr      # comparison
-    | IDENTIFIER                # identifier
-    | IDENTIFIER '.' IDENTIFIER # portField
-    | NUMBER                    # number
-    | '(' expr ')'              # expression
-    | IDENTIFIER '(' expr ')'   # function
-    | IDENTIFIER '[' shift (',' shift)* ']'  # timeShift
-    | IDENTIFIER '[' expr  (',' expr )* ']'  # timeIndex
-    | IDENTIFIER '[' shift1=shift '..' shift2=shift ']'      # timeShiftRange
-    | IDENTIFIER '[' expr '..' expr ']'      # timeRange
+    | shift_expr op=('+' | '-') atom           # shiftAddsubAtom
+    | shift_expr op=('+' | '-') '(' expr ')'   # shiftAddsub
     ;
 
 fragment DIGIT         : [0-9] ;
