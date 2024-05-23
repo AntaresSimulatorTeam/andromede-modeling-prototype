@@ -60,8 +60,6 @@ def resolve_library(
         port_types.extend(lib.port_types.values())
     port_types_dict = dict((p.id, p) for p in port_types)
     models = [_resolve_model(m, port_types_dict) for m in input_lib.models]
-    for lib in preloaded_libraries:
-        models.extend(lib.models.values())
     return library(port_types, models)
 
 

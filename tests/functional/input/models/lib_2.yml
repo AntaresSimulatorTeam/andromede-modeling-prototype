@@ -10,26 +10,11 @@
 #
 # This file is part of the Antares project.
 library:
-  id: basic
+  id: basic 2
+  dependence: basic
   description: Basic library
 
-  port-types:
-    - id: flow
-      description: A port which transfers power flow
-      fields:
-        - name: flow
-
   models:
-
-
-    - id: node
-      description: A basic balancing node model
-      ports:
-        - name: injection_port
-          type: flow
-      binding-constraints:
-        - name: balance
-          expression:  sum_connections(injection_port.flow) = 0
 
     - id: spillage
       description: A basic spillage model

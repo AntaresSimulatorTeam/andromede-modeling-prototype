@@ -33,13 +33,47 @@ class AntaresTimeSeriesImportError(Exception):
     pass
 
 
-def input_models(model_path: List[Path]) -> Library:
-    with model_path[0].open("r") as file:
-        lib = resolve_library(parse_yaml_library(file))
-    for path in model_path[1:]:
+def input_models(model_paths: List[Path]) -> Library:
+    yaml_libraries = {}
+    for path in model_paths:
         with path.open("r") as file:
-            lib = resolve_library(parse_yaml_library(file), [lib])
-    return lib
+            yaml_lib = parse_yaml_library(file)
+            if yaml_lib.id in yaml_libraries:
+                raise ValueError(f"the identifier: {yaml_lib.id} is defined twice")
+            yaml_libraries[yaml_lib.id] = yaml_lib
+
+    todo = list(yaml_libraries.values())
+    did = list()
+    import_stack = []
+    output_lib = Library(port_types={}, models={})
+
+    while todo:
+        next_lib = todo.pop()
+        if next_lib.id in did:
+            continue
+        else:
+            import_stack.append(next_lib)
+        while import_stack:
+            if import_stack[-1].dependence:
+                if import_stack[-1].dependence in did:
+                    lib = resolve_library(import_stack[-1], [output_lib])
+
+                    output_lib.models.update(lib.models)
+                    output_lib.port_types.update(lib.port_types)
+
+                    did.append(import_stack.pop().id)
+                elif yaml_libraries[import_stack[-1].dependence] in import_stack:
+                    raise Exception("importing loop in yaml libraries")
+                else:
+                    import_stack.append(yaml_libraries[import_stack[-1].dependence])
+            else:
+                lib = resolve_library(import_stack[-1], [output_lib])
+
+                output_lib.models.update(lib.models)
+                output_lib.port_types.update(lib.port_types)
+
+                did.append(import_stack.pop().id)
+    return output_lib
 
 
 def input_database(study_path: Path, timeseries_path: Optional[Path]) -> DataBase:

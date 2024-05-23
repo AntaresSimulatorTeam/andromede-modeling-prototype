@@ -93,6 +93,7 @@ class InputModel(BaseModel):
 
 class InputLibrary(BaseModel):
     id: str
+    dependence: Optional[str] = None
     port_types: List[InputPortType] = Field(default_factory=list)
     models: List[InputModel] = Field(default_factory=list)
 
