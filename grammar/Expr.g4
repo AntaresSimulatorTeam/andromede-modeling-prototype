@@ -17,14 +17,23 @@ grammar Expr;
 /* To match the whole input */
 fullexpr: expr EOF;
 
-shift: TIME expr?;
+shift: TIME shift_expr?;
 
-expr
+shift_expr
     : op=('+' | '-') NUMBER                    # signedNumber
     | op=('+' | '-') IDENTIFIER                # signedIdentifier
-    | expr op=('/' | '*') expr                 # muldiv
-    | expr op=('+' | '-') expr                 # addsub
-    | '-' expr                         # negation
+    | op=('+' | '-') '(' expr ')'              # signedExpression
+    | op=('+' | '-') IDENTIFIER '(' expr ')'   # signedFunction
+    | shift_expr op=('/' | '*') NUMBER         # shiftMuldivNumber
+    | shift_expr op=('/' | '*') IDENTIFIER     # shiftMuldivIdentifier
+    | shift_expr op=('/' | '*') '(' expr ')'   # shiftMuldiv
+    | shift_expr op=('+' | '-') expr           # shiftAddsub
+    ;
+
+expr
+    : '-' expr                  # negation
+    | expr op=('/' | '*') expr  # muldiv
+    | expr op=('+' | '-') expr  # addsub
     | expr COMPARISON expr      # comparison
     | IDENTIFIER                # identifier
     | IDENTIFIER '.' IDENTIFIER # portField
