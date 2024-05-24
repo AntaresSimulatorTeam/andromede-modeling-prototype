@@ -78,6 +78,12 @@ from andromede.expression.parsing.parse_expression import (
         (
             {"x"},
             {"d"},
+            "x[t-1+d*2]",
+            var("x").shift(-literal(1) + param("d") * literal(2)),
+        ),
+        (
+            {"x"},
+            {"d"},
             "x[t-2-d+1]",
             var("x").shift(-literal(2) - param("d") + literal(1)),
         ),

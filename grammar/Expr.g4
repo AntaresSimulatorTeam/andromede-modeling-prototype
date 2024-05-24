@@ -40,13 +40,18 @@ atom
 shift: TIME shift_expr?;
 
 shift_expr
-    : op=('+' | '-') atom                      # signedAtom
+    : shift_expr op=('*' | '/') right_expr     # shiftMuldiv
+    | shift_expr op=('+' | '-') right_expr     # shiftAddsub
+    | op=('+' | '-') atom                      # signedAtom
     | op=('+' | '-') '(' expr ')'              # signedExpression
-    | shift_expr op=('/' | '*') atom           # shiftMuldivAtom
-    | shift_expr op=('/' | '*') '(' expr ')'   # shiftMuldiv
-    | shift_expr op=('+' | '-') atom           # shiftAddsubAtom
-    | shift_expr op=('+' | '-') '(' expr ')'   # shiftAddsub
     ;
+
+right_expr
+    : right_expr op=('/' | '*') right_expr     # rightMuldiv
+    | '(' expr ')'                             # rightExpression
+    | atom                                     # rightAtom
+    ;
+
 
 fragment DIGIT         : [0-9] ;
 fragment CHAR          : [a-zA-Z_];

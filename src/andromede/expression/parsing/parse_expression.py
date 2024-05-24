@@ -170,20 +170,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     # Visit a parse tree produced by ExprParser#shiftAddsub.
     def visitShiftAddsub(self, ctx: ExprParser.ShiftAddsubContext) -> ExpressionNode:
         left = ctx.shift_expr().accept(self)  # type: ignore
-        right = ctx.expr().accept(self)  # type: ignore
-        op = ctx.op.text  # type: ignore
-        if op == "+":
-            return left + right
-        elif op == "-":
-            return left - right
-        raise ValueError(f"Invalid operator {op}")
-
-    # Visit a parse tree produced by ExprParser#shiftAddsubAtom.
-    def visitShiftAddsubAtom(
-        self, ctx: ExprParser.ShiftAddsubAtomContext
-    ) -> ExpressionNode:
-        left = ctx.shift_expr().accept(self)  # type: ignore
-        right = ctx.atom().accept(self)  # type: ignore
+        right = ctx.right_expr().accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
         if op == "+":
             return left + right
@@ -194,20 +181,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     # Visit a parse tree produced by ExprParser#shiftMuldiv.
     def visitShiftMuldiv(self, ctx: ExprParser.ShiftMuldivContext) -> ExpressionNode:
         left = ctx.shift_expr().accept(self)  # type: ignore
-        right = ctx.expr().accept(self)  # type: ignore
-        op = ctx.op.text  # type: ignore
-        if op == "*":
-            return left * right
-        elif op == "/":
-            return left / right
-        raise ValueError(f"Invalid operator {op}")
-
-    # Visit a parse tree produced by ExprParser#shiftMuldivAtom.
-    def visitShiftMuldivAtom(
-        self, ctx: ExprParser.ShiftMuldivAtomContext
-    ) -> ExpressionNode:
-        left = ctx.shift_expr().accept(self)  # type: ignore
-        right = ctx.atom().accept(self)  # type: ignore
+        right = ctx.right_expr().accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
         if op == "*":
             return left * right
@@ -230,6 +204,27 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
             return -ctx.atom().accept(self)  # type: ignore
         else:
             return ctx.atom().accept(self)  # type: ignore
+
+    # Visit a parse tree produced by ExprParser#rightExpression.
+    def visitRightExpression(
+        self, ctx: ExprParser.RightExpressionContext
+    ) -> ExpressionNode:
+        return ctx.expr().accept(self)  # type: ignore
+
+    # Visit a parse tree produced by ExprParser#rightMuldiv.
+    def visitRightMuldiv(self, ctx: ExprParser.RightMuldivContext) -> ExpressionNode:
+        left = ctx.right_expr(0).accept(self)  # type: ignore
+        right = ctx.right_expr(1).accept(self)  # type: ignore
+        op = ctx.op.text  # type: ignore
+        if op == "*":
+            return left * right
+        elif op == "/":
+            return left / right
+        raise ValueError(f"Invalid operator {op}")
+
+    # Visit a parse tree produced by ExprParser#rightAtom.
+    def visitRightAtom(self, ctx: ExprParser.RightAtomContext) -> ExpressionNode:
+        return ctx.atom().accept(self)  # type: ignore
 
 
 _FUNCTIONS = {

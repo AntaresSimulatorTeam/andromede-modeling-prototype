@@ -82,10 +82,6 @@ class ExprVisitor(ParseTreeVisitor):
     def visitSignedExpression(self, ctx: ExprParser.SignedExpressionContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#shiftMuldivAtom.
-    def visitShiftMuldivAtom(self, ctx: ExprParser.ShiftMuldivAtomContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#shiftMuldiv.
     def visitShiftMuldiv(self, ctx: ExprParser.ShiftMuldivContext):
         return self.visitChildren(ctx)
@@ -94,8 +90,16 @@ class ExprVisitor(ParseTreeVisitor):
     def visitShiftAddsub(self, ctx: ExprParser.ShiftAddsubContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#shiftAddsubAtom.
-    def visitShiftAddsubAtom(self, ctx: ExprParser.ShiftAddsubAtomContext):
+    # Visit a parse tree produced by ExprParser#rightExpression.
+    def visitRightExpression(self, ctx: ExprParser.RightExpressionContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#rightMuldiv.
+    def visitRightMuldiv(self, ctx: ExprParser.RightMuldivContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#rightAtom.
+    def visitRightAtom(self, ctx: ExprParser.RightAtomContext):
         return self.visitChildren(ctx)
 
 
