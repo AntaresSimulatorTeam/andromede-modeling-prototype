@@ -61,9 +61,5 @@ NUMBER        : DIGIT+ ('.' DIGIT+)?;
 TIME          : 't';
 IDENTIFIER    : CHAR CHAR_OR_DIGIT*;
 COMPARISON    : ( '=' | '>=' | '<=' );
-ADDSUB        : ( '+' | '-' );
-MULDIV        : ( '*' | '/' );
-LBRACKET: '[';
-RBRACKET: ']';
 
 WS: (' ' | '\t' | '\r'| '\n') -> skip;

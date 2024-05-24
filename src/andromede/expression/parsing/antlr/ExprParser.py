@@ -15,7 +15,7 @@ def serializedATN():
     return [
         4,
         1,
-        18,
+        16,
         131,
         2,
         0,
@@ -388,7 +388,7 @@ def serializedATN():
         17,
         18,
         5,
-        12,
+        14,
         0,
         0,
         18,
@@ -400,7 +400,7 @@ def serializedATN():
         19,
         70,
         5,
-        12,
+        14,
         0,
         0,
         20,
@@ -442,7 +442,7 @@ def serializedATN():
         26,
         27,
         5,
-        12,
+        14,
         0,
         0,
         27,
@@ -472,13 +472,13 @@ def serializedATN():
         31,
         32,
         5,
-        12,
+        14,
         0,
         0,
         32,
         33,
         5,
-        16,
+        8,
         0,
         0,
         33,
@@ -490,7 +490,7 @@ def serializedATN():
         34,
         35,
         5,
-        8,
+        9,
         0,
         0,
         35,
@@ -538,7 +538,7 @@ def serializedATN():
         41,
         42,
         5,
-        17,
+        10,
         0,
         0,
         42,
@@ -550,13 +550,13 @@ def serializedATN():
         43,
         44,
         5,
-        12,
+        14,
         0,
         0,
         44,
         45,
         5,
-        16,
+        8,
         0,
         0,
         45,
@@ -568,7 +568,7 @@ def serializedATN():
         46,
         47,
         5,
-        8,
+        9,
         0,
         0,
         47,
@@ -616,7 +616,7 @@ def serializedATN():
         53,
         54,
         5,
-        17,
+        10,
         0,
         0,
         54,
@@ -628,13 +628,13 @@ def serializedATN():
         55,
         56,
         5,
-        12,
+        14,
         0,
         0,
         56,
         57,
         5,
-        16,
+        8,
         0,
         0,
         57,
@@ -646,7 +646,7 @@ def serializedATN():
         58,
         59,
         5,
-        9,
+        11,
         0,
         0,
         59,
@@ -658,7 +658,7 @@ def serializedATN():
         60,
         61,
         5,
-        17,
+        10,
         0,
         0,
         61,
@@ -670,13 +670,13 @@ def serializedATN():
         62,
         63,
         5,
-        12,
+        14,
         0,
         0,
         63,
         64,
         5,
-        16,
+        8,
         0,
         0,
         64,
@@ -688,7 +688,7 @@ def serializedATN():
         65,
         66,
         5,
-        9,
+        11,
         0,
         0,
         66,
@@ -700,7 +700,7 @@ def serializedATN():
         67,
         68,
         5,
-        17,
+        10,
         0,
         0,
         68,
@@ -814,7 +814,7 @@ def serializedATN():
         78,
         79,
         5,
-        13,
+        15,
         0,
         0,
         79,
@@ -874,13 +874,13 @@ def serializedATN():
         85,
         88,
         5,
-        10,
+        12,
         0,
         0,
         86,
         88,
         5,
-        12,
+        14,
         0,
         0,
         87,
@@ -904,7 +904,7 @@ def serializedATN():
         89,
         91,
         5,
-        11,
+        13,
         0,
         0,
         90,
@@ -1217,19 +1217,17 @@ class ExprParser(Parser):
         "'/'",
         "'*'",
         "'+'",
+        "'['",
         "','",
+        "']'",
         "'..'",
         "<INVALID>",
         "'t'",
-        "<INVALID>",
-        "<INVALID>",
-        "<INVALID>",
-        "<INVALID>",
-        "'['",
-        "']'",
     ]
 
     symbolicNames = [
+        "<INVALID>",
+        "<INVALID>",
         "<INVALID>",
         "<INVALID>",
         "<INVALID>",
@@ -1244,10 +1242,6 @@ class ExprParser(Parser):
         "TIME",
         "IDENTIFIER",
         "COMPARISON",
-        "ADDSUB",
-        "MULDIV",
-        "LBRACKET",
-        "RBRACKET",
         "WS",
     ]
 
@@ -1270,15 +1264,13 @@ class ExprParser(Parser):
     T__6 = 7
     T__7 = 8
     T__8 = 9
-    NUMBER = 10
-    TIME = 11
-    IDENTIFIER = 12
-    COMPARISON = 13
-    ADDSUB = 14
-    MULDIV = 15
-    LBRACKET = 16
-    RBRACKET = 17
-    WS = 18
+    T__9 = 10
+    T__10 = 11
+    NUMBER = 12
+    TIME = 13
+    IDENTIFIER = 14
+    COMPARISON = 15
+    WS = 16
 
     def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
@@ -1402,17 +1394,11 @@ class ExprParser(Parser):
         def IDENTIFIER(self):
             return self.getToken(ExprParser.IDENTIFIER, 0)
 
-        def LBRACKET(self):
-            return self.getToken(ExprParser.LBRACKET, 0)
-
         def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(ExprParser.ExprContext)
             else:
                 return self.getTypedRuleContext(ExprParser.ExprContext, i)
-
-        def RBRACKET(self):
-            return self.getToken(ExprParser.RBRACKET, 0)
 
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitTimeIndex"):
@@ -1452,17 +1438,11 @@ class ExprParser(Parser):
         def IDENTIFIER(self):
             return self.getToken(ExprParser.IDENTIFIER, 0)
 
-        def LBRACKET(self):
-            return self.getToken(ExprParser.LBRACKET, 0)
-
         def shift(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(ExprParser.ShiftContext)
             else:
                 return self.getTypedRuleContext(ExprParser.ShiftContext, i)
-
-        def RBRACKET(self):
-            return self.getToken(ExprParser.RBRACKET, 0)
 
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitTimeShift"):
@@ -1520,12 +1500,6 @@ class ExprParser(Parser):
 
         def IDENTIFIER(self):
             return self.getToken(ExprParser.IDENTIFIER, 0)
-
-        def LBRACKET(self):
-            return self.getToken(ExprParser.LBRACKET, 0)
-
-        def RBRACKET(self):
-            return self.getToken(ExprParser.RBRACKET, 0)
 
         def shift(self, i: int = None):
             if i is None:
@@ -1588,17 +1562,11 @@ class ExprParser(Parser):
         def IDENTIFIER(self):
             return self.getToken(ExprParser.IDENTIFIER, 0)
 
-        def LBRACKET(self):
-            return self.getToken(ExprParser.LBRACKET, 0)
-
         def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(ExprParser.ExprContext)
             else:
                 return self.getTypedRuleContext(ExprParser.ExprContext, i)
-
-        def RBRACKET(self):
-            return self.getToken(ExprParser.RBRACKET, 0)
 
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitTimeRange"):
@@ -1683,15 +1651,15 @@ class ExprParser(Parser):
                 self.state = 31
                 self.match(ExprParser.IDENTIFIER)
                 self.state = 32
-                self.match(ExprParser.LBRACKET)
+                self.match(ExprParser.T__7)
                 self.state = 33
                 self.shift()
                 self.state = 38
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la == 8:
+                while _la == 9:
                     self.state = 34
-                    self.match(ExprParser.T__7)
+                    self.match(ExprParser.T__8)
                     self.state = 35
                     self.shift()
                     self.state = 40
@@ -1699,7 +1667,7 @@ class ExprParser(Parser):
                     _la = self._input.LA(1)
 
                 self.state = 41
-                self.match(ExprParser.RBRACKET)
+                self.match(ExprParser.T__9)
                 pass
 
             elif la_ == 7:
@@ -1709,15 +1677,15 @@ class ExprParser(Parser):
                 self.state = 43
                 self.match(ExprParser.IDENTIFIER)
                 self.state = 44
-                self.match(ExprParser.LBRACKET)
+                self.match(ExprParser.T__7)
                 self.state = 45
                 self.expr(0)
                 self.state = 50
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la == 8:
+                while _la == 9:
                     self.state = 46
-                    self.match(ExprParser.T__7)
+                    self.match(ExprParser.T__8)
                     self.state = 47
                     self.expr(0)
                     self.state = 52
@@ -1725,7 +1693,7 @@ class ExprParser(Parser):
                     _la = self._input.LA(1)
 
                 self.state = 53
-                self.match(ExprParser.RBRACKET)
+                self.match(ExprParser.T__9)
                 pass
 
             elif la_ == 8:
@@ -1735,15 +1703,15 @@ class ExprParser(Parser):
                 self.state = 55
                 self.match(ExprParser.IDENTIFIER)
                 self.state = 56
-                self.match(ExprParser.LBRACKET)
+                self.match(ExprParser.T__7)
                 self.state = 57
                 localctx.shift1 = self.shift()
                 self.state = 58
-                self.match(ExprParser.T__8)
+                self.match(ExprParser.T__10)
                 self.state = 59
                 localctx.shift2 = self.shift()
                 self.state = 60
-                self.match(ExprParser.RBRACKET)
+                self.match(ExprParser.T__9)
                 pass
 
             elif la_ == 9:
@@ -1753,15 +1721,15 @@ class ExprParser(Parser):
                 self.state = 62
                 self.match(ExprParser.IDENTIFIER)
                 self.state = 63
-                self.match(ExprParser.LBRACKET)
+                self.match(ExprParser.T__7)
                 self.state = 64
                 self.expr(0)
                 self.state = 65
-                self.match(ExprParser.T__8)
+                self.match(ExprParser.T__10)
                 self.state = 66
                 self.expr(0)
                 self.state = 67
-                self.match(ExprParser.RBRACKET)
+                self.match(ExprParser.T__9)
                 pass
 
             self._ctx.stop = self._input.LT(-1)
@@ -1914,13 +1882,13 @@ class ExprParser(Parser):
             self.state = 87
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [10]:
+            if token in [12]:
                 localctx = ExprParser.NumberContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 85
                 self.match(ExprParser.NUMBER)
                 pass
-            elif token in [12]:
+            elif token in [14]:
                 localctx = ExprParser.IdentifierContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 86
@@ -2297,7 +2265,7 @@ class ExprParser(Parser):
                 self.state = 117
                 self.match(ExprParser.T__3)
                 pass
-            elif token in [10, 12]:
+            elif token in [12, 14]:
                 localctx = ExprParser.RightAtomContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
