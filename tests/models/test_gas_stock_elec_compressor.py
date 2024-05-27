@@ -26,12 +26,11 @@ from andromede.study import (
 
 def test_gas_stock_elec_compressor(data_dir: Path, lib: Path, lib_sc: Path):
     """
-    Test of a pipeline with stock capacity
+    Test of a gas stock and compressor to pump the gas through
 
-    for the following test we have two gaz production and two gaz demands,
-    One of each on each sides of a pipeline that has a storage capacity
-    gaz_prod_1 and gaz_demand_1 are on the input side of the pipeline
-    gaz_prod_2 and gaz_demand_2 are on the output side of the pipeline
+    for the following test we have a gas production and demand, a electricity production and demand
+    a gas demand on a side of the pipeline and a gas production on the other side
+    two electrolyzer converts electricity to gas and are connected to the pipeline and the electricity node
     we have the following values:
     gaz production 1:
         - p_max = 200
