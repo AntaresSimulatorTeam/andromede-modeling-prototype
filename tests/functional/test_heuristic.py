@@ -417,6 +417,7 @@ def test_accurate_heuristic() -> None:
 
     number_hours = 168
 
+    # First optimization
     problem_optimization_1 = create_simple_problem(
         ConstantData(0), number_hours, lp_relaxation=False
     )
@@ -424,6 +425,7 @@ def test_accurate_heuristic() -> None:
 
     assert status == problem_optimization_1.solver.OPTIMAL
 
+    # Get number of on units and round it to integer
     output_1 = OutputValues(problem_optimization_1)
     nb_on_1 = pd.DataFrame(
         np.transpose(
@@ -436,6 +438,7 @@ def test_accurate_heuristic() -> None:
     for time_step in range(number_hours):
         assert nb_on_1.iloc[time_step, 0] == 2 if time_step != 12 else 3
 
+    # Solve heuristic problem
     problem_accurate_heuristic = create_problem_accurate_heuristic(n_guide)
     status = problem_accurate_heuristic.solver.Solve()
 
@@ -454,6 +457,7 @@ def test_accurate_heuristic() -> None:
     for time_step in range(number_hours):
         assert nb_on_heuristic.iloc[time_step, 0] == 2 if time_step != 12 else 3
 
+    # Second optimization with lower bound modified
     problem_optimization_2 = create_simple_problem(
         nb_on_min, number_hours, lp_relaxation=False
     )
