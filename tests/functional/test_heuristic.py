@@ -12,6 +12,7 @@
 
 import pandas as pd
 import pytest
+import numpy as np
 
 from andromede.expression import literal, param, var
 from andromede.expression.expression import ExpressionRange, port_field
@@ -45,6 +46,7 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
+from andromede.study.data import AbstractDataStructure
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
@@ -61,6 +63,7 @@ THERMAL_CLUSTER_MODEL_MILP = model(
         float_parameter("cost", CONSTANT),
         float_parameter("startup_cost", CONSTANT),
         float_parameter("fixed_cost", CONSTANT),
+        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
         int_parameter("nb_units_max", CONSTANT),
         int_parameter("nb_failures", TIME_AND_SCENARIO_FREE),
     ],
@@ -73,7 +76,7 @@ THERMAL_CLUSTER_MODEL_MILP = model(
         ),
         int_variable(
             "nb_on",
-            lower_bound=literal(0),
+            lower_bound=param("nb_units_min"),
             upper_bound=param("nb_units_max"),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -143,6 +146,7 @@ THERMAL_CLUSTER_MODEL_LP = model(
         float_parameter("cost", CONSTANT),
         float_parameter("startup_cost", CONSTANT),
         float_parameter("fixed_cost", CONSTANT),
+        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
         int_parameter("nb_units_max", CONSTANT),
         int_parameter("nb_failures", TIME_AND_SCENARIO_FREE),
     ],
@@ -155,7 +159,7 @@ THERMAL_CLUSTER_MODEL_LP = model(
         ),
         float_variable(
             "nb_on",
-            lower_bound=literal(0),
+            lower_bound=param("nb_units_min"),
             upper_bound=param("nb_units_max"),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -216,6 +220,58 @@ THERMAL_CLUSTER_MODEL_LP = model(
 )
 
 
+THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
+    id="GEN",
+    parameters=[
+        float_parameter("d_min_up", CONSTANT),
+        float_parameter("d_min_down", CONSTANT),
+        float_parameter("cost", CONSTANT),
+        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_max", CONSTANT),
+    ],
+    variables=[
+        float_variable(
+            "nb_on",
+            lower_bound=param("nb_units_min"),
+            upper_bound=param("nb_units_max"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "nb_stop",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "nb_start",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+    ],
+    constraints=[
+        Constraint(
+            "NODU balance",
+            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
+        ),
+        Constraint(
+            "Min up time",
+            var("nb_start")
+            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            .sum()
+            <= var("nb_on"),
+        ),
+        Constraint(
+            "Min down time",
+            var("nb_stop")
+            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
+            .sum()
+            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+        ),
+        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
+    ],
+    objective_operational_contribution=(var("nb_on")).sum().expec(),
+)
+
+
 def test_milp_version() -> None:
     """
     Model on 168 time steps with one thermal generation and one demand on a single node.
@@ -244,63 +300,7 @@ def test_milp_version() -> None:
     """
     number_hours = 168
 
-    database = DataBase()
-
-    database.add_data("G", "p_max", ConstantData(1000))
-    database.add_data("G", "p_min", ConstantData(700))
-    database.add_data("G", "cost", ConstantData(50))
-    database.add_data("G", "startup_cost", ConstantData(50))
-    database.add_data("G", "fixed_cost", ConstantData(1))
-    database.add_data("G", "d_min_up", ConstantData(3))
-    database.add_data("G", "d_min_down", ConstantData(10))
-    database.add_data("G", "nb_units_max", ConstantData(3))
-    database.add_data("G", "nb_failures", ConstantData(0))
-
-    database.add_data("U", "cost", ConstantData(1000))
-    database.add_data("S", "cost", ConstantData(0))
-
-    demand_data = pd.DataFrame(
-        [[2000.0]] * number_hours,
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-    demand_data.iloc[12, 0] = 2050.0
-
-    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
-    database.add_data("D", "demand", demand_time_scenario_series)
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = 1
-
-    node = Node(model=NODE_BALANCE_MODEL, id="1")
-    demand = create_component(model=DEMAND_MODEL, id="D")
-
-    gen = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G")
-
-    spillage = create_component(model=SPILLAGE_MODEL, id="S")
-
-    unsupplied_energy = create_component(model=UNSUPPLIED_ENERGY_MODEL, id="U")
-
-    network = Network("test")
-    network.add_node(node)
-    network.add_component(demand)
-    network.add_component(gen)
-    network.add_component(spillage)
-    network.add_component(unsupplied_energy)
-    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(
-        PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
-    )
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
+    problem = create_simple_problem(ConstantData(0), number_hours, lp_relaxation=False)
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -366,71 +366,15 @@ def test_lp_version() -> None:
         + 50 x 2050 (prod step 13)
         + 2 x 1 x 168 (fixed cost step 1-12 and 14-168)
         + 2050/1000 x 1 (fixed cost step 13)
-        = 16 802 838,05
+        + 0,05 x 50 (start up cost step 13)
+        = 16 802 840,55
     """
     number_hours = 168
-
-    database = DataBase()
-
-    database.add_data("G", "p_max", ConstantData(1000))
-    database.add_data("G", "p_min", ConstantData(700))
-    database.add_data("G", "cost", ConstantData(50))
-    database.add_data("G", "startup_cost", ConstantData(50))
-    database.add_data("G", "fixed_cost", ConstantData(1))
-    database.add_data("G", "d_min_up", ConstantData(3))
-    database.add_data("G", "d_min_down", ConstantData(10))
-    database.add_data("G", "nb_units_max", ConstantData(3))
-    database.add_data("G", "nb_failures", ConstantData(0))
-
-    database.add_data("U", "cost", ConstantData(1000))
-    database.add_data("S", "cost", ConstantData(0))
-
-    demand_data = pd.DataFrame(
-        [[2000.0]] * number_hours,
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-    demand_data.iloc[12, 0] = 2050.0
-
-    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
-    database.add_data("D", "demand", demand_time_scenario_series)
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = 1
-
-    node = Node(model=NODE_BALANCE_MODEL, id="1")
-    demand = create_component(model=DEMAND_MODEL, id="D")
-
-    gen = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G")
-
-    spillage = create_component(model=SPILLAGE_MODEL, id="S")
-
-    unsupplied_energy = create_component(model=UNSUPPLIED_ENERGY_MODEL, id="U")
-
-    network = Network("test")
-    network.add_node(node)
-    network.add_component(demand)
-    network.add_component(gen)
-    network.add_component(spillage)
-    network.add_component(unsupplied_energy)
-    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(
-        PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
-    )
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
+    problem = create_simple_problem(ConstantData(0), number_hours, lp_relaxation=True)
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == pytest.approx(16802838.05)
+    assert problem.solver.Objective().Value() == pytest.approx(16802840.55)
 
     output = OutputValues(problem)
     assert output.component("G").var("generation").value == [
@@ -468,16 +412,96 @@ def test_lp_version() -> None:
 
 def test_accurate_heuristic() -> None:
     """
-    TODO
+    Solve the same problem as before with the heuristic accurate of Antares
     """
-    problem_optimization_1 = create_problem_with_lower_bound_on_units_on()
+
+    number_hours = 168
+
+    problem_optimization_1 = create_simple_problem(
+        ConstantData(0), number_hours, lp_relaxation=False
+    )
     status = problem_optimization_1.solver.Solve()
 
     assert status == problem_optimization_1.solver.OPTIMAL
 
+    output_1 = OutputValues(problem_optimization_1)
+    nb_on_1 = pd.DataFrame(
+        np.transpose(
+            np.ceil(np.round(np.array(output_1.component("G").var("nb_on").value), 12))
+        ),
+        index=[i for i in range(number_hours)],
+        columns=[0],
+    )
+    n_guide = TimeScenarioSeriesData(nb_on_1)
+    for time_step in range(number_hours):
+        assert nb_on_1.iloc[time_step, 0] == 2 if time_step != 12 else 3
 
-def create_problem_with_lower_bound_on_units_on() -> OptimizationProblem:
-    number_hours = 168
+    problem_accurate_heuristic = create_problem_accurate_heuristic(n_guide)
+    status = problem_accurate_heuristic.solver.Solve()
+
+    assert status == problem_accurate_heuristic.solver.OPTIMAL
+
+    output_heuristic = OutputValues(problem_accurate_heuristic)
+    nb_on_heuristic = pd.DataFrame(
+        np.transpose(
+            np.ceil(np.array(output_heuristic.component("G").var("nb_on").value))
+        ),
+        index=[i for i in range(number_hours)],
+        columns=[0],
+    )
+    nb_on_min = TimeScenarioSeriesData(nb_on_heuristic)
+
+    for time_step in range(number_hours):
+        assert nb_on_heuristic.iloc[time_step, 0] == 2 if time_step != 12 else 3
+
+    problem_optimization_2 = create_simple_problem(
+        nb_on_min, number_hours, lp_relaxation=False
+    )
+    status = problem_optimization_2.solver.Solve()
+
+    assert status == problem_optimization_2.solver.OPTIMAL
+    assert problem_optimization_2.solver.Objective().Value() == 16805387
+
+    output = OutputValues(problem_optimization_2)
+    assert output.component("G").var("generation").value == [
+        [
+            pytest.approx(2000.0) if time_step != 12 else pytest.approx(2100.0)
+            for time_step in range(number_hours)
+        ]
+    ]
+    assert output.component("G").var("nb_on").value == [
+        [
+            pytest.approx(2.0) if time_step != 12 else pytest.approx(3.0)
+            for time_step in range(number_hours)
+        ]
+    ]
+    assert output.component("G").var("nb_start").value == [
+        [
+            pytest.approx(0.0) if time_step != 12 else pytest.approx(1.0)
+            for time_step in range(number_hours)
+        ]
+    ]
+    assert output.component("G").var("nb_stop").value == [
+        [
+            pytest.approx(0.0) if time_step != 13 else pytest.approx(1.0)
+            for time_step in range(number_hours)
+        ]
+    ]
+
+    assert output.component("S").var("spillage").value == [
+        [
+            pytest.approx(0.0) if time_step != 12 else pytest.approx(50.0)
+            for time_step in range(number_hours)
+        ]
+    ]
+    assert output.component("U").var("unsupplied_energy").value == [
+        [pytest.approx(0.0)] * number_hours
+    ]
+
+
+def create_simple_problem(
+    lower_bound: AbstractDataStructure, number_hours: int, lp_relaxation: bool
+) -> OptimizationProblem:
 
     database = DataBase()
 
@@ -488,6 +512,7 @@ def create_problem_with_lower_bound_on_units_on() -> OptimizationProblem:
     database.add_data("G", "fixed_cost", ConstantData(1))
     database.add_data("G", "d_min_up", ConstantData(3))
     database.add_data("G", "d_min_down", ConstantData(10))
+    database.add_data("G", "nb_units_min", lower_bound)
     database.add_data("G", "nb_units_max", ConstantData(3))
     database.add_data("G", "nb_failures", ConstantData(0))
 
@@ -510,7 +535,10 @@ def create_problem_with_lower_bound_on_units_on() -> OptimizationProblem:
     node = Node(model=NODE_BALANCE_MODEL, id="1")
     demand = create_component(model=DEMAND_MODEL, id="D")
 
-    gen = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G")
+    if lp_relaxation:
+        gen = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G")
+    else:
+        gen = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G")
 
     spillage = create_component(model=SPILLAGE_MODEL, id="S")
 
@@ -528,6 +556,43 @@ def create_problem_with_lower_bound_on_units_on() -> OptimizationProblem:
     network.connect(
         PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
     )
+
+    problem = build_problem(
+        network,
+        database,
+        time_block,
+        scenarios,
+        border_management=BlockBorderManagement.CYCLE,
+    )
+
+    return problem
+
+
+def create_problem_accurate_heuristic(
+    lower_bound: AbstractDataStructure,
+) -> OptimizationProblem:
+    number_hours = 168
+
+    database = DataBase()
+
+    database.add_data("G", "p_max", ConstantData(1000))
+    database.add_data("G", "p_min", ConstantData(700))
+    database.add_data("G", "cost", ConstantData(50))
+    database.add_data("G", "startup_cost", ConstantData(50))
+    database.add_data("G", "fixed_cost", ConstantData(1))
+    database.add_data("G", "d_min_up", ConstantData(3))
+    database.add_data("G", "d_min_down", ConstantData(10))
+    database.add_data("G", "nb_units_min", lower_bound)
+    database.add_data("G", "nb_units_max", ConstantData(3))
+    database.add_data("G", "nb_failures", ConstantData(0))
+
+    time_block = TimeBlock(1, [i for i in range(number_hours)])
+    scenarios = 1
+
+    gen = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G")
+
+    network = Network("test")
+    network.add_component(gen)
 
     problem = build_problem(
         network,
