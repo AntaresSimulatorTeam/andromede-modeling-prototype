@@ -151,19 +151,17 @@ def main() -> None:
 
     network = build_network(components)
 
-    for scenario in range(1, args.scenario + 1):
-        timeblock = TimeBlock(1, list(range(args.duration)))
-        try:
-            problem = build_problem(network, database, timeblock, scenario)
-        except IndexError as e:
-            raise IndexError(
-                str(e)
-                + ". Did you correctly use the '--duration' and '--scenario' parameters ?"
-            )
+    timeblock = TimeBlock(1, list(range(args.duration)))
+    try:
+        problem = build_problem(network, database, timeblock, args.scenario)
+    except IndexError as e:
+        raise IndexError(
+            str(e)
+            + ". Did you correctly use the '--duration' and '--scenario' parameters ?"
+        )
 
-        status = problem.solver.Solve()
-        print("scenario ", scenario)
-        print("status : ", status)
+    status = problem.solver.Solve()
+    print("status : ", status)
 
     print("avarage final cost : ", problem.solver.Objective().Value())
 
