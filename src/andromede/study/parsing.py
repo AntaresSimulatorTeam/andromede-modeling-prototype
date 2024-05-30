@@ -36,14 +36,22 @@ class InputPortConnections(BaseModel):
 class InputComponentParameter(BaseModel):
     name: str
     type: str
+    scenario_group: Optional[str] = None
     value: Optional[float] = None
     timeseries: Optional[str] = None
+
+    class Config:
+        alias_generator = _to_kebab
 
 
 class InputComponent(BaseModel):
     id: str
     model: str
+    scenario_group: Optional[str] = None
     parameters: Optional[List[InputComponentParameter]] = None
+
+    class Config:
+        alias_generator = _to_kebab
 
 
 class InputComponents(BaseModel):

@@ -25,6 +25,7 @@ from andromede.study import (
     Node,
     PortRef,
     PortsConnection,
+    Scenarization,
 )
 from andromede.study.data import (
     AbstractDataStructure,
@@ -160,11 +161,48 @@ def _evaluate_param_type(
     param_value: Optional[float],
     timeseries_name: Optional[str],
     timeseries_dir: Optional[Path],
+    scenarization: Optional[Scenarization] = None,
 ) -> AbstractDataStructure:
     if param_type == "constant" and param_value is not None:
         return ConstantData(float(param_value))
 
     elif param_type == "timeseries":
-        return TimeScenarioSeriesData(load_ts_from_txt(timeseries_name, timeseries_dir))
+        return TimeScenarioSeriesData(
+            load_ts_from_txt(timeseries_name, timeseries_dir), scenarization
+        )
 
     raise ValueError(f"Data should be either constant or timeseries ")
+
+
+def _resolve_scenarization(
+    scenario_builder_data: pd.core.frame.DataFrame,
+) -> Dict[str, Scenarization]:
+    output: Dict[str, Scenarization] = {}
+    for i, row in scenario_builder_data.iterrows():
+        if row["name"] in output:
+            output[row["name"]].add_year(row["year"], row["scenario"])
+        else:
+            output[row["name"]] = Scenarization({row["year"]: row["scenario"]})
+    return output
+
+
+def build_scenarized_data_base(
+    input_comp: InputComponents,
+    scenario_builder_data: pd.core.frame.DataFrame,
+    timeseries_dir: Optional[Path],
+) -> DataBase:
+    database = DataBase()
+    scenarizations = _resolve_scenarization(scenario_builder_data)
+    for comp in input_comp.components:
+        scenarization = None
+        if comp.scenario_group:
+            scenarization = scenarizations[comp.scenario_group]
+        for param in comp.parameters or []:
+            if param.scenario_group:
+                scenarization = scenarizations[param.scenario_group]
+            param_value = _evaluate_param_type(
+                param.type, param.value, param.timeseries, timeseries_dir, scenarization
+            )
+            database.add_data(comp.id, param.name, param_value)
+
+    return database
