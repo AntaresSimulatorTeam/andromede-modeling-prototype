@@ -226,9 +226,12 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     node: Node,
 ) -> None:
     """
-    This use case aims at representing the situation where investment decisions are to be made at different, say "planning times". An actualisation rate can be taken into account.
+    This use case aims at representing the situation where investment decisions are to be made at different, say "planning times".
+    An actualization rate can be taken into account.
 
-    The novelty compared the actual usage of planning tools, is that the planning decisions at a given time are taken without knowing exactly which "macro-scenario" / hypothesis on the system that will eventually happen (only knowing the probability distribution of these hypothesis).
+    The novelty compared the actual usage of planning tools, is that the planning decisions at a given time
+    are taken without knowing exactly which "macro-scenario" / hypothesis on the system that will eventually happen
+    (only knowing the probability distribution of these hypothesis).
 
     This example models a case where investment decisions have to be made in 2030 and 2040.
         - In 2030, we have full knowledge of the existing assets
@@ -236,10 +239,10 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
             - A case where there is no change in the generation assets since 2030 (except te potential investment in 2030)
             - A case where a base generation unit is present
 
-    When taking the decision in 2030, we do not know which case will occur in 2040 and we seek the best decision given a risk criterion (the expectation here).
-
-    The value of these models lies in the output for the first decision rather than the decisions at the later stages as the first decisions are related to "what we have to do today" ?
-
+    When taking the decision in 2030, we do not know which case will occur in 2040
+    and we seek the best decision given a risk criterion (the expectation here).
+    The value of these models lies in the output for the first decision rather than
+    the decisions at the later stages as the first decisions are related to "what we have to do today" ?
     More specifically, to define the use case, we define the following tree representing the system at the different decision times and hypothesis
 
     2030 (root node) :
@@ -250,9 +253,9 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
             Max investment = 400,
             Investment cost = 100
         Unsupplied energy :
-            Cost = 10000
+            Cost = 10 000
 
-    2040 with new base (scenario 1) :
+    2040 with new base (child A) :
         Demand = 600
         Generator :
             P_max = 200,
@@ -263,9 +266,9 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
             P_max = 200,
             Production cost = 5
         Unsupplied energy :
-            Cost = 10000
+            Cost = 10 000
 
-    2040 no base (scenario 2) :
+    2040 no base (child B) :
         Demand = 600
         Generator :
             P_max = 200,
@@ -273,50 +276,54 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
             Max investment = 100,
             Investment cost = 50
         Unsupplied energy :
-            Cost = 10000
+            Cost = 10 000
 
-    In the second decision time, demand increases from 300 to 600 in both scenarios. However, investment capacity in the candidate is limited to 100 in the second stage. Investment cost decreases to reflect the effect of a discount rate.
+    In the second decision time, demand increases from 300 to 600 in both scenarios.
+    However, investment capacity in the candidate is limited to 100 in the second stage.
+    Investment cost decreases to reflect the effect of a discount rate.
 
-    In case 1, a base unit of capacity 100 has arrived and can produce at the same cost than the candidate. As it is more intersting to invest the latest possible, the optimal solution for scenario 1 is to invest [100, 100].
+    In case 1, a base unit of capacity 100 has arrived and can produce at smaller cost than the candidate.
+    As it is more interesting to invest the latest possible, the optimal solution for this scenario is to invest [100, 100].
 
-    In case 2, there is no base unit and the max investment is 100 in the second stage, therefore if we consider scenario 2 only, as unsupplied energy is very expensive, the best investment is [300, 100]
+    In case 2, there is no base unit and the max investment is 100 in the second stage,
+    therefore if we consider scenario 2 only, as unsupplied energy is very expensive, the best investment is [300, 100]
 
     But here as we solve on the tree, we need to find the best solution in expectation on the set of paths in the tree.
 
-    With initial investment = 100 :
-        Total cost = [100 x 100 (investment root) + 10 x 300 (prod root)]
-            + 0.5 (proba child 1) x [100 x 50 (investment child 1) + 10 x 400 (prod generator) + 5 x 200 (prod base)]
-            + 0.5 (proba child 2) x [100 x 50 (investment child 2) + 10 x 400 (prod generator) + 1000 x 200 (unsupplied energy)]
-            = 122 500
+    Case 1 :    prob    |    investment   |  operational
+    root:             1 x [     100 x 100 +     10 x 300 ]
+    child A:      + 0.5 x [      50 x 100 +     10 x 400 (generator) + 5 x 200 (base)]
+    child B:      + 0.5 x [      50 x 100 +     10 x 400 (generator) + 10 000 x 200 (unsupplied energy)]
+                  = 1 022 500
 
-    With initial investment = 300 :
-        Total cost = [100 x 300 (investment root) + 10 x 300 (prod root)]
-            + 0.5 (proba child 1) x [10 x 400 (prod generator) + 5 x 200 (prod base)]
-            + 0.5 (proba child 2) x [100 x 50 (investment child 2) + 10 x 600 (prod generator)]
-            = 41 000
+    Case 2 :    prob    |    investment   |  operational
+    root:             1 x [     100 x 300 +     10 x 300 ]
+    child A:      + 0.5 x [      50 x   0 +     10 x 400 (generator) + 5 x 200 (base)]
+    child B:      + 0.5 x [      50 x 100 +     10 x 600 (generator)]
+                  = 41 000
 
-    As investing less than 300 in the first stage would increase the unsupplied energy and lead to an increase in overall cost (-1 MW invested in 1st stage => + 1 MW unsp energy => +900/MW cost increase more or less), the optimal solution is to invest :
+    As investing less than 300 in the first stage would increase the unsupplied energy and lead to an increase in overall cost
+    (-1 MW invested in 1st stage => + 1 MW unsupplied energy => +900/MW cost increase more or less), the optimal solution is to invest :
         - 300 at first stage
-        - 0 in child 1
-        - 100 in child 2
-
+        - 0 in child A
+        - 100 in child B
     """
 
     # Either we duplicate all network for each node : Lots of duplications
-    # or we index all data, parameters, variables by the resolution node : Make the data struture dependent of the resolution tree...
+    # or we index all data, parameters, variables by the resolution node : Make the data structure dependent of the resolution tree...
 
     database = DataBase()
     database.add_data("N", "spillage_cost", ConstantData(10))
-    database.add_data("N", "ens_cost", ConstantData(10000))
+    database.add_data("N", "ens_cost", ConstantData(10_000))
 
     database.add_data(
         "D",
         "demand",
         TreeData(
             {
-                "ROOT": ConstantData(300),
-                "CHILD_A": ConstantData(600),
-                "CHILD_B": ConstantData(600),
+                "root": ConstantData(300),
+                "childA": ConstantData(600),
+                "childB": ConstantData(600),
             }
         ),
     )
@@ -328,9 +335,9 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         "invest_cost",
         TreeData(
             {
-                "ROOT": ConstantData(100),
-                "CHILD_A": ConstantData(50),
-                "CHILD_B": ConstantData(50),
+                "root": ConstantData(100),
+                "childA": ConstantData(50),
+                "childB": ConstantData(50),
             }
         ),
     )
@@ -339,48 +346,134 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         "max_invest",
         TreeData(
             {
-                "ROOT": ConstantData(400),
-                "CHILD_A": ConstantData(100),
-                "CHILD_B": ConstantData(100),
+                "root": ConstantData(400),
+                "childA": ConstantData(100),
+                "childB": ConstantData(100),
             }
         ),
     )
 
-    database.add_data(
-        "BASE",
-        "p_max",
-        TreeData(
-            {
-                "ROOT": ConstantData(0),
-                "CHILD_A": ConstantData(200),
-                "CHILD_B": ConstantData(0),
-            }
-        ),
-    )
+    database.add_data("BASE", "p_max", ConstantData(200))
     database.add_data("BASE", "cost", ConstantData(5))
 
-    network = Network("test")
-    network.add_node(node)
-    network.add_component(demand)
-    network.add_component(generator)
-    network.add_component(candidate)
-    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
+    COUPLING_MODEL = model(
+        id="COUPLING",
+        variables=[
+            float_variable(
+                "root_CAND_delta_invest",
+                lower_bound=literal(0),
+                structure=IndexingStructure(False, False),
+                context=ProblemContext.INVESTMENT,
+            ),
+            float_variable(
+                "root_CAND_invested_capa",
+                lower_bound=literal(0),
+                structure=IndexingStructure(False, False),
+                context=ProblemContext.INVESTMENT,
+            ),
+            float_variable(
+                "childA_CAND_delta_invest",
+                lower_bound=literal(0),
+                structure=IndexingStructure(False, False),
+                context=ProblemContext.INVESTMENT,
+            ),
+            float_variable(
+                "childA_CAND_invested_capa",
+                lower_bound=literal(0),
+                structure=IndexingStructure(False, False),
+                context=ProblemContext.INVESTMENT,
+            ),
+            float_variable(
+                "childB_CAND_delta_invest",
+                lower_bound=literal(0),
+                structure=IndexingStructure(False, False),
+                context=ProblemContext.INVESTMENT,
+            ),
+            float_variable(
+                "childB_CAND_invested_capa",
+                lower_bound=literal(0),
+                structure=IndexingStructure(False, False),
+                context=ProblemContext.INVESTMENT,
+            ),
+        ],
+        constraints=[
+            Constraint(
+                name="Max investment on root",
+                expression=var("root_CAND_invested_capa")
+                == var("root_CAND_delta_invest"),
+                context=ProblemContext.INVESTMENT,
+            ),
+            Constraint(
+                name="Max investment on child A",
+                expression=var("childA_CAND_invested_capa")
+                == var("childA_CAND_delta_invest") + var("root_CAND_invested_capa"),
+                context=ProblemContext.INVESTMENT,
+            ),
+            Constraint(
+                name="Max investment on child B",
+                expression=var("childB_CAND_invested_capa")
+                == var("childB_CAND_delta_invest") + var("root_CAND_invested_capa"),
+                context=ProblemContext.INVESTMENT,
+            ),
+        ],
+    )
+
+    network_coupler = Network("coupling_test")
+    network_coupler.add_component(create_component(model=COUPLING_MODEL, id=""))
+
+    network_root = Network("root_network")
+    network_root.add_node(node)
+    network_root.add_component(demand)
+    network_root.add_component(candidate)
+    network_root.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network_root.connect(
+        PortRef(candidate, "balance_port"), PortRef(node, "balance_port")
+    )
+
+    network_childA = network_root.replicate(id="childA_network")
+    network_childA.add_component(generator)
+    network_childA.connect(
+        PortRef(generator, "balance_port"), PortRef(node, "balance_port")
+    )
+
+    network_childB = network_root.replicate(id="childB_network")
 
     scenarios = 1
     time_scenario_config = InterDecisionTimeScenarioConfig(
         [TimeBlock(0, [0])], scenarios
     )
 
-    dt_root = DecisionTreeNode("ROOT", time_scenario_config, network)
+    dt_root = DecisionTreeNode("root", time_scenario_config, network_root)
     dt_child_A = DecisionTreeNode(
-        "CHILD_A", time_scenario_config, network, parent=dt_root
+        "childA", time_scenario_config, network_childA, parent=dt_root
     )
     dt_child_B = DecisionTreeNode(
-        "CHILD_B", time_scenario_config, network, parent=dt_root
+        "childB", time_scenario_config, network_childB, parent=dt_root
     )
 
-    xpansion = build_benders_decomposed_problem(dt_root, database)
+    xpansion = build_benders_decomposed_problem(
+        dt_root, database, coupling_network=network_coupler
+    )
+    xpansion.initialise(is_debug=True)
 
-    # xpansion.initialise(is_debug=True)
+    data = {
+        "solution": {
+            "overall_cost": 49_000,
+            "values": {
+                "root_CAND_delta_invest": 300,
+                "childA_CAND_delta_invest": 0,
+                "childB_CAND_delta_invest": 100,
+                "root_CAND_invested_capa": 300,
+                "childA_CAND_invested_capa": 300,
+                "childB_CAND_invested_capa": 400,
+            },
+        }
+    }
+    solution = BendersSolution(data)
+
+    assert xpansion.run()
+    decomposed_solution = xpansion.solution
+    if decomposed_solution is not None:  # For mypy only
+        assert decomposed_solution.is_close(
+            solution
+        ), f"Solution differs from expected: {decomposed_solution}"
