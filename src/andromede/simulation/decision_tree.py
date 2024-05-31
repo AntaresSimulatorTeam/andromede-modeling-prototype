@@ -29,6 +29,7 @@ class DecisionTreeNode(NodeMixin):
     id: str
     config: InterDecisionTimeScenarioConfig
     network: Network
+    prob: float
 
     def __init__(
         self,
@@ -37,11 +38,17 @@ class DecisionTreeNode(NodeMixin):
         network: Network = Network(""),
         parent: Optional["DecisionTreeNode"] = None,
         children: Optional[Iterable["DecisionTreeNode"]] = None,
+        prob: float = 1.0,
     ) -> None:
         self.id = id
         self.config = config
         self.network = network
         self.parent = parent
+
+        if prob < 0 or 1 < prob:
+            raise ValueError("Probability must be a value in the range [0, 1]")
+
+        self.prob = prob
         if children:
             self.children = children
 

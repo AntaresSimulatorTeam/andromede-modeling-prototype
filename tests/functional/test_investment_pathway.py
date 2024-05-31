@@ -235,9 +235,9 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
 
     This example models a case where investment decisions have to be made in 2030 and 2040.
         - In 2030, we have full knowledge of the existing assets
-        - In 2040, two equiprobable hypothesis are possible :
-            - A case where there is no change in the generation assets since 2030 (except te potential investment in 2030)
-            - A case where a base generation unit is present
+        - In 2040, two possible hypothesis are possible :
+            - P=0.2 => A case where there is no change in the generation assets since 2030 (except te potential investment in 2030)
+            - P=0.8 => A case where a base generation unit is present
 
     When taking the decision in 2030, we do not know which case will occur in 2040
     and we seek the best decision given a risk criterion (the expectation here).
@@ -292,15 +292,15 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
 
     Case 1 :    prob    |    investment   |  operational
     root:             1 x [     100 x 100 +     10 x 300 ]
-    child A:      + 0.5 x [      50 x 100 +     10 x 400 (generator) + 5 x 200 (base)]
-    child B:      + 0.5 x [      50 x 100 +     10 x 400 (generator) + 10 000 x 200 (unsupplied energy)]
-                  = 1 022 500
+    child A:      + 0.8 x [      50 x 100 +     10 x 400 (generator) + 5 x 200 (base)]
+    child B:      + 0.2 x [      50 x 100 +     10 x 400 (generator) + 10 000 x 200 (unsupplied energy)]
+                  = 422 800
 
     Case 2 :    prob    |    investment   |  operational
     root:             1 x [     100 x 300 +     10 x 300 ]
-    child A:      + 0.5 x [      50 x   0 +     10 x 400 (generator) + 5 x 200 (base)]
-    child B:      + 0.5 x [      50 x 100 +     10 x 600 (generator)]
-                  = 41 000
+    child A:      + 0.8 x [      50 x   0 +     10 x 400 (generator) + 5 x 200 (base)]
+    child B:      + 0.2 x [      50 x 100 +     10 x 600 (generator)]
+                  = 39 200
 
     As investing less than 300 in the first stage would increase the unsupplied energy and lead to an increase in overall cost
     (-1 MW invested in 1st stage => + 1 MW unsupplied energy => +900/MW cost increase more or less), the optimal solution is to invest :
@@ -443,12 +443,13 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         [TimeBlock(0, [0])], scenarios
     )
 
+    # TODO Implement the prob behavior for the Expected Value
     dt_root = DecisionTreeNode("root", time_scenario_config, network_root)
     dt_child_A = DecisionTreeNode(
-        "childA", time_scenario_config, network_childA, parent=dt_root
+        "childA", time_scenario_config, network_childA, parent=dt_root, prob=0.8
     )
     dt_child_B = DecisionTreeNode(
-        "childB", time_scenario_config, network_childB, parent=dt_root
+        "childB", time_scenario_config, network_childB, parent=dt_root, prob=0.2
     )
 
     xpansion = build_benders_decomposed_problem(

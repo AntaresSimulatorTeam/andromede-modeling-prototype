@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import pytest
 
 from andromede.simulation import TimeBlock
 from andromede.simulation.decision_tree import (
@@ -29,14 +30,26 @@ def test_generate_model_on_node() -> None:
 
     assert root.id == "root"
     assert root.parent is None
+    assert root.prob == 1.0
     assert not root.children  # No children
 
-    child = DecisionTreeNode("child", config, parent=root)
+    child = DecisionTreeNode("child", config, parent=root, prob=0.8)
 
     assert child.parent == root
+    assert child.prob == 0.8
     assert child in root.children
 
     grandchild = DecisionTreeNode("grandchild", config, parent=child)
 
     assert grandchild.parent == child
     assert (grandchild not in root.children) and (grandchild in child.children)
+
+    with pytest.raises(ValueError, match="Probability must be a value in the range"):
+        great_grandchild = DecisionTreeNode(
+            "greatgrandchild", config, parent=grandchild, prob=2.0
+        )
+
+    with pytest.raises(ValueError, match="Probability must be a value in the range"):
+        great_grandchild = DecisionTreeNode(
+            "greatgrandchild", config, parent=grandchild, prob=-0.3
+        )
