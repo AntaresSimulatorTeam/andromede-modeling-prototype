@@ -13,7 +13,7 @@
 import pandas as pd
 import pytest
 import numpy as np
-from typing import List, Union
+from typing import List, Dict
 from math import ceil, floor
 import ortools.linear_solver.pywraplp as pywraplp
 
@@ -329,7 +329,10 @@ def test_milp_version() -> None:
     number_hours = 168
 
     problem = create_complex_problem(
-        ConstantData(0), number_hours, lp_relaxation=False, fast=False
+        {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
+        number_hours,
+        lp_relaxation=False,
+        fast=False,
     )
 
     parameters = pywraplp.MPSolverParameters()
@@ -361,9 +364,7 @@ def test_milp_version() -> None:
         output.component("U").var("unsupplied_energy").value[0]
     ) == pytest.approx(6529)
 
-    assert problem.solver.Objective().Value() == pytest.approx(
-        79107845 - 24501 * 3 - 1 - 100500
-    )
+    assert problem.solver.Objective().Value() == pytest.approx(78933841)
 
 
 def test_accurate_heuristic() -> None:
@@ -381,7 +382,10 @@ def test_accurate_heuristic() -> None:
 
     # First optimization
     problem_optimization_1 = create_complex_problem(
-        ConstantData(0), number_hours, lp_relaxation=True, fast=False
+        {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
+        number_hours,
+        lp_relaxation=True,
+        fast=False,
     )
     status = problem_optimization_1.solver.Solve(parameters)
 
@@ -389,37 +393,36 @@ def test_accurate_heuristic() -> None:
 
     # Get number of on units and round it to integer
     output_1 = OutputValues(problem_optimization_1)
-    nb_on_1 = pd.DataFrame(
-        np.transpose(
-            np.ceil(np.round(np.array(output_1.component("G").var("nb_on").value), 12))
-        ),
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-    n_guide = TimeScenarioSeriesData(nb_on_1)
-    for time_step in range(number_hours):
-        assert nb_on_1.iloc[time_step, 0] == 2 if time_step != 12 else 3
+    nb_on_min = {}
+    for g in ["G1", "G2", "G3"]:
+        nb_on_1 = pd.DataFrame(
+            np.transpose(
+                np.ceil(
+                    np.round(np.array(output_1.component(g).var("nb_on").value), 12)
+                )
+            ),
+            index=[i for i in range(number_hours)],
+            columns=[0],
+        )
+        n_guide = TimeScenarioSeriesData(nb_on_1)
 
-    # Solve heuristic problem
-    problem_accurate_heuristic = create_problem_accurate_heuristic(
-        n_guide, number_hours
-    )
-    status = problem_accurate_heuristic.solver.Solve(parameters)
+        # Solve heuristic problem
+        problem_accurate_heuristic = create_problem_accurate_heuristic(
+            {g: n_guide}, number_hours, thermal_cluster=g
+        )
+        status = problem_accurate_heuristic.solver.Solve(parameters)
 
-    assert status == problem_accurate_heuristic.solver.OPTIMAL
+        assert status == problem_accurate_heuristic.solver.OPTIMAL
 
-    output_heuristic = OutputValues(problem_accurate_heuristic)
-    nb_on_heuristic = pd.DataFrame(
-        np.transpose(
-            np.ceil(np.array(output_heuristic.component("G").var("nb_on").value))
-        ),
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-    nb_on_min = TimeScenarioSeriesData(nb_on_heuristic)
-
-    for time_step in range(number_hours):
-        assert nb_on_heuristic.iloc[time_step, 0] == 2 if time_step != 12 else 3
+        output_heuristic = OutputValues(problem_accurate_heuristic)
+        nb_on_heuristic = pd.DataFrame(
+            np.transpose(
+                np.ceil(np.array(output_heuristic.component(g).var("nb_on").value))
+            ),
+            index=[i for i in range(number_hours)],
+            columns=[0],
+        )
+        nb_on_min[g] = TimeScenarioSeriesData(nb_on_heuristic)
 
     # Second optimization with lower bound modified
     problem_optimization_2 = create_complex_problem(
@@ -428,43 +431,26 @@ def test_accurate_heuristic() -> None:
     status = problem_optimization_2.solver.Solve(parameters)
 
     assert status == problem_optimization_2.solver.OPTIMAL
-    assert problem_optimization_2.solver.Objective().Value() == 16805387
+    assert problem_optimization_2.solver.Objective().Value() == 78996726
 
     output = OutputValues(problem_optimization_2)
-    assert output.component("G").var("generation").value == [
-        [
-            pytest.approx(2000.0) if time_step != 12 else pytest.approx(2100.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_on").value == [
-        [
-            pytest.approx(2.0) if time_step != 12 else pytest.approx(3.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_start").value == [
-        [
-            pytest.approx(0.0) if time_step != 12 else pytest.approx(1.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_stop").value == [
-        [
-            pytest.approx(0.0) if time_step != 13 else pytest.approx(1.0)
-            for time_step in range(number_hours)
-        ]
-    ]
+    assert sum(output.component("G1").var("generation").value[0]) == pytest.approx(
+        60625
+    )
+    assert sum(output.component("G1").var("nb_on").value[0]) == pytest.approx(168)
 
-    assert output.component("S").var("spillage").value == [
-        [
-            pytest.approx(0.0) if time_step != 12 else pytest.approx(50.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("U").var("unsupplied_energy").value == [
-        [pytest.approx(0.0)] * number_hours
-    ]
+    assert sum(output.component("G2").var("generation").value[0]) == pytest.approx(5730)
+    assert sum(output.component("G2").var("nb_on").value[0]) == pytest.approx(68)
+
+    assert sum(output.component("G3").var("generation").value[0]) == pytest.approx(
+        61119
+    )
+    assert sum(output.component("G3").var("nb_on").value[0]) == pytest.approx(320)
+
+    assert sum(output.component("S").var("spillage").value[0]) == pytest.approx(1427)
+    assert sum(
+        output.component("U").var("unsupplied_energy").value[0]
+    ) == pytest.approx(6529)
 
 
 def test_fast_heuristic() -> None:
@@ -557,7 +543,7 @@ def test_fast_heuristic() -> None:
 
 
 def create_complex_problem(
-    lower_bound: AbstractDataStructure,
+    lower_bound: Dict[str, AbstractDataStructure],
     number_hours: int,
     lp_relaxation: bool,
     fast: bool,
@@ -572,10 +558,10 @@ def create_complex_problem(
     database.add_data("G1", "fixed_cost", ConstantData(1))
     database.add_data("G1", "d_min_up", ConstantData(8))
     database.add_data("G1", "d_min_down", ConstantData(8))
-    database.add_data("G1", "nb_units_min", lower_bound)
+    database.add_data("G1", "nb_units_min", lower_bound["G1"])
     database.add_data("G1", "nb_units_max", ConstantData(1))
     database.add_data("G1", "failures", ConstantData(410))
-    database.add_data("G1", "mingen", lower_bound)
+    database.add_data("G1", "mingen", lower_bound["G1"])
 
     database.add_data("G2", "p_max", ConstantData(90))
     database.add_data("G2", "p_min", ConstantData(60))
@@ -584,10 +570,10 @@ def create_complex_problem(
     database.add_data("G2", "fixed_cost", ConstantData(1))
     database.add_data("G2", "d_min_up", ConstantData(11))
     database.add_data("G2", "d_min_down", ConstantData(11))
-    database.add_data("G2", "nb_units_min", lower_bound)
+    database.add_data("G2", "nb_units_min", lower_bound["G2"])
     database.add_data("G2", "nb_units_max", ConstantData(3))
     database.add_data("G2", "failures", ConstantData(270))
-    database.add_data("G2", "mingen", lower_bound)
+    database.add_data("G2", "mingen", lower_bound["G2"])
 
     failures_3 = pd.DataFrame(
         np.repeat([1100, 1100, 0, 1100, 1100, 1100, 1100], 24),
@@ -602,10 +588,10 @@ def create_complex_problem(
     database.add_data("G3", "fixed_cost", ConstantData(1))
     database.add_data("G3", "d_min_up", ConstantData(9))
     database.add_data("G3", "d_min_down", ConstantData(9))
-    database.add_data("G3", "nb_units_min", lower_bound)
+    database.add_data("G3", "nb_units_min", lower_bound["G3"])
     database.add_data("G3", "nb_units_max", ConstantData(4))
     database.add_data("G3", "failures", TimeScenarioSeriesData(failures_3))
-    database.add_data("G3", "mingen", lower_bound)
+    database.add_data("G3", "mingen", lower_bound["G3"])
 
     database.add_data("U", "cost", ConstantData(10000))
     database.add_data("S", "cost", ConstantData(1))
@@ -842,20 +828,62 @@ def create_complex_problem(
 
 
 def create_problem_accurate_heuristic(
-    lower_bound: AbstractDataStructure, number_hours: int
+    lower_bound: Dict[str, AbstractDataStructure],
+    number_hours: int,
+    thermal_cluster: str,
 ) -> OptimizationProblem:
 
     database = DataBase()
 
-    database.add_data("G", "d_min_up", ConstantData(3))
-    database.add_data("G", "d_min_down", ConstantData(10))
-    database.add_data("G", "nb_units_min", lower_bound)
-    database.add_data("G", "nb_units_max", ConstantData(3))
+    if thermal_cluster == "G1":
+        database.add_data("G1", "p_max", ConstantData(410))
+        database.add_data("G1", "p_min", ConstantData(180))
+        database.add_data("G1", "cost", ConstantData(96))
+        database.add_data("G1", "startup_cost", ConstantData(100500))
+        database.add_data("G1", "fixed_cost", ConstantData(1))
+        database.add_data("G1", "d_min_up", ConstantData(8))
+        database.add_data("G1", "d_min_down", ConstantData(8))
+        database.add_data("G1", "nb_units_min", lower_bound["G1"])
+        database.add_data("G1", "nb_units_max", ConstantData(1))
+        database.add_data("G1", "failures", ConstantData(410))
+        database.add_data("G1", "mingen", lower_bound["G1"])
+    elif thermal_cluster == "G2":
+        database.add_data("G2", "p_max", ConstantData(90))
+        database.add_data("G2", "p_min", ConstantData(60))
+        database.add_data("G2", "cost", ConstantData(137))
+        database.add_data("G2", "startup_cost", ConstantData(24500))
+        database.add_data("G2", "fixed_cost", ConstantData(1))
+        database.add_data("G2", "d_min_up", ConstantData(11))
+        database.add_data("G2", "d_min_down", ConstantData(11))
+        database.add_data("G2", "nb_units_min", lower_bound["G2"])
+        database.add_data("G2", "nb_units_max", ConstantData(3))
+        database.add_data("G2", "failures", ConstantData(270))
+        database.add_data("G2", "mingen", lower_bound["G2"])
+    elif thermal_cluster == "G3":
+        failures_3 = pd.DataFrame(
+            np.repeat([1100, 1100, 0, 1100, 1100, 1100, 1100], 24),
+            index=[i for i in range(number_hours)],
+            columns=[0],
+        )
+
+        database.add_data("G3", "p_max", ConstantData(275))
+        database.add_data("G3", "p_min", ConstantData(150))
+        database.add_data("G3", "cost", ConstantData(107))
+        database.add_data("G3", "startup_cost", ConstantData(69500))
+        database.add_data("G3", "fixed_cost", ConstantData(1))
+        database.add_data("G3", "d_min_up", ConstantData(9))
+        database.add_data("G3", "d_min_down", ConstantData(9))
+        database.add_data("G3", "nb_units_min", lower_bound["G3"])
+        database.add_data("G3", "nb_units_max", ConstantData(4))
+        database.add_data("G3", "failures", TimeScenarioSeriesData(failures_3))
+        database.add_data("G3", "mingen", lower_bound["G3"])
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
     scenarios = 1
 
-    gen = create_component(model=THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC, id="G")
+    gen = create_component(
+        model=THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC, id=thermal_cluster
+    )
 
     network = Network("test")
     network.add_component(gen)
