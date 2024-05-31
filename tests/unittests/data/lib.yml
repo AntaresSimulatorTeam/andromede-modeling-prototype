@@ -43,28 +43,6 @@ library:
           definition: generation
       objective: expec(sum(cost * generation))
 
-    - id: sd-generator
-      description: A basic scenario dependent generator model
-      parameters:
-        - name: cost
-          time-dependent: true
-          scenario-dependent: true
-        - name: p_max
-          time-dependent: false
-          scenario-dependent: false
-      variables:
-        - name: generation
-          lower-bound: 0
-          upper-bound: p_max
-      ports:
-        - name: injection_port
-          type: flow
-      port-field-definitions:
-        - port: injection_port
-          field: flow
-          definition: generation
-      objective: expec(sum(cost * generation))
-
     - id: node
       description: A basic balancing node model
       ports:

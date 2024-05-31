@@ -16,12 +16,11 @@ study:
 
   components:
     - id: G
-      model: sd-generator
+      model: generator
       parameters:
         - name: cost
-          scenario-group: cost-group
-          type: timeseries
-          timeseries: gen-costs
+          type: constant
+          value: 100
         - name: p_max
           type: constant
           value: 100
