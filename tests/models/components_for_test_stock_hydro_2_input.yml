@@ -1,0 +1,84 @@
+study:
+  nodes:
+    - id: NE1
+      model: node
+    - id: NE2
+      model: node
+
+  components:
+    - id: DE1
+      model: demand
+      parameters:
+        - name: demand
+          type: constant
+          value: 50
+    - id: DE2
+      model: demand
+      parameters:
+        - name: demand
+          type: constant
+          value: 100
+    - id: PE1
+      model: generator
+      parameters:
+        - name: cost
+          type: constant
+          value: 10
+        - name: p_max
+          type: constant
+          value: 200
+    - id: PE2
+      model: generator
+      parameters:
+        - name: cost
+          type: constant
+          value: 10
+        - name: p_max
+          type: constant
+          value: 200
+    - id: HS
+      model: stock_final_level_input
+      parameters:
+        - name: p_max_in
+          type: constant
+          value: 50
+        - name: p_max_out
+          type: constant
+          value: 50
+        - name: capacity
+          type: constant
+          value: 100
+        - name: initial_level
+          type: constant
+          value: 10
+        - name: final_level
+          type: constant
+          value: 20
+
+
+  connections:
+      - component1: NE1
+        port_1: injection_port
+        component2: PE1
+        port_2: injection_port
+      - component1: NE1
+        port_1: injection_port
+        component2: DE1
+        port_2: injection_port
+      - component1: NE1
+        port_1: injection_port
+        component2: HS
+        port_2: flow_s1
+
+      - component1: NE2
+        port_1: injection_port
+        component2: PE2
+        port_2: injection_port
+      - component1: NE2
+        port_1: injection_port
+        component2: DE2
+        port_2: injection_port
+      - component1: NE2
+        port_1: injection_port
+        component2: HS
+        port_2: flow_s2
