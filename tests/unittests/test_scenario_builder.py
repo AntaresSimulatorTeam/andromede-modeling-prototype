@@ -27,10 +27,26 @@ from andromede.study.resolve_components import (
     consistency_check,
     resolve_components_and_cnx,
 )
+from andromede.study.scenario_parsing import parse_scenario_builder
 
 
 @pytest.fixture
-def database(data_dir: Path) -> DataBase:
+def scenario_builder(data_dir: Path) -> pd.core.frame.DataFrame:
+    buider_path = data_dir / "scenario_builder.csv"
+    return parse_scenario_builder(buider_path)
+
+
+@pytest.fixture
+def database(data_dir: Path, scenario_builder: pd.core.frame.DataFrame) -> DataBase:
+    components_path = data_dir / "components_for_scenarization_test.yml"
+    ts_path = data_dir
+    with components_path.open() as components:
+        return build_scenarized_data_base(
+            parse_yaml_components(components), scenario_builder, ts_path
+        )
+
+
+def test_parser(scenario_builder):
     builder = pd.DataFrame(
         {
             "name": [
@@ -47,14 +63,8 @@ def database(data_dir: Path) -> DataBase:
             "scenario": [0, 1, 0, 1, 0, 0, 1, 1],
         }
     )
-    builder = builder.reset_index()
 
-    components_path = data_dir / "components_for_scenarization_test.yml"
-    ts_path = data_dir
-    with components_path.open() as components:
-        return build_scenarized_data_base(
-            parse_yaml_components(components), builder, ts_path
-        )
+    assert builder.equals(scenario_builder)
 
 
 # cost-group group isnt use in following test because sum can't take time dependant parameters
