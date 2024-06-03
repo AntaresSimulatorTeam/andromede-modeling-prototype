@@ -60,6 +60,36 @@ from andromede.expression.parsing.parse_expression import (
         (
             {"x"},
             {},
+            "x[t-1+1]",
+            var("x").shift(-literal(1) + literal(1)),
+        ),
+        (
+            {"x"},
+            {"d"},
+            "x[t-d+1]",
+            var("x").shift(-param("d") + literal(1)),
+        ),
+        (
+            {"x"},
+            {"d"},
+            "x[t-2*d+1]",
+            var("x").shift(-literal(2) * param("d") + literal(1)),
+        ),
+        (
+            {"x"},
+            {"d"},
+            "x[t-1+d*2]",
+            var("x").shift(-literal(1) + param("d") * literal(2)),
+        ),
+        (
+            {"x"},
+            {"d"},
+            "x[t-2-d+1]",
+            var("x").shift(-literal(2) - param("d") + literal(1)),
+        ),
+        (
+            {"x"},
+            {},
             "x[t-1, t, t+4]",
             var("x").shift([-literal(1), literal(0), literal(4)]),
         ),
@@ -137,6 +167,7 @@ def test_parsing_visitor(
         "1 6",
         "x[t+1-t]",
         "x[2*t]",
+        "x[t 4]",
     ],
 )
 def test_parse_cancellation_should_throw(expression_str: str):
