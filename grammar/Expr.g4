@@ -37,8 +37,21 @@ atom
     | IDENTIFIER                               # identifier
     ;
 
+// a shift is required to be either "t" or "t + ..." or "t - ..."
+// Note: simply defining it as "shift: TIME ('+' | '-') expr" won't work
+//       because the minus sign will not have the expected precedence:
+//       "t - d + 1" would be equivalent to "t - (d + 1)"
 shift: TIME shift_expr?;
 
+// Because the shift MUST start with + or -, we need
+// to differentiate it from generic "expr".
+// A shift expression can only be extended to the right by a
+// "right_expr" which cannot start with a + or -,
+// unlike shift_expr itself.
+// TODO: the grammar is still a little weird, because we
+//       allow more things in the "expr" parts of those
+//       shift expressions than on their left-most part
+//       (port fields, nested time shifts and so on).
 shift_expr
     : shift_expr op=('*' | '/') right_expr     # shiftMuldiv
     | shift_expr op=('+' | '-') right_expr     # shiftAddsub
