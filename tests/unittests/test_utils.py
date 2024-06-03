@@ -10,10 +10,17 @@
 #
 # This file is part of the Antares project.
 
+from typing import List
+
 import pandas as pd
 import pytest
 
-from andromede.study import TimeScenarioIndex, TimeScenarioSeriesData
+from andromede.study import (
+    TimeIndex,
+    TimeScenarioIndex,
+    TimeScenarioSeriesData,
+    TimeSeriesData,
+)
 from andromede.utils import get_or_add
 
 
@@ -33,7 +40,9 @@ def test_get_or_add_should_evaluate_lazily() -> None:
     assert get_or_add(d, "key2", value_factory) == "value2"
 
 
-def generate_data(value: float, horizon: int, scenarios: int) -> TimeScenarioSeriesData:
+def generate_scalar_matrix_data(
+    value: float, horizon: int, scenarios: int
+) -> TimeScenarioSeriesData:
     data = pd.DataFrame(index=range(horizon), columns=range(scenarios))
 
     data.fillna(value, inplace=True)
