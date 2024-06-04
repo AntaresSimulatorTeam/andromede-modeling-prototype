@@ -1,0 +1,176 @@
+study:
+  nodes:
+    - id: NG
+      model: node
+    - id: NE1
+      model: node
+    - id: NE2
+      model: node
+
+  components:
+    - id: DG
+      model: demand
+      parameters:
+        - name: demand
+          type: constant
+          value: 10
+    - id: DE1
+      model: demand
+      parameters:
+        - name: demand
+          type: constant
+          value: 50
+    - id: DE2
+      model: demand
+      parameters:
+        - name: demand
+          type: constant
+          value: 100
+    - id: PG
+      model: generator
+      parameters:
+        - name: cost
+          type: constant
+          value: 10
+        - name: p_max
+          type: constant
+          value: 300
+    - id: PE1
+      model: generator
+      parameters:
+        - name: cost
+          type: constant
+          value: 10
+        - name: p_max
+          type: constant
+          value: 200
+    - id: PE2
+      model: generator
+      parameters:
+        - name: cost
+          type: constant
+          value: 10
+        - name: p_max
+          type: constant
+          value: 200
+    - id: GS
+      model: stock_final_level
+      parameters:
+        - name: p_max_in
+          type: constant
+          value: 100
+        - name: p_max_out
+          type: constant
+          value: 50
+        - name: capacity
+          type: constant
+          value: 100
+        - name: initial_level
+          type: constant
+          value: 10
+        - name: final_level
+          type: constant
+          value: 90
+    - id: EZ1
+      model: convertor
+      parameters:
+        - name: alpha
+          type: constant
+          value: 0.5
+    - id: EZ2
+      model: convertor
+      parameters:
+        - name: alpha
+          type: constant
+          value: 0.5
+    - id: CP1
+      model: convertor
+      parameters:
+        - name: alpha
+          type: constant
+          value: 0.5
+    - id: CP2
+      model: convertor
+      parameters:
+        - name: alpha
+          type: constant
+          value: 0.5
+    - id: RC
+      model: repartition_key
+      parameters:
+        - name: alpha
+          type: constant
+          value: 0.5
+
+
+  connections:
+      - component1: NG
+        port_1: injection_port
+        component2: DG
+        port_2: injection_port
+      - component1: NG
+        port_1: injection_port
+        component2: PG
+        port_2: injection_port
+      - component1: NG
+        port_1: injection_port
+        component2: GS
+        port_2: flow_s
+
+      - component1: NE1
+        port_1: injection_port
+        component2: PE1
+        port_2: injection_port
+      - component1: NE1
+        port_1: injection_port
+        component2: DE1
+        port_2: injection_port
+      - component1: NE1
+        port_1: injection_port
+        component2: CP1
+        port_2: output_port
+      - component1: NE1
+        port_1: injection_port
+        component2: EZ1
+        port_2: input_port
+      - component1: EZ1
+        port_1: input_port
+        component2: NG
+        port_2: injection_port
+      - component1: CP1
+        port_1: input_port
+        component2: GS
+        port_2: flow_c
+      - component1: CP1
+        port_1: input_port
+        component2: RC
+        port_2: flow_k
+
+      - component1: NE2
+        port_1: injection_port
+        component2: PE2
+        port_2: injection_port
+      - component1: NE2
+        port_1: injection_port
+        component2: DE2
+        port_2: injection_port
+      - component1: NE2
+        port_1: injection_port
+        component2: CP2
+        port_2: output_port
+      - component1: NE2
+        port_1: injection_port
+        component2: EZ2
+        port_2: input_port
+      - component1: EZ2
+        port_1: input_port
+        component2: NG
+        port_2: injection_port
+      - component1: CP2
+        port_1: input_port
+        component2: GS
+        port_2: flow_c
+      - component1: CP2
+        port_1: input_port
+        component2: RC
+        port_2: flow_k

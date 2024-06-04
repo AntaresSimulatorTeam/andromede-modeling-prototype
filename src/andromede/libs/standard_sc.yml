@@ -24,6 +24,226 @@ library:
         - name: emission
 
   models:
+    - id: link_with_storage
+      description: A link with energy storage
+      parameters:
+        - name: f_from_max
+          time-dependent: false
+          scenario-dependent: false
+        - name: f_to_max
+          time-dependent: false
+          scenario-dependent: false
+        - name: capacity
+          time-dependent: false
+          scenario-dependent: false
+        - name: initial_level
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: r
+          lower-bound: 0
+          upper-bound: capacity
+        - name: f_from
+          lower-bound: -f_from_max
+          upper-bound: f_from_max
+        - name: f_to
+          lower-bound: -f_to_max
+          upper-bound: f_to_max
+        - name: f_from_p
+          lower-bound: 0
+        - name: f_from_m
+          lower-bound: 0
+        - name: f_to_p
+          lower-bound: 0
+        - name: f_to_m
+          lower-bound: 0
+      ports:
+        - name: flow_from
+          type: flow
+        - name: flow_to
+          type: flow
+        - name: flow_from_pos
+          type: flow
+        - name: flow_to_pos
+          type: flow
+      port-field-definitions:
+        - port: flow_from
+          field: flow
+          definition: -f_from
+        - port: flow_to
+          field: flow
+          definition: f_to
+      constraints:
+        - name: max0_from
+          expression: f_from = f_from_p - f_from_m
+        - name: max0_to
+          expression: f_to = f_to_p - f_to_m
+        - name: r_t1
+          expression: r[t+1] = r[t] + f_from - f_to
+        - name: r0
+          expression: r[0] = initial_level
+        - name: rt
+          expression: r[t] = initial_level
+      binding-constraints:
+        - name: FlowFromPos
+          expression: sum_connections(flow_from_pos.flow) = f_from_p
+        - name: FlowToPos
+          expression: sum_connections(flow_to_pos.flow) = f_to_p
+
+    - id: link_with_storage_2
+      description: A link with energy storage without flow_from/to_pos
+      parameters:
+        - name: f_from_max
+          time-dependent: false
+          scenario-dependent: false
+        - name: f_to_max
+          time-dependent: false
+          scenario-dependent: false
+        - name: capacity
+          time-dependent: false
+          scenario-dependent: false
+        - name: initial_level
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: r
+          lower-bound: 0
+          upper-bound: capacity
+        - name: f_from
+          lower-bound: -f_from_max
+          upper-bound: f_from_max
+        - name: f_to
+          lower-bound: -f_to_max
+          upper-bound: f_to_max
+        - name: f_from_p
+          lower-bound: 0
+        - name: f_from_m
+          lower-bound: 0
+        - name: f_to_p
+          lower-bound: 0
+        - name: f_to_m
+          lower-bound: 0
+      ports:
+        - name: flow_from
+          type: flow
+        - name: flow_to
+          type: flow
+      port-field-definitions:
+        - port: flow_from
+          field: flow
+          definition: -f_from
+        - port: flow_to
+          field: flow
+          definition: f_to
+      constraints:
+        - name: r_t1
+          expression: r[t+1] = r[t] + f_from - f_to
+        - name: r0
+          expression: r[0] = initial_level
+        - name: rt
+          expression: r[t] = initial_level
+
+    - id: stock_final_level_input
+      description: A stock model with multiple input
+      parameters:
+        - name: p_max_in
+          time-dependent: false
+          scenario-dependent: false
+        - name: p_max_out
+          time-dependent: false
+          scenario-dependent: false
+        - name: capacity
+          time-dependent: false
+          scenario-dependent: false
+        - name: initial_level
+          time-dependent: false
+          scenario-dependent: false
+        - name: final_level
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: r
+          lower-bound: 0
+          upper-bound: capacity
+        - name: u_in
+          lower-bound: 0
+          upper-bound: p_max_in
+        - name: u_out
+          lower-bound: 0
+          upper-bound: p_max_out
+      ports:
+        - name: flow_s
+          type: flow
+        - name: flow_c
+          type: flow
+      port-field-definitions:
+        - port: flow_s
+          field: flow
+          definition: u_out - u_in
+      constraints:
+        - name: r_h
+          expression: r[t+1] = r[t] + u_in[t] - u_out[t]
+      binding-constraints:
+        - name: flow_in
+          expression: sum_connections(flow_c.flow) = u_in
+
+    - id: stock_final_level
+      description: A stock model
+      parameters:
+        - name: p_max_in
+          time-dependent: false
+          scenario-dependent: false
+        - name: p_max_out
+          time-dependent: false
+          scenario-dependent: false
+        - name: capacity
+          time-dependent: false
+          scenario-dependent: false
+        - name: initial_level
+          time-dependent: false
+          scenario-dependent: false
+        - name: final_level
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: r
+          lower-bound: 0
+          upper-bound: capacity
+        - name: u_in
+          lower-bound: 0
+          upper-bound: p_max_in
+        - name: u_out
+          lower-bound: 0
+          upper-bound: p_max_out
+      ports:
+        - name: flow_s
+          type: flow
+        - name: flow_c
+          type: flow
+      port-field-definitions:
+        - port: flow_s
+          field: flow
+          definition: u_out - u_in
+      constraints:
+        - name: r_h
+          expression: r[t+1] = r[t] + u_in[t] - u_out[t]
+      binding-constraints:
+        - name: flow_in
+          expression: sum_connections(flow_c.flow) = u_in
+
+    - id: repartition_key
+      description: A repartition key
+      parameters:
+        - name: alpha
+          time-dependent: false
+          scenario-dependent: false
+      ports:
+        - name: flow_k
+          type: flow
+      binding-constraints:
+        - name: sum
+          expression: sum_connections(flow_k.flow) = 0
+
     - id: convertor
       description: A basic convertor model
       parameters:
