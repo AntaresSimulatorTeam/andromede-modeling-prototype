@@ -232,12 +232,13 @@ THERMAL_CLUSTER_MODEL_FAST = model(
         float_parameter("cost", CONSTANT),
         int_parameter("nb_units_max", CONSTANT),
         float_parameter("mingen", TIME_AND_SCENARIO_FREE),
+        float_parameter("failures", TIME_AND_SCENARIO_FREE),
     ],
     variables=[
         float_variable(
             "generation",
             lower_bound=param("mingen"),
-            upper_bound=param("nb_units_max") * param("p_max"),
+            upper_bound=param("failures"),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
     ],
@@ -248,7 +249,12 @@ THERMAL_CLUSTER_MODEL_FAST = model(
             definition=var("generation"),
         )
     ],
-    constraints=[],
+    constraints=[
+        Constraint(
+            "Max generation",
+            var("generation") <= param("p_max") * param("nb_units_max"),
+        ),
+    ],
     objective_operational_contribution=(param("cost") * var("generation"))
     .sum()
     .expec(),
@@ -369,12 +375,13 @@ def check_output_values(problem: OptimizationProblem, mode: str) -> None:
             for line in expected_output_clusters[7:]
         ]
     ]
-    assert output.component("G1").var("nb_on").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[12]))
-            for line in expected_output_clusters[7:]
+    if mode != "fast":
+        assert output.component("G1").var("nb_on").value == [
+            [
+                pytest.approx(float(line.strip().split("\t")[12]))
+                for line in expected_output_clusters[7:]
+            ]
         ]
-    ]
 
     assert output.component("G2").var("generation").value == [
         [
@@ -382,12 +389,13 @@ def check_output_values(problem: OptimizationProblem, mode: str) -> None:
             for line in expected_output_clusters[7:]
         ]
     ]
-    assert output.component("G2").var("nb_on").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[13]))
-            for line in expected_output_clusters[7:]
+    if mode != "fast":
+        assert output.component("G2").var("nb_on").value == [
+            [
+                pytest.approx(float(line.strip().split("\t")[13]))
+                for line in expected_output_clusters[7:]
+            ]
         ]
-    ]
 
     assert output.component("G3").var("generation").value == [
         [
@@ -395,12 +403,13 @@ def check_output_values(problem: OptimizationProblem, mode: str) -> None:
             for line in expected_output_clusters[7:]
         ]
     ]
-    assert output.component("G3").var("nb_on").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[14]))
-            for line in expected_output_clusters[7:]
+    if mode != "fast":
+        assert output.component("G3").var("nb_on").value == [
+            [
+                pytest.approx(float(line.strip().split("\t")[14]))
+                for line in expected_output_clusters[7:]
+            ]
         ]
-    ]
 
     assert output.component("S").var("spillage").value == [
         [
@@ -487,35 +496,22 @@ def test_accurate_heuristic() -> None:
 def test_fast_heuristic() -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
-    Model on 168 time steps with one thermal generation and one demand on a single node.
-        - Demand is constant to 2000 MW except for the 13th hour for which it is 2050 MW
-        - Thermal generation is characterized with:
-            - P_min = 700 MW
-            - P_max = 1000 MW
-            - Min up time = 3
-            - Min down time = 10
-            - Generation cost = 50€ / MWh
-            - Startup cost = 50
-            - Fixed cost = 1 /h
-            - Number of unit = 3
-        - Unsupplied energy = 1000 €/MWh
-        - Spillage = 0 €/MWh
-
-    The optimal solution consists in having 3 units turned on between time steps 10 and 19 with production equal to 2100 to respect pmin and 2 the rest of the time.
-
-    The optimal cost is then :
-          50 x 2000 x 158 (prod step 1-9 and 20-168)
-        + 50 x 2100 x 10 (prod step 10-19)
-        = 16 850 000
     """
 
     number_hours = 168
 
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+
     # First optimization
     problem_optimization_1 = create_complex_problem(
-        ConstantData(0), number_hours, lp_relaxation=True, fast=True
+        {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
+        number_hours,
+        lp_relaxation=True,
+        fast=True,
     )
-    status = problem_optimization_1.solver.Solve()
+    status = problem_optimization_1.solver.Solve(parameters)
 
     assert status == problem_optimization_1.solver.OPTIMAL
 
@@ -523,54 +519,29 @@ def test_fast_heuristic() -> None:
     output_1 = OutputValues(problem_optimization_1)
 
     # Solve heuristic problem
-    mingen_heuristic = create_problem_fast_heuristic(
-        output_1.component("G").var("generation").value,
-        number_hours,
-    )
-
-    mingen = TimeScenarioSeriesData(mingen_heuristic)
-
-    for time_step in range(number_hours):
-        assert (
-            mingen_heuristic.iloc[time_step, 0] == 3 * 700
-            if time_step in [t for t in range(10, 20)]
-            else 2 * 700
+    mingen: Dict[str, AbstractDataStructure] = {}
+    for g in ["G1", "G2", "G3"]:
+        mingen_heuristic = create_problem_fast_heuristic(
+            output_1.component(g).var("generation").value,  # type:ignore
+            number_hours,
+            thermal_cluster=g,
         )
+
+        mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
 
     # Second optimization with lower bound modified
     problem_optimization_2 = create_complex_problem(
         mingen, number_hours, lp_relaxation=True, fast=True
     )
-    status = problem_optimization_2.solver.Solve()
+    status = problem_optimization_2.solver.Solve(parameters)
 
     assert status == problem_optimization_2.solver.OPTIMAL
-    assert problem_optimization_2.solver.Objective().Value() == pytest.approx(16850000)
 
-    output = OutputValues(problem_optimization_2)
-    assert output.component("G").var("generation").value == [
-        [
-            (
-                pytest.approx(2100.0)
-                if time_step in [t for t in range(10, 20)]
-                else pytest.approx(2000.0)
-            )
-            for time_step in range(number_hours)
-        ]
-    ]
+    check_output_values(problem_optimization_2, "fast")
 
-    assert output.component("S").var("spillage").value == [
-        [
-            (
-                pytest.approx(100.0)
-                if time_step in [t for t in range(10, 20) if t != 12]
-                else (pytest.approx(0.0) if time_step != 12 else pytest.approx(50.0))
-            )
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("U").var("unsupplied_energy").value == [
-        [pytest.approx(0.0)] * number_hours
-    ]
+    assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
+        79277215 - 630089
+    )
 
 
 def create_complex_problem(
@@ -932,10 +903,20 @@ def create_problem_accurate_heuristic(
 
 
 def create_problem_fast_heuristic(
-    lower_bound: List[List[float]], number_hours: int
+    lower_bound: List[List[float]], number_hours: int, thermal_cluster: str
 ) -> pd.DataFrame:
 
-    delta = 10
+    delta = {"G1": 8, "G2": 11, "G3": 9}[thermal_cluster]
+    pmax = {"G1": 410, "G2": 90, "G3": 275}[thermal_cluster]
+    pmin = {"G1": 180, "G2": 60, "G3": 150}[thermal_cluster]
+    pdispo = {
+        "G1": np.array(410),
+        "G2": np.array(270),
+        "G3": np.reshape(
+            np.repeat([1100, 1100, 0, 1100, 1100, 1100, 1100], 24), (168, 1)
+        ),
+    }
+
     cost = pd.DataFrame(
         np.zeros((delta + 1, 1)),
         index=[i for i in range(delta + 1)],
@@ -944,63 +925,33 @@ def create_problem_fast_heuristic(
     n = np.zeros((number_hours, delta + 1, 1))
     for h in range(delta + 1):
         cost_h = 0
-        t = 0
-        while t < number_hours:
-            if t < h:
-                n_k = max(
-                    [convert_to_integer(lower_bound[0][j] / 1000) for j in range(h)]
-                    + [
-                        convert_to_integer(lower_bound[0][j] / 1000)
-                        for j in range(number_hours - delta + h, number_hours)
-                    ]
-                )
-                cost_h += (h - 1) * n_k
-                n[0:h, h, 0] = n_k
-                t = h
-            else:
-                k = floor((t - h) / delta) * delta + h
-                n_k = max(
-                    [
-                        convert_to_integer(lower_bound[0][j] / 1000)
-                        for j in range(k, min(number_hours, k + delta))
-                    ]
-                )
-                cost_h += delta * n_k
-                n[k : min(number_hours, k + delta), h, 0] = n_k
-                if t + delta < number_hours:
-                    t += delta
-                else:
-                    t = number_hours
+        n_k = max(
+            [convert_to_integer(lower_bound[0][j] / pmax) for j in range(h)]
+            + [
+                convert_to_integer(lower_bound[0][j] / pmax)
+                for j in range(number_hours - delta + h, number_hours)
+            ]
+        )
+        cost_h += delta * n_k
+        n[0:h, h, 0] = n_k
+        n[number_hours - delta + h : number_hours, h, 0] = n_k
+        t = h
+        while t < number_hours - delta + h:
+            k = floor((t - h) / delta) * delta + h
+            n_k = max(
+                [
+                    convert_to_integer(lower_bound[0][j] / pmax)
+                    for j in range(k, min(number_hours - delta + h, k + delta))
+                ]
+            )
+            cost_h += (min(number_hours - delta + h, k + delta) - k) * n_k
+            n[k : min(number_hours - delta + h, k + delta), h, 0] = n_k
+            t += delta
         cost.iloc[h, 0] = cost_h
 
-    database = DataBase()
-
-    database.add_data("G", "cost", TimeScenarioSeriesData(cost))
-
-    time_block = TimeBlock(1, [i for i in range(10)])
-    scenarios = 1
-
-    gen = create_component(model=BLOCK_MODEL_FAST_HEURISTIC, id="G")
-
-    network = Network("test")
-    network.add_component(gen)
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
-
-    status = problem.solver.Solve()
-
-    assert status == problem.solver.OPTIMAL
-
-    output_heuristic = OutputValues(problem)
-    h = np.argmax(output_heuristic.component("G").var("t_ajust").value[0])
+    hmin = np.argmin(cost.values[:, 0])
     mingen_heuristic = pd.DataFrame(
-        n[:, h, :] * 700,
+        np.minimum(n[:, hmin, :] * pmin, pdispo[thermal_cluster]),
         index=[i for i in range(number_hours)],
         columns=[0],
     )

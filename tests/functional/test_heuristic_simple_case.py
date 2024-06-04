@@ -767,65 +767,33 @@ def create_problem_fast_heuristic(
     n = np.zeros((number_hours, delta + 1, 1))
     for h in range(delta + 1):
         cost_h = 0
-        t = 0
-        while t < number_hours:
-            if t < h:
-                n_k = max(
-                    [convert_to_integer(lower_bound[0][j] / 1000) for j in range(h)]
-                    + [
-                        convert_to_integer(lower_bound[0][j] / 1000)
-                        for j in range(number_hours - delta + h, number_hours)
-                    ]
-                )
-                cost_h += (h - 1) * n_k
-                n[0:h, h, 0] = n_k
-                t = h
-            else:
-                k = floor((t - h) / delta) * delta + h
-                n_k = max(
-                    [
-                        convert_to_integer(lower_bound[0][j] / 1000)
-                        for j in range(k, min(number_hours, k + delta))
-                    ]
-                )
-                cost_h += delta * n_k
-                n[k : min(number_hours, k + delta), h, 0] = n_k
-                if t + delta < number_hours:
-                    t += delta
-                else:
-                    t = number_hours
+        n_k = max(
+            [convert_to_integer(lower_bound[0][j] / 1000) for j in range(h)]
+            + [
+                convert_to_integer(lower_bound[0][j] / 1000)
+                for j in range(number_hours - delta + h, number_hours)
+            ]
+        )
+        cost_h += delta * n_k
+        n[0:h, h, 0] = n_k
+        n[number_hours - delta + h : number_hours, h, 0] = n_k
+        t = h
+        while t < number_hours - delta + h:
+            k = floor((t - h) / delta) * delta + h
+            n_k = max(
+                [
+                    convert_to_integer(lower_bound[0][j] / 1000)
+                    for j in range(k, min(number_hours - delta + h, k + delta))
+                ]
+            )
+            cost_h += (min(number_hours - delta + h, k + delta) - k) * n_k
+            n[k : min(number_hours - delta + h, k + delta), h, 0] = n_k
+            t += delta
         cost.iloc[h, 0] = cost_h
 
-    database = DataBase()
-
-    database.add_data("G", "cost", TimeScenarioSeriesData(cost))
-
-    time_block = TimeBlock(1, [i for i in range(10)])
-    scenarios = 1
-
-    gen = create_component(model=BLOCK_MODEL_FAST_HEURISTIC, id="G")
-
-    network = Network("test")
-    network.add_component(gen)
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
-
-    status = problem.solver.Solve()
-
-    assert status == problem.solver.OPTIMAL
-
-    output_heuristic = OutputValues(problem)
-    h = np.argmax(
-        output_heuristic.component("G").var("t_ajust").value[0]  # type:ignore
-    )
+    hmin = np.argmin(cost.values[:, 0])
     mingen_heuristic = pd.DataFrame(
-        n[:, h, :] * 700,
+        n[:, hmin, :] * 700,
         index=[i for i in range(number_hours)],
         columns=[0],
     )
