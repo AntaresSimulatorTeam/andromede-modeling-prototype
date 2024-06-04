@@ -47,6 +47,8 @@ from andromede.study import (
     PortRef,
     TimeScenarioIndex,
     TimeScenarioSeriesData,
+    TimeSeriesData,
+    TimeIndex,
     create_component,
 )
 from andromede.study.data import AbstractDataStructure
@@ -338,30 +340,38 @@ def test_milp_version() -> None:
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
-    parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
-    parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
 
     status = problem.solver.Solve(parameters)
 
     assert status == problem.solver.OPTIMAL
 
     output = OutputValues(problem)
-    assert sum(output.component("G1").var("generation").value[0]) == pytest.approx(
-        60670
-    )
-    assert sum(output.component("G1").var("nb_on").value[0]) == pytest.approx(168)
+    assert sum(  # type:ignore
+        output.component("G1").var("generation").value[0]  # type:ignore
+    ) == pytest.approx(60670)
+    assert sum(  # type:ignore
+        output.component("G1").var("nb_on").value[0]  # type:ignore
+    ) == pytest.approx(168)
 
-    assert sum(output.component("G2").var("generation").value[0]) == pytest.approx(6650)
-    assert sum(output.component("G2").var("nb_on").value[0]) == pytest.approx(83)
+    assert sum(  # type:ignore
+        output.component("G2").var("generation").value[0]  # type:ignore
+    ) == pytest.approx(6650)
+    assert sum(  # type:ignore
+        output.component("G2").var("nb_on").value[0]  # type:ignore
+    ) == pytest.approx(83)
 
-    assert sum(output.component("G3").var("generation").value[0]) == pytest.approx(
-        60154
-    )
-    assert sum(output.component("G3").var("nb_on").value[0]) == pytest.approx(315)
+    assert sum(  # type:ignore
+        output.component("G3").var("generation").value[0]  # type:ignore
+    ) == pytest.approx(60154)
+    assert sum(  # type:ignore
+        output.component("G3").var("nb_on").value[0]  # type:ignore
+    ) == pytest.approx(315)
 
-    assert sum(output.component("S").var("spillage").value[0]) == pytest.approx(1427)
-    assert sum(
-        output.component("U").var("unsupplied_energy").value[0]
+    assert sum(  # type:ignore
+        output.component("S").var("spillage").value[0]  # type:ignore
+    ) == pytest.approx(1427)
+    assert sum(  # type:ignore
+        output.component("U").var("unsupplied_energy").value[0]  # type:ignore
     ) == pytest.approx(6529)
 
     assert problem.solver.Objective().Value() == pytest.approx(78933841)
@@ -377,8 +387,6 @@ def test_accurate_heuristic() -> None:
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
-    parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
-    parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
 
     # First optimization
     problem_optimization_1 = create_complex_problem(
@@ -393,7 +401,7 @@ def test_accurate_heuristic() -> None:
 
     # Get number of on units and round it to integer
     output_1 = OutputValues(problem_optimization_1)
-    nb_on_min = {}
+    nb_on_min: Dict[str, AbstractDataStructure] = {}
     for g in ["G1", "G2", "G3"]:
         nb_on_1 = pd.DataFrame(
             np.transpose(
@@ -434,22 +442,32 @@ def test_accurate_heuristic() -> None:
     assert problem_optimization_2.solver.Objective().Value() == 78996726
 
     output = OutputValues(problem_optimization_2)
-    assert sum(output.component("G1").var("generation").value[0]) == pytest.approx(
-        60625
-    )
-    assert sum(output.component("G1").var("nb_on").value[0]) == pytest.approx(168)
+    assert sum(  # type:ignore
+        output.component("G1").var("generation").value[0]  # type:ignore
+    ) == pytest.approx(60625)
+    assert sum(  # type:ignore
+        output.component("G1").var("nb_on").value[0]  # type:ignore
+    ) == pytest.approx(168)
 
-    assert sum(output.component("G2").var("generation").value[0]) == pytest.approx(5730)
-    assert sum(output.component("G2").var("nb_on").value[0]) == pytest.approx(68)
+    assert sum(  # type:ignore
+        output.component("G2").var("generation").value[0]  # type:ignore
+    ) == pytest.approx(5730)
+    assert sum(  # type:ignore
+        output.component("G2").var("nb_on").value[0]  # type:ignore
+    ) == pytest.approx(68)
 
-    assert sum(output.component("G3").var("generation").value[0]) == pytest.approx(
-        61119
-    )
-    assert sum(output.component("G3").var("nb_on").value[0]) == pytest.approx(320)
+    assert sum(  # type:ignore
+        output.component("G3").var("generation").value[0]  # type:ignore
+    ) == pytest.approx(61119)
+    assert sum(  # type:ignore
+        output.component("G3").var("nb_on").value[0]  # type:ignore
+    ) == pytest.approx(320)
 
-    assert sum(output.component("S").var("spillage").value[0]) == pytest.approx(1427)
-    assert sum(
-        output.component("U").var("unsupplied_energy").value[0]
+    assert sum(  # type:ignore
+        output.component("S").var("spillage").value[0]  # type:ignore
+    ) == pytest.approx(1427)
+    assert sum(  # type:ignore
+        output.component("U").var("unsupplied_energy").value[0]  # type:ignore
     ) == pytest.approx(6529)
 
 
@@ -894,6 +912,7 @@ def create_problem_accurate_heuristic(
         time_block,
         scenarios,
         border_management=BlockBorderManagement.CYCLE,
+        solver_id="XPRESS",
     )
 
     return problem

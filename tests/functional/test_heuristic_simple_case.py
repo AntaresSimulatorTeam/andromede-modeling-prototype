@@ -600,7 +600,7 @@ def test_fast_heuristic() -> None:
 
     # Solve heuristic problem
     mingen_heuristic = create_problem_fast_heuristic(
-        output_1.component("G").var("generation").value,
+        output_1.component("G").var("generation").value,  # type:ignore
         number_hours,
     )
 
@@ -821,7 +821,9 @@ def create_problem_fast_heuristic(
     assert status == problem.solver.OPTIMAL
 
     output_heuristic = OutputValues(problem)
-    h = np.argmax(output_heuristic.component("G").var("t_ajust").value[0])
+    h = np.argmax(
+        output_heuristic.component("G").var("t_ajust").value[0]  # type:ignore
+    )
     mingen_heuristic = pd.DataFrame(
         n[:, h, :] * 700,
         index=[i for i in range(number_hours)],
