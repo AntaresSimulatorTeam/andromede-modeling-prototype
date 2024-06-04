@@ -345,36 +345,76 @@ def test_milp_version() -> None:
 
     assert status == problem.solver.OPTIMAL
 
-    output = OutputValues(problem)
-    assert sum(  # type:ignore
-        output.component("G1").var("generation").value[0]  # type:ignore
-    ) == pytest.approx(60670)
-    assert sum(  # type:ignore
-        output.component("G1").var("nb_on").value[0]  # type:ignore
-    ) == pytest.approx(168)
-
-    assert sum(  # type:ignore
-        output.component("G2").var("generation").value[0]  # type:ignore
-    ) == pytest.approx(6650)
-    assert sum(  # type:ignore
-        output.component("G2").var("nb_on").value[0]  # type:ignore
-    ) == pytest.approx(83)
-
-    assert sum(  # type:ignore
-        output.component("G3").var("generation").value[0]  # type:ignore
-    ) == pytest.approx(60154)
-    assert sum(  # type:ignore
-        output.component("G3").var("nb_on").value[0]  # type:ignore
-    ) == pytest.approx(315)
-
-    assert sum(  # type:ignore
-        output.component("S").var("spillage").value[0]  # type:ignore
-    ) == pytest.approx(1427)
-    assert sum(  # type:ignore
-        output.component("U").var("unsupplied_energy").value[0]  # type:ignore
-    ) == pytest.approx(6529)
+    check_output_values(problem, "milp")
 
     assert problem.solver.Objective().Value() == pytest.approx(78933841)
+
+
+def check_output_values(problem: OptimizationProblem, mode: str) -> None:
+    output = OutputValues(problem)
+
+    expected_output_clusters_file = open(
+        "tests/functional/data_complex_case/" + mode + "/details-hourly.txt", "r"
+    )
+    expected_output_clusters = expected_output_clusters_file.readlines()
+
+    expected_output_general_file = open(
+        "tests/functional/data_complex_case/" + mode + "/values-hourly.txt", "r"
+    )
+    expected_output_general = expected_output_general_file.readlines()
+
+    assert output.component("G1").var("generation").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[4]))
+            for line in expected_output_clusters[7:]
+        ]
+    ]
+    assert output.component("G1").var("nb_on").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[12]))
+            for line in expected_output_clusters[7:]
+        ]
+    ]
+
+    assert output.component("G2").var("generation").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[5]))
+            for line in expected_output_clusters[7:]
+        ]
+    ]
+    assert output.component("G2").var("nb_on").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[13]))
+            for line in expected_output_clusters[7:]
+        ]
+    ]
+
+    assert output.component("G3").var("generation").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[6]))
+            for line in expected_output_clusters[7:]
+        ]
+    ]
+    assert output.component("G3").var("nb_on").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[14]))
+            for line in expected_output_clusters[7:]
+        ]
+    ]
+
+    assert output.component("S").var("spillage").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[20 if mode == "milp" else 21]))
+            for line in expected_output_general[7:]
+        ]
+    ]
+
+    assert output.component("U").var("unsupplied_energy").value == [
+        [
+            pytest.approx(float(line.strip().split("\t")[19 if mode == "milp" else 20]))
+            for line in expected_output_general[7:]
+        ]
+    ]
 
 
 def test_accurate_heuristic() -> None:
@@ -441,34 +481,7 @@ def test_accurate_heuristic() -> None:
     assert status == problem_optimization_2.solver.OPTIMAL
     assert problem_optimization_2.solver.Objective().Value() == 78996726
 
-    output = OutputValues(problem_optimization_2)
-    assert sum(  # type:ignore
-        output.component("G1").var("generation").value[0]  # type:ignore
-    ) == pytest.approx(60625)
-    assert sum(  # type:ignore
-        output.component("G1").var("nb_on").value[0]  # type:ignore
-    ) == pytest.approx(168)
-
-    assert sum(  # type:ignore
-        output.component("G2").var("generation").value[0]  # type:ignore
-    ) == pytest.approx(5730)
-    assert sum(  # type:ignore
-        output.component("G2").var("nb_on").value[0]  # type:ignore
-    ) == pytest.approx(68)
-
-    assert sum(  # type:ignore
-        output.component("G3").var("generation").value[0]  # type:ignore
-    ) == pytest.approx(61119)
-    assert sum(  # type:ignore
-        output.component("G3").var("nb_on").value[0]  # type:ignore
-    ) == pytest.approx(320)
-
-    assert sum(  # type:ignore
-        output.component("S").var("spillage").value[0]  # type:ignore
-    ) == pytest.approx(1427)
-    assert sum(  # type:ignore
-        output.component("U").var("unsupplied_energy").value[0]  # type:ignore
-    ) == pytest.approx(6529)
+    check_output_values(problem_optimization_2, "accurate")
 
 
 def test_fast_heuristic() -> None:
