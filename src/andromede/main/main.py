@@ -42,38 +42,7 @@ def input_models(model_paths: List[Path]) -> Library:
                 raise ValueError(f"the identifier: {yaml_lib.id} is defined twice")
             yaml_libraries[yaml_lib.id] = yaml_lib
 
-    todo = list(yaml_libraries.values())
-    did = list()
-    import_stack = []
-    output_lib = Library(port_types={}, models={})
-
-    while todo:
-        next_lib = todo.pop()
-        if next_lib.id in did:
-            continue
-        else:
-            import_stack.append(next_lib)
-        while import_stack:
-            if import_stack[-1].dependence:
-                if import_stack[-1].dependence in did:
-                    lib = resolve_library(import_stack[-1], [output_lib])
-
-                    output_lib.models.update(lib.models)
-                    output_lib.port_types.update(lib.port_types)
-
-                    did.append(import_stack.pop().id)
-                elif yaml_libraries[import_stack[-1].dependence] in import_stack:
-                    raise Exception("importing loop in yaml libraries")
-                else:
-                    import_stack.append(yaml_libraries[import_stack[-1].dependence])
-            else:
-                lib = resolve_library(import_stack[-1], [output_lib])
-
-                output_lib.models.update(lib.models)
-                output_lib.port_types.update(lib.port_types)
-
-                did.append(import_stack.pop().id)
-    return output_lib
+    return resolve_library(yaml_libraries)
 
 
 def input_database(study_path: Path, timeseries_path: Optional[Path]) -> DataBase:
@@ -89,7 +58,7 @@ def input_components(study_path: Path, model: Library) -> NetworkComponents:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--study", type=Path, help="path to the root dirertory of the study"
+        "--study", type=Path, help="path to the root directory of the study"
     )
     parser.add_argument(
         "--models", nargs="+", type=Path, help="list of path to model file, *.yml"
@@ -98,7 +67,7 @@ def main() -> None:
         "--component", type=Path, help="path to the component file, *.yml"
     )
     parser.add_argument(
-        "--timeseries", type=Path, help="path to the timeseries dirertory"
+        "--timeseries", type=Path, help="path to the timeseries directory"
     )
     parser.add_argument(
         "--duration", type=int, help="duration of the simulation", default=1
@@ -151,21 +120,20 @@ def main() -> None:
 
     network = build_network(components)
 
-    for scenario in range(1, args.scenario + 1):
-        timeblock = TimeBlock(1, list(range(args.duration)))
-        try:
-            problem = build_problem(network, database, timeblock, scenario)
-        except IndexError as e:
-            raise IndexError(
-                str(e)
-                + ". Did you correctly use the '--duration' and '--scenario' parameters ?"
-            )
+    timeblock = TimeBlock(1, list(range(args.duration)))
+    scenario = args.scenario
+    try:
+        problem = build_problem(network, database, timeblock, scenario)
+    except IndexError as e:
+        raise IndexError(
+            str(e)
+            + ". Did you correctly use the '--duration' and '--scenario' parameters ?"
+        )
 
-        status = problem.solver.Solve()
-        print("scenario ", scenario)
-        print("status : ", status)
+    status = problem.solver.Solve()
+    print("status : ", status)
 
-    print("avarage final cost : ", problem.solver.Objective().Value())
+    print("final average cost : ", problem.solver.Objective().Value())
 
 
 if __name__ == "__main__":

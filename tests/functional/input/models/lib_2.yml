@@ -11,7 +11,8 @@
 # This file is part of the Antares project.
 library:
   id: basic 2
-  dependence: basic
+  dependencies: 
+    - basic
   description: Basic library
 
   models:

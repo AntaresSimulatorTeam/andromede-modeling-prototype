@@ -9,7 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from andromede.expression import ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
@@ -44,23 +44,60 @@ from andromede.model.parsing import (
 )
 
 
-def resolve_library(
-    input_lib: InputLibrary, preloaded_libraries: Optional[List[Library]] = None
-) -> Library:
+def resolve_library(input_libs: Dict[str, InputLibrary]) -> Library:
     """
     Converts parsed data into an actually usable library of models.
 
      - resolves references between models and ports
      - parses expressions and resolves references to variables/params
     """
-    if preloaded_libraries is None:
-        preloaded_libraries = []
-    port_types = [_convert_port_type(p) for p in input_lib.port_types]
-    for lib in preloaded_libraries:
-        port_types.extend(lib.port_types.values())
-    port_types_dict = dict((p.id, p) for p in port_types)
-    models = [_resolve_model(m, port_types_dict) for m in input_lib.models]
-    return library(port_types, models)
+    # if preloaded_libraries is None:
+    #     preloaded_libraries = []
+
+    todo: List[str] = list(input_libs)
+    did: Set[str] = set()
+    import_stack: List[str] = []
+
+    output_lib = Library(port_types={}, models={})
+
+    while todo:
+        next_lib_id = todo.pop()
+        if next_lib_id in did:
+            continue
+        else:
+            import_stack.append(next_lib_id)
+
+        while import_stack:
+            cur_lib = input_libs[import_stack[-1]]
+            dependencies = set(cur_lib.dependencies) - did
+
+            if dependencies:
+                first_dependency = dependencies.pop()
+                if first_dependency in import_stack:
+                    raise Exception("importing loop in yaml libraries")
+                import_stack.append(first_dependency)
+            else:
+                port_types = [_convert_port_type(p) for p in cur_lib.port_types]
+                port_types_dict = dict((p.id, p) for p in port_types)
+                if output_lib.port_types.keys() & port_types_dict.keys():
+                    raise Exception(
+                        f"port(s) : {str(output_lib.port_types.keys() & port_types_dict.keys())} is(are) defined twice"
+                    )
+                output_lib.port_types.update(port_types_dict)
+
+                models = [
+                    _resolve_model(m, output_lib.port_types) for m in cur_lib.models
+                ]
+                models_dict = dict((m.id, m) for m in models)
+                if output_lib.models.keys() & models_dict.keys():
+                    raise Exception(
+                        f"model(s) : {str(output_lib.models.keys() & models_dict.keys())} is(are) defined twice"
+                    )
+                output_lib.models.update(models_dict)
+
+                did.add(import_stack.pop())
+
+    return output_lib
 
 
 def _convert_field(field: InputField) -> PortField:

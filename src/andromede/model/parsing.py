@@ -97,7 +97,7 @@ class InputModel(ModifiedBaseModel):
 
 class InputLibrary(ModifiedBaseModel):
     id: str
-    dependence: Optional[str] = None
+    dependencies: List[str] = []
     port_types: List[InputPortType] = Field(default_factory=list)
     models: List[InputModel] = Field(default_factory=list)
     description: Optional[str] = None
