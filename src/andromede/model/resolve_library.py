@@ -44,21 +44,27 @@ from andromede.model.parsing import (
 )
 
 
-def resolve_library(input_libs: Dict[str, InputLibrary]) -> Library:
+def resolve_library(
+    input_libs: List[InputLibrary], preloaded_libraries: Optional[List[Library]] = None
+) -> Library:
     """
     Converts parsed data into an actually usable library of models.
 
      - resolves references between models and ports
      - parses expressions and resolves references to variables/params
     """
-    # if preloaded_libraries is None:
-    #     preloaded_libraries = []
+    yaml_lib_dict = dict((l.id, l) for l in input_libs)
 
-    todo: List[str] = list(input_libs)
+    preloaded_port_types = {}
+    if preloaded_libraries:
+        for preloaded_lib in preloaded_libraries:
+            preloaded_port_types.update(preloaded_lib.port_types)
+
+    output_lib = Library(port_types=preloaded_port_types, models={})
+
+    todo: List[str] = list(yaml_lib_dict)
     did: Set[str] = set()
     import_stack: List[str] = []
-
-    output_lib = Library(port_types={}, models={})
 
     while todo:
         next_lib_id = todo.pop()
@@ -68,7 +74,7 @@ def resolve_library(input_libs: Dict[str, InputLibrary]) -> Library:
             import_stack.append(next_lib_id)
 
         while import_stack:
-            cur_lib = input_libs[import_stack[-1]]
+            cur_lib = yaml_lib_dict[import_stack[-1]]
             dependencies = set(cur_lib.dependencies) - did
 
             if dependencies:

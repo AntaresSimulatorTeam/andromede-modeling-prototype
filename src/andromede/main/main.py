@@ -34,13 +34,15 @@ class AntaresTimeSeriesImportError(Exception):
 
 
 def input_models(model_paths: List[Path]) -> Library:
-    yaml_libraries = {}
+    yaml_libraries = []
+    yaml_library_ids = set()
     for path in model_paths:
         with path.open("r") as file:
             yaml_lib = parse_yaml_library(file)
-            if yaml_lib.id in yaml_libraries:
+            if yaml_lib.id in yaml_library_ids:
                 raise ValueError(f"the identifier: {yaml_lib.id} is defined twice")
-            yaml_libraries[yaml_lib.id] = yaml_lib
+            yaml_libraries.append(yaml_lib)
+            yaml_library_ids.add(yaml_lib.id)
 
     return resolve_library(yaml_libraries)
 
