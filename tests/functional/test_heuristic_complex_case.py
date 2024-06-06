@@ -335,42 +335,57 @@ BLOCK_MODEL_FAST_HEURISTIC = model(
 def test_milp_version() -> None:
     """ """
     number_hours = 168
+    scenarios = 2
 
-    for week in range(2):
-        problem = create_complex_problem(
-            {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-            number_hours,
-            lp_relaxation=False,
-            fast=False,
-            week=week,
-        )
+    for scenario in range(scenarios):
+        for week in range(2):
+            problem = create_complex_problem(
+                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
+                number_hours,
+                lp_relaxation=False,
+                fast=False,
+                week=week,
+                scenario=scenario,
+            )
 
-        parameters = pywraplp.MPSolverParameters()
-        parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-        parameters.SetIntegerParam(parameters.SCALING, 0)
+            parameters = pywraplp.MPSolverParameters()
+            parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+            parameters.SetIntegerParam(parameters.SCALING, 0)
 
-        status = problem.solver.Solve(parameters)
+            status = problem.solver.Solve(parameters)
 
-        assert status == problem.solver.OPTIMAL
+            assert status == problem.solver.OPTIMAL
 
-        check_output_values(problem, "milp", week)
+            check_output_values(problem, "milp", week, scenario=scenario)
 
-        if week == 0:
-            assert problem.solver.Objective().Value() == pytest.approx(78933841)
-        elif week == 1:
-            assert problem.solver.Objective().Value() == pytest.approx(102109698)
+            expected_cost = [[78933841, 102109698], [17472101, 17424769]]
+            assert problem.solver.Objective().Value() == pytest.approx(
+                expected_cost[scenario][week]
+            )
 
 
-def check_output_values(problem: OptimizationProblem, mode: str, week: int) -> None:
+def check_output_values(
+    problem: OptimizationProblem, mode: str, week: int, scenario: int
+) -> None:
     output = OutputValues(problem)
 
     expected_output_clusters_file = open(
-        "tests/functional/data_complex_case/" + mode + "/details-hourly.txt", "r"
+        "tests/functional/data_complex_case/"
+        + mode
+        + "/"
+        + str(scenario)
+        + "/details-hourly.txt",
+        "r",
     )
     expected_output_clusters = expected_output_clusters_file.readlines()
 
     expected_output_general_file = open(
-        "tests/functional/data_complex_case/" + mode + "/values-hourly.txt", "r"
+        "tests/functional/data_complex_case/"
+        + mode
+        + "/"
+        + str(scenario)
+        + "/values-hourly.txt",
+        "r",
     )
     expected_output_general = expected_output_general_file.readlines()
 
@@ -443,72 +458,89 @@ def test_accurate_heuristic() -> None:
     """
 
     number_hours = 168
+    scenarios = 2
 
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
-    for week in range(2):
-        # First optimization
-        problem_optimization_1 = create_complex_problem(
-            {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-            number_hours,
-            lp_relaxation=True,
-            fast=False,
-            week=week,
-        )
-        status = problem_optimization_1.solver.Solve(parameters)
-
-        assert status == problem_optimization_1.solver.OPTIMAL
-
-        # Get number of on units and round it to integer
-        output_1 = OutputValues(problem_optimization_1)
-        nb_on_min: Dict[str, AbstractDataStructure] = {}
-        for g in ["G1", "G2", "G3"]:
-            nb_on_1 = pd.DataFrame(
-                np.transpose(
-                    np.ceil(
-                        np.round(np.array(output_1.component(g).var("nb_on").value), 12)
-                    )
-                ),
-                index=[i for i in range(number_hours)],
-                columns=[0],
+    for scenario in range(scenarios):
+        for week in range(2):
+            # First optimization
+            problem_optimization_1 = create_complex_problem(
+                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
+                number_hours,
+                lp_relaxation=True,
+                fast=False,
+                week=week,
+                scenario=scenario,
             )
-            n_guide = TimeScenarioSeriesData(nb_on_1)
+            status = problem_optimization_1.solver.Solve(parameters)
 
-            # Solve heuristic problem
-            problem_accurate_heuristic = create_problem_accurate_heuristic(
-                {g: n_guide}, number_hours, thermal_cluster=g, week=week
+            assert status == problem_optimization_1.solver.OPTIMAL
+
+            # Get number of on units and round it to integer
+            output_1 = OutputValues(problem_optimization_1)
+            nb_on_min: Dict[str, AbstractDataStructure] = {}
+            for g in ["G1", "G2", "G3"]:
+                nb_on_1 = pd.DataFrame(
+                    np.transpose(
+                        np.ceil(
+                            np.round(
+                                np.array(output_1.component(g).var("nb_on").value), 12
+                            )
+                        )
+                    ),
+                    index=[i for i in range(number_hours)],
+                    columns=[0],
+                )
+                n_guide = TimeScenarioSeriesData(nb_on_1)
+
+                # Solve heuristic problem
+                problem_accurate_heuristic = create_problem_accurate_heuristic(
+                    {g: n_guide},
+                    number_hours,
+                    thermal_cluster=g,
+                    week=week,
+                    scenario=scenario,
+                )
+                status = problem_accurate_heuristic.solver.Solve(parameters)
+
+                assert status == problem_accurate_heuristic.solver.OPTIMAL
+
+                output_heuristic = OutputValues(problem_accurate_heuristic)
+                nb_on_heuristic = pd.DataFrame(
+                    np.transpose(
+                        np.ceil(
+                            np.array(output_heuristic.component(g).var("nb_on").value)
+                        )
+                    ),
+                    index=[i for i in range(number_hours)],
+                    columns=[0],
+                )
+                nb_on_min[g] = TimeScenarioSeriesData(nb_on_heuristic)
+
+            # Second optimization with lower bound modified
+            problem_optimization_2 = create_complex_problem(
+                nb_on_min,
+                number_hours,
+                lp_relaxation=True,
+                fast=False,
+                week=week,
+                scenario=scenario,
             )
-            status = problem_accurate_heuristic.solver.Solve(parameters)
+            status = problem_optimization_2.solver.Solve(parameters)
 
-            assert status == problem_accurate_heuristic.solver.OPTIMAL
+            assert status == problem_optimization_2.solver.OPTIMAL
 
-            output_heuristic = OutputValues(problem_accurate_heuristic)
-            nb_on_heuristic = pd.DataFrame(
-                np.transpose(
-                    np.ceil(np.array(output_heuristic.component(g).var("nb_on").value))
-                ),
-                index=[i for i in range(number_hours)],
-                columns=[0],
-            )
-            nb_on_min[g] = TimeScenarioSeriesData(nb_on_heuristic)
-
-        # Second optimization with lower bound modified
-        problem_optimization_2 = create_complex_problem(
-            nb_on_min, number_hours, lp_relaxation=True, fast=False, week=week
-        )
-        status = problem_optimization_2.solver.Solve(parameters)
-
-        assert status == problem_optimization_2.solver.OPTIMAL
-        if week == 0:
-            assert problem_optimization_2.solver.Objective().Value() == 78996726
-        elif week == 1:
-            assert (
-                problem_optimization_2.solver.Objective().Value() == 102215087 - 69500
+            check_output_values(
+                problem_optimization_2, "accurate", week, scenario=scenario
             )
 
-        check_output_values(problem_optimization_2, "accurate", week)
+            expected_cost = [[78996726, 102215087 - 69500], [17587733, 17650089-10081]]
+            assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
+                expected_cost[scenario][week]
+            )
 
 
 def test_fast_heuristic() -> None:
@@ -517,56 +549,64 @@ def test_fast_heuristic() -> None:
     """
 
     number_hours = 168
+    scenarios = 2
 
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
-    for week in range(2):
-        # First optimization
-        problem_optimization_1 = create_complex_problem(
-            {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-            number_hours,
-            lp_relaxation=True,
-            fast=True,
-            week=week,
-        )
-        status = problem_optimization_1.solver.Solve(parameters)
-
-        assert status == problem_optimization_1.solver.OPTIMAL
-
-        # Get number of on units
-        output_1 = OutputValues(problem_optimization_1)
-
-        # Solve heuristic problem
-        mingen: Dict[str, AbstractDataStructure] = {}
-        for g in ["G1", "G2", "G3"]:
-            mingen_heuristic = create_problem_fast_heuristic(
-                output_1.component(g).var("generation").value,  # type:ignore
+    for scenario in range(scenarios):
+        for week in range(2):
+            # First optimization
+            problem_optimization_1 = create_complex_problem(
+                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
                 number_hours,
-                thermal_cluster=g,
+                lp_relaxation=True,
+                fast=True,
                 week=week,
+                scenario=scenario,
             )
+            status = problem_optimization_1.solver.Solve(parameters)
 
-            mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
+            assert status == problem_optimization_1.solver.OPTIMAL
 
-        # Second optimization with lower bound modified
-        problem_optimization_2 = create_complex_problem(
-            mingen, number_hours, lp_relaxation=True, fast=True, week=week
-        )
-        status = problem_optimization_2.solver.Solve(parameters)
+            # Get number of on units
+            output_1 = OutputValues(problem_optimization_1)
 
-        assert status == problem_optimization_2.solver.OPTIMAL
+            # Solve heuristic problem
+            mingen: Dict[str, AbstractDataStructure] = {}
+            for g in ["G1", "G2", "G3"]:
+                mingen_heuristic = create_problem_fast_heuristic(
+                    output_1.component(g).var("generation").value,  # type:ignore
+                    number_hours,
+                    thermal_cluster=g,
+                    week=week,
+                    scenario=scenario,
+                )
 
-        check_output_values(problem_optimization_2, "fast", week)
+                mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
 
-        if week == 0:
+            # Second optimization with lower bound modified
+            problem_optimization_2 = create_complex_problem(
+                mingen,
+                number_hours,
+                lp_relaxation=True,
+                fast=True,
+                week=week,
+                scenario=scenario,
+            )
+            status = problem_optimization_2.solver.Solve(parameters)
+
+            assert status == problem_optimization_2.solver.OPTIMAL
+
+            check_output_values(problem_optimization_2, "fast", week, scenario)
+
+            expected_cost = [
+                [79277215 - 630089, 102461792 - 699765],
+                [17803738 - 661246, 17720390 - 661246],
+            ]
             assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
-                79277215 - 630089
-            )
-        elif week == 1:
-            assert (
-                problem_optimization_2.solver.Objective().Value() == 102461792 - 699765
+                expected_cost[scenario][week]
             )
 
 
@@ -576,9 +616,12 @@ def create_complex_problem(
     lp_relaxation: bool,
     fast: bool,
     week: int,
+    scenario: int,
 ) -> OptimizationProblem:
 
-    database = generate_database(lower_bound, number_hours, week=week)
+    database = generate_database(
+        lower_bound, number_hours, week=week, scenario=scenario
+    )
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
     scenarios = 1
@@ -633,9 +676,18 @@ def create_complex_problem(
 
 
 def generate_database(
-    lower_bound: Dict[str, AbstractDataStructure], number_hours: int, week: int
+    lower_bound: Dict[str, AbstractDataStructure],
+    number_hours: int,
+    week: int,
+    scenario: int,
 ) -> DataBase:
     database = DataBase()
+
+    failures_1 = pd.DataFrame(
+        np.repeat(get_failures_for_cluster1(week, scenario), 24),
+        index=[i for i in range(number_hours)],
+        columns=[0],
+    )
 
     database.add_data("G1", "p_max", ConstantData(410))
     database.add_data("G1", "p_min", ConstantData(180))
@@ -646,7 +698,7 @@ def generate_database(
     database.add_data("G1", "d_min_down", ConstantData(8))
     database.add_data("G1", "nb_units_min", lower_bound["G1"])
     database.add_data("G1", "nb_units_max", ConstantData(1))
-    database.add_data("G1", "failures", ConstantData(410))
+    database.add_data("G1", "failures", TimeScenarioSeriesData(failures_1))
     database.add_data("G1", "mingen", lower_bound["G1"])
 
     database.add_data("G2", "p_max", ConstantData(90))
@@ -662,7 +714,7 @@ def generate_database(
     database.add_data("G2", "mingen", lower_bound["G2"])
 
     failures_3 = pd.DataFrame(
-        np.repeat(get_failures_for_cluster3(week), 24),
+        np.repeat(get_failures_for_cluster3(week, scenario), 24),
         index=[i for i in range(number_hours)],
         columns=[0],
     )
@@ -682,7 +734,12 @@ def generate_database(
     database.add_data("U", "cost", ConstantData(10000))
     database.add_data("S", "cost", ConstantData(1))
 
-    output_file = open("tests/functional/data_complex_case/milp/values-hourly.txt", "r")
+    output_file = open(
+        "tests/functional/data_complex_case/milp/"
+        + str(scenario)
+        + "/values-hourly.txt",
+        "r",
+    )
     output = output_file.readlines()
 
     demand_data = pd.DataFrame(
@@ -700,13 +757,25 @@ def generate_database(
     return database
 
 
-def get_failures_for_cluster3(week: int) -> List:
-    if week == 0:
-        failures_3 = [1100, 1100, 0, 1100, 1100, 1100, 1100]
-    elif week == 1:
-        failures_3 = [1100, 1100, 1100, 1100, 1100, 0, 1100]
+def get_failures_for_cluster3(week: int, scenario: int) -> List:
+    if scenario == 0:
+        if week == 0:
+            failures_3 = [1100, 1100, 0, 1100, 1100, 1100, 1100]
+        elif week == 1:
+            failures_3 = [1100, 1100, 1100, 1100, 1100, 0, 1100]
+    elif scenario == 1:
+        failures_3 = [1100, 1100, 1100, 1100, 1100, 1100, 1100]
 
     return failures_3
+
+
+def get_failures_for_cluster1(week: int, scenario: int) -> List:
+    if scenario == 0:
+        failures = [410, 410, 410, 410, 410, 410, 410]
+    elif scenario == 1:
+        failures = [410, 410, 410, 410, 0, 410, 410]
+
+    return failures
 
 
 def create_problem_accurate_heuristic(
@@ -714,11 +783,17 @@ def create_problem_accurate_heuristic(
     number_hours: int,
     thermal_cluster: str,
     week: int,
+    scenario: int,
 ) -> OptimizationProblem:
 
     database = DataBase()
 
     if thermal_cluster == "G1":
+        failures_1 = pd.DataFrame(
+            np.repeat(get_failures_for_cluster1(week, scenario), 24),
+            index=[i for i in range(number_hours)],
+            columns=[0],
+        )
         database.add_data("G1", "p_max", ConstantData(410))
         database.add_data("G1", "p_min", ConstantData(180))
         database.add_data("G1", "cost", ConstantData(96))
@@ -728,7 +803,7 @@ def create_problem_accurate_heuristic(
         database.add_data("G1", "d_min_down", ConstantData(8))
         database.add_data("G1", "nb_units_min", lower_bound["G1"])
         database.add_data("G1", "nb_units_max", ConstantData(1))
-        database.add_data("G1", "failures", ConstantData(410))
+        database.add_data("G1", "failures", TimeScenarioSeriesData(failures_1))
         database.add_data("G1", "mingen", lower_bound["G1"])
     elif thermal_cluster == "G2":
         database.add_data("G2", "p_max", ConstantData(90))
@@ -744,7 +819,7 @@ def create_problem_accurate_heuristic(
         database.add_data("G2", "mingen", lower_bound["G2"])
     elif thermal_cluster == "G3":
         failures_3 = pd.DataFrame(
-            np.repeat(get_failures_for_cluster3(week), 24),
+            np.repeat(get_failures_for_cluster3(week, scenario), 24),
             index=[i for i in range(number_hours)],
             columns=[0],
         )
@@ -784,17 +859,23 @@ def create_problem_accurate_heuristic(
 
 
 def create_problem_fast_heuristic(
-    lower_bound: List[List[float]], number_hours: int, thermal_cluster: str, week: int
+    lower_bound: List[List[float]],
+    number_hours: int,
+    thermal_cluster: str,
+    week: int,
+    scenario: int,
 ) -> pd.DataFrame:
 
     delta = {"G1": 8, "G2": 11, "G3": 9}[thermal_cluster]
     pmax = {"G1": 410, "G2": 90, "G3": 275}[thermal_cluster]
     pmin = {"G1": 180, "G2": 60, "G3": 150}[thermal_cluster]
     pdispo = {
-        "G1": np.array(410),
+        "G1": np.reshape(
+            np.repeat(get_failures_for_cluster1(week, scenario), 24), (number_hours, 1)
+        ),
         "G2": np.array(270),
         "G3": np.reshape(
-            np.repeat(get_failures_for_cluster3(week), 24), (number_hours, 1)
+            np.repeat(get_failures_for_cluster3(week, scenario), 24), (number_hours, 1)
         ),
     }
 
