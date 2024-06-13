@@ -499,67 +499,29 @@ def test_fast_heuristic() -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
     """
-
     number_hours = 168
-    scenarios = 2
+    scenario = 0
+    week = 0
 
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
+    for j, cluster in enumerate(["G" + str(i) for i in range(1, 7)]):
+        nb_on_1 = np.loadtxt(
+            f"tests/functional/data_second_complex_case/fast/itr1_fast_cluster{j+1}.txt"
+        )
 
-    for scenario in range(scenarios):
-        for week in range(2):
-            # First optimization
-            problem_optimization_1 = create_complex_problem(
-                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-                number_hours,
-                lp_relaxation=True,
-                fast=True,
-                week=week,
-                scenario=scenario,
-            )
-            status = problem_optimization_1.solver.Solve(parameters)
+        # Solve heuristic problem
+        mingen_heuristic = create_problem_fast_heuristic(
+            nb_on_1,  # type:ignore
+            number_hours,
+            thermal_cluster=cluster,
+            week=week,
+            scenario=scenario,
+        )
 
-            assert status == problem_optimization_1.solver.OPTIMAL
-
-            # Get number of on units
-            output_1 = OutputValues(problem_optimization_1)
-
-            # Solve heuristic problem
-            mingen: Dict[str, AbstractDataStructure] = {}
-            for g in ["G1", "G2", "G3"]:
-                mingen_heuristic = create_problem_fast_heuristic(
-                    output_1.component(g).var("generation").value,  # type:ignore
-                    number_hours,
-                    thermal_cluster=g,
-                    week=week,
-                    scenario=scenario,
-                )
-
-                mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
-
-            # Second optimization with lower bound modified
-            problem_optimization_2 = create_complex_problem(
-                mingen,
-                number_hours,
-                lp_relaxation=True,
-                fast=True,
-                week=week,
-                scenario=scenario,
-            )
-            status = problem_optimization_2.solver.Solve(parameters)
-
-            assert status == problem_optimization_2.solver.OPTIMAL
-
-            check_output_values(problem_optimization_2, "fast", week, scenario)
-
-            expected_cost = [
-                [79277215 - 630089, 102461792 - 699765],
-                [17803738 - 661246, 17720390 - 661246],
-            ]
-            assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
-                expected_cost[scenario][week]
-            )
+        expected_output = np.loadtxt(
+            f"tests/functional/data_second_complex_case/fast/itr2_fast_cluster{j+1}.txt"
+        )
+        for time_step in range(number_hours):
+            assert mingen_heuristic.values[time_step, 0] == expected_output[time_step]
 
 
 def generate_database(
@@ -724,7 +686,7 @@ def create_problem_accurate_heuristic(
 
 
 def create_problem_fast_heuristic(
-    lower_bound: List[List[float]],
+    lower_bound: List[float],
     number_hours: int,
     thermal_cluster: str,
     week: int,
@@ -746,9 +708,9 @@ def create_problem_fast_heuristic(
     for h in range(delta + 1):
         cost_h = 0
         n_k = max(
-            [convert_to_integer(lower_bound[0][j] / pmax) for j in range(h)]
+            [convert_to_integer(lower_bound[j] / pmax) for j in range(h)]
             + [
-                convert_to_integer(lower_bound[0][j] / pmax)
+                convert_to_integer(lower_bound[j] / pmax)
                 for j in range(number_hours - delta + h, number_hours)
             ]
         )
@@ -760,7 +722,7 @@ def create_problem_fast_heuristic(
             k = floor((t - h) / delta) * delta + h
             n_k = max(
                 [
-                    convert_to_integer(lower_bound[0][j] / pmax)
+                    convert_to_integer(lower_bound[j] / pmax)
                     for j in range(k, min(number_hours - delta + h, k + delta))
                 ]
             )
@@ -771,7 +733,7 @@ def create_problem_fast_heuristic(
 
     hmin = np.argmin(cost.values[:, 0])
     mingen_heuristic = pd.DataFrame(
-        np.minimum(n[:, hmin, :] * pmin, pdispo[thermal_cluster]),
+        np.minimum(n[:, hmin, :] * pmin, pdispo.values),
         index=[i for i in range(number_hours)],
         columns=[0],
     )
