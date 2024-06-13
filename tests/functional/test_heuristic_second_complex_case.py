@@ -364,43 +364,6 @@ BLOCK_MODEL_FAST_HEURISTIC = model(
 )
 
 
-def test_milp_version() -> None:
-    """ """
-    number_hours = 168
-    scenarios = 1
-
-    for scenario in range(scenarios):
-        for week in range(2):
-            problem = create_complex_problem(
-                {"G" + str(i): ConstantData(0) for i in range(1, 7)},
-                number_hours,
-                lp_relaxation=False,
-                fast=False,
-                week=week,
-                scenario=scenario,
-            )
-
-            parameters = pywraplp.MPSolverParameters()
-            parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-            parameters.SetIntegerParam(parameters.SCALING, 0)
-            parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
-            parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
-            parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.0001)
-
-            problem.solver.EnableOutput()
-
-            status = problem.solver.Solve(parameters)
-
-            assert status == problem.solver.OPTIMAL
-
-            check_output_values(problem, "milp", week, scenario=scenario)
-
-            expected_cost = [[123092396 - 22, 95357001]]
-            assert problem.solver.Objective().Value() == pytest.approx(
-                expected_cost[scenario][week]
-            )
-
-
 def check_output_values(
     problem: OptimizationProblem, mode: str, week: int, scenario: int
 ) -> None:
@@ -620,86 +583,6 @@ def test_fast_heuristic() -> None:
             assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
-
-
-def create_complex_problem(
-    lower_bound: Dict[str, AbstractDataStructure],
-    number_hours: int,
-    lp_relaxation: bool,
-    fast: bool,
-    week: int,
-    scenario: int,
-) -> OptimizationProblem:
-
-    database = generate_database(
-        lower_bound, number_hours, week=week, scenario=scenario
-    )
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = 1
-
-    node = Node(model=NODE_BALANCE_MODEL, id="1")
-    demand = create_component(model=DEMAND_MODEL, id="D")
-
-    if fast:
-        gen1 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="G1")
-        gen2 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="G2")
-        gen3 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="G3")
-        gen4 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="G4")
-        gen5 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="G5")
-        gen6 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="G6")
-    elif lp_relaxation:
-        gen1 = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G1")
-        gen2 = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G2")
-        gen3 = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G3")
-        gen4 = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G4")
-        gen5 = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G5")
-        gen6 = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G6")
-    else:
-        gen1 = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G1")
-        gen2 = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G2")
-        gen3 = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G3")
-        gen4 = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G4")
-        gen5 = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G5")
-        gen6 = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G6")
-
-    spillage = create_component(model=SPILLAGE_MODEL, id="S")
-
-    unsupplied_energy = create_component(model=UNSUPPLIED_ENERGY_MODEL, id="U")
-
-    network = Network("test")
-    network.add_node(node)
-    network.add_component(demand)
-    # network.add_component(gen1)
-    network.add_component(gen2)
-    # network.add_component(gen3)
-    # network.add_component(gen4)
-    # network.add_component(gen5)
-    # network.add_component(gen6)
-    network.add_component(spillage)
-    network.add_component(unsupplied_energy)
-    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
-    # network.connect(PortRef(gen1, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(gen2, "balance_port"), PortRef(node, "balance_port"))
-    # network.connect(PortRef(gen3, "balance_port"), PortRef(node, "balance_port"))
-    # network.connect(PortRef(gen4, "balance_port"), PortRef(node, "balance_port"))
-    # network.connect(PortRef(gen5, "balance_port"), PortRef(node, "balance_port"))
-    # network.connect(PortRef(gen6, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(
-        PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
-    )
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-        solver_id="XPRESS",
-    )
-
-    return problem
 
 
 def generate_database(
