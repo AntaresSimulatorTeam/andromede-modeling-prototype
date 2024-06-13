@@ -171,6 +171,7 @@ THERMAL_CLUSTER_MODEL_LP = model(
         int_parameter("nb_units_max", TIME_AND_SCENARIO_FREE),
         float_parameter("max_generating", TIME_AND_SCENARIO_FREE),
         int_parameter("max_failure", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_max_min_down_time", TIME_AND_SCENARIO_FREE),
     ],
     variables=[
         float_variable(
@@ -241,10 +242,7 @@ THERMAL_CLUSTER_MODEL_LP = model(
             var("nb_stop")
             .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
             .sum()
-            - param("max_failure")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+            <= param("nb_units_max_min_down_time") - var("nb_on"),
         ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
@@ -299,7 +297,10 @@ THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
         float_parameter("d_min_up", CONSTANT),
         float_parameter("d_min_down", CONSTANT),
         int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
-        int_parameter("nb_units_max", CONSTANT),
+        int_parameter("nb_units_max", TIME_AND_SCENARIO_FREE),
+        float_parameter("max_generating", TIME_AND_SCENARIO_FREE),
+        int_parameter("max_failure", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_max_min_down_time", TIME_AND_SCENARIO_FREE),
     ],
     variables=[
         float_variable(
@@ -314,6 +315,12 @@ THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         float_variable(
+            "nb_failure",
+            lower_bound=literal(0),
+            upper_bound=param("max_failure"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
             "nb_start",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
@@ -325,8 +332,15 @@ THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
             var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
         ),
         Constraint(
+            "Max failures",
+            var("nb_failure") <= var("nb_stop"),
+        ),
+        Constraint(
             "Min up time",
             var("nb_start")
+            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            .sum()
+            - var("nb_failure")
             .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
             .sum()
             <= var("nb_on"),
@@ -336,7 +350,7 @@ THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
             var("nb_stop")
             .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
             .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+            <= param("nb_units_max_min_down_time") - var("nb_on"),
         ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
@@ -430,92 +444,55 @@ def test_accurate_heuristic() -> None:
     """
 
     number_hours = 168
-    scenarios = 2
+    scenario = 0
+    week = 0
 
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
-    for scenario in range(scenarios):
-        for week in range(2):
-            # First optimization
-            problem_optimization_1 = create_complex_problem(
-                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-                number_hours,
-                lp_relaxation=True,
-                fast=False,
-                week=week,
-                scenario=scenario,
-            )
-            status = problem_optimization_1.solver.Solve(parameters)
-
-            assert status == problem_optimization_1.solver.OPTIMAL
-
-            # Get number of on units and round it to integer
-            output_1 = OutputValues(problem_optimization_1)
-            nb_on_min: Dict[str, AbstractDataStructure] = {}
-            for g in ["G1", "G2", "G3"]:
-                nb_on_1 = pd.DataFrame(
-                    np.transpose(
-                        np.ceil(
-                            np.round(
-                                np.array(output_1.component(g).var("nb_on").value), 12
-                            )
-                        )
-                    ),
-                    index=[i for i in range(number_hours)],
-                    columns=[0],
+    for j, cluster in enumerate(["G" + str(i) for i in range(1, 7)]):
+        nb_on_1 = pd.DataFrame(
+            np.transpose(
+                np.ceil(
+                    np.round(
+                        np.loadtxt(
+                            f"tests/functional/data_second_complex_case/accurate/itr1_accurate_cluster{j+1}.txt"
+                        ),
+                        12,
+                    )
                 )
-                n_guide = TimeScenarioSeriesData(nb_on_1)
+            ),
+            index=[i for i in range(number_hours)],
+            columns=[0],
+        )
+        n_guide = TimeScenarioSeriesData(nb_on_1)
 
-                # Solve heuristic problem
-                problem_accurate_heuristic = create_problem_accurate_heuristic(
-                    {g: n_guide},
-                    number_hours,
-                    thermal_cluster=g,
-                    week=week,
-                    scenario=scenario,
-                )
-                status = problem_accurate_heuristic.solver.Solve(parameters)
+        # Solve heuristic problem
+        problem_accurate_heuristic = create_problem_accurate_heuristic(
+            {
+                "G" + str(i): ConstantData(0) if "G" + str(i) != cluster else n_guide
+                for i in range(1, 7)
+            },
+            number_hours,
+            thermal_cluster=cluster,
+            week=week,
+            scenario=scenario,
+        )
+        status = problem_accurate_heuristic.solver.Solve(parameters)
 
-                assert status == problem_accurate_heuristic.solver.OPTIMAL
+        assert status == problem_accurate_heuristic.solver.OPTIMAL
 
-                output_heuristic = OutputValues(problem_accurate_heuristic)
-                nb_on_heuristic = pd.DataFrame(
-                    np.transpose(
-                        np.ceil(
-                            np.array(output_heuristic.component(g).var("nb_on").value)
-                        )
-                    ),
-                    index=[i for i in range(number_hours)],
-                    columns=[0],
-                )
-                nb_on_min[g] = TimeScenarioSeriesData(nb_on_heuristic)
+        output_heuristic = OutputValues(problem_accurate_heuristic)
+        nb_on_heuristic = np.transpose(
+            np.ceil(np.array(output_heuristic.component(cluster).var("nb_on").value))
+        )
 
-            # Second optimization with lower bound modified
-            problem_optimization_2 = create_complex_problem(
-                nb_on_min,
-                number_hours,
-                lp_relaxation=True,
-                fast=False,
-                week=week,
-                scenario=scenario,
-            )
-            status = problem_optimization_2.solver.Solve(parameters)
-
-            assert status == problem_optimization_2.solver.OPTIMAL
-
-            check_output_values(
-                problem_optimization_2, "accurate", week, scenario=scenario
-            )
-
-            expected_cost = [
-                [78996726, 102215087 - 69500],
-                [17587733, 17650089 - 10081],
-            ]
-            assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
-                expected_cost[scenario][week]
-            )
+        expected_output = np.loadtxt(
+            f"tests/functional/data_second_complex_case/accurate/itr2_accurate_cluster{j+1}.txt"
+        )
+        for time_step in range(number_hours):
+            assert nb_on_heuristic[time_step, 0] == expected_output[time_step]
 
 
 def test_fast_heuristic() -> None:
@@ -720,64 +697,9 @@ def create_problem_accurate_heuristic(
     scenario: int,
 ) -> OptimizationProblem:
 
-    database = DataBase()
-
-    if thermal_cluster == "G1":
-
-        database.add_data("G1", "p_max", ConstantData(410))
-        database.add_data("G1", "p_min", ConstantData(180))
-        database.add_data("G1", "cost", ConstantData(96))
-        database.add_data("G1", "startup_cost", ConstantData(100500))
-        database.add_data("G1", "fixed_cost", ConstantData(1))
-        database.add_data("G1", "d_min_up", ConstantData(8))
-        database.add_data("G1", "d_min_down", ConstantData(8))
-        database.add_data("G1", "nb_units_min", lower_bound["G1"])
-        database.add_data("G1", "nb_units_max", ConstantData(1))
-        database.add_data(
-            "G1",
-            "failures",
-            TimeScenarioSeriesData(
-                get_failures_for_cluster(week, scenario, "G1", number_hours)
-            ),
-        )
-        database.add_data("G1", "mingen", lower_bound["G1"])
-    elif thermal_cluster == "G2":
-        database.add_data("G2", "p_max", ConstantData(90))
-        database.add_data("G2", "p_min", ConstantData(60))
-        database.add_data("G2", "cost", ConstantData(137))
-        database.add_data("G2", "startup_cost", ConstantData(24500))
-        database.add_data("G2", "fixed_cost", ConstantData(1))
-        database.add_data("G2", "d_min_up", ConstantData(11))
-        database.add_data("G2", "d_min_down", ConstantData(11))
-        database.add_data("G2", "nb_units_min", lower_bound["G2"])
-        database.add_data("G2", "nb_units_max", ConstantData(3))
-        database.add_data(
-            "G2",
-            "failures",
-            TimeScenarioSeriesData(
-                get_failures_for_cluster(week, scenario, "G2", number_hours)
-            ),
-        )
-        database.add_data("G2", "mingen", lower_bound["G2"])
-    elif thermal_cluster == "G3":
-
-        database.add_data("G3", "p_max", ConstantData(275))
-        database.add_data("G3", "p_min", ConstantData(150))
-        database.add_data("G3", "cost", ConstantData(107))
-        database.add_data("G3", "startup_cost", ConstantData(69500))
-        database.add_data("G3", "fixed_cost", ConstantData(1))
-        database.add_data("G3", "d_min_up", ConstantData(9))
-        database.add_data("G3", "d_min_down", ConstantData(9))
-        database.add_data("G3", "nb_units_min", lower_bound["G3"])
-        database.add_data("G3", "nb_units_max", ConstantData(4))
-        database.add_data(
-            "G3",
-            "failures",
-            TimeScenarioSeriesData(
-                get_failures_for_cluster(week, scenario, "G3", number_hours)
-            ),
-        )
-        database.add_data("G3", "mingen", lower_bound["G3"])
+    database = generate_database(
+        lower_bound, number_hours, week=week, scenario=scenario
+    )
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
     scenarios = 1
