@@ -51,6 +51,39 @@ library:
       binding-constraints:
         - name: balance
           expression:  sum_connections(injection_port.flow) = 0
+    - id: spillage
+      description: A basic spillage model
+      parameters:
+        - name: cost
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: spillage
+          lower-bound: 0
+      ports:
+        - name: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: -spillage
+    - id: unsupplied
+      description: A basic unsupplied model
+      parameters:
+        - name: cost
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: unsupplied_energy
+          lower-bound: 0
+      ports:
+        - name: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: unsupplied_energy
+
 
     - id: demand
       description: A basic fixed demand model
@@ -110,23 +143,23 @@ library:
           scenario-dependent: true
       variables:
         - name: generation
-          lower_bound: 0
-          upper_bound: nb_units_max * p_max
+          lower-bound: 0
+          upper-bound: nb_units_max * p_max
           time-dependent: true
           scenario-dependent: true
         - name: nb_on
-          lower_bound: 0
-          upper_bound: nb_units_max
+          lower-bound: 0
+          upper-bound: nb_units_max
           time-dependent: true
           scenario-dependent: false
         - name: nb_stop
-          lower_bound: 0
-          upper_bound: nb_units_max
+          lower-bound: 0
+          upper-bound: nb_units_max
           time-dependent: true
           scenario-dependent: false
         - name: nb_start
-          lower_bound: 0
-          upper_bound: nb_units_max
+          lower-bound: 0
+          upper-bound: nb_units_max
           time-dependent: true
           scenario-dependent: false
       ports:
