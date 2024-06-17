@@ -1,4 +1,5 @@
 import math
+import pandas as pd
 
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -26,15 +27,23 @@ from andromede.study import (
 
 
 def generate_data(
-    efficiency: float, horizon: int, scenarios: int
+        efficiency: float, horizon: int, scenarios: int
 ) -> TimeScenarioSeriesData:
-    data = {}
+    # Create an empty DataFrame with index being the range of the horizon
+    data = pd.DataFrame(index=range(horizon))
+
     for scenario in range(scenarios):
+        # Create a column name based on the scenario number
+        column_name = f"scenario_{scenario}"
+        data[column_name] = 0  # Initialize the column with zeros
+
         for absolute_timestep in range(horizon):
             if absolute_timestep == 0:
-                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18
+                data.at[absolute_timestep, column_name] = -18
             else:
-                data[TimeScenarioIndex(absolute_timestep, scenario)] = 2 * efficiency
+                data.at[absolute_timestep, column_name] = 2 * efficiency
+
+    # Return as TimeScenarioSeriesData object
     return TimeScenarioSeriesData(time_scenario_series=data)
 
 
