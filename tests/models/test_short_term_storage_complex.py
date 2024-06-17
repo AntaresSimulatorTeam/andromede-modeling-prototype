@@ -1,5 +1,6 @@
-import pandas as pd
 import math
+
+import pandas as pd
 
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -27,7 +28,7 @@ from andromede.study import (
 
 
 def generate_data(
-        efficiency: float, horizon: int, scenarios: int
+    efficiency: float, horizon: int, scenarios: int
 ) -> TimeScenarioSeriesData:
     # Create an empty DataFrame with index being the range of the horizon
     data = pd.DataFrame(index=range(horizon))
