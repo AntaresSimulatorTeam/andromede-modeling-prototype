@@ -9,23 +9,18 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+library:
+  id: basic 3
+  dependence: basic
+  description: Basic library
 
-from .data import (
-    ConstantData,
-    DataBase,
-    ScenarioIndex,
-    ScenarioSeriesData,
-    Scenarization,
-    TimeIndex,
-    TimeScenarioIndex,
-    TimeScenarioSeriesData,
-    TimeSeriesData,
-)
-from .network import (
-    Component,
-    Network,
-    Node,
-    PortRef,
-    PortsConnection,
-    create_component,
-)
+  models:
+
+    - id: node
+      description: A basic balancing node model
+      ports:
+        - name: injection_port
+          type: flow
+      binding-constraints:
+        - name: balance
+          expression:  sum_connections(injection_port.flow) = 0
