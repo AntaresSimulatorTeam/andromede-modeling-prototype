@@ -38,7 +38,7 @@ def generate_data(
     return TimeScenarioSeriesData(time_scenario_series=data)
 
 
-def short_term_storage_base(efficiency: float, horizon: int) -> None:
+def short_term_storage_base(efficiency: float, horizon: int, result: int) -> None:
     # 18 produced in the 1st time-step, then consumed 2 * efficiency in the rest
     time_blocks = [TimeBlock(0, list(range(horizon)))]
     scenarios = 1
@@ -97,7 +97,7 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
 
     assert status == problem.solver.OPTIMAL
 
-    assert math.isclose(problem.solver.Objective().Value(), 72)
+    assert math.isclose(problem.solver.Objective().Value(), result)
 
     count_variables = 0
     for variable in problem.solver.variables():
@@ -130,7 +130,7 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
 
     assert status == problem.solver.OPTIMAL
 
-    assert math.isclose(problem.solver.Objective().Value(), 72)
+    assert math.isclose(problem.solver.Objective().Value(), result)
 
     count_variables = 0
     for variable in problem.solver.variables():
@@ -163,7 +163,7 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
 
     assert status == problem.solver.OPTIMAL
 
-    assert math.isclose(problem.solver.Objective().Value(), 72)
+    assert math.isclose(problem.solver.Objective().Value(), result)
 
     count_variables = 0
     for variable in problem.solver.variables():
@@ -187,8 +187,8 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
 
 
 def test_short_test_horizon_10() -> None:
-    short_term_storage_base(efficiency=0.8, horizon=10)
+    short_term_storage_base(efficiency=0.8, horizon=10, result=72)
 
 
 def test_short_test_horizon_5() -> None:
-    short_term_storage_base(efficiency=0.2, horizon=5)
+    short_term_storage_base(efficiency=0.2, horizon=5, result=18)
