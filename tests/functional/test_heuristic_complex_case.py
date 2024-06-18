@@ -680,7 +680,7 @@ def test_fast_heuristic() -> None:
                     number_hours,
                     thermal_cluster=g,
                     week=week,
-                    scenario=scenario
+                    scenario=scenario,
                 )
 
                 mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
