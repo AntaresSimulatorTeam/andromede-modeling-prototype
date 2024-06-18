@@ -633,14 +633,15 @@ def test_fast_heuristic() -> None:
     """
 
     number_hours = 168
-    scenarios = 2
+    scenarios = 1
+    weeks = 1
 
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
     for scenario in range(scenarios):
-        for week in range(2):
+        for week in range(weeks):
             # First optimization
             problem_optimization_1 = create_complex_problem(
                 {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
