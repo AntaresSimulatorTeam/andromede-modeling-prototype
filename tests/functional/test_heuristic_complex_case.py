@@ -311,25 +311,106 @@ THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
     objective_operational_contribution=(var("nb_on")).sum().expec(),
 )
 
-BLOCK_MODEL_FAST_HEURISTIC = model(
-    id="GEN",
-    parameters=[float_parameter("cost", TIME_AND_SCENARIO_FREE)],
-    variables=[
-        int_variable(
-            "t_ajust",
-            lower_bound=literal(0),
-            upper_bound=literal(1),
-            structure=TIME_AND_SCENARIO_FREE,
-        )
-    ],
-    constraints=[
-        Constraint(
-            "Choose one t ajust",
-            var("t_ajust").sum() == literal(1),
-        )
-    ],
-    objective_operational_contribution=(var("t_ajust") * param("cost")).sum().expec(),
-)
+
+def get_model_fast_heuristic(Q: int, delta: int) -> Model:
+    BLOCK_MODEL_FAST_HEURISTIC = model(
+        id="BLOCK_FAST",
+        parameters=[
+            float_parameter("n_guide", TIME_AND_SCENARIO_FREE),
+            float_parameter("delta", CONSTANT),
+            float_parameter("n_max", CONSTANT),
+        ]
+        + [
+            int_parameter(f"alpha_{k}_{h}", NON_ANTICIPATIVE_TIME_VARYING)
+            for k in range(Q)
+            for h in range(delta)
+        ]
+        + [
+            int_parameter(f"alpha_ajust_{h}", NON_ANTICIPATIVE_TIME_VARYING)
+            for h in range(delta)
+        ],
+        variables=[
+            float_variable(
+                f"n_block_{k}",
+                lower_bound=literal(0),
+                upper_bound=param("n_max"),
+                structure=CONSTANT_PER_SCENARIO,
+            )
+            for k in range(Q)
+        ]
+        + [
+            float_variable(
+                "n_ajust",
+                lower_bound=literal(0),
+                upper_bound=param("n_max"),
+                structure=CONSTANT_PER_SCENARIO,
+            )
+        ]
+        + [
+            int_variable(
+                f"t_ajust_{h}",
+                lower_bound=literal(0),
+                upper_bound=literal(1),
+                structure=CONSTANT_PER_SCENARIO,
+            )
+            for h in range(delta)
+        ]
+        + [
+            float_variable(
+                "n",
+                lower_bound=literal(0),
+                upper_bound=param("n_max"),
+                structure=TIME_AND_SCENARIO_FREE,
+            )
+        ],
+        constraints=[
+            Constraint(
+                f"Definition of n block {k} for {h}",
+                var(f"n_block_{k}")
+                >= param("n_guide") * param(f"alpha_{k}_{h}")
+                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+            )
+            for k in range(Q)
+            for h in range(delta)
+        ]
+        + [
+            Constraint(
+                f"Definition of n ajust for {h}",
+                var(f"n_ajust")
+                >= param("n_guide") * param(f"alpha_ajust_{h}")
+                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+            )
+            for h in range(delta)
+        ]
+        + [
+            Constraint(
+                f"Definition of n with relation to block {k} for {h}",
+                var(f"n")
+                >= param(f"alpha_{k}_{h}") * var(f"n_block_{k}")
+                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+            )
+            for k in range(Q)
+            for h in range(delta)
+        ]
+        + [
+            Constraint(
+                f"Definition of n with relation to ajust for {h}",
+                var(f"n")
+                >= param(f"alpha_ajust_{h}") * var(f"n_ajust")
+                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+            )
+            for h in range(delta)
+        ]
+        + [
+            Constraint(
+                "Choose one t ajust",
+                literal(0) + sum([var(f"t_ajust_{h}") for h in range(delta)])
+                == literal(1),
+            )
+        ],
+        objective_operational_contribution=(var("n")).sum().expec(),
+    )
+    return BLOCK_MODEL_FAST_HEURISTIC
 
 
 def test_milp_version() -> None:
@@ -537,7 +618,10 @@ def test_accurate_heuristic() -> None:
                 problem_optimization_2, "accurate", week, scenario=scenario
             )
 
-            expected_cost = [[78996726, 102215087 - 69500], [17587733, 17650089-10081]]
+            expected_cost = [
+                [78996726, 102215087 - 69500],
+                [17587733, 17650089 - 10081],
+            ]
             assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
@@ -575,13 +659,28 @@ def test_fast_heuristic() -> None:
 
             # Solve heuristic problem
             mingen: Dict[str, AbstractDataStructure] = {}
-            for g in ["G1", "G2", "G3"]:
+            for g in ["G1", "G2", "G3"]:  #
+                pmax = {"G1": 410, "G2": 90, "G3": 275}[g]
+                nb_on_1 = np.ceil(
+                    np.round(
+                        np.array(
+                            output_1.component(g)
+                            .var("generation")
+                            .value[0]  # type:ignore
+                        )
+                        / pmax,
+                        12,
+                    )
+                )
+                n_guide = TimeSeriesData(
+                    {TimeIndex(i): nb_on_1[i] for i in range(number_hours)}
+                )
                 mingen_heuristic = create_problem_fast_heuristic(
-                    output_1.component(g).var("generation").value,  # type:ignore
+                    n_guide,
                     number_hours,
                     thermal_cluster=g,
                     week=week,
-                    scenario=scenario,
+                    scenario=scenario
                 )
 
                 mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
@@ -859,7 +958,7 @@ def create_problem_accurate_heuristic(
 
 
 def create_problem_fast_heuristic(
-    lower_bound: List[List[float]],
+    lower_bound: AbstractDataStructure,
     number_hours: int,
     thermal_cluster: str,
     week: int,
@@ -867,7 +966,6 @@ def create_problem_fast_heuristic(
 ) -> pd.DataFrame:
 
     delta = {"G1": 8, "G2": 11, "G3": 9}[thermal_cluster]
-    pmax = {"G1": 410, "G2": 90, "G3": 275}[thermal_cluster]
     pmin = {"G1": 180, "G2": 60, "G3": 150}[thermal_cluster]
     pdispo = {
         "G1": np.reshape(
@@ -877,43 +975,89 @@ def create_problem_fast_heuristic(
         "G3": np.reshape(
             np.repeat(get_failures_for_cluster3(week, scenario), 24), (number_hours, 1)
         ),
-    }
+    }[thermal_cluster]
+    nmax = {"G1": 1, "G2": 3, "G3": 4}[thermal_cluster]
 
-    cost = pd.DataFrame(
-        np.zeros((delta + 1, 1)),
-        index=[i for i in range(delta + 1)],
-        columns=[0],
-    )
-    n = np.zeros((number_hours, delta + 1, 1))
-    for h in range(delta + 1):
-        cost_h = 0
-        n_k = max(
-            [convert_to_integer(lower_bound[0][j] / pmax) for j in range(h)]
-            + [
-                convert_to_integer(lower_bound[0][j] / pmax)
-                for j in range(number_hours - delta + h, number_hours)
-            ]
+    # nopt = {
+    #     "G1": np.ones((number_hours)),
+    #     "G2": np.array(
+    #         [
+    #             (
+    #                 3.0
+    #                 if i in list(range(50, 72))
+    #                 else (1.0 if i in list(range(39, 50)) else 0.0)
+    #             )
+    #             for i in range(number_hours)
+    #         ]
+    #     ),
+    # }[thermal_cluster]
+    number_blocks = number_hours // delta
+
+    database = DataBase()
+
+    database.add_data("B", "n_max", ConstantData(nmax))
+    database.add_data("B", "delta", ConstantData(delta))
+    database.add_data("B", "n_guide", lower_bound)
+    for h in range(delta):
+        start_ajust = number_hours - delta + h
+        database.add_data(
+            "B",
+            f"alpha_ajust_{h}",
+            TimeSeriesData(
+                {
+                    TimeIndex(t): 1 if (t >= start_ajust) or (t < h) else 0
+                    for t in range(number_hours)
+                }
+            ),
         )
-        cost_h += delta * n_k
-        n[0:h, h, 0] = n_k
-        n[number_hours - delta + h : number_hours, h, 0] = n_k
-        t = h
-        while t < number_hours - delta + h:
-            k = floor((t - h) / delta) * delta + h
-            n_k = max(
-                [
-                    convert_to_integer(lower_bound[0][j] / pmax)
-                    for j in range(k, min(number_hours - delta + h, k + delta))
-                ]
+        for k in range(number_blocks):
+            start_k = k * delta + h
+            end_k = min(start_ajust, (k + 1) * delta + h)
+            database.add_data(
+                "B",
+                f"alpha_{k}_{h}",
+                TimeSeriesData(
+                    {
+                        TimeIndex(t): 1 if (t >= start_k) and (t < end_k) else 0
+                        for t in range(number_hours)
+                    }
+                ),
             )
-            cost_h += (min(number_hours - delta + h, k + delta) - k) * n_k
-            n[k : min(number_hours - delta + h, k + delta), h, 0] = n_k
-            t += delta
-        cost.iloc[h, 0] = cost_h
 
-    hmin = np.argmin(cost.values[:, 0])
+    time_block = TimeBlock(1, [i for i in range(number_hours)])
+    scenarios = delta
+
+    block = create_component(
+        model=get_model_fast_heuristic(number_blocks, delta=delta), id="B"
+    )
+
+    network = Network("test")
+    network.add_component(block)
+
+    problem = build_problem(
+        network,
+        database,
+        time_block,
+        scenarios,
+        border_management=BlockBorderManagement.CYCLE,
+        solver_id="XPRESS",
+    )
+
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    problem.solver.EnableOutput()
+
+    status = problem.solver.Solve(parameters)
+
+    assert status == problem.solver.OPTIMAL
+
+    output_heuristic = OutputValues(problem)
+    n_heuristic = np.array(
+        output_heuristic.component("B").var("n").value[0]  # type:ignore
+    ).reshape((168, 1))
     mingen_heuristic = pd.DataFrame(
-        np.minimum(n[:, hmin, :] * pmin, pdispo[thermal_cluster]),
+        np.minimum(n_heuristic * pmin, pdispo),
         index=[i for i in range(number_hours)],
         columns=[0],
     )
