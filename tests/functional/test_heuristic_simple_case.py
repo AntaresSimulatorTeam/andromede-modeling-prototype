@@ -15,6 +15,7 @@ import pytest
 import numpy as np
 from typing import List
 from math import ceil, floor
+import ortools.linear_solver.pywraplp as pywraplp
 
 from andromede.expression import literal, param, var
 from andromede.expression.expression import ExpressionRange, port_field
@@ -46,6 +47,8 @@ from andromede.study import (
     PortRef,
     TimeScenarioIndex,
     TimeScenarioSeriesData,
+    TimeSeriesData,
+    TimeIndex,
     create_component,
 )
 from andromede.study.data import AbstractDataStructure
@@ -302,24 +305,104 @@ THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
     objective_operational_contribution=(var("nb_on")).sum().expec(),
 )
 
+Q = 16  # number of blocks
+R = 8  # length of the last block
+Delta = 10
 BLOCK_MODEL_FAST_HEURISTIC = model(
-    id="GEN",
-    parameters=[float_parameter("cost", TIME_AND_SCENARIO_FREE)],
+    id="BLOCK_FAST",
+    parameters=[
+        float_parameter("n_guide", TIME_AND_SCENARIO_FREE),
+        float_parameter("delta", CONSTANT),
+        float_parameter("n_max", CONSTANT),
+    ]
+    + [
+        int_parameter(f"alpha_{k}_{h}", NON_ANTICIPATIVE_TIME_VARYING)
+        for k in range(Q)
+        for h in range(Delta)
+    ]
+    + [
+        int_parameter(f"alpha_ajust_{h}", NON_ANTICIPATIVE_TIME_VARYING)
+        for h in range(Delta)
+    ],
     variables=[
+        float_variable(
+            f"n_block_{k}",
+            lower_bound=literal(0),
+            upper_bound=param("n_max"),
+            structure=CONSTANT_PER_SCENARIO,
+        )
+        for k in range(Q)
+    ]
+    + [
+        float_variable(
+            "n_ajust",
+            lower_bound=literal(0),
+            upper_bound=param("n_max"),
+            structure=CONSTANT_PER_SCENARIO,
+        )
+    ]
+    + [
         int_variable(
-            "t_ajust",
+            f"t_ajust_{h}",
             lower_bound=literal(0),
             upper_bound=literal(1),
+            structure=CONSTANT_PER_SCENARIO,
+        )
+        for h in range(Delta)
+    ]
+    + [
+        float_variable(
+            "n",
+            lower_bound=literal(0),
+            upper_bound=param("n_max"),
             structure=TIME_AND_SCENARIO_FREE,
         )
     ],
     constraints=[
         Constraint(
+            f"Definition of n block {k} for {h}",
+            var(f"n_block_{k}")
+            >= param("n_guide") * param(f"alpha_{k}_{h}")
+            - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+        )
+        for k in range(Q)
+        for h in range(Delta)
+    ]
+    + [
+        Constraint(
+            f"Definition of n ajust for {h}",
+            var(f"n_ajust")
+            >= param("n_guide") * param(f"alpha_ajust_{h}")
+            - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+        )
+        for h in range(Delta)
+    ]
+    + [
+        Constraint(
+            f"Definition of n with relation to block {k} for {h}",
+            var(f"n")
+            >= param(f"alpha_{k}_{h}") * var(f"n_block_{k}")
+            - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+        )
+        for k in range(Q)
+        for h in range(Delta)
+    ]
+    + [
+        Constraint(
+            f"Definition of n with relation to ajust for {h}",
+            var(f"n")
+            >= param(f"alpha_ajust_{h}") * var(f"n_ajust")
+            - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+        )
+        for h in range(Delta)
+    ]
+    + [
+        Constraint(
             "Choose one t ajust",
-            var("t_ajust").sum() == literal(1),
+            literal(0) + sum([var(f"t_ajust_{h}") for h in range(Delta)]) == literal(1),
         )
     ],
-    objective_operational_contribution=(var("t_ajust") * param("cost")).sum().expec(),
+    objective_operational_contribution=(var("n")).sum().expec(),
 )
 
 
@@ -586,6 +669,7 @@ def test_fast_heuristic() -> None:
     """
 
     number_hours = 168
+    pmax = 1000
 
     # First optimization
     problem_optimization_1 = create_simple_problem(
@@ -598,9 +682,28 @@ def test_fast_heuristic() -> None:
     # Get number of on units
     output_1 = OutputValues(problem_optimization_1)
 
+    nb_on_1 = pd.DataFrame(
+        np.transpose(
+            np.ceil(
+                np.round(
+                    np.array(
+                        output_1.component("G")
+                        .var("generation")
+                        .value[0]  # type:ignore
+                    )
+                    / pmax,
+                    12,
+                )
+            )
+        ),
+        index=[i for i in range(number_hours)],
+        columns=[0],
+    )
+    n_guide = TimeScenarioSeriesData(nb_on_1)
+
     # Solve heuristic problem
     mingen_heuristic = create_problem_fast_heuristic(
-        output_1.component("G").var("generation").value,  # type:ignore
+        n_guide,
         number_hours,
     )
 
@@ -755,45 +858,76 @@ def create_problem_accurate_heuristic(
 
 
 def create_problem_fast_heuristic(
-    lower_bound: List[List[float]], number_hours: int
+    lower_bound: AbstractDataStructure, number_hours: int
 ) -> pd.DataFrame:
 
     delta = 10
-    cost = pd.DataFrame(
-        np.zeros((delta + 1, 1)),
-        index=[i for i in range(delta + 1)],
-        columns=[0],
-    )
-    n = np.zeros((number_hours, delta + 1, 1))
-    for h in range(delta + 1):
-        cost_h = 0
-        n_k = max(
-            [convert_to_integer(lower_bound[0][j] / 1000) for j in range(h)]
-            + [
-                convert_to_integer(lower_bound[0][j] / 1000)
-                for j in range(number_hours - delta + h, number_hours)
-            ]
-        )
-        cost_h += delta * n_k
-        n[0:h, h, 0] = n_k
-        n[number_hours - delta + h : number_hours, h, 0] = n_k
-        t = h
-        while t < number_hours - delta + h:
-            k = floor((t - h) / delta) * delta + h
-            n_k = max(
-                [
-                    convert_to_integer(lower_bound[0][j] / 1000)
-                    for j in range(k, min(number_hours - delta + h, k + delta))
-                ]
-            )
-            cost_h += (min(number_hours - delta + h, k + delta) - k) * n_k
-            n[k : min(number_hours - delta + h, k + delta), h, 0] = n_k
-            t += delta
-        cost.iloc[h, 0] = cost_h
+    pmin = 700
+    pdispo = np.array(3000)
+    nmax = 3
 
-    hmin = np.argmin(cost.values[:, 0])
+    database = DataBase()
+
+    database.add_data("B", "n_max", ConstantData(nmax))
+    database.add_data("B", "delta", ConstantData(delta))
+    database.add_data("B", "n_guide", lower_bound)
+    for h in range(delta):
+        start_ajust = number_hours - delta + h
+        database.add_data(
+            "B",
+            f"alpha_ajust_{h}",
+            TimeSeriesData(
+                {
+                    TimeIndex(t): 1 if (t >= start_ajust) or (t < h) else 0
+                    for t in range(number_hours)
+                }
+            ),
+        )
+        for k in range(Q):
+            start_k = k * delta + h
+            end_k = min(start_ajust, (k + 1) * delta + h)
+            database.add_data(
+                "B",
+                f"alpha_{k}_{h}",
+                TimeSeriesData(
+                    {
+                        TimeIndex(t): 1 if (t >= start_k) and (t < end_k) else 0
+                        for t in range(number_hours)
+                    }
+                ),
+            )
+
+    time_block = TimeBlock(1, [i for i in range(number_hours)])
+
+    block = create_component(model=BLOCK_MODEL_FAST_HEURISTIC, id="B")
+
+    network = Network("test")
+    network.add_component(block)
+
+    problem = build_problem(
+        network,
+        database,
+        time_block,
+        1,
+        border_management=BlockBorderManagement.CYCLE,
+        solver_id="XPRESS",
+    )
+
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    problem.solver.EnableOutput()
+
+    status = problem.solver.Solve(parameters)
+
+    assert status == problem.solver.OPTIMAL
+
+    output_heuristic = OutputValues(problem)
+    n_heuristic = np.array(
+        output_heuristic.component("B").var("n").value[0]  # type:ignore
+    )
     mingen_heuristic = pd.DataFrame(
-        n[:, hmin, :] * 700,
+        np.minimum(n_heuristic * pmin, pdispo),
         index=[i for i in range(number_hours)],
         columns=[0],
     )
