@@ -587,28 +587,6 @@ def generate_database(
         )
         database.add_data(cluster, "mingen", lower_bound[cluster])
 
-    database.add_data("U", "cost", ConstantData(750))
-    database.add_data("S", "cost", ConstantData(10))
-
-    output_file = open(
-        "tests/functional/data_second_complex_case/milp/"
-        + str(scenario)
-        + "/values-hourly.txt",
-        "r",
-    )
-    output = output_file.readlines()
-
-    demand_data = pd.DataFrame(
-        data=[
-            float(line.strip().split("\t")[7])
-            for line in output[168 * week + 7 : 168 * week + 7 + 168]
-        ],
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-
-    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
-    database.add_data("D", "demand", demand_time_scenario_series)
     return database
 
 
