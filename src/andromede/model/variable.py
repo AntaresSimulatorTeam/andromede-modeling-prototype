@@ -10,8 +10,8 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, replace
+from typing import Any, Optional
 
 from andromede.expression import ExpressionNode
 from andromede.expression.degree import is_constant
@@ -37,6 +37,9 @@ class Variable:
             raise ValueError("Lower bounds of variables must be constant")
         if self.upper_bound and not is_constant(self.upper_bound):
             raise ValueError("Upper bounds of variables must be constant")
+
+    def replicate(self, /, **changes: Any) -> "Variable":
+        return replace(self, **changes)
 
 
 def int_variable(
