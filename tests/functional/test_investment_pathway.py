@@ -455,7 +455,6 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     xpansion = build_benders_decomposed_problem(
         dt_root, database, coupling_network=network_coupler
     )
-    xpansion.initialise(is_debug=True)
 
     data = {
         "solution": {
