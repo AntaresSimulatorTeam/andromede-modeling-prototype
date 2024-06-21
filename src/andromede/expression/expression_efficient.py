@@ -16,6 +16,7 @@ Defines the model for generic expressions.
 import enum
 import inspect
 from dataclasses import dataclass, field
+import math
 from typing import Any, Callable, List, Optional, Sequence, Union
 
 import andromede.expression.port_operator
@@ -43,31 +44,31 @@ class ExpressionNodeEfficient:
     instances: Instances = field(init=False, default=Instances.SIMPLE)
 
     def __neg__(self) -> "ExpressionNodeEfficient":
-        return NegationNode(self)
+        return _negate_node(self)
 
     def __add__(self, rhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(rhs, lambda x: AdditionNode(self, x))
+        return _apply_if_node(rhs, lambda x: _add_node(self, x))
 
     def __radd__(self, lhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(lhs, lambda x: AdditionNode(x, self))
+        return _apply_if_node(lhs, lambda x: _add_node(x, self))
 
     def __sub__(self, rhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(rhs, lambda x: SubstractionNode(self, x))
+        return _apply_if_node(rhs, lambda x: _substract_node(self, x))
 
     def __rsub__(self, lhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(lhs, lambda x: SubstractionNode(x, self))
+        return _apply_if_node(lhs, lambda x: _substract_node(x, self))
 
     def __mul__(self, rhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(rhs, lambda x: MultiplicationNode(self, x))
+        return _apply_if_node(rhs, lambda x: _multiply_node(self, x))
 
     def __rmul__(self, lhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(lhs, lambda x: MultiplicationNode(x, self))
+        return _apply_if_node(lhs, lambda x: _multiply_node(x, self))
 
     def __truediv__(self, rhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(rhs, lambda x: DivisionNode(self, x))
+        return _apply_if_node(rhs, lambda x: _divide_node(self, x))
 
     def __rtruediv__(self, lhs: Any) -> "ExpressionNodeEfficient":
-        return _apply_if_node(lhs, lambda x: DivisionNode(x, self))
+        return _apply_if_node(lhs, lambda x: _divide_node(x, self))
 
     def __le__(self, rhs: Any) -> "ExpressionNodeEfficient":
         return _apply_if_node(
@@ -149,6 +150,84 @@ def _apply_if_node(
         return func(as_node)
     else:
         return NotImplemented
+
+def is_zero(node: ExpressionNodeEfficient) -> bool:
+    # Could we use expressions equal
+    # TODO: Change hard coded 1e-16 abs_tol
+    return isinstance(node, LiteralNode) and math.isclose(node.value, 0, abs_tol=1e-16)
+
+def is_one(node: ExpressionNodeEfficient) -> bool:
+    # Could we use expressions equal
+    return isinstance(node, LiteralNode) and math.isclose(node.value, 1)
+
+def is_minus_one(node: ExpressionNodeEfficient) -> bool:
+    # Could we use expressions equal
+    return isinstance(node, LiteralNode) and math.isclose(node.value, -1)
+
+def _negate_node(node: ExpressionNodeEfficient):
+    if isinstance(node, LiteralNode):
+        return LiteralNode(-node.value)
+    else:
+        return NegationNode(node)
+
+def _add_node(
+    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
+) -> ExpressionNodeEfficient:
+    if is_zero(lhs):
+        return rhs
+    if is_zero(rhs):
+        return lhs
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        return LiteralNode(lhs.value + rhs.value)
+    # TODO : Si noeuds gauche droite même clé de param -> 2 * param
+    else:
+        return AdditionNode(lhs, rhs)
+
+
+def _substract_node(
+    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
+) -> ExpressionNodeEfficient:
+    if is_zero(lhs):
+        return -rhs
+    if is_zero(rhs):
+        return lhs
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        return LiteralNode(lhs.value - rhs.value)
+    # TODO : Si noeuds gauche droite même clé de param -> 0
+    else:
+        return SubstractionNode(lhs, rhs)
+
+
+def _multiply_node(
+    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
+) -> ExpressionNodeEfficient:
+    if is_one(lhs):
+        return rhs
+    if is_one(rhs):
+        return lhs
+    if is_minus_one(lhs):
+        return -rhs
+    if is_minus_one(rhs):
+        return -lhs
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        return LiteralNode(lhs.value * rhs.value)
+    else:
+        return MultiplicationNode(lhs, rhs)
+
+
+def _divide_node(
+    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
+) -> ExpressionNodeEfficient:
+    if is_one(rhs):
+        return lhs
+    if is_minus_one(rhs):
+        return -lhs
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        # This could raise division by 0 error
+        return LiteralNode(lhs.value / rhs.value)
+
+    else:
+        return DivisionNode(lhs, rhs)
 
 
 @dataclass(frozen=True, eq=False)

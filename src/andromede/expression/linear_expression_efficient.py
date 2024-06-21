@@ -15,7 +15,7 @@ Specific modelling for "instantiated" linear expressions,
 with only variables and literal coefficients.
 """
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import ValueProvider, evaluate
@@ -35,8 +35,8 @@ T = TypeVar("T")
 EPS = 10 ** (-16)
 
 
-def is_close_abs(value: float, other_value: float, eps: float) -> bool:
-    return abs(value - other_value) < eps
+# def is_close_abs(value: float, other_value: float, eps: float) -> bool:
+#     return abs(value - other_value) < eps
 
 
 def is_zero(value: ExpressionNodeEfficient) -> bool:
@@ -296,36 +296,37 @@ class LinearExpressionEfficient:
     def __eq__(self, rhs: object) -> bool:
         return (
             isinstance(rhs, LinearExpressionEfficient)
-            and is_close_abs(self.constant, rhs.constant, EPS)
+            and expressions_equal(self.constant, rhs.constant)
             and self.terms
             == rhs.terms  # /!\ There may be float equality comparison in the terms values
         )
 
-    def __iadd__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
-        if not isinstance(rhs, LinearExpressionEfficient):
-            return NotImplemented
+    def __iadd__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+        rhs = _wrap_in_linear_expr(rhs)
         self.constant += rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms, 0)
         self.terms = aggregated_terms
         self.remove_zeros_from_terms()
         return self
 
-    def __add__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+    def __add__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result += self
         result += rhs
         return result
 
-    def __isub__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
-        if not isinstance(rhs, LinearExpressionEfficient):
-            return NotImplemented
+    def __radd__(self, rhs: int) -> "LinearExpressionEfficient":
+        return self.__add__(rhs)
+
+    def __isub__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+        rhs = _wrap_in_linear_expr(rhs)
         self.constant -= rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms, 0)
         self.terms = aggregated_terms
         self.remove_zeros_from_terms()
         return self
 
-    def __sub__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+    def __sub__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result += self
         result -= rhs
@@ -336,9 +337,8 @@ class LinearExpressionEfficient:
         result -= self
         return result
 
-    def __imul__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
-        if not isinstance(rhs, LinearExpressionEfficient):
-            return NotImplemented
+    def __imul__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+        rhs = _wrap_in_linear_expr(rhs)
 
         if self.terms and rhs.terms:
             raise ValueError("Cannot multiply two non constant expression")
@@ -350,9 +350,9 @@ class LinearExpressionEfficient:
                 # It is possible that both expr are constant
                 left_expr = rhs
                 const_expr = self
-            if expressions_equal(const_expr.constant, LiteralNode(0), EPS):
+            if is_zero(const_expr.constant):
                 return LinearExpressionEfficient()
-            elif expressions_equal(const_expr.constant, LiteralNode(1), EPS):
+            elif is_one(const_expr.constant):
                 _copy_expression(left_expr, self)
             else:
                 left_expr.constant *= const_expr.constant
@@ -369,17 +369,19 @@ class LinearExpressionEfficient:
                 _copy_expression(left_expr, self)
         return self
 
-    def __mul__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+    def __mul__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result += self
         result *= rhs
         return result
 
+    def __rmul__(self, rhs: int) -> "LinearExpressionEfficient":
+        return self.__mul__(rhs)
+
     def __itruediv__(
-        self, rhs: "LinearExpressionEfficient"
+        self, rhs: Union["LinearExpressionEfficient", int, float]
     ) -> "LinearExpressionEfficient":
-        if not isinstance(rhs, LinearExpressionEfficient):
-            return NotImplemented
+        rhs = _wrap_in_linear_expr(rhs)
 
         if rhs.terms:
             raise ValueError("Cannot divide by a non constant expression")
@@ -403,18 +405,21 @@ class LinearExpressionEfficient:
         return self
 
     def __truediv__(
-        self, rhs: "LinearExpressionEfficient"
+        self, rhs: Union["LinearExpressionEfficient", int, float]
     ) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result += self
         result /= rhs
 
         return result
+    
+    def __rtruediv__(self, rhs: Union[int, float]) -> "LinearExpressionEfficient":
+        return self.__truediv__(rhs)
 
     def remove_zeros_from_terms(self) -> None:
         # TODO: Not optimized, checks could be done directly when doing operations on self.linear_term to avoid copies
         for term_key, term in self.terms.copy().items():
-            if is_close_abs(term.coefficient, 0, EPS):
+            if is_zero(term.coefficient):
                 del self.terms[term_key]
 
     def is_valid(self) -> bool:
@@ -445,6 +450,21 @@ class LinearExpressionEfficient:
     def is_constant(self) -> bool:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
         return not self.terms
+
+def _wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:
+    if isinstance(obj, LinearExpressionEfficient):
+        return obj
+    elif isinstance(obj, float) or isinstance(obj, int):
+        return LinearExpressionEfficient([], LiteralNode(float(obj)))
+    raise TypeError(f"Unable to wrap {obj} into a linear expression")
+
+def _apply_if_node(
+    obj: Any, func: Callable[[LinearExpressionEfficient], LinearExpressionEfficient]
+) -> LinearExpressionEfficient:
+    if as_linear_expr := _wrap_in_linear_expr(obj):
+        return func(as_linear_expr)
+    else:
+        return NotImplemented
 
 
 def _copy_expression(
