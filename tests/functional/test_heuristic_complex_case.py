@@ -408,7 +408,10 @@ def get_model_fast_heuristic(Q: int, delta: int) -> Model:
                 == literal(1),
             )
         ],
-        objective_operational_contribution=(var("n")).sum().expec(),
+        objective_operational_contribution=(var("n")).sum().expec()
+        + sum(
+            [var(f"t_ajust_{h}") * (h + 1) / 10 / delta for h in range(delta)]
+        ).expec(),  # type:ignore
     )
     return BLOCK_MODEL_FAST_HEURISTIC
 
@@ -633,8 +636,8 @@ def test_fast_heuristic() -> None:
     """
 
     number_hours = 168
-    scenarios = 1
-    weeks = 1
+    scenarios = 2
+    weeks = 2
 
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
@@ -1026,7 +1029,6 @@ def create_problem_fast_heuristic(
             )
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = delta
 
     block = create_component(
         model=get_model_fast_heuristic(number_blocks, delta=delta), id="B"
@@ -1039,7 +1041,7 @@ def create_problem_fast_heuristic(
         network,
         database,
         time_block,
-        scenarios,
+        1,
         border_management=BlockBorderManagement.CYCLE,
         solver_id="XPRESS",
     )
@@ -1047,6 +1049,7 @@ def create_problem_fast_heuristic(
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
+    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-7)
     problem.solver.EnableOutput()
 
     status = problem.solver.Solve(parameters)
