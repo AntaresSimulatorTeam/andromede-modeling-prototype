@@ -454,7 +454,10 @@ def get_model_fast_heuristic(Q: int, delta: int) -> Model:
                 == literal(1),
             )
         ],
-        objective_operational_contribution=(var("n")).sum().expec(),
+        objective_operational_contribution=(var("n")).sum().expec()
+        + sum(
+            [var(f"t_ajust_{h}") * (h + 1) / 10 / delta for h in range(delta)]
+        ).expec(),  # type:ignore
     )
     return BLOCK_MODEL_FAST_HEURISTIC
 
@@ -805,7 +808,6 @@ def create_problem_fast_heuristic(
             )
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = delta
 
     block = create_component(
         model=get_model_fast_heuristic(number_blocks, delta=delta), id="B"
@@ -818,7 +820,7 @@ def create_problem_fast_heuristic(
         network,
         database,
         time_block,
-        scenarios,
+        1,
         border_management=BlockBorderManagement.CYCLE,
         solver_id="XPRESS",
     )
