@@ -13,7 +13,7 @@
 import pandas as pd
 import pytest
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Optional
 from math import ceil, floor
 import ortools.linear_solver.pywraplp as pywraplp
 
@@ -53,55 +53,134 @@ CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
 
 capacity = 1e07
 
+HYDRO_MODEL = {
+    "id": "H",
+    "parameters": [
+        float_parameter("max_generating", NON_ANTICIPATIVE_TIME_VARYING),
+        float_parameter("min_generating", NON_ANTICIPATIVE_TIME_VARYING),
+        float_parameter("capacity", CONSTANT),
+        float_parameter("initial_level", CONSTANT_PER_SCENARIO),
+        float_parameter("generating_target", TIME_AND_SCENARIO_FREE),
+        float_parameter("overall_target", CONSTANT_PER_SCENARIO),
+        float_parameter("inflow", TIME_AND_SCENARIO_FREE),
+        float_parameter(
+            "max_epsilon", NON_ANTICIPATIVE_TIME_VARYING
+        ),  # not really a parameter, it is just to implement correctly one constraint
+        float_parameter("lower_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
+        float_parameter("upper_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
+    ],
+    "variables": [
+        float_variable(
+            "generating",
+            lower_bound=param("min_generating"),
+            upper_bound=param("max_generating"),
+            structure=TIME_AND_SCENARIO_FREE,
+        ),
+        float_variable(
+            "level",
+            lower_bound=literal(0),
+            upper_bound=param("capacity"),
+            structure=TIME_AND_SCENARIO_FREE,
+        ),
+        float_variable(
+            "overflow",
+            lower_bound=literal(0),
+            structure=TIME_AND_SCENARIO_FREE,
+        ),
+        float_variable(
+            "epsilon",
+            lower_bound=-param("max_epsilon"),
+            upper_bound=param("max_epsilon"),
+            structure=TIME_AND_SCENARIO_FREE,
+        ),
+    ],
+    "constraints": [
+        Constraint(
+            "Level balance",
+            var("level")
+            == var("level").shift(-1)
+            - var("generating")
+            - var("overflow")
+            + param("inflow")
+            + var("epsilon"),
+        ),
+        # Constraint(
+        #     "Respect generating target",
+        #     var("generating").sum() == param("overall_target"),
+        # ),
+        Constraint(
+            "Initial level",
+            var("level").eval(literal(0))
+            == param("initial_level")
+            - var("generating").eval(literal(0))
+            - var("overflow").eval(literal(0))
+            + param("inflow").eval(literal(0)),
+        ),
+    ],
+}
 
-def get_hydro_model(horizon: str) -> Model:
+
+def get_heuristic_hydro_model(
+    hydro_model: Dict,
+    horizon: str,
+) -> Model:
+    objective_function_cost = {
+        "gamma_d": 1,
+        "gamma_delta": 1 if horizon == "monthly" else 2,
+        "gamma_y": 100000 if horizon == "monthly" else 68,
+        "gamma_w": 0 if horizon == "monthly" else 34,
+        "gamma_v+": 100 if horizon == "monthly" else 0,
+        "gamma_v-": 100 if horizon == "monthly" else 68,
+        "gamma_o": 0 if horizon == "monthly" else 23 * 68 + 1,
+        "gamma_s": 0 if horizon == "monthly" else -1 / 32,
+    }
+
+    list_constraint = hydro_model["constraints"] + [
+        Constraint(
+            "Respect generating target",
+            var("generating").sum() + var("gap_to_target") == param("overall_target"),
+        ),
+        Constraint(
+            "Definition of distance between target and generating",
+            var("distance_between_target_and_generating")
+            >= param("generating_target") - var("generating"),
+        ),
+        Constraint(
+            "Definition of distance between generating and target",
+            var("distance_between_target_and_generating")
+            >= var("generating") - param("generating_target"),
+        ),
+        Constraint(
+            "Definition of max distance between generating and target",
+            var("max_distance_between_target_and_generating")
+            >= var("distance_between_target_and_generating"),
+        ),
+        Constraint(
+            "Definition of violation of lower rule curve",
+            var("violation_lower_rule_curve") + var("level")
+            >= param("lower_rule_curve"),
+        ),
+        Constraint(
+            "Definition of violation of upper rule curve",
+            var("violation_upper_rule_curve") - var("level")
+            >= -param("upper_rule_curve"),
+        ),
+        Constraint(
+            "Definition of max violation of lower rule curve",
+            var("max_violation_lower_rule_curve") >= var("violation_lower_rule_curve"),
+        ),
+    ]
+    if horizon == "monthly":
+        list_constraint.append(Constraint("No overflow", var("overflow") <= literal(0)))
+        list_constraint.append(
+            Constraint("No gap to target", var("gap_to_target") <= literal(0))
+        )
+
     HYDRO_HEURISTIC = model(
         id="H",
-        parameters=[
-            float_parameter("gamma_delta", CONSTANT),
-            float_parameter("gamma_y", CONSTANT),
-            float_parameter("gamma_w", CONSTANT),
-            float_parameter("gamma_d", CONSTANT),
-            float_parameter("gamma_v+", CONSTANT),
-            float_parameter("gamma_v-", CONSTANT),
-            float_parameter("gamma_o", CONSTANT),
-            float_parameter("gamma_s", CONSTANT),
-            int_parameter("alpha_o", CONSTANT),
-            float_parameter("lower_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
-            float_parameter("upper_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
-            float_parameter("max_generating", NON_ANTICIPATIVE_TIME_VARYING),
-            float_parameter("min_generating", NON_ANTICIPATIVE_TIME_VARYING),
-            float_parameter("capacity", CONSTANT),
-            float_parameter("initial_level", CONSTANT_PER_SCENARIO),
-            float_parameter("generating_target", TIME_AND_SCENARIO_FREE),
-            float_parameter("overall_target", CONSTANT_PER_SCENARIO),
-            float_parameter("inflow", TIME_AND_SCENARIO_FREE),
-            float_parameter("max_epsilon", NON_ANTICIPATIVE_TIME_VARYING),
-        ],
-        variables=[
-            float_variable(
-                "generating",
-                lower_bound=param("min_generating"),
-                upper_bound=param("max_generating"),
-                structure=TIME_AND_SCENARIO_FREE,
-            ),
-            float_variable(
-                "level",
-                lower_bound=literal(0),
-                upper_bound=param("capacity"),
-                structure=TIME_AND_SCENARIO_FREE,
-            ),
-            float_variable(
-                "overflow",
-                lower_bound=literal(0),
-                structure=TIME_AND_SCENARIO_FREE,
-            ),
-            float_variable(
-                "epsilon",
-                lower_bound=-param("max_epsilon"),
-                upper_bound=param("max_epsilon"),
-                structure=TIME_AND_SCENARIO_FREE,
-            ),
+        parameters=hydro_model["parameters"],
+        variables=hydro_model["variables"]
+        + [
             float_variable(
                 "distance_between_target_and_generating",
                 lower_bound=literal(0),
@@ -127,78 +206,40 @@ def get_hydro_model(horizon: str) -> Model:
                 lower_bound=literal(0),
                 structure=CONSTANT_PER_SCENARIO,
             ),
-            float_variable(
-                "gap_to_target",
-                lower_bound=literal(0),
-                structure=CONSTANT_PER_SCENARIO,
-            ),
+        ]
+        + [
+            (
+                float_variable(
+                    "gap_to_target",
+                    lower_bound=literal(0),
+                    structure=CONSTANT_PER_SCENARIO,
+                )
+                if horizon == "daily"
+                else float_variable(
+                    "gap_to_target",
+                    lower_bound=literal(0),
+                    upper_bound=literal(0),
+                    structure=CONSTANT_PER_SCENARIO,
+                )
+            )
         ],
-        constraints=[
-            Constraint(
-                "Level balance",
-                var("level")
-                == var("level").shift(-1)
-                - var("generating")
-                - param("alpha_o") * var("overflow")
-                + param("inflow")
-                + var("epsilon"),
-            ),
-            Constraint(
-                "Respect generating target",
-                var("generating").sum() + var("gap_to_target")
-                == param("overall_target"),
-            ),
-            Constraint(
-                "Initial level",
-                var("level").eval(literal(0))
-                == param("initial_level")
-                - var("generating").eval(literal(0))
-                - param("alpha_o") * var("overflow").eval(literal(0))
-                + param("inflow").eval(literal(0)),
-            ),
-            Constraint(
-                "Definition of distance between target and generating",
-                var("distance_between_target_and_generating")
-                >= param("generating_target") - var("generating"),
-            ),
-            Constraint(
-                "Definition of distance between generating and target",
-                var("distance_between_target_and_generating")
-                >= var("generating") - param("generating_target"),
-            ),
-            Constraint(
-                "Definition of max distance between generating and target",
-                var("max_distance_between_target_and_generating")
-                >= var("distance_between_target_and_generating"),
-            ),
-            Constraint(
-                "Definition of violation of lower rule curve",
-                var("violation_lower_rule_curve") + var("level")
-                >= param("lower_rule_curve"),
-            ),
-            Constraint(
-                "Definition of violation of upper rule curve",
-                var("violation_upper_rule_curve") - var("level")
-                >= -param("upper_rule_curve"),
-            ),
-            Constraint(
-                "Definition of max violation of lower rule curve",
-                var("max_violation_lower_rule_curve")
-                >= var("violation_lower_rule_curve"),
-            ),
-        ],
+        constraints=list_constraint,
         objective_operational_contribution=(
-            param("gamma_d") * var("distance_between_target_and_generating")
-            + param("gamma_delta") * var("max_distance_between_target_and_generating")
-            + param("gamma_v+") * var("violation_upper_rule_curve")
-            + param("gamma_v-") * var("violation_lower_rule_curve")
-            + param("gamma_y") * var("max_violation_lower_rule_curve")
-            + param("gamma_w") * var("gap_to_target")
-            + param("gamma_o") * var("overflow")
-            + param("gamma_s") * var("level")
+            objective_function_cost["gamma_d"]
+            * var("distance_between_target_and_generating")
+            + objective_function_cost["gamma_v+"] * var("violation_upper_rule_curve")
+            + objective_function_cost["gamma_v-"] * var("violation_lower_rule_curve")
+            + objective_function_cost["gamma_o"] * var("overflow")
+            + objective_function_cost["gamma_s"] * var("level")
         )
         .sum()
-        .expec(),
+        .expec()
+        + (
+            objective_function_cost["gamma_delta"]
+            * var("max_distance_between_target_and_generating")
+            + objective_function_cost["gamma_y"] * var("max_violation_lower_rule_curve")
+            + objective_function_cost["gamma_w"] * var("gap_to_target")
+        ).expec(),
     )
     return HYDRO_HEURISTIC
 
@@ -229,8 +270,8 @@ def test_hydro_heuristic() -> None:
             max_generating=monthly_max_generating,
             lower_rule_curve=list(monthly_lowerrulecruve),
             upper_rule_curve=list(monthly_upperrulecruve),
-            month=0,
             initial_level=initial_level,
+            month=0,
         )
         monthly_generation = list(
             np.array(
@@ -293,8 +334,8 @@ def test_hydro_heuristic() -> None:
                 upper_rule_curve=list(
                     daily_upperrulecruve[day_in_year : day_in_year + number_day_month]
                 ),
-                month=month,
                 initial_level=initial_level,
+                month=month,
             )
 
             # Calcul des cibles hebdomadaires
@@ -328,12 +369,11 @@ def create_hydro_problem(
     max_generating: List[float],
     lower_rule_curve: List[float],
     upper_rule_curve: List[float],
-    month: int,
     initial_level: float,
+    month: int,
 ) -> tuple[List[float], float]:
 
     database = generate_database(
-        horizon=horizon,
         target=target,
         inflow=inflow,
         max_generating=max_generating,
@@ -345,7 +385,9 @@ def create_hydro_problem(
     time_block = TimeBlock(1, [i for i in range(len(target))])
     scenarios = 1
 
-    hydro = create_component(model=get_hydro_model(horizon), id="H")
+    hydro = create_component(
+        model=get_heuristic_hydro_model(HYDRO_MODEL, horizon), id="H"
+    )
 
     network = Network("test")
     network.add_component(hydro)
@@ -362,8 +404,6 @@ def create_hydro_problem(
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
-    # if horizon == "daily":
-    #     parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1)
     problem.solver.EnableOutput()
 
     status = problem.solver.Solve(parameters)
@@ -374,23 +414,24 @@ def create_hydro_problem(
         assert problem.solver.Objective().Value() / capacity == pytest.approx(
             10.1423117689793
         )
-    # elif horizon == "daily":
-    #     assert problem.solver.Objective().Value() / capacity == pytest.approx(
-    #         [
-    #             -0.405595,
-    #             -0.354666,
-    #             -0.383454,
-    #             -0.374267,
-    #             -0.424858,
-    #             -0.481078,
-    #             -0.595347,
-    #             0.0884837,
-    #             -0.638019,
-    #             -0.610892,
-    #             -0.526716,
-    #             -0.466928,
-    #         ][month]
-    #     )
+    elif horizon == "daily":
+        assert problem.solver.Objective().Value() / capacity == pytest.approx(
+            [
+                -0.405595,
+                -0.354666,
+                -0.383454,
+                -0.374267,
+                -0.424858,
+                -0.481078,
+                -0.595347,
+                0.0884837,
+                -0.638019,
+                -0.610892,
+                -0.526716,
+                -0.466928,
+            ][month],
+            abs=0.02,
+        )
 
     output = OutputValues(problem)
 
@@ -401,7 +442,6 @@ def create_hydro_problem(
 
 
 def generate_database(
-    horizon: str,
     target: List[float],
     inflow: List[float],
     max_generating: List[float],
@@ -411,50 +451,6 @@ def generate_database(
 ) -> DataBase:
     database = DataBase()
 
-    database.add_data(
-        "H",
-        "gamma_delta",
-        (
-            ConstantData(1 / len(inflow))
-            if horizon == "monthly"
-            else ConstantData(2 / len(inflow))
-        ),
-    )
-    database.add_data(
-        "H",
-        "gamma_y",
-        (
-            ConstantData(100000 / len(inflow))
-            if horizon == "monthly"
-            else ConstantData(68 / len(inflow))
-        ),
-    )
-    database.add_data(
-        "H",
-        "gamma_w",
-        ConstantData(0) if horizon == "monthly" else ConstantData(34 / len(inflow)),
-    )
-    database.add_data("H", "gamma_d", ConstantData(1))
-    database.add_data(
-        "H", "gamma_v+", ConstantData(100) if horizon == "monthly" else ConstantData(0)
-    )
-    database.add_data(
-        "H", "gamma_v-", ConstantData(100) if horizon == "monthly" else ConstantData(68)
-    )
-    database.add_data(
-        "H",
-        "gamma_o",
-        ConstantData(0) if horizon == "monthly" else ConstantData(23 * 68 + 1),
-    )
-    database.add_data(
-        "H",
-        "gamma_s",
-        ConstantData(0) if horizon == "monthly" else ConstantData(-1 / 32),
-    )
-    if horizon == "monthly":
-        database.add_data("H", "alpha_o", ConstantData(0))
-    elif horizon == "daily":
-        database.add_data("H", "alpha_o", ConstantData(1))
     database.add_data("H", "capacity", ConstantData(capacity))
     database.add_data("H", "initial_level", ConstantData(initial_level))
 
@@ -503,19 +499,16 @@ def generate_database(
         ),
     )
 
-    if horizon == "monthly":
-        database.add_data("H", "max_epsilon", ConstantData(0))
-    elif horizon == "daily":
-        database.add_data(
-            "H",
-            "max_epsilon",
-            TimeSeriesData(
-                {
-                    TimeIndex(i): capacity if i == 0 else 0
-                    for i in range(len(max_generating))
-                }
-            ),
-        )
+    database.add_data(
+        "H",
+        "max_epsilon",
+        TimeSeriesData(
+            {
+                TimeIndex(i): capacity if i == 0 else 0
+                for i in range(len(max_generating))
+            }
+        ),
+    )
 
     return database
 
@@ -578,7 +571,7 @@ def get_lowerrulecurve_data(time_step: str) -> List[float]:
             day += day_for_month
         return montly_data
     elif time_step == "daily":
-        return list(data)
+        return list(data[1:]) + [data[0]]
     return []
 
 
@@ -593,5 +586,5 @@ def get_upperrulecurve_data(time_step: str) -> List[float]:
             day += day_for_month
         return montly_data
     elif time_step == "daily":
-        return list(data)
+        return list(data[1:]) + [data[0]]
     return []
