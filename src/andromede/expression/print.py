@@ -22,7 +22,22 @@ from andromede.expression.expression import (
 )
 from andromede.expression.visitor import T
 
-from .expression import (
+# from .expression import (
+#     AdditionNode,
+#     Comparator,
+#     ComparisonNode,
+#     DivisionNode,
+#     LiteralNode,
+#     MultiplicationNode,
+#     NegationNode,
+#     ParameterNode,
+#     ScenarioOperatorNode,
+#     SubstractionNode,
+#     TimeAggregatorNode,
+#     TimeOperatorNode,
+#     VariableNode,
+# )
+from .expression_efficient import (
     AdditionNode,
     Comparator,
     ComparisonNode,
@@ -35,7 +50,6 @@ from .expression import (
     SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
-    VariableNode,
 )
 from .visitor import ExpressionVisitor, visit
 
@@ -86,8 +100,8 @@ class PrinterVisitor(ExpressionVisitor[str]):
         right_value = visit(node.right, self)
         return f"{left_value} {op} {right_value}"
 
-    def variable(self, node: VariableNode) -> str:
-        return node.name
+    # def variable(self, node: VariableNode) -> str:
+    #     return node.name
 
     def parameter(self, node: ParameterNode) -> str:
         return node.name

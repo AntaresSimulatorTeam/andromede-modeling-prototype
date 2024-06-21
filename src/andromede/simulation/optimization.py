@@ -22,9 +22,8 @@ from typing import Dict, Iterable, List, Optional, Type
 
 import ortools.linear_solver.pywraplp as lp
 
-from andromede.expression import (
+from andromede.expression import (  # ExpressionNode,
     EvaluationVisitor,
-    ExpressionNode,
     ParameterValueProvider,
     ValueProvider,
     resolve_parameters,
@@ -33,6 +32,7 @@ from andromede.expression import (
 from andromede.expression.context_adder import add_component_context
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
@@ -141,7 +141,7 @@ def _make_value_provider(
 class ExpressionTimestepValueProvider(TimestepValueProvider):
     context: "OptimizationContext"
     component: Component
-    expression: ExpressionNode
+    expression: LinearExpressionEfficient
 
     # OptimizationContext has knowledge of the block, so that get_value only needs block_timestep and scenario to get the correct data value
 
@@ -215,7 +215,9 @@ class ComponentContext:
     opt_context: "OptimizationContext"
     component: Component
 
-    def get_values(self, expression: ExpressionNode) -> TimestepValueProvider:
+    def get_values(
+        self, expression: LinearExpressionEfficient
+    ) -> TimestepValueProvider:
         """
         The returned value provider will evaluate the provided expression.
         """
@@ -249,7 +251,7 @@ class ComponentContext:
         self,
         block_timestep: int,
         scenario: int,
-        expression: ExpressionNode,
+        expression: LinearExpressionEfficient,
     ) -> LinearExpression:
         parameters_valued_provider = _make_parameter_value_provider(
             self.opt_context, block_timestep, scenario
@@ -314,7 +316,7 @@ class OptimizationContext:
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
         self._solver_variables: Dict[lp.Variable, SolverVariableInfo] = {}
         self._connection_fields_expressions: Dict[
-            PortFieldKey, List[ExpressionNode]
+            PortFieldKey, List[LinearExpressionEfficient]
         ] = {}
 
     @property
@@ -329,7 +331,9 @@ class OptimizationContext:
         return len(self._block.timesteps)
 
     @property
-    def connection_fields_expressions(self) -> Dict[PortFieldKey, List[ExpressionNode]]:
+    def connection_fields_expressions(
+        self,
+    ) -> Dict[PortFieldKey, List[LinearExpressionEfficient]]:
         return self._connection_fields_expressions
 
     # TODO: Need to think about data processing when creating blocks with varying or inequal time steps length (aggregation, sum ?, mean of data ?)
@@ -405,7 +409,7 @@ class OptimizationContext:
         component_id: str,
         port_name: str,
         field_name: str,
-        expression: ExpressionNode,
+        expression: LinearExpressionEfficient,
     ) -> None:
         key = PortFieldKey(component_id, PortFieldId(port_name, field_name))
         get_or_add(self._connection_fields_expressions, key, lambda: []).append(
@@ -434,10 +438,10 @@ def _compute_indexing_structure(
 
 
 def _instantiate_model_expression(
-    model_expression: ExpressionNode,
+    model_expression: LinearExpressionEfficient,
     component_id: str,
     optimization_context: OptimizationContext,
-) -> ExpressionNode:
+) -> LinearExpressionEfficient:
     """
     Performs common operations that are necessary on model expressions before their actual use:
      1. add component ID for variables and parameters of THIS component
@@ -496,7 +500,7 @@ def _create_objective(
     opt_context: OptimizationContext,
     component: Component,
     component_context: ComponentContext,
-    objective_contribution: ExpressionNode,
+    objective_contribution: LinearExpressionEfficient,
 ) -> None:
     instantiated_expr = _instantiate_model_expression(
         objective_contribution, component.id, opt_context

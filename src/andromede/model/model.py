@@ -19,37 +19,76 @@ import itertools
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional
 
-from andromede.expression import (
+# from andromede.expression.expression import (
+#     BinaryOperatorNode,
+#     ComponentParameterNode,
+#     ComponentVariableNode,
+#     PortFieldAggregatorNode,
+#     PortFieldNode,
+#     ScenarioOperatorNode,
+#     TimeAggregatorNode,
+#     TimeOperatorNode,
+# )
+from andromede.expression.expression_efficient import (
     AdditionNode,
+    BinaryOperatorNode,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
-    ExpressionNode,
-    ExpressionVisitor,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
-    VariableNode,
-)
-from andromede.expression.degree import is_linear
-from andromede.expression.expression import (
-    BinaryOperatorNode,
-    ComponentParameterNode,
-    ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
+    SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.visitor import T, visit
+from andromede.expression.linear_expression_efficient import (
+    LinearExpressionEfficient,
+    is_linear,
+)
+from andromede.expression.visitor import ExpressionVisitor, visit
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
 from andromede.model.variable import Variable
+
+# from andromede.expression import (
+#     AdditionNode,
+#     ComparisonNode,
+#     DivisionNode,
+#     ExpressionNode,
+#     ExpressionVisitor,
+#     LiteralNode,
+#     MultiplicationNode,
+#     NegationNode,
+#     ParameterNode,
+#     SubstractionNode,
+#     VariableNode,
+# )
+# from andromede.expression.expression_efficient import (
+#     AdditionNode,
+#     BinaryOperatorNode,
+#     ComparisonNode,
+#     ComponentParameterNode,
+#     DivisionNode,
+#     ExpressionNodeEfficient,
+#     LiteralNode,
+#     MultiplicationNode,
+#     NegationNode,
+#     ParameterNode,
+#     PortFieldAggregatorNode,
+#     PortFieldNode,
+#     ScenarioOperatorNode,
+#     SubstractionNode,
+#     TimeAggregatorNode,
+#     TimeOperatorNode,
+# )
 
 
 # TODO: Introduce bool_variable ?
@@ -79,7 +118,7 @@ def _make_structure_provider(model: "Model") -> IndexingStructureProvider:
 
 
 def _is_objective_contribution_valid(
-    model: "Model", objective_contribution: ExpressionNode
+    model: "Model", objective_contribution: LinearExpressionEfficient
 ) -> bool:
     if not is_linear(objective_contribution):
         raise ValueError("Objective contribution must be a linear expression.")
@@ -121,14 +160,14 @@ class PortFieldDefinition:
     """
 
     port_field: PortFieldId
-    definition: ExpressionNode
+    definition: LinearExpressionEfficient
 
     def __post_init__(self) -> None:
         _validate_port_field_expression(self)
 
 
 def port_field_def(
-    port_name: str, field_name: str, definition: ExpressionNode
+    port_name: str, field_name: str, definition: LinearExpressionEfficient
 ) -> PortFieldDefinition:
     return PortFieldDefinition(PortFieldId(port_name, field_name), definition)
 
@@ -146,8 +185,8 @@ class Model:
     inter_block_dyn: bool = False
     parameters: Dict[str, Parameter] = field(default_factory=dict)
     variables: Dict[str, Variable] = field(default_factory=dict)
-    objective_operational_contribution: Optional[ExpressionNode] = None
-    objective_investment_contribution: Optional[ExpressionNode] = None
+    objective_operational_contribution: Optional[LinearExpressionEfficient] = None
+    objective_investment_contribution: Optional[LinearExpressionEfficient] = None
     ports: Dict[str, ModelPort] = field(default_factory=dict)  # key = port name
     port_fields_definitions: Dict[PortFieldId, PortFieldDefinition] = field(
         default_factory=dict
@@ -190,8 +229,8 @@ def model(
     binding_constraints: Optional[Iterable[Constraint]] = None,
     parameters: Optional[Iterable[Parameter]] = None,
     variables: Optional[Iterable[Variable]] = None,
-    objective_operational_contribution: Optional[ExpressionNode] = None,
-    objective_investment_contribution: Optional[ExpressionNode] = None,
+    objective_operational_contribution: Optional[LinearExpressionEfficient] = None,
+    objective_investment_contribution: Optional[LinearExpressionEfficient] = None,
     inter_block_dyn: bool = False,
     ports: Optional[Iterable[ModelPort]] = None,
     port_fields_definitions: Optional[Iterable[PortFieldDefinition]] = None,
@@ -258,8 +297,8 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
     def comparison(self, node: ComparisonNode) -> None:
         raise ValueError("Port definition cannot contain a comparison operator.")
 
-    def variable(self, node: VariableNode) -> None:
-        pass
+    # def variable(self, node: VariableNode) -> None:
+    #     pass
 
     def parameter(self, node: ParameterNode) -> None:
         pass
@@ -269,10 +308,10 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
             "Port definition must not contain a parameter associated to a component."
         )
 
-    def comp_variable(self, node: ComponentVariableNode) -> None:
-        raise ValueError(
-            "Port definition must not contain a variable associated to a component."
-        )
+    # def comp_variable(self, node: ComponentVariableNode) -> None:
+    #     raise ValueError(
+    #         "Port definition must not contain a variable associated to a component."
+    #     )
 
     def time_operator(self, node: TimeOperatorNode) -> None:
         visit(node.operand, self)
@@ -291,4 +330,6 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
 
 
 def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
-    visit(definition.definition, _PortFieldExpressionChecker())
+    for term in definition.definition.terms.values():
+        visit(term.coefficient, _PortFieldExpressionChecker())
+    visit(definition.definition.constant, _PortFieldExpressionChecker())

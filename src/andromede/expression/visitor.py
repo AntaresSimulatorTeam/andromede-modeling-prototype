@@ -13,17 +13,34 @@
 """
 Defines abstract base class for visitors of expressions.
 """
-import typing
 from abc import ABC, abstractmethod
 from typing import Generic, Protocol, TypeVar
 
-from andromede.expression.expression import (
+# from andromede.expression.expression import (
+#     AdditionNode,
+#     ComparisonNode,
+#     ComponentParameterNode,
+#     ComponentVariableNode,
+#     DivisionNode,
+#     ExpressionNode,
+#     LiteralNode,
+#     MultiplicationNode,
+#     NegationNode,
+#     ParameterNode,
+#     PortFieldAggregatorNode,
+#     PortFieldNode,
+#     ScenarioOperatorNode,
+#     SubstractionNode,
+#     TimeAggregatorNode,
+#     TimeOperatorNode,
+#     VariableNode,
+# )
+from andromede.expression.expression_efficient import (
     AdditionNode,
     ComparisonNode,
     ComponentParameterNode,
-    ComponentVariableNode,
     DivisionNode,
-    ExpressionNode,
+    ExpressionNodeEfficient,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
@@ -34,7 +51,6 @@ from andromede.expression.expression import (
     SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
-    VariableNode,
 )
 
 T = TypeVar("T")
@@ -77,9 +93,9 @@ class ExpressionVisitor(ABC, Generic[T]):
     def comparison(self, node: ComparisonNode) -> T:
         ...
 
-    @abstractmethod
-    def variable(self, node: VariableNode) -> T:
-        ...
+    # @abstractmethod
+    # def variable(self, node: VariableNode) -> T:
+    #     ...
 
     @abstractmethod
     def parameter(self, node: ParameterNode) -> T:
@@ -89,9 +105,9 @@ class ExpressionVisitor(ABC, Generic[T]):
     def comp_parameter(self, node: ComponentParameterNode) -> T:
         ...
 
-    @abstractmethod
-    def comp_variable(self, node: ComponentVariableNode) -> T:
-        ...
+    # @abstractmethod
+    # def comp_variable(self, node: ComponentVariableNode) -> T:
+    #     ...
 
     @abstractmethod
     def time_operator(self, node: TimeOperatorNode) -> T:
@@ -114,7 +130,7 @@ class ExpressionVisitor(ABC, Generic[T]):
         ...
 
 
-def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
+def visit(root: ExpressionNodeEfficient, visitor: ExpressionVisitor[T]) -> T:
     """
     Utility method to dispatch calls to the right method of a visitor.
     """
@@ -122,14 +138,14 @@ def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
         return visitor.literal(root)
     elif isinstance(root, NegationNode):
         return visitor.negation(root)
-    elif isinstance(root, VariableNode):
-        return visitor.variable(root)
+    # elif isinstance(root, VariableNode):
+    #     return visitor.variable(root)
     elif isinstance(root, ParameterNode):
         return visitor.parameter(root)
     elif isinstance(root, ComponentParameterNode):
         return visitor.comp_parameter(root)
-    elif isinstance(root, ComponentVariableNode):
-        return visitor.comp_variable(root)
+    # elif isinstance(root, ComponentVariableNode):
+    #     return visitor.comp_variable(root)
     elif isinstance(root, AdditionNode):
         return visitor.addition(root)
     elif isinstance(root, MultiplicationNode):

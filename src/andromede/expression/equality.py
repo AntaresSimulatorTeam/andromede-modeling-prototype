@@ -14,28 +14,48 @@ import math
 from dataclasses import dataclass
 from typing import Optional
 
-from andromede.expression import (
+from andromede.expression.expression_efficient import (
     AdditionNode,
+    BinaryOperatorNode,
     ComparisonNode,
     DivisionNode,
-    ExpressionNode,
+    ExpressionNodeEfficient,
+    ExpressionRange,
+    InstancesTimeIndex,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
-    VariableNode,
-)
-from andromede.expression.expression import (
-    BinaryOperatorNode,
-    ExpressionRange,
-    InstancesTimeIndex,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
+    SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
 )
+
+# from andromede.expression import (
+#     AdditionNode,
+#     ComparisonNode,
+#     DivisionNode,
+#     ExpressionNode,
+#     LiteralNode,
+#     MultiplicationNode,
+#     NegationNode,
+#     ParameterNode,
+#     SubstractionNode,
+#     VariableNode,
+# )
+# from andromede.expression.expression import (
+#     BinaryOperatorNode,
+#     ExpressionRange,
+#     InstancesTimeIndex,
+#     PortFieldAggregatorNode,
+#     PortFieldNode,
+#     ScenarioOperatorNode,
+#     TimeAggregatorNode,
+#     TimeOperatorNode,
+# )
 
 
 @dataclass(frozen=True)
@@ -53,7 +73,9 @@ class EqualityVisitor:
                 f"Relative comparison tolerance must be >= 0, got {self.rel_tol}"
             )
 
-    def visit(self, left: ExpressionNode, right: ExpressionNode) -> bool:
+    def visit(
+        self, left: ExpressionNodeEfficient, right: ExpressionNodeEfficient
+    ) -> bool:
         if left.__class__ != right.__class__:
             return False
         if isinstance(left, LiteralNode) and isinstance(right, LiteralNode):
@@ -72,8 +94,8 @@ class EqualityVisitor:
             return self.multiplication(left, right)
         if isinstance(left, ComparisonNode) and isinstance(right, ComparisonNode):
             return self.comparison(left, right)
-        if isinstance(left, VariableNode) and isinstance(right, VariableNode):
-            return self.variable(left, right)
+        # if isinstance(left, VariableNode) and isinstance(right, VariableNode):
+        #     return self.variable(left, right)
         if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
             return self.parameter(left, right)
         if isinstance(left, TimeOperatorNode) and isinstance(right, TimeOperatorNode):
@@ -124,8 +146,8 @@ class EqualityVisitor:
     def comparison(self, left: ComparisonNode, right: ComparisonNode) -> bool:
         return left.comparator == right.comparator and self._visit_operands(left, right)
 
-    def variable(self, left: VariableNode, right: VariableNode) -> bool:
-        return left.name == right.name
+    # def variable(self, left: VariableNode, right: VariableNode) -> bool:
+    #     return left.name == right.name
 
     def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
         return left.name == right.name
@@ -183,7 +205,10 @@ class EqualityVisitor:
 
 
 def expressions_equal(
-    left: ExpressionNode, right: ExpressionNode, abs_tol: float = 0, rel_tol: float = 0
+    left: ExpressionNodeEfficient,
+    right: ExpressionNodeEfficient,
+    abs_tol: float = 0,
+    rel_tol: float = 0,
 ) -> bool:
     """
     True if both expression nodes are equal. Literal values may be compared with absolute or relative tolerance.
@@ -192,7 +217,7 @@ def expressions_equal(
 
 
 def expressions_equal_if_present(
-    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
+    lhs: Optional[ExpressionNodeEfficient], rhs: Optional[ExpressionNodeEfficient]
 ) -> bool:
     if lhs is None and rhs is None:
         return True

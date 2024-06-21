@@ -11,8 +11,9 @@
 # This file is part of the Antares project.
 from typing import Dict, List, Optional
 
-from andromede.expression import ExpressionNode
+# from andromede.expression import ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
 from andromede.expression.parsing.parse_expression import (
     ModelIdentifiers,
     parse_expression,
@@ -123,7 +124,7 @@ def _to_parameter(param: InputParameter) -> Parameter:
 
 def _to_expression_if_present(
     expr: Optional[str], identifiers: ModelIdentifiers
-) -> Optional[ExpressionNode]:
+) -> Optional[LinearExpressionEfficient]:
     if not expr:
         return None
     return parse_expression(expr, identifiers)

@@ -13,13 +13,12 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from andromede.expression import ExpressionNode
-from andromede.expression.degree import is_constant
 from andromede.expression.equality import (
     expressions_equal,
     expressions_equal_if_present,
 )
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
 from andromede.model.common import ProblemContext, ValueType
 
 
@@ -31,15 +30,15 @@ class Variable:
 
     name: str
     data_type: ValueType
-    lower_bound: Optional[ExpressionNode]
-    upper_bound: Optional[ExpressionNode]
+    lower_bound: Optional[LinearExpressionEfficient]
+    upper_bound: Optional[LinearExpressionEfficient]
     structure: IndexingStructure
     context: ProblemContext
 
     def __post_init__(self) -> None:
-        if self.lower_bound and not is_constant(self.lower_bound):
+        if self.lower_bound and not self.lower_bound.is_constant():
             raise ValueError("Lower bounds of variables must be constant")
-        if self.upper_bound and not is_constant(self.upper_bound):
+        if self.upper_bound and not self.upper_bound.is_constant():
             raise ValueError("Upper bounds of variables must be constant")
 
     def __eq__(self, other: Any) -> bool:
@@ -56,8 +55,8 @@ class Variable:
 
 def int_variable(
     name: str,
-    lower_bound: Optional[ExpressionNode] = None,
-    upper_bound: Optional[ExpressionNode] = None,
+    lower_bound: Optional[LinearExpressionEfficient] = None,
+    upper_bound: Optional[LinearExpressionEfficient] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
@@ -68,8 +67,8 @@ def int_variable(
 
 def float_variable(
     name: str,
-    lower_bound: Optional[ExpressionNode] = None,
-    upper_bound: Optional[ExpressionNode] = None,
+    lower_bound: Optional[LinearExpressionEfficient] = None,
+    upper_bound: Optional[LinearExpressionEfficient] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:

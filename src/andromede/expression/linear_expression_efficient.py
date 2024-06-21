@@ -17,10 +17,18 @@ with only variables and literal coefficients.
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, TypeVar, Union
 
+from andromede.expression.equality import expressions_equal
+from andromede.expression.evaluate import ValueProvider, evaluate
+from andromede.expression.expression_efficient import (
+    ComponentParameterNode,
+    ExpressionNodeEfficient,
+    LiteralNode,
+    ParameterNode,
+)
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.print import print_expr
 from andromede.expression.scenario_operator import ScenarioOperator
 from andromede.expression.time_operator import TimeAggregator, TimeOperator
-from andromede.model.model import PortFieldId
 
 T = TypeVar("T")
 
@@ -31,20 +39,20 @@ def is_close_abs(value: float, other_value: float, eps: float) -> bool:
     return abs(value - other_value) < eps
 
 
-def is_zero(value: float) -> bool:
-    return is_close_abs(value, 0, EPS)
+def is_zero(value: ExpressionNodeEfficient) -> bool:
+    return expressions_equal(value, LiteralNode(0), EPS)
 
 
-def is_one(value: float) -> bool:
-    return is_close_abs(value, 1, EPS)
+def is_one(value: ExpressionNodeEfficient) -> bool:
+    return expressions_equal(value, LiteralNode(1), EPS)
 
 
 def is_minus_one(value: float) -> bool:
-    return is_close_abs(value, -1, EPS)
+    return expressions_equal(value, LiteralNode(-1), EPS)
 
 
 @dataclass(frozen=True)
-class TermKey:
+class TermKeyEfficient:
     """
     Utility class to provide key for a term that contains all term information except coefficient
     """
@@ -57,7 +65,7 @@ class TermKey:
 
 
 @dataclass(frozen=True)
-class Term:
+class TermEfficient:
     """
     One term in a linear expression: for example the "10x" par in "10x + 5y + 5"
 
@@ -66,7 +74,7 @@ class Term:
         variable_name: the name of the variable, for example "x" in "10x"
     """
 
-    coefficient: float
+    coefficient: ExpressionNodeEfficient
     component_id: str
     variable_name: str
     structure: IndexingStructure = field(
@@ -88,7 +96,7 @@ class Term:
         elif is_minus_one(self.coefficient):
             str_for_coeff = "-"
         else:
-            str_for_coeff = "{:+g}".format(self.coefficient)
+            str_for_coeff = print_expr(self.coefficient)
         return str_for_coeff
 
     def __str__(self) -> str:
@@ -111,9 +119,20 @@ class Term:
             else:
                 return 1
 
+    def evaluate(self, context: ValueProvider) -> float:
+        # TODO: Take care of component variables, multiple time scenarios, operators, etc
+        # Probably very error prone
+        if self.component_id:
+            variable_value = context.get_component_variable_value(
+                self.component_id, self.variable_name
+            )
+        else:
+            variable_value = context.get_variable_value(self.variable_name)
+        return evaluate(self.coefficient, context) * variable_value
 
-def generate_key(term: Term) -> TermKey:
-    return TermKey(
+
+def generate_key(term: TermEfficient) -> TermKeyEfficient:
+    return TermKeyEfficient(
         term.component_id,
         term.variable_name,
         term.time_operator,
@@ -123,18 +142,18 @@ def generate_key(term: Term) -> TermKey:
 
 
 def _merge_dicts(
-    lhs: Dict[TermKey, Term],
-    rhs: Dict[TermKey, Term],
-    merge_func: Callable[[Term, Term], Term],
+    lhs: Dict[TermKeyEfficient, TermEfficient],
+    rhs: Dict[TermKeyEfficient, TermEfficient],
+    merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
     neutral: float,
-) -> Dict[TermKey, Term]:
+) -> Dict[TermKeyEfficient, TermEfficient]:
     res = {}
     for k, v in lhs.items():
         res[k] = merge_func(
             v,
             rhs.get(
                 k,
-                Term(
+                TermEfficient(
                     neutral,
                     v.component_id,
                     v.variable_name,
@@ -148,7 +167,7 @@ def _merge_dicts(
     for k, v in rhs.items():
         if k not in lhs:
             res[k] = merge_func(
-                Term(
+                TermEfficient(
                     neutral,
                     v.component_id,
                     v.variable_name,
@@ -162,7 +181,7 @@ def _merge_dicts(
     return res
 
 
-def _merge_is_possible(lhs: Term, rhs: Term) -> None:
+def _merge_is_possible(lhs: TermEfficient, rhs: TermEfficient) -> None:
     if lhs.component_id != rhs.component_id or lhs.variable_name != rhs.variable_name:
         raise ValueError("Cannot merge terms for different variables")
     if (
@@ -175,9 +194,9 @@ def _merge_is_possible(lhs: Term, rhs: Term) -> None:
         raise ValueError("Cannot merge terms with different structures")
 
 
-def _add_terms(lhs: Term, rhs: Term) -> Term:
+def _add_terms(lhs: TermEfficient, rhs: TermEfficient) -> TermEfficient:
     _merge_is_possible(lhs, rhs)
-    return Term(
+    return TermEfficient(
         lhs.coefficient + rhs.coefficient,
         lhs.component_id,
         lhs.variable_name,
@@ -188,9 +207,9 @@ def _add_terms(lhs: Term, rhs: Term) -> Term:
     )
 
 
-def _substract_terms(lhs: Term, rhs: Term) -> Term:
+def _substract_terms(lhs: TermEfficient, rhs: TermEfficient) -> TermEfficient:
     _merge_is_possible(lhs, rhs)
-    return Term(
+    return TermEfficient(
         lhs.coefficient - rhs.coefficient,
         lhs.component_id,
         lhs.variable_name,
@@ -201,7 +220,7 @@ def _substract_terms(lhs: Term, rhs: Term) -> Term:
     )
 
 
-class LinearExpression:
+class LinearExpressionEfficient:
     """
     Represents a linear expression with respect to variable names, for example 10x + 5y + 2.
 
@@ -214,16 +233,19 @@ class LinearExpression:
     Examples:
         Operators may be used for construction:
 
-        >>> LinearExpression([], 10) + LinearExpression([Term(10, "x")], 0)
-        LinearExpression([Term(10, "x")], 10)
+        >>> LinearExpression([], 10) + LinearExpression([TermEfficient(10, "x")], 0)
+        LinearExpression([TermEfficient(10, "x")], 10)
     """
 
-    terms: Dict[TermKey, Term]
-    constant: float
+    terms: Dict[TermKeyEfficient, TermEfficient]
+    constant: ExpressionNodeEfficient
 
+    # TODO: We need to check that terms.key is indeed a TermKey and change the tests that this will break
     def __init__(
         self,
-        terms: Optional[Union[Dict[TermKey, Term], List[Term]]] = None,
+        terms: Optional[
+            Union[Dict[TermKeyEfficient, TermEfficient], List[TermEfficient]]
+        ] = None,
         constant: Optional[float] = None,
     ) -> None:
         self.constant = 0
@@ -234,8 +256,8 @@ class LinearExpression:
             self.constant = constant
         if terms is not None:
             # Allows to give two different syntax in the constructor:
-            #   - List[Term] is natural
-            #   - Dict[str, Term] is useful when constructing a linear expression from the terms of another expression
+            #   - List[TermEfficient] is natural
+            #   - Dict[str, TermEfficient] is useful when constructing a linear expression from the terms of another expression
             if isinstance(terms, dict):
                 for term_key, term in terms.items():
                     if not term.is_zero():
@@ -256,7 +278,7 @@ class LinearExpression:
         if is_zero(self.constant):
             return ""
         else:
-            return "{:+g}".format(self.constant)
+            return f" + {print_expr(self.constant)}"
 
     def __str__(self) -> str:
         # Useful for debugging tests
@@ -273,14 +295,14 @@ class LinearExpression:
 
     def __eq__(self, rhs: object) -> bool:
         return (
-            isinstance(rhs, LinearExpression)
+            isinstance(rhs, LinearExpressionEfficient)
             and is_close_abs(self.constant, rhs.constant, EPS)
             and self.terms
             == rhs.terms  # /!\ There may be float equality comparison in the terms values
         )
 
-    def __iadd__(self, rhs: "LinearExpression") -> "LinearExpression":
-        if not isinstance(rhs, LinearExpression):
+    def __iadd__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+        if not isinstance(rhs, LinearExpressionEfficient):
             return NotImplemented
         self.constant += rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms, 0)
@@ -288,14 +310,14 @@ class LinearExpression:
         self.remove_zeros_from_terms()
         return self
 
-    def __add__(self, rhs: "LinearExpression") -> "LinearExpression":
-        result = LinearExpression()
+    def __add__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+        result = LinearExpressionEfficient()
         result += self
         result += rhs
         return result
 
-    def __isub__(self, rhs: "LinearExpression") -> "LinearExpression":
-        if not isinstance(rhs, LinearExpression):
+    def __isub__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+        if not isinstance(rhs, LinearExpressionEfficient):
             return NotImplemented
         self.constant -= rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms, 0)
@@ -303,19 +325,19 @@ class LinearExpression:
         self.remove_zeros_from_terms()
         return self
 
-    def __sub__(self, rhs: "LinearExpression") -> "LinearExpression":
-        result = LinearExpression()
+    def __sub__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+        result = LinearExpressionEfficient()
         result += self
         result -= rhs
         return result
 
-    def __neg__(self) -> "LinearExpression":
-        result = LinearExpression()
+    def __neg__(self) -> "LinearExpressionEfficient":
+        result = LinearExpressionEfficient()
         result -= self
         return result
 
-    def __imul__(self, rhs: "LinearExpression") -> "LinearExpression":
-        if not isinstance(rhs, LinearExpression):
+    def __imul__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+        if not isinstance(rhs, LinearExpressionEfficient):
             return NotImplemented
 
         if self.terms and rhs.terms:
@@ -328,14 +350,14 @@ class LinearExpression:
                 # It is possible that both expr are constant
                 left_expr = rhs
                 const_expr = self
-            if is_close_abs(const_expr.constant, 0, EPS):
-                return LinearExpression()
-            elif is_close_abs(const_expr.constant, 1, EPS):
+            if expressions_equal(const_expr.constant, LiteralNode(0), EPS):
+                return LinearExpressionEfficient()
+            elif expressions_equal(const_expr.constant, LiteralNode(1), EPS):
                 _copy_expression(left_expr, self)
             else:
                 left_expr.constant *= const_expr.constant
                 for term_key, term in left_expr.terms.items():
-                    left_expr.terms[term_key] = Term(
+                    left_expr.terms[term_key] = TermEfficient(
                         term.coefficient * const_expr.constant,
                         term.component_id,
                         term.variable_name,
@@ -347,27 +369,29 @@ class LinearExpression:
                 _copy_expression(left_expr, self)
         return self
 
-    def __mul__(self, rhs: "LinearExpression") -> "LinearExpression":
-        result = LinearExpression()
+    def __mul__(self, rhs: "LinearExpressionEfficient") -> "LinearExpressionEfficient":
+        result = LinearExpressionEfficient()
         result += self
         result *= rhs
         return result
 
-    def __itruediv__(self, rhs: "LinearExpression") -> "LinearExpression":
-        if not isinstance(rhs, LinearExpression):
+    def __itruediv__(
+        self, rhs: "LinearExpressionEfficient"
+    ) -> "LinearExpressionEfficient":
+        if not isinstance(rhs, LinearExpressionEfficient):
             return NotImplemented
 
         if rhs.terms:
             raise ValueError("Cannot divide by a non constant expression")
         else:
-            if is_close_abs(rhs.constant, 0, EPS):
+            if is_zero(rhs.constant):
                 raise ZeroDivisionError("Cannot divide expression by zero")
-            elif is_close_abs(rhs.constant, 1, EPS):
+            elif is_one(rhs.constant):
                 return self
             else:
                 self.constant /= rhs.constant
                 for term_key, term in self.terms.items():
-                    self.terms[term_key] = Term(
+                    self.terms[term_key] = TermEfficient(
                         term.coefficient / rhs.constant,
                         term.component_id,
                         term.variable_name,
@@ -378,8 +402,10 @@ class LinearExpression:
                     )
         return self
 
-    def __truediv__(self, rhs: "LinearExpression") -> "LinearExpression":
-        result = LinearExpression()
+    def __truediv__(
+        self, rhs: "LinearExpressionEfficient"
+    ) -> "LinearExpressionEfficient":
+        result = LinearExpressionEfficient()
         result += self
         result /= rhs
 
@@ -411,7 +437,59 @@ class LinearExpression:
         else:
             raise ValueError(f"{self} is not a valid linear expression")
 
+    def evaluate(self, context: ValueProvider) -> float:
+        return sum([term.evaluate(context) for term in self.terms.values()]) + evaluate(
+            self.constant, context
+        )
 
-def _copy_expression(src: LinearExpression, dst: LinearExpression) -> None:
+    def is_constant(self) -> bool:
+        # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
+        return not self.terms
+
+
+def _copy_expression(
+    src: LinearExpressionEfficient, dst: LinearExpressionEfficient
+) -> None:
     dst.terms = src.terms
     dst.constant = src.constant
+
+
+def literal(value: float) -> LinearExpressionEfficient:
+    return LinearExpressionEfficient([], LiteralNode(value))
+
+
+# TODO : Define shortcuts for "x", is_one etc ....
+def var(name: str) -> LinearExpressionEfficient:
+    return LinearExpressionEfficient(
+        [
+            TermEfficient(
+                coefficient=LiteralNode(1), component_id="", variable_name=name
+            )
+        ],
+        LiteralNode(0),
+    )
+
+
+def comp_var(component_id: str, name: str) -> LinearExpressionEfficient:
+    return LinearExpressionEfficient(
+        [
+            TermEfficient(
+                coefficient=LiteralNode(1),
+                component_id=component_id,
+                variable_name=name,
+            )
+        ],
+        LiteralNode(0),
+    )
+
+
+def param(name: str) -> LinearExpressionEfficient:
+    return LinearExpressionEfficient([], ParameterNode(name))
+
+
+def comp_param(component_id: str, name: str) -> LinearExpressionEfficient:
+    return LinearExpressionEfficient([], ComponentParameterNode(component_id, name))
+
+
+def is_linear(expr: LinearExpressionEfficient) -> bool:
+    return True
