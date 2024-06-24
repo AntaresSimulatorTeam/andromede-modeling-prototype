@@ -413,12 +413,50 @@ def get_target(
 def get_all_data(
     scenario: int, horizon: str
 ) -> tuple[List[float], List[float], List[float], List[float], List[float]]:
-    demand = get_load_data(scenario, horizon)
-    inflow = get_inflow_data(scenario, horizon)
+    if horizon == "monthly":
+        hours_aggregated_time_steps = [
+            24 * get_number_of_days_in_month(m) for m in range(12)
+        ]
+    elif horizon == "daily":
+        hours_aggregated_time_steps = [24 for d in range(365)]
 
-    max_generating = get_maxpower_data(horizon)
-    lowerrulecruve = get_lowerrulecurve_data(horizon)
-    upperrulecruve = get_upperrulecurve_data(horizon)
+    demand = get_input_data(
+        name_file="load",
+        column=scenario,
+        hours_aggregated_time_steps=hours_aggregated_time_steps,
+        hours_input=1,
+        operator="sum",
+    )
+    inflow = get_input_data(
+        name_file="mod",
+        column=scenario,
+        hours_aggregated_time_steps=hours_aggregated_time_steps,
+        hours_input=24,
+        operator="sum",
+    )
+    lowerrulecruve = get_input_data(
+        name_file="reservoir",
+        column=0,
+        hours_aggregated_time_steps=hours_aggregated_time_steps,
+        hours_input=24,
+        operator="lag_first_element",
+    )
+    upperrulecruve = get_input_data(
+        name_file="reservoir",
+        column=2,
+        hours_aggregated_time_steps=hours_aggregated_time_steps,
+        hours_input=24,
+        operator="lag_first_element",
+    )
+    max_generating = get_input_data(
+        name_file="maxpower",
+        column=0,
+        hours_aggregated_time_steps=hours_aggregated_time_steps,
+        hours_input=24,
+        operator="sum",
+    )
+    max_generating = [x * 24 for x in max_generating]
+
     return (
         demand,
         inflow,
@@ -579,78 +617,28 @@ def add_objective_coefficients_to_database(
     return database
 
 
-def get_load_data(scenario: int, time_step: str) -> List[float]:
-    data = np.loadtxt("tests/functional/data_third_complex_case/hydro/load.txt")
-    data = data[:, scenario]
-    if time_step == "monthly":
-        montly_data = []
-        hour = 0
-        for day_for_month in [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]:
-            montly_data.append(np.sum(data[hour : hour + 24 * day_for_month]))
-            hour += 24 * day_for_month
-        return montly_data
-    elif time_step == "daily":
-        cropped_data = data.reshape((365, 24))
-        daily_data = cropped_data.sum(axis=1)
-        return list(daily_data)
-    return []
-
-
-def get_inflow_data(scenario: int, time_step: str) -> List[float]:
-    data = np.loadtxt("tests/functional/data_third_complex_case/hydro/mod.txt")
-    data = data[:, scenario]
-    if time_step == "monthly":
-        montly_data = []
-        day = 0
-        for day_for_month in [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]:
-            montly_data.append(np.sum(data[day : day + day_for_month]))
-            day += day_for_month
-        return montly_data
-    elif time_step == "daily":
-        return list(data)
-    return []
-
-
-def get_maxpower_data(time_step: str) -> List[float]:
-    data = np.loadtxt("tests/functional/data_third_complex_case/hydro/maxpower.txt")
-    data = data[:, 0]
-    if time_step == "monthly":
-        montly_data = []
-        day = 0
-        for day_for_month in [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]:
-            montly_data.append(np.sum(data[day : day + day_for_month] * 24))
-            day += day_for_month
-        return montly_data
-    elif time_step == "daily":
-        return list(data * 24)
-    return []
-
-
-def get_lowerrulecurve_data(time_step: str) -> List[float]:
-    data = np.loadtxt("tests/functional/data_third_complex_case/hydro/reservoir.txt")
-    data = data[:, 0]
-    if time_step == "monthly":
-        montly_data = []
-        day = 0
-        for day_for_month in [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]:
-            montly_data.append(data[(day + day_for_month) % 365])
-            day += day_for_month
-        return montly_data
-    elif time_step == "daily":
-        return list(data[1:]) + [data[0]]
-    return []
-
-
-def get_upperrulecurve_data(time_step: str) -> List[float]:
-    data = np.loadtxt("tests/functional/data_third_complex_case/hydro/reservoir.txt")
-    data = data[:, 2]
-    if time_step == "monthly":
-        montly_data = []
-        day = 0
-        for day_for_month in [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]:
-            montly_data.append(data[(day + day_for_month) % 365])
-            day += day_for_month
-        return montly_data
-    elif time_step == "daily":
-        return list(data[1:]) + [data[0]]
-    return []
+def get_input_data(
+    name_file: str,
+    column: int,
+    hours_aggregated_time_steps: List[int],
+    hours_input: int,
+    operator: str,
+) -> List[float]:
+    data = np.loadtxt(
+        "tests/functional/data_third_complex_case/hydro/" + name_file + ".txt"
+    )
+    data = data[:, column]
+    aggregated_data: List[float] = []
+    hour = 0
+    for hours_time_step in hours_aggregated_time_steps:
+        assert hours_time_step % hours_input == 0
+        if operator == "sum":
+            aggregated_data.append(
+                np.sum(data[hour : hour + hours_time_step // hours_input])
+            )
+        elif operator == "lag_first_element":
+            aggregated_data.append(
+                data[(hour + hours_time_step // hours_input) % len(data)]
+            )
+        hour += hours_time_step // hours_input
+    return aggregated_data
