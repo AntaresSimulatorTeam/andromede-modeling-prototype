@@ -34,7 +34,7 @@ def lib(data_dir: Path):
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
 
-    lib = resolve_library(input_lib)
+    lib = resolve_library([input_lib])
     return lib
 
 
@@ -46,5 +46,5 @@ def lib_sc():
     with lib_sc_file.open() as f:
         input_lib_sc = parse_yaml_library(f)
 
-    lib_sc = resolve_library(input_lib_sc)
+    lib_sc = resolve_library([input_lib_sc])
     return lib_sc
