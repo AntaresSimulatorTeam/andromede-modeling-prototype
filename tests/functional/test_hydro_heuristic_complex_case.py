@@ -22,11 +22,21 @@ from andromede.model import Model, float_parameter, float_variable, model
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import float_parameter
 from andromede.model.variable import float_variable
-from andromede.simulation import (BlockBorderManagement, OutputValues,
-                                  TimeBlock, build_problem)
-from andromede.study import (ConstantData, DataBase, Network, TimeIndex,
-                             TimeScenarioSeriesData, TimeSeriesData,
-                             create_component)
+from andromede.simulation import (
+    BlockBorderManagement,
+    OutputValues,
+    TimeBlock,
+    build_problem,
+)
+from andromede.study import (
+    ConstantData,
+    DataBase,
+    Network,
+    TimeIndex,
+    TimeScenarioSeriesData,
+    TimeSeriesData,
+    create_component,
+)
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
