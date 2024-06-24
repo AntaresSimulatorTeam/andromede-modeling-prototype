@@ -10,32 +10,23 @@
 #
 # This file is part of the Antares project.
 
-import pandas as pd
+from typing import Dict, List
+
 import numpy as np
-from typing import List, Dict
 import ortools.linear_solver.pywraplp as pywraplp
+import pandas as pd
 
 from andromede.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import Model, float_parameter, float_variable, model
+from andromede.model.constraint import Constraint
 from andromede.model.parameter import float_parameter
 from andromede.model.variable import float_variable
-from andromede.model.constraint import Constraint
-from andromede.simulation import (
-    BlockBorderManagement,
-    OutputValues,
-    TimeBlock,
-    build_problem,
-)
-from andromede.study import (
-    ConstantData,
-    DataBase,
-    Network,
-    TimeScenarioSeriesData,
-    TimeSeriesData,
-    TimeIndex,
-    create_component,
-)
+from andromede.simulation import (BlockBorderManagement, OutputValues,
+                                  TimeBlock, build_problem)
+from andromede.study import (ConstantData, DataBase, Network, TimeIndex,
+                             TimeScenarioSeriesData, TimeSeriesData,
+                             create_component)
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
