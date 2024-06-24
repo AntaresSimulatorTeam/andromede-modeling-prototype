@@ -54,15 +54,13 @@ CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
 
 capacity = 1e07
 
-HYDRO_MODEL = {
-    "id": "H",
-    "parameters": [
+HYDRO_MODEL = model(
+    id="H",
+    parameters=[
         float_parameter("max_generating", NON_ANTICIPATIVE_TIME_VARYING),
         float_parameter("min_generating", NON_ANTICIPATIVE_TIME_VARYING),
         float_parameter("capacity", CONSTANT),
         float_parameter("initial_level", CONSTANT_PER_SCENARIO),
-        float_parameter("generating_target", TIME_AND_SCENARIO_FREE),
-        float_parameter("overall_target", CONSTANT_PER_SCENARIO),
         float_parameter("inflow", TIME_AND_SCENARIO_FREE),
         float_parameter(
             "max_epsilon", NON_ANTICIPATIVE_TIME_VARYING
@@ -70,7 +68,7 @@ HYDRO_MODEL = {
         float_parameter("lower_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
         float_parameter("upper_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
     ],
-    "variables": [
+    variables=[
         float_variable(
             "generating",
             lower_bound=param("min_generating"),
@@ -95,7 +93,7 @@ HYDRO_MODEL = {
             structure=TIME_AND_SCENARIO_FREE,
         ),
     ],
-    "constraints": [
+    constraints=[
         Constraint(
             "Level balance",
             var("level")
@@ -105,10 +103,6 @@ HYDRO_MODEL = {
             + param("inflow")
             + var("epsilon"),
         ),
-        # Constraint(
-        #     "Respect generating target",
-        #     var("generating").sum() == param("overall_target"),
-        # ),
         Constraint(
             "Initial level",
             var("level").eval(literal(0))
@@ -118,11 +112,11 @@ HYDRO_MODEL = {
             + param("inflow").eval(literal(0)),
         ),
     ],
-}
+)
 
 
 def get_heuristic_hydro_model(
-    hydro_model: Dict,
+    hydro_model: Model,
     horizon: str,
 ) -> Model:
     objective_function_cost = {
@@ -136,7 +130,7 @@ def get_heuristic_hydro_model(
         "gamma_s": 0 if horizon == "monthly" else -1 / 32,
     }
 
-    list_constraint = hydro_model["constraints"] + [
+    list_constraint = [c for c in hydro_model.constraints.values()] + [
         Constraint(
             "Respect generating target",
             var("generating").sum() + var("gap_to_target") == param("overall_target"),
@@ -179,8 +173,12 @@ def get_heuristic_hydro_model(
 
     HYDRO_HEURISTIC = model(
         id="H",
-        parameters=hydro_model["parameters"],
-        variables=hydro_model["variables"]
+        parameters=[p for p in hydro_model.parameters.values()]
+        + [
+            float_parameter("generating_target", TIME_AND_SCENARIO_FREE),
+            float_parameter("overall_target", CONSTANT_PER_SCENARIO),
+        ],
+        variables=[v for v in hydro_model.variables.values()]
         + [
             float_variable(
                 "distance_between_target_and_generating",
@@ -207,22 +205,11 @@ def get_heuristic_hydro_model(
                 lower_bound=literal(0),
                 structure=CONSTANT_PER_SCENARIO,
             ),
-        ]
-        + [
-            (
-                float_variable(
-                    "gap_to_target",
-                    lower_bound=literal(0),
-                    structure=CONSTANT_PER_SCENARIO,
-                )
-                if horizon == "daily"
-                else float_variable(
-                    "gap_to_target",
-                    lower_bound=literal(0),
-                    upper_bound=literal(0),
-                    structure=CONSTANT_PER_SCENARIO,
-                )
-            )
+            float_variable(
+                "gap_to_target",
+                lower_bound=literal(0),
+                structure=CONSTANT_PER_SCENARIO,
+            ),
         ],
         constraints=list_constraint,
         objective_operational_contribution=(
@@ -264,7 +251,7 @@ def test_hydro_heuristic() -> None:
         monthly_upperrulecruve = get_upperrulecurve_data("monthly")
 
         # Ajustement de la réapartition mensuelle
-        monthly_generation, _ = create_hydro_problem(
+        monthly_generation, _ = create_and_solve_hydro_problem(
             horizon="monthly",
             target=list(monthly_target),
             inflow=list(monthly_inflow),
@@ -322,7 +309,7 @@ def test_hydro_heuristic() -> None:
                 )
             )
             # Ajustement de la répartition jour par jour
-            daily_generation, initial_level = create_hydro_problem(
+            daily_generation, initial_level = create_and_solve_hydro_problem(
                 horizon="daily",
                 target=list(daily_target),
                 inflow=list(daily_inflow[day_in_year : day_in_year + number_day_month]),
@@ -363,7 +350,7 @@ def test_hydro_heuristic() -> None:
         #     ) == round(weekly_target[week])
 
 
-def create_hydro_problem(
+def create_and_solve_hydro_problem(
     horizon: str,
     target: List[float],
     inflow: List[float],
