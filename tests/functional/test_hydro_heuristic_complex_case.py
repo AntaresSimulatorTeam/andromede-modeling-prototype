@@ -16,7 +16,7 @@ import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
-from andromede.expression import literal, param, var
+from andromede.expression import literal, param, var, ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import Model, float_parameter, float_variable, model
 from andromede.model.constraint import Constraint
@@ -37,6 +37,10 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
+from andromede.model.constraint import Constraint
+from andromede.model.parameter import Parameter
+from andromede.model.variable import Variable
+from andromede.simulation.optimization import OptimizationProblem
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
@@ -111,7 +115,85 @@ def get_heuristic_hydro_model(
     horizon: str,
 ) -> Model:
 
-    list_constraint = [c for c in hydro_model.constraints.values()] + [
+    HYDRO_HEURISTIC = model(
+        id="H",
+        parameters=[p for p in hydro_model.parameters.values()]
+        + get_heuristic_parameters(),
+        variables=[v for v in hydro_model.variables.values()]
+        + get_heuristic_variables(),
+        constraints=[c for c in hydro_model.constraints.values()]
+        + get_heuristic_constraints(horizon),
+        objective_operational_contribution=get_heuristic_objective(),
+    )
+    return HYDRO_HEURISTIC
+
+
+def get_heuristic_objective() -> ExpressionNode:
+    return (
+        param("gamma_d") * var("distance_between_target_and_generating")
+        + param("gamma_v+") * var("violation_upper_rule_curve")
+        + param("gamma_v-") * var("violation_lower_rule_curve")
+        + param("gamma_o") * var("overflow")
+        + param("gamma_s") * var("level")
+    ).sum().expec() + (
+        param("gamma_delta") * var("max_distance_between_target_and_generating")
+        + param("gamma_y") * var("max_violation_lower_rule_curve")
+        + param("gamma_w") * var("gap_to_target")
+    ).expec()
+
+
+def get_heuristic_variables() -> List[Variable]:
+    return [
+        float_variable(
+            "distance_between_target_and_generating",
+            lower_bound=literal(0),
+            structure=TIME_AND_SCENARIO_FREE,
+        ),
+        float_variable(
+            "max_distance_between_target_and_generating",
+            lower_bound=literal(0),
+            structure=CONSTANT_PER_SCENARIO,
+        ),
+        float_variable(
+            "violation_lower_rule_curve",
+            lower_bound=literal(0),
+            structure=TIME_AND_SCENARIO_FREE,
+        ),
+        float_variable(
+            "violation_upper_rule_curve",
+            lower_bound=literal(0),
+            structure=TIME_AND_SCENARIO_FREE,
+        ),
+        float_variable(
+            "max_violation_lower_rule_curve",
+            lower_bound=literal(0),
+            structure=CONSTANT_PER_SCENARIO,
+        ),
+        float_variable(
+            "gap_to_target",
+            lower_bound=literal(0),
+            structure=CONSTANT_PER_SCENARIO,
+        ),
+    ]
+
+
+def get_heuristic_parameters() -> List[Parameter]:
+    return [
+        float_parameter("generating_target", TIME_AND_SCENARIO_FREE),
+        float_parameter("overall_target", CONSTANT_PER_SCENARIO),
+        float_parameter("gamma_d", CONSTANT),
+        float_parameter("gamma_delta", CONSTANT),
+        float_parameter("gamma_y", CONSTANT),
+        float_parameter("gamma_w", CONSTANT),
+        float_parameter("gamma_v+", CONSTANT),
+        float_parameter("gamma_v-", CONSTANT),
+        float_parameter("gamma_o", CONSTANT),
+        float_parameter("gamma_s", CONSTANT),
+    ]
+
+
+def get_heuristic_constraints(horizon: str) -> List[Constraint]:
+    list_constraint = [
         Constraint(
             "Respect generating target",
             var("generating").sum() + var("gap_to_target") == param("overall_target"),
@@ -126,6 +208,25 @@ def get_heuristic_hydro_model(
             var("distance_between_target_and_generating")
             >= var("generating") - param("generating_target"),
         ),
+        Constraint(
+            "Definition of max distance between generating and target",
+            var("max_distance_between_target_and_generating")
+            >= var("distance_between_target_and_generating"),
+        ),
+        Constraint(
+            "Definition of violation of lower rule curve",
+            var("violation_lower_rule_curve") + var("level")
+            >= param("lower_rule_curve"),
+        ),
+        Constraint(
+            "Definition of violation of upper rule curve",
+            var("violation_upper_rule_curve") - var("level")
+            >= -param("upper_rule_curve"),
+        ),
+        Constraint(
+            "Definition of max violation of lower rule curve",
+            var("max_violation_lower_rule_curve") >= var("violation_lower_rule_curve"),
+        ),
     ]
     if horizon == "monthly":
         list_constraint.append(Constraint("No overflow", var("overflow") <= literal(0)))
@@ -133,46 +234,7 @@ def get_heuristic_hydro_model(
             Constraint("No gap to target", var("gap_to_target") <= literal(0))
         )
 
-    HYDRO_HEURISTIC = model(
-        id="H",
-        parameters=[p for p in hydro_model.parameters.values()]
-        + [
-            float_parameter("generating_target", TIME_AND_SCENARIO_FREE),
-            float_parameter("overall_target", CONSTANT_PER_SCENARIO),
-            float_parameter("gamma_d", CONSTANT),
-        ],
-        variables=[v for v in hydro_model.variables.values()]
-        + [
-            float_variable(
-                "distance_between_target_and_generating",
-                lower_bound=literal(0),
-                structure=TIME_AND_SCENARIO_FREE,
-            ),
-        ]
-        + [
-            (
-                float_variable(
-                    "gap_to_target",
-                    lower_bound=literal(0),
-                    structure=CONSTANT_PER_SCENARIO,
-                )
-                if horizon == "daily"
-                else float_variable(
-                    "gap_to_target",
-                    lower_bound=literal(0),
-                    upper_bound=literal(0),
-                    structure=CONSTANT,
-                )
-            )
-        ],
-        constraints=list_constraint,
-        objective_operational_contribution=(
-            param("gamma_d") * var("distance_between_target_and_generating")
-        )
-        .sum()
-        .expec(),
-    )
-    return HYDRO_HEURISTIC
+    return list_constraint
 
 
 def test_hydro_heuristic() -> None:
@@ -180,71 +242,71 @@ def test_hydro_heuristic() -> None:
     scenarios = 1
     interdaily_breakdown = 3
 
+    capacity = 1711510
+
     for scenario in range(scenarios):
+        initial_level = 0.5 * capacity
+
         # Répartition des apports mensuels
-        monthly_demand = get_load_data(scenario, "monthly")
-        monthly_inflow = get_inflow_data(scenario, "monthly")
-        monthly_target = (
-            sum(monthly_inflow) * np.array(monthly_demand) / sum(monthly_demand)
-        )
-        monthly_max_generating = get_maxpower_data("monthly")
+        (
+            monthly_demand,
+            monthly_inflow,
+            monthly_max_generating,
+        ) = get_all_data(scenario, "monthly")
+        monthly_target = get_target(monthly_demand, sum(monthly_inflow))
 
         # Ajustement de la réapartition mensuelle
-        initial_level = 0.5 * 1711510
-        monthly_generation, _ = create_hydro_problem(
+        problem = create_hydro_problem(
             horizon="monthly",
-            target=list(monthly_target),
-            inflow=list(monthly_inflow),
+            target=monthly_target,
+            inflow=monthly_inflow,
             max_generating=monthly_max_generating,
             initial_level=initial_level,
         )
 
-        weekly_target = np.zeros(52)
-        week = 0
-        day_in_week = 0
+        status, monthly_generation, _ = solve_hydro_problem(problem)
+
+        assert status == problem.solver.OPTIMAL
+
+        all_daily_generation: List[float] = []
         day_in_year = 0
-        daily_demand = get_load_data(scenario, "daily")
-        daily_inflow = get_inflow_data(scenario, "daily")
-        daily_max_generating = get_maxpower_data("daily")
+        (
+            daily_demand,
+            daily_inflow,
+            daily_max_generating,
+        ) = get_all_data(scenario, "daily")
 
         for month in range(12):
-            number_day_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month]
+            number_day_month = get_number_of_days_in_month(month)
             # Répartition des crédits de turbinage jour par jour
 
-            daily_target = (
-                monthly_generation[month]
-                * np.power(
-                    daily_demand[day_in_year : day_in_year + number_day_month],
-                    interdaily_breakdown,
-                )
-                / sum(
-                    np.power(
-                        daily_demand[day_in_year : day_in_year + number_day_month],
-                        interdaily_breakdown,
-                    )
-                )
+            daily_target = get_target(
+                demand=daily_demand[day_in_year : day_in_year + number_day_month],
+                total_target=monthly_generation[month],
+                inter_breakdown=interdaily_breakdown,
             )
             # Ajustement de la répartition jour par jour
-            daily_generation, initial_level = create_hydro_problem(
+            problem = create_hydro_problem(
                 horizon="daily",
-                target=list(daily_target),
-                inflow=list(daily_inflow),
-                max_generating=list(
-                    daily_max_generating[day_in_year : day_in_year + number_day_month]
-                ),
+                target=daily_target,
+                inflow=daily_inflow[day_in_year : day_in_year + number_day_month],
+                max_generating=daily_max_generating[
+                    day_in_year : day_in_year + number_day_month
+                ],
                 initial_level=initial_level,
             )
 
-            # Calcul des cibles hebdomadaires
-            day_in_month = 0
-            while day_in_month < number_day_month and week < 52:
-                weekly_target[week] += daily_generation[day_in_month]
-                day_in_month += 1
-                day_in_week += 1
-                if day_in_week >= 7:
-                    week += 1
-                    day_in_week = 0
+            status, daily_generation, initial_level = solve_hydro_problem(problem)
+
+            assert status == problem.solver.OPTIMAL
+
+            all_daily_generation = all_daily_generation + daily_generation
             day_in_year += number_day_month
+
+        # Calcul des cibles hebdomadaires
+        weekly_target = calculate_weekly_target(
+            all_daily_generation,
+        )
 
         # Vérification des valeurs trouvées
         expected_output_file = open(
@@ -258,13 +320,61 @@ def test_hydro_heuristic() -> None:
             )
 
 
+def calculate_weekly_target(all_daily_generation: list[float]) -> list[float]:
+    weekly_target = np.zeros(52)
+    week = 0
+    day_in_week = 0
+    day_in_year = 0
+
+    while week < 52:
+        weekly_target[week] += all_daily_generation[day_in_year]
+        day_in_year += 1
+        day_in_week += 1
+        if day_in_week >= 7:
+            week += 1
+            day_in_week = 0
+
+    return list(weekly_target)
+
+
+def get_number_of_days_in_month(month: int) -> int:
+    number_day_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month]
+    return number_day_month
+
+
+def get_target(
+    demand: List[float], total_target: float, inter_breakdown: int = 1
+) -> List[float]:
+    target = (
+        total_target
+        * np.power(demand, inter_breakdown)
+        / sum(np.power(demand, inter_breakdown))
+    )
+
+    return list(target)
+
+
+def get_all_data(
+    scenario: int, horizon: str
+) -> tuple[List[float], List[float], List[float]]:
+    demand = get_load_data(scenario, horizon)
+    inflow = get_inflow_data(scenario, horizon)
+
+    max_generating = get_maxpower_data(horizon)
+    return (
+        demand,
+        inflow,
+        max_generating,
+    )
+
+
 def create_hydro_problem(
     horizon: str,
     target: List[float],
     inflow: List[float],
     max_generating: List[float],
     initial_level: float,
-) -> tuple[List[float], float]:
+) -> OptimizationProblem:
     database = generate_database(
         target=target,
         inflow=inflow,
@@ -293,17 +403,21 @@ def create_hydro_problem(
         solver_id="XPRESS",
     )
 
+    return problem
+
+
+def solve_hydro_problem(problem: OptimizationProblem) -> tuple[int, list[float], float]:
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
+    problem.solver.EnableOutput()
 
     status = problem.solver.Solve(parameters)
-
-    assert status == problem.solver.OPTIMAL
 
     output = OutputValues(problem)
 
     return (
+        status,
         output.component("H").var("generating").value[0],  # type:ignore
         output.component("H").var("level").value[0][-1],  # type:ignore
     )
@@ -363,6 +477,13 @@ def add_objective_coefficients_to_database(
 ) -> DataBase:
     objective_function_cost = {
         "gamma_d": 1,
+        "gamma_delta": 1 if horizon == "monthly" else 2,
+        "gamma_y": 100000 if horizon == "monthly" else 68,
+        "gamma_w": 0 if horizon == "monthly" else 34,
+        "gamma_v+": 100 if horizon == "monthly" else 0,
+        "gamma_v-": 100 if horizon == "monthly" else 68,
+        "gamma_o": 0 if horizon == "monthly" else 23 * 68 + 1,
+        "gamma_s": 0 if horizon == "monthly" else -1 / 32,
     }
 
     for name, coeff in objective_function_cost.items():
