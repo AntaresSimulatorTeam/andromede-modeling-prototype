@@ -184,7 +184,6 @@ def test_hydro_heuristic() -> None:
     interdaily_breakdown = 3
 
     for scenario in range(scenarios):
-
         # Répartition des apports mensuels
         monthly_demand = get_load_data(scenario, "monthly")
         monthly_inflow = get_inflow_data(scenario, "monthly")
@@ -269,7 +268,6 @@ def create_hydro_problem(
     max_generating: List[float],
     initial_level: float,
 ) -> tuple[List[float], float]:
-
     database = generate_database(
         target=target,
         inflow=inflow,

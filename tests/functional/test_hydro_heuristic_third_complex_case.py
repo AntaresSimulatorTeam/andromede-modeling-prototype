@@ -373,7 +373,6 @@ def create_hydro_problem(
     initial_level: float,
     month: int,
 ) -> tuple[List[float], float]:
-
     database = generate_database(
         target=target,
         inflow=inflow,
