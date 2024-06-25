@@ -295,12 +295,28 @@ class LinearExpressionEfficient:
 
         return result
 
+    def __le__(self, rhs: Any) -> "StandaloneConstraint":
+        return StandaloneConstraint(
+            expression=self - rhs,
+            lower_bound=literal(-float("inf")),
+            upper_bound=literal(0),
+        )
+
+    def __ge__(self, rhs: Any) -> "ExpressionNodeEfficient":
+        return StandaloneConstraint(
+            expression=self - rhs,
+            lower_bound=literal(0),
+            upper_bound=literal(float("inf")),
+        )
+
+    # def __eq__(self, rhs: Any) -> "ExpressionNodeEfficient":  # type: ignore
+    #     return _apply_if_node(rhs, lambda x: ComparisonNode(self, x, Comparator.EQUAL))
+
     def __eq__(self, rhs: object) -> bool:
         return (
             isinstance(rhs, LinearExpressionEfficient)
             and expressions_equal(self.constant, rhs.constant)
-            and self.terms
-            == rhs.terms
+            and self.terms == rhs.terms
         )
 
     def __iadd__(
@@ -464,6 +480,44 @@ class LinearExpressionEfficient:
     def is_constant(self) -> bool:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
         return not self.terms
+
+
+@dataclass
+class StandaloneConstraint:
+    """
+    A standalone constraint, with rugid initialization.
+    """
+
+    expression: LinearExpressionEfficient
+    lower_bound: LinearExpressionEfficient
+    upper_bound: LinearExpressionEfficient
+
+    def __init__(
+        self,
+        expression: LinearExpressionEfficient,
+        lower_bound: LinearExpressionEfficient,
+        upper_bound: LinearExpressionEfficient,
+    ) -> None:
+
+        for bound in [lower_bound, upper_bound]:
+            if bound is not None and not bound.is_constant():
+                raise ValueError(
+                    f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
+                )
+
+            self.expression = expression
+            if lower_bound is not None:
+                self.lower_bound = lower_bound
+            else:
+                self.lower_bound = literal(-float("inf"))
+
+            if upper_bound is not None:
+                self.upper_bound = upper_bound
+            else:
+                self.upper_bound = literal(float("inf"))
+
+    def __str__(self) -> str:
+        return f"{str(self.lower_bound)} <= {str(self.expression)} <= {str(self.upper_bound)}"
 
 
 def _wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:

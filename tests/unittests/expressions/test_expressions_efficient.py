@@ -26,9 +26,11 @@ from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
+    StandaloneConstraint,
     TermEfficient,
     comp_param,
     comp_var,
+    literal,
     param,
     var,
 )
@@ -214,6 +216,7 @@ def test_addition(
 ) -> None:
     assert e1 + e2 == expected
 
+
 @pytest.mark.parametrize(
     "e1, e2, expected",
     [
@@ -318,14 +321,17 @@ def test_linear_expression_equality(
 #     )
 
 
+def test_standalone_constraint() -> None:
+    cst = StandaloneConstraint(var("x"), literal(0), literal(10))
+
+    assert str(cst) == "0 <= +x <=  + 10"
+
+
 def test_comparison() -> None:
     x = var("x")
     p = param("p")
-    expr: Constraint = (
-        5 * x + 3
-    ) >= p - 2  ## Overloading operator to return a constraint object !
-
-    assert str(expr) == "((5.0 * x) + 3.0) >= (p - 2.0)"
+    expr = (5 * x + 3) >= p - 2
+    assert str(expr) == "0 <= 5.0x + (3.0 - (p - 2.0)) <=  + inf"
 
 
 class StructureProvider(IndexingStructureProvider):
