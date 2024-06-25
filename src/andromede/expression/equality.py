@@ -18,6 +18,7 @@ from andromede.expression.expression_efficient import (
     AdditionNode,
     BinaryOperatorNode,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
     ExpressionNodeEfficient,
     ExpressionRange,
@@ -98,6 +99,8 @@ class EqualityVisitor:
         #     return self.variable(left, right)
         if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
             return self.parameter(left, right)
+        if isinstance(left, ComponentParameterNode) and isinstance(right, ComponentParameterNode):
+            return self.comp_parameter(left, right)
         if isinstance(left, TimeOperatorNode) and isinstance(right, TimeOperatorNode):
             return self.time_operator(left, right)
         if isinstance(left, TimeAggregatorNode) and isinstance(
@@ -151,6 +154,9 @@ class EqualityVisitor:
 
     def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
         return left.name == right.name
+    
+    def comp_parameter(self, left: ComponentParameterNode, right: ComponentParameterNode) -> bool:
+        return left.component_id == right.component_id and left.name == right.name
 
     def expression_range(self, left: ExpressionRange, right: ExpressionRange) -> bool:
         if not self.visit(left.start, right.start):

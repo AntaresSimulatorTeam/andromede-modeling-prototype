@@ -24,6 +24,10 @@ from andromede.expression.expression_efficient import (
     ExpressionNodeEfficient,
     LiteralNode,
     ParameterNode,
+    is_minus_one,
+    is_one,
+    is_zero,
+    wrap_in_node,
 )
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.print import print_expr
@@ -31,24 +35,6 @@ from andromede.expression.scenario_operator import ScenarioOperator
 from andromede.expression.time_operator import TimeAggregator, TimeOperator
 
 T = TypeVar("T")
-
-EPS = 10 ** (-16)
-
-
-# def is_close_abs(value: float, other_value: float, eps: float) -> bool:
-#     return abs(value - other_value) < eps
-
-
-def is_zero(value: ExpressionNodeEfficient) -> bool:
-    return expressions_equal(value, LiteralNode(0), EPS)
-
-
-def is_one(value: ExpressionNodeEfficient) -> bool:
-    return expressions_equal(value, LiteralNode(1), EPS)
-
-
-def is_minus_one(value: float) -> bool:
-    return expressions_equal(value, LiteralNode(-1), EPS)
 
 
 @dataclass(frozen=True)
@@ -85,6 +71,21 @@ class TermEfficient:
     scenario_operator: Optional[ScenarioOperator] = None
 
     # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "coefficient", wrap_in_node(self.coefficient))
+
+    def __eq__(self, other: "TermEfficient") -> bool:
+        return (
+            isinstance(other, TermEfficient)
+            and expressions_equal(self.coefficient, other.coefficient)
+            and self.component_id == other.component_id
+            and self.variable_name == other.variable_name
+            and self.structure == other.structure
+            and self.time_operator == other.time_operator
+            and self.time_aggregator == other.time_aggregator
+            and self.scenario_operator == other.scenario_operator
+        )
 
     def is_zero(self) -> bool:
         return is_zero(self.coefficient)
@@ -246,14 +247,15 @@ class LinearExpressionEfficient:
         terms: Optional[
             Union[Dict[TermKeyEfficient, TermEfficient], List[TermEfficient]]
         ] = None,
-        constant: Optional[float] = None,
+        constant: Optional[Union[float, ExpressionNodeEfficient]] = None,
     ) -> None:
-        self.constant = 0
-        self.terms = {}
 
-        if constant is not None:
-            # += b
-            self.constant = constant
+        if constant is None:
+            self.constant = LiteralNode(0)
+        else:
+            self.constant = wrap_in_node(constant)
+
+        self.terms = {}
         if terms is not None:
             # Allows to give two different syntax in the constructor:
             #   - List[TermEfficient] is natural
@@ -298,10 +300,12 @@ class LinearExpressionEfficient:
             isinstance(rhs, LinearExpressionEfficient)
             and expressions_equal(self.constant, rhs.constant)
             and self.terms
-            == rhs.terms  # /!\ There may be float equality comparison in the terms values
+            == rhs.terms
         )
 
-    def __iadd__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+    def __iadd__(
+        self, rhs: Union["LinearExpressionEfficient", int, float]
+    ) -> "LinearExpressionEfficient":
         rhs = _wrap_in_linear_expr(rhs)
         self.constant += rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms, 0)
@@ -309,7 +313,9 @@ class LinearExpressionEfficient:
         self.remove_zeros_from_terms()
         return self
 
-    def __add__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+    def __add__(
+        self, rhs: Union["LinearExpressionEfficient", int, float]
+    ) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result += self
         result += rhs
@@ -318,7 +324,9 @@ class LinearExpressionEfficient:
     def __radd__(self, rhs: int) -> "LinearExpressionEfficient":
         return self.__add__(rhs)
 
-    def __isub__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+    def __isub__(
+        self, rhs: Union["LinearExpressionEfficient", int, float]
+    ) -> "LinearExpressionEfficient":
         rhs = _wrap_in_linear_expr(rhs)
         self.constant -= rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms, 0)
@@ -326,7 +334,9 @@ class LinearExpressionEfficient:
         self.remove_zeros_from_terms()
         return self
 
-    def __sub__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+    def __sub__(
+        self, rhs: Union["LinearExpressionEfficient", int, float]
+    ) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result += self
         result -= rhs
@@ -337,7 +347,9 @@ class LinearExpressionEfficient:
         result -= self
         return result
 
-    def __imul__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+    def __imul__(
+        self, rhs: Union["LinearExpressionEfficient", int, float]
+    ) -> "LinearExpressionEfficient":
         rhs = _wrap_in_linear_expr(rhs)
 
         if self.terms and rhs.terms:
@@ -369,7 +381,9 @@ class LinearExpressionEfficient:
                 _copy_expression(left_expr, self)
         return self
 
-    def __mul__(self, rhs: Union["LinearExpressionEfficient", int, float]) -> "LinearExpressionEfficient":
+    def __mul__(
+        self, rhs: Union["LinearExpressionEfficient", int, float]
+    ) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result += self
         result *= rhs
@@ -412,7 +426,7 @@ class LinearExpressionEfficient:
         result /= rhs
 
         return result
-    
+
     def __rtruediv__(self, rhs: Union[int, float]) -> "LinearExpressionEfficient":
         return self.__truediv__(rhs)
 
@@ -451,12 +465,14 @@ class LinearExpressionEfficient:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
         return not self.terms
 
+
 def _wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:
     if isinstance(obj, LinearExpressionEfficient):
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
         return LinearExpressionEfficient([], LiteralNode(float(obj)))
     raise TypeError(f"Unable to wrap {obj} into a linear expression")
+
 
 def _apply_if_node(
     obj: Any, func: Callable[[LinearExpressionEfficient], LinearExpressionEfficient]

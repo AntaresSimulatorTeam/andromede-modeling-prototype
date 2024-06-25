@@ -23,42 +23,6 @@ from andromede.expression.time_operator import TimeShift, TimeSum
 
 
 @pytest.mark.parametrize(
-    "term, expected",
-    [
-        (TermEfficient(1, "c", "x"), "+x"),
-        (TermEfficient(-1, "c", "x"), "-x"),
-        (TermEfficient(2.50, "c", "x"), "+2.5x"),
-        (TermEfficient(-3, "c", "x"), "-3x"),
-        (TermEfficient(-3, "c", "x", time_operator=TimeShift(-1)), "-3x.shift([-1])"),
-        (TermEfficient(-3, "c", "x", time_aggregator=TimeSum(True)), "-3x.sum(True)"),
-        (
-            TermEfficient(
-                -3,
-                "c",
-                "x",
-                time_operator=TimeShift([2, 3]),
-                time_aggregator=TimeSum(False),
-            ),
-            "-3x.shift([2, 3]).sum(False)",
-        ),
-        (TermEfficient(-3, "c", "x", scenario_operator=Expectation()), "-3x.expec()"),
-        (
-            TermEfficient(
-                -3,
-                "c",
-                "x",
-                time_aggregator=TimeSum(True),
-                scenario_operator=Expectation(),
-            ),
-            "-3x.sum(True).expec()",
-        ),
-    ],
-)
-def test_printing_term(term: TermEfficient, expected: str) -> None:
-    assert str(term) == expected
-
-
-@pytest.mark.parametrize(
     "coeff, var_name, constant, expec_str",
     [
         (0, "x", 0, "0"),

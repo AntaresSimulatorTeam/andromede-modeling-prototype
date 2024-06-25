@@ -15,13 +15,15 @@ Defines the model for generic expressions.
 """
 import enum
 import inspect
-from dataclasses import dataclass, field
 import math
+from dataclasses import dataclass, field
 from typing import Any, Callable, List, Optional, Sequence, Union
 
 import andromede.expression.port_operator
 import andromede.expression.scenario_operator
 import andromede.expression.time_operator
+
+EPS = 10 ** (-16)
 
 
 class Instances(enum.Enum):
@@ -135,7 +137,7 @@ class ExpressionNodeEfficient:
         return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Variance"))
 
 
-def _wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
+def wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
     if isinstance(obj, ExpressionNodeEfficient):
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
@@ -146,29 +148,33 @@ def _wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
 def _apply_if_node(
     obj: Any, func: Callable[["ExpressionNodeEfficient"], "ExpressionNodeEfficient"]
 ) -> "ExpressionNodeEfficient":
-    if as_node := _wrap_in_node(obj):
+    if as_node := wrap_in_node(obj):
         return func(as_node)
     else:
         return NotImplemented
 
+
 def is_zero(node: ExpressionNodeEfficient) -> bool:
-    # Could we use expressions equal
-    # TODO: Change hard coded 1e-16 abs_tol
-    return isinstance(node, LiteralNode) and math.isclose(node.value, 0, abs_tol=1e-16)
+    # Faster implementation than expressions equal for this particular cases
+    return isinstance(node, LiteralNode) and math.isclose(node.value, 0, abs_tol=EPS)
+
 
 def is_one(node: ExpressionNodeEfficient) -> bool:
-    # Could we use expressions equal
+    # Faster implementation than expressions equal for this particular cases
     return isinstance(node, LiteralNode) and math.isclose(node.value, 1)
 
+
 def is_minus_one(node: ExpressionNodeEfficient) -> bool:
-    # Could we use expressions equal
+    # Faster implementation than expressions equal for this particular cases
     return isinstance(node, LiteralNode) and math.isclose(node.value, -1)
+
 
 def _negate_node(node: ExpressionNodeEfficient):
     if isinstance(node, LiteralNode):
         return LiteralNode(-node.value)
     else:
         return NegationNode(node)
+
 
 def _add_node(
     lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
@@ -177,6 +183,9 @@ def _add_node(
         return rhs
     if is_zero(rhs):
         return lhs
+    # TODO: How can we use the equality visitor here (simple import -> circular import), copy code here ?
+    # if expressions_equal(lhs, -rhs):
+    # return LiteralNode(0)
     if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
         return LiteralNode(lhs.value + rhs.value)
     # TODO : Si noeuds gauche droite même clé de param -> 2 * param
@@ -191,6 +200,9 @@ def _substract_node(
         return -rhs
     if is_zero(rhs):
         return lhs
+    # TODO: How can we use the equality visitor here (simple import -> circular import), copy code here ?
+    # if expressions_equal(lhs, rhs):
+    # return LiteralNode(0)
     if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
         return LiteralNode(lhs.value - rhs.value)
     # TODO : Si noeuds gauche droite même clé de param -> 0
@@ -201,6 +213,8 @@ def _substract_node(
 def _multiply_node(
     lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
 ) -> ExpressionNodeEfficient:
+    if is_zero(lhs) or is_zero(rhs):
+        return LiteralNode(0)
     if is_one(lhs):
         return rhs
     if is_one(rhs):
@@ -365,7 +379,7 @@ class ExpressionRange:
         for attribute in self.__dict__:
             value = getattr(self, attribute)
             object.__setattr__(
-                self, attribute, _wrap_in_node(value) if value is not None else value
+                self, attribute, wrap_in_node(value) if value is not None else value
             )
 
 
@@ -376,9 +390,9 @@ def expression_range(
     start: IntOrExpr, stop: IntOrExpr, step: Optional[IntOrExpr] = None
 ) -> ExpressionRange:
     return ExpressionRange(
-        start=_wrap_in_node(start),
-        stop=_wrap_in_node(stop),
-        step=None if step is None else _wrap_in_node(step),
+        start=wrap_in_node(start),
+        stop=wrap_in_node(stop),
+        step=None if step is None else wrap_in_node(step),
     )
 
 
@@ -415,7 +429,7 @@ class InstancesTimeIndex:
             )
 
         if isinstance(expressions, (int, ExpressionNodeEfficient)):
-            self.expressions = [_wrap_in_node(expressions)]
+            self.expressions = [wrap_in_node(expressions)]
         else:
             self.expressions = expressions
 
