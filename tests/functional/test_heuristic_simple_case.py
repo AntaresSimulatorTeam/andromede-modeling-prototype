@@ -17,7 +17,14 @@ from typing import List
 from math import ceil, floor
 import ortools.linear_solver.pywraplp as pywraplp
 
-from andromede.expression import literal, param, var
+from andromede.expression import (
+    literal,
+    param,
+    var,
+    PrinterVisitor,
+    visit,
+    ExpressionNode,
+)
 from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
@@ -30,7 +37,7 @@ from andromede.libs.standard import (
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parameter import float_parameter, int_parameter
-from andromede.model.variable import float_variable, int_variable
+from andromede.model.variable import float_variable, int_variable, ValueType, Variable
 from andromede.model.constraint import Constraint
 from andromede.simulation import (
     BlockBorderManagement,
@@ -72,165 +79,6 @@ THERMAL_CLUSTER_MODEL_MILP = model(
         int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
         int_parameter("nb_units_max", CONSTANT),
         int_parameter("nb_failures", TIME_AND_SCENARIO_FREE),
-    ],
-    variables=[
-        float_variable(
-            "generation",
-            lower_bound=literal(0),
-            upper_bound=param("nb_units_max") * param("p_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_on",
-            lower_bound=param("nb_units_min"),
-            upper_bound=param("nb_units_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_stop",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_start",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-    ],
-    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
-        )
-    ],
-    constraints=[
-        Constraint(
-            "Max generation",
-            var("generation") <= param("p_max") * var("nb_on"),
-        ),
-        Constraint(
-            "Min generation",
-            var("generation") >= param("p_min") * var("nb_on"),
-        ),
-        Constraint(
-            "NODU balance",
-            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
-        ),
-        Constraint(
-            "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            <= var("nb_on"),
-        ),
-        Constraint(
-            "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
-        ),
-        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
-    ],
-    objective_operational_contribution=(
-        param("cost") * var("generation")
-        + param("startup_cost") * var("nb_start")
-        + param("fixed_cost") * var("nb_on")
-    )
-    .sum()
-    .expec(),
-)
-
-THERMAL_CLUSTER_MODEL_LP = model(
-    id="GEN",
-    parameters=[
-        float_parameter("p_max", CONSTANT),  # p_max of a single unit
-        float_parameter("p_min", CONSTANT),
-        float_parameter("d_min_up", CONSTANT),
-        float_parameter("d_min_down", CONSTANT),
-        float_parameter("cost", CONSTANT),
-        float_parameter("startup_cost", CONSTANT),
-        float_parameter("fixed_cost", CONSTANT),
-        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
-        int_parameter("nb_units_max", CONSTANT),
-        int_parameter("nb_failures", TIME_AND_SCENARIO_FREE),
-    ],
-    variables=[
-        float_variable(
-            "generation",
-            lower_bound=literal(0),
-            upper_bound=param("nb_units_max") * param("p_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_on",
-            lower_bound=param("nb_units_min"),
-            upper_bound=param("nb_units_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_stop",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_start",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-    ],
-    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
-        )
-    ],
-    constraints=[
-        Constraint(
-            "Max generation",
-            var("generation") <= param("p_max") * var("nb_on"),
-        ),
-        Constraint(
-            "Min generation",
-            var("generation") >= param("p_min") * var("nb_on"),
-        ),
-        Constraint(
-            "NODU balance",
-            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
-        ),
-        Constraint(
-            "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            <= var("nb_on"),
-        ),
-        Constraint(
-            "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
-        ),
-        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
-    ],
-    objective_operational_contribution=(
-        param("cost") * var("generation")
-        + param("startup_cost") * var("nb_start")
-        + param("fixed_cost") * var("nb_on")
-    )
-    .sum()
-    .expec(),
-)
-
-THERMAL_CLUSTER_MODEL_FAST = model(
-    id="GEN",
-    parameters=[
-        float_parameter("p_max", CONSTANT),  # p_max of a single unit
-        float_parameter("cost", CONSTANT),
-        int_parameter("nb_units_max", CONSTANT),
         float_parameter("mingen", TIME_AND_SCENARIO_FREE),
     ],
     variables=[
@@ -240,6 +88,22 @@ THERMAL_CLUSTER_MODEL_FAST = model(
             upper_bound=param("nb_units_max") * param("p_max"),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
+        int_variable(
+            "nb_on",
+            lower_bound=param("nb_units_min"),
+            upper_bound=param("nb_units_max"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        int_variable(
+            "nb_stop",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        int_variable(
+            "nb_start",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
     ],
     ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
     port_fields_definitions=[
@@ -248,11 +112,127 @@ THERMAL_CLUSTER_MODEL_FAST = model(
             definition=var("generation"),
         )
     ],
-    constraints=[],
-    objective_operational_contribution=(param("cost") * var("generation"))
+    constraints=[
+        Constraint(
+            "Max generation",
+            var("generation") <= param("p_max") * var("nb_on"),
+        ),
+        Constraint(
+            "Min generation",
+            var("generation") >= param("p_min") * var("nb_on"),
+        ),
+        Constraint(
+            "NODU balance",
+            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
+        ),
+        Constraint(
+            "Min up time",
+            var("nb_start")
+            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            .sum()
+            <= var("nb_on"),
+        ),
+        Constraint(
+            "Min down time",
+            var("nb_stop")
+            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
+            .sum()
+            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+        ),
+        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
+    ],
+    objective_operational_contribution=(
+        param("cost") * var("generation")
+        + param("startup_cost") * var("nb_start")
+        + param("fixed_cost") * var("nb_on")
+    )
     .sum()
     .expec(),
 )
+
+
+def get_thermal_cluster_accurate_model(initial_model: Model) -> Model:
+
+    THERMAL_CLUSTER_MODEL_LP = model(
+        id=initial_model.id,
+        parameters=[p for p in initial_model.parameters.values()],
+        variables=[
+            float_variable(
+                v.name,
+                lower_bound=v.lower_bound,
+                upper_bound=v.upper_bound,
+                structure=v.structure,
+            )
+            for v in initial_model.variables.values()
+        ],
+        ports=[p for p in initial_model.ports.values()],
+        port_fields_definitions=[
+            p for p in initial_model.port_fields_definitions.values()
+        ],
+        constraints=[c for c in initial_model.constraints.values()],
+        objective_operational_contribution=initial_model.objective_operational_contribution,
+    )
+
+    return THERMAL_CLUSTER_MODEL_LP
+
+
+def get_thermal_cluster_fast_model(initial_model: Model) -> Model:
+
+    integer_variables = [
+        v.name
+        for v in initial_model.variables.values()
+        if v.data_type == ValueType.INTEGER
+    ]
+
+    THERMAL_CLUSTER_MODEL_FAST = model(
+        id=initial_model.id,
+        parameters=[p for p in initial_model.parameters.values()],
+        variables=[
+            float_variable(
+                v.name,
+                lower_bound=(
+                    v.lower_bound if v.data_type == ValueType.FLOAT else literal(0)
+                ),
+                upper_bound=(
+                    v.upper_bound if v.data_type == ValueType.FLOAT else literal(0)
+                ),
+                structure=v.structure,
+            )
+            for v in initial_model.variables.values()
+        ],
+        ports=[p for p in initial_model.ports.values()],
+        port_fields_definitions=[
+            p for p in initial_model.port_fields_definitions.values()
+        ],
+        constraints=[
+            c
+            for c in initial_model.constraints.values()
+            if not (variable_in_constraint(c, integer_variables))
+        ],
+        objective_operational_contribution=initial_model.objective_operational_contribution,
+    )
+
+    return THERMAL_CLUSTER_MODEL_FAST
+
+
+def variable_in_constraint(c: Constraint, variables: List[str]) -> bool:
+    res = False
+    if variable_in_expression(c.lower_bound, variables):
+        res = True
+    elif variable_in_expression(c.expression, variables):
+        res = True
+    elif variable_in_expression(c.upper_bound, variables):
+        res = True
+    return res
+
+
+def variable_in_expression(expr: ExpressionNode, variables: List[str]) -> bool:
+    res = False
+    str_expr = visit(expr, PrinterVisitor())
+    for v in variables:
+        if v in str_expr:
+            res = True
+    return res
 
 
 THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
@@ -793,9 +773,13 @@ def create_simple_problem(
     demand = create_component(model=DEMAND_MODEL, id="D")
 
     if fast:
-        gen = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="G")
+        gen = create_component(
+            model=get_thermal_cluster_fast_model(THERMAL_CLUSTER_MODEL_MILP), id="G"
+        )
     elif lp_relaxation:
-        gen = create_component(model=THERMAL_CLUSTER_MODEL_LP, id="G")
+        gen = create_component(
+            model=get_thermal_cluster_accurate_model(THERMAL_CLUSTER_MODEL_MILP), id="G"
+        )
     else:
         gen = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G")
 
