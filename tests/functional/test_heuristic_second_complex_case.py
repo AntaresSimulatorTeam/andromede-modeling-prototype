@@ -17,7 +17,14 @@ from typing import List, Dict
 from math import ceil, floor
 import ortools.linear_solver.pywraplp as pywraplp
 
-from andromede.expression import literal, param, var
+from andromede.expression import (
+    literal,
+    param,
+    var,
+    visit,
+    PrinterVisitor,
+    ExpressionNode,
+)
 from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
@@ -157,71 +164,47 @@ THERMAL_CLUSTER_MODEL_MILP = model(
     .expec(),
 )
 
-THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
-    id="GEN",
-    parameters=[
-        float_parameter("d_min_up", CONSTANT),
-        float_parameter("d_min_down", CONSTANT),
-        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
-        int_parameter("nb_units_max", TIME_AND_SCENARIO_FREE),
-        float_parameter("max_generating", TIME_AND_SCENARIO_FREE),
-        int_parameter("max_failure", TIME_AND_SCENARIO_FREE),
-        int_parameter("nb_units_max_min_down_time", TIME_AND_SCENARIO_FREE),
-    ],
-    variables=[
-        float_variable(
-            "nb_on",
-            lower_bound=param("nb_units_min"),
-            upper_bound=param("nb_units_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_stop",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_failure",
-            lower_bound=literal(0),
-            upper_bound=param("max_failure"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_start",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-    ],
-    constraints=[
-        Constraint(
-            "NODU balance",
-            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
-        ),
-        Constraint(
-            "Max failures",
-            var("nb_failure") <= var("nb_stop"),
-        ),
-        Constraint(
-            "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            - var("nb_failure")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            <= var("nb_on"),
-        ),
-        Constraint(
-            "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max_min_down_time") - var("nb_on"),
-        ),
-        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
-    ],
-    objective_operational_contribution=(var("nb_on")).sum().expec(),
-)
+
+def variable_in_constraint(c: Constraint, variables: List[str]) -> bool:
+    res = False
+    if variable_in_expression(c.lower_bound, variables):
+        res = True
+    elif variable_in_expression(c.expression, variables):
+        res = True
+    elif variable_in_expression(c.upper_bound, variables):
+        res = True
+    return res
+
+
+def variable_in_expression(expr: ExpressionNode, variables: List[str]) -> bool:
+    res = False
+    str_expr = visit(expr, PrinterVisitor())
+    for v in variables:
+        if v in str_expr:
+            res = True
+    return res
+
+
+def get_accurate_heuristic_model(initial_model: Model) -> Model:
+
+    generation_variable = ["generation"]
+
+    THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
+        id=initial_model.id,
+        parameters=[p for p in initial_model.parameters.values()],
+        variables=[
+            v
+            for v in initial_model.variables.values()
+            if v.name not in generation_variable
+        ],
+        constraints=[
+            c
+            for c in initial_model.constraints.values()
+            if not (variable_in_constraint(c, generation_variable))
+        ],
+        objective_operational_contribution=(var("nb_on")).sum().expec(),
+    )
+    return THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC
 
 
 def get_model_fast_heuristic(Q: int, delta: int) -> Model:
@@ -595,7 +578,8 @@ def create_problem_accurate_heuristic(
     scenarios = 1
 
     gen = create_component(
-        model=THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC, id=thermal_cluster
+        model=get_accurate_heuristic_model(THERMAL_CLUSTER_MODEL_MILP),
+        id=thermal_cluster,
     )
 
     network = Network("test")

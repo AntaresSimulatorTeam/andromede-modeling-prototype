@@ -235,55 +235,27 @@ def variable_in_expression(expr: ExpressionNode, variables: List[str]) -> bool:
     return res
 
 
-THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
-    id="GEN",
-    parameters=[
-        float_parameter("d_min_up", CONSTANT),
-        float_parameter("d_min_down", CONSTANT),
-        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
-        int_parameter("nb_units_max", CONSTANT),
-    ],
-    variables=[
-        float_variable(
-            "nb_on",
-            lower_bound=param("nb_units_min"),
-            upper_bound=param("nb_units_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_stop",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "nb_start",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-    ],
-    constraints=[
-        Constraint(
-            "NODU balance",
-            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
-        ),
-        Constraint(
-            "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            <= var("nb_on"),
-        ),
-        Constraint(
-            "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
-        ),
-        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
-    ],
-    objective_operational_contribution=(var("nb_on")).sum().expec(),
-)
+def get_accurate_heuristic_model(initial_model: Model) -> Model:
+
+    generation_variable = ["generation"]
+
+    THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
+        id=initial_model.id,
+        parameters=[p for p in initial_model.parameters.values()],
+        variables=[
+            v
+            for v in initial_model.variables.values()
+            if v.name not in generation_variable
+        ],
+        constraints=[
+            c
+            for c in initial_model.constraints.values()
+            if not (variable_in_constraint(c, generation_variable))
+        ],
+        objective_operational_contribution=(var("nb_on")).sum().expec(),
+    )
+    return THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC
+
 
 Q = 16  # number of blocks
 R = 8  # length of the last block
@@ -817,15 +789,24 @@ def create_problem_accurate_heuristic(
 
     database = DataBase()
 
+    database.add_data("G", "p_max", ConstantData(1000))
+    database.add_data("G", "p_min", ConstantData(700))
+    database.add_data("G", "cost", ConstantData(50))
+    database.add_data("G", "startup_cost", ConstantData(50))
+    database.add_data("G", "fixed_cost", ConstantData(1))
     database.add_data("G", "d_min_up", ConstantData(3))
     database.add_data("G", "d_min_down", ConstantData(10))
     database.add_data("G", "nb_units_min", lower_bound)
     database.add_data("G", "nb_units_max", ConstantData(3))
+    database.add_data("G", "nb_failures", ConstantData(0))
+    database.add_data("G", "mingen", lower_bound)
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
     scenarios = 1
 
-    gen = create_component(model=THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC, id="G")
+    gen = create_component(
+        model=get_accurate_heuristic_model(THERMAL_CLUSTER_MODEL_MILP), id="G"
+    )
 
     network = Network("test")
     network.add_component(gen)
