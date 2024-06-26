@@ -330,8 +330,14 @@ def test_standalone_constraint() -> None:
 def test_comparison() -> None:
     x = var("x")
     p = param("p")
-    expr = (5 * x + 3) >= p - 2
-    assert str(expr) == "0 <= 5.0x + (3.0 - (p - 2.0)) <=  + inf"
+
+    expr_geq = (5 * x + 3) >= p - 2
+    expr_leq = (5 * x + 3) <= p - 2
+    expr_eq = (5 * x + 3) == p - 2
+
+    assert str(expr_geq) == "0 <= 5.0x + (3.0 - (p - 2.0)) <=  + inf"
+    assert str(expr_leq) == " + (-inf) <= 5.0x + (3.0 - (p - 2.0)) <= 0"
+    assert str(expr_eq) == "0 <= 5.0x + (3.0 - (p - 2.0)) <= 0"
 
 
 class StructureProvider(IndexingStructureProvider):

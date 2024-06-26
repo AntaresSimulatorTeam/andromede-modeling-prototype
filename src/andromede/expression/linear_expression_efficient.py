@@ -280,7 +280,13 @@ class LinearExpressionEfficient:
         if is_zero(self.constant):
             return ""
         else:
-            return f" + {print_expr(self.constant)}"
+            const_str = print_expr(self.constant)
+            if const_str.startswith("+"):
+                return f" + {const_str[1:]}"
+            elif const_str.startswith("-"):
+                return f" + ({const_str})"
+            else:
+                return f" + {print_expr(self.constant)}"
 
     def __str__(self) -> str:
         # Useful for debugging tests
@@ -309,14 +315,11 @@ class LinearExpressionEfficient:
             upper_bound=literal(float("inf")),
         )
 
-    # def __eq__(self, rhs: Any) -> "ExpressionNodeEfficient":  # type: ignore
-    #     return _apply_if_node(rhs, lambda x: ComparisonNode(self, x, Comparator.EQUAL))
-
-    def __eq__(self, rhs: object) -> bool:
-        return (
-            isinstance(rhs, LinearExpressionEfficient)
-            and expressions_equal(self.constant, rhs.constant)
-            and self.terms == rhs.terms
+    def __eq__(self, rhs: Any) -> "ExpressionNodeEfficient":  # type: ignore
+        return StandaloneConstraint(
+            expression=self - rhs,
+            lower_bound=literal(0),
+            upper_bound=literal(0),
         )
 
     def __iadd__(
@@ -480,6 +483,17 @@ class LinearExpressionEfficient:
     def is_constant(self) -> bool:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
         return not self.terms
+
+
+def linear_expressions_equal(
+    lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
+) -> bool:
+    return (
+        isinstance(lhs, LinearExpressionEfficient)
+        and isinstance(rhs, LinearExpressionEfficient)
+        and expressions_equal(lhs.constant, rhs.constant)
+        and lhs.terms == rhs.terms
+    )
 
 
 @dataclass

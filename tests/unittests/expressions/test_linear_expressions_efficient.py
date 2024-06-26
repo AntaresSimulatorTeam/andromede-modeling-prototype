@@ -17,6 +17,7 @@ import pytest
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     TermEfficient,
+    linear_expressions_equal,
 )
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeShift, TimeSum
@@ -27,9 +28,9 @@ from andromede.expression.time_operator import TimeShift, TimeSum
     [
         (0, "x", 0, "0"),
         (1, "x", 0, "+x"),
-        (1, "x", 1, "+x+1"),
-        (3.7, "x", 1, "+3.7x+1"),
-        (0, "x", 1, "+1"),
+        (1, "x", 1, "+x + 1.0"),
+        (3.7, "x", 1, "3.7x + 1.0"),
+        (0, "x", 1, " + 1.0"),
     ],
 )
 def test_affine_expression_printing_should_reflect_required_formatting(
@@ -63,7 +64,7 @@ def test_affine_expression_printing_should_reflect_required_formatting(
 def test_constant_expressions(
     lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
 ) -> None:
-    assert lhs == rhs
+    assert linear_expressions_equal(lhs, rhs)
 
 
 @pytest.mark.parametrize(
@@ -165,7 +166,7 @@ def test_addition(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    assert e1 + e2 == expected
+    assert linear_expressions_equal(e1 + e2, expected)
 
 
 def test_addition_of_linear_expressions_with_different_number_of_instances_should_raise_value_error() -> (
@@ -235,8 +236,8 @@ def test_multiplication(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    assert e1 * e2 == expected
-    assert e2 * e1 == expected
+    assert linear_expressions_equal(e1 * e2, expected)
+    assert linear_expressions_equal(e2 * e1, expected)
 
 
 def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> None:
@@ -287,7 +288,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
 def test_negation(
     e1: LinearExpressionEfficient, expected: LinearExpressionEfficient
 ) -> None:
-    assert -e1 == expected
+    assert linear_expressions_equal(-e1, expected)
 
 
 @pytest.mark.parametrize(
@@ -377,7 +378,7 @@ def test_substraction(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    assert e1 - e2 == expected
+    assert linear_expressions_equal(e1 - e2, expected)
 
 
 @pytest.mark.parametrize(
@@ -429,7 +430,7 @@ def test_division(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    assert e1 / e2 == expected
+    assert linear_expressions_equal(e1 / e2, expected)
 
 
 def test_division_by_zero_sould_raise_zero_division_error() -> None:
@@ -454,6 +455,6 @@ def test_imul_preserve_identity() -> None:
     e1 = LinearExpressionEfficient([], 15)
     e2 = e1
     e1 *= LinearExpressionEfficient([], 2)
-    assert e1 == LinearExpressionEfficient([], 30)
-    assert e2 == e1
+    assert linear_expressions_equal(e1, LinearExpressionEfficient([], 30))
+    assert linear_expressions_equal(e2, e1)
     assert e2 is e1
