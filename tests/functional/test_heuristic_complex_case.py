@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 import numpy as np
 from typing import List, Dict
-from math import ceil, floor
+from math import ceil
 import ortools.linear_solver.pywraplp as pywraplp
 
 from andromede.expression import (
@@ -25,17 +25,15 @@ from andromede.expression import (
     PrinterVisitor,
     ExpressionNode,
 )
-from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
     DEMAND_MODEL,
     NODE_BALANCE_MODEL,
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from andromede.model import Model, ModelPort, float_parameter, float_variable, model
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
+from andromede.model import Model, float_parameter, float_variable, model
 from andromede.model.parameter import float_parameter, int_parameter
 from andromede.model.variable import float_variable, int_variable, ValueType
 from andromede.model.constraint import Constraint
@@ -52,7 +50,6 @@ from andromede.study import (
     Network,
     Node,
     PortRef,
-    TimeScenarioIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
     TimeIndex,
@@ -65,90 +62,6 @@ TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
 ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, True)
 NON_ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, False)
 CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
-
-THERMAL_CLUSTER_MODEL_MILP = model(
-    id="GEN",
-    parameters=[
-        float_parameter("p_max", CONSTANT),  # p_max of a single unit
-        float_parameter("p_min", CONSTANT),
-        float_parameter("d_min_up", CONSTANT),
-        float_parameter("d_min_down", CONSTANT),
-        float_parameter("cost", CONSTANT),
-        float_parameter("startup_cost", CONSTANT),
-        float_parameter("fixed_cost", CONSTANT),
-        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
-        int_parameter("nb_units_max", CONSTANT),
-        float_parameter("failures", TIME_AND_SCENARIO_FREE),
-        float_parameter("mingen", TIME_AND_SCENARIO_FREE),
-    ],
-    variables=[
-        float_variable(
-            "generation",
-            lower_bound=param("mingen"),
-            upper_bound=param("failures"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_on",
-            lower_bound=param("nb_units_min"),
-            upper_bound=param("nb_units_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_stop",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_start",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-    ],
-    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
-        )
-    ],
-    constraints=[
-        Constraint(
-            "Max generation",
-            var("generation") <= param("p_max") * var("nb_on"),
-        ),
-        Constraint(
-            "Min generation",
-            var("generation") >= param("p_min") * var("nb_on"),
-        ),
-        Constraint(
-            "NODU balance",
-            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
-        ),
-        Constraint(
-            "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            <= var("nb_on"),
-        ),
-        Constraint(
-            "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
-        ),
-        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
-    ],
-    objective_operational_contribution=(
-        param("cost") * var("generation")
-        + param("startup_cost") * var("nb_start")
-        + param("fixed_cost") * var("nb_on")
-    )
-    .sum()
-    .expec(),
-)
 
 
 def get_thermal_cluster_accurate_model(initial_model: Model) -> Model:
@@ -255,7 +168,6 @@ def get_accurate_heuristic_model(initial_model: Model) -> Model:
         objective_operational_contribution=(var("nb_on")).sum().expec(),
     )
     return THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC
-
 
 
 def get_model_fast_heuristic(Q: int, delta: int) -> Model:
@@ -388,7 +300,7 @@ def test_milp_version() -> None:
 
             check_output_values(problem, "milp", week, scenario=scenario)
 
-            expected_cost = [[78933841, 102109698], [17472101, 17424769]]
+            expected_cost = [[78933742, 102109698], [17472101, 17424769]]
             assert problem.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
@@ -528,7 +440,10 @@ def test_accurate_heuristic() -> None:
 
                 # Solve heuristic problem
                 problem_accurate_heuristic = create_problem_accurate_heuristic(
-                    {g: n_guide},
+                    {
+                        th: n_guide if th == g else ConstantData(0)
+                        for th in ["G1", "G2", "G3"]
+                    },
                     number_hours,
                     thermal_cluster=g,
                     week=week,
@@ -569,7 +484,7 @@ def test_accurate_heuristic() -> None:
 
             expected_cost = [
                 [78996726, 102215087 - 69500],
-                [17587733, 17650089 - 10081],
+                [17587733, 17641808],
             ]
             assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
@@ -739,6 +654,9 @@ def generate_database(
         index=[i for i in range(number_hours)],
         columns=[0],
     )
+    max_units_1 = get_max_unit(410, 1, failures_1)
+    max_failures_1 = get_max_failures(max_units_1)
+    nb_units_max_min_down_time_1 = get_max_unit_for_min_down_time(8, max_units_1)
 
     database.add_data("G1", "p_max", ConstantData(410))
     database.add_data("G1", "p_min", ConstantData(180))
@@ -748,9 +666,15 @@ def generate_database(
     database.add_data("G1", "d_min_up", ConstantData(8))
     database.add_data("G1", "d_min_down", ConstantData(8))
     database.add_data("G1", "nb_units_min", lower_bound["G1"])
-    database.add_data("G1", "nb_units_max", ConstantData(1))
-    database.add_data("G1", "failures", TimeScenarioSeriesData(failures_1))
-    database.add_data("G1", "mingen", lower_bound["G1"])
+    database.add_data("G1", "nb_units_max", TimeScenarioSeriesData(max_units_1))
+    database.add_data("G1", "max_generating", TimeScenarioSeriesData(failures_1))
+    database.add_data("G1", "min_generating", lower_bound["G1"])
+    database.add_data("G1", "max_failure", TimeScenarioSeriesData(max_failures_1))
+    database.add_data(
+        "G1",
+        "nb_units_max_min_down_time",
+        TimeScenarioSeriesData(nb_units_max_min_down_time_1),
+    )
 
     database.add_data("G2", "p_max", ConstantData(90))
     database.add_data("G2", "p_min", ConstantData(60))
@@ -761,14 +685,19 @@ def generate_database(
     database.add_data("G2", "d_min_down", ConstantData(11))
     database.add_data("G2", "nb_units_min", lower_bound["G2"])
     database.add_data("G2", "nb_units_max", ConstantData(3))
-    database.add_data("G2", "failures", ConstantData(270))
-    database.add_data("G2", "mingen", lower_bound["G2"])
+    database.add_data("G2", "max_generating", ConstantData(270))
+    database.add_data("G2", "min_generating", lower_bound["G2"])
+    database.add_data("G2", "max_failure", ConstantData(0))
+    database.add_data("G2", "nb_units_max_min_down_time", ConstantData(3))
 
     failures_3 = pd.DataFrame(
         np.repeat(get_failures_for_cluster3(week, scenario), 24),
         index=[i for i in range(number_hours)],
         columns=[0],
     )
+    max_units_3 = get_max_unit(275, 4, failures_3)
+    max_failures_3 = get_max_failures(max_units_3)
+    nb_units_max_min_down_time_3 = get_max_unit_for_min_down_time(9, max_units_3)
 
     database.add_data("G3", "p_max", ConstantData(275))
     database.add_data("G3", "p_min", ConstantData(150))
@@ -778,9 +707,15 @@ def generate_database(
     database.add_data("G3", "d_min_up", ConstantData(9))
     database.add_data("G3", "d_min_down", ConstantData(9))
     database.add_data("G3", "nb_units_min", lower_bound["G3"])
-    database.add_data("G3", "nb_units_max", ConstantData(4))
-    database.add_data("G3", "failures", TimeScenarioSeriesData(failures_3))
-    database.add_data("G3", "mingen", lower_bound["G3"])
+    database.add_data("G3", "nb_units_max", TimeScenarioSeriesData(max_units_3))
+    database.add_data("G3", "max_generating", TimeScenarioSeriesData(failures_3))
+    database.add_data("G3", "min_generating", lower_bound["G3"])
+    database.add_data("G3", "max_failure", TimeScenarioSeriesData(max_failures_3))
+    database.add_data(
+        "G3",
+        "nb_units_max_min_down_time",
+        TimeScenarioSeriesData(nb_units_max_min_down_time_3),
+    )
 
     database.add_data("U", "cost", ConstantData(10000))
     database.add_data("S", "cost", ConstantData(1))
@@ -829,6 +764,38 @@ def get_failures_for_cluster1(week: int, scenario: int) -> List:
     return failures
 
 
+def get_max_unit_for_min_down_time(delta: int, max_units: pd.DataFrame) -> pd.DataFrame:
+    nb_units_max_min_down_time = pd.DataFrame(
+        np.roll(max_units.values, delta), index=max_units.index
+    )
+    end_failures = max_units - pd.DataFrame(
+        np.roll(max_units.values, 1), index=max_units.index
+    )
+    end_failures.where(end_failures > 0, 0, inplace=True)
+    for j in range(delta):
+        nb_units_max_min_down_time += pd.DataFrame(
+            np.roll(end_failures.values, j), index=end_failures.index
+        )
+
+    return nb_units_max_min_down_time
+
+
+def get_max_failures(max_units: pd.DataFrame) -> pd.DataFrame:
+    max_failures = (
+        pd.DataFrame(np.roll(max_units.values, 1), index=max_units.index) - max_units
+    )
+    max_failures.where(max_failures > 0, 0, inplace=True)
+    return max_failures
+
+
+def get_max_unit(
+    pmax: float, units: float, max_generating: pd.DataFrame
+) -> pd.DataFrame:
+    max_units = max_generating / pmax
+    max_units.where(max_units < units, units, inplace=True)
+    return max_units
+
+
 def create_problem_accurate_heuristic(
     lower_bound: Dict[str, AbstractDataStructure],
     number_hours: int,
@@ -837,61 +804,16 @@ def create_problem_accurate_heuristic(
     scenario: int,
 ) -> OptimizationProblem:
 
-    database = DataBase()
-
-    if thermal_cluster == "G1":
-        failures_1 = pd.DataFrame(
-            np.repeat(get_failures_for_cluster1(week, scenario), 24),
-            index=[i for i in range(number_hours)],
-            columns=[0],
-        )
-        database.add_data("G1", "p_max", ConstantData(410))
-        database.add_data("G1", "p_min", ConstantData(180))
-        database.add_data("G1", "cost", ConstantData(96))
-        database.add_data("G1", "startup_cost", ConstantData(100500))
-        database.add_data("G1", "fixed_cost", ConstantData(1))
-        database.add_data("G1", "d_min_up", ConstantData(8))
-        database.add_data("G1", "d_min_down", ConstantData(8))
-        database.add_data("G1", "nb_units_min", lower_bound["G1"])
-        database.add_data("G1", "nb_units_max", ConstantData(1))
-        database.add_data("G1", "failures", TimeScenarioSeriesData(failures_1))
-        database.add_data("G1", "mingen", lower_bound["G1"])
-    elif thermal_cluster == "G2":
-        database.add_data("G2", "p_max", ConstantData(90))
-        database.add_data("G2", "p_min", ConstantData(60))
-        database.add_data("G2", "cost", ConstantData(137))
-        database.add_data("G2", "startup_cost", ConstantData(24500))
-        database.add_data("G2", "fixed_cost", ConstantData(1))
-        database.add_data("G2", "d_min_up", ConstantData(11))
-        database.add_data("G2", "d_min_down", ConstantData(11))
-        database.add_data("G2", "nb_units_min", lower_bound["G2"])
-        database.add_data("G2", "nb_units_max", ConstantData(3))
-        database.add_data("G2", "failures", ConstantData(270))
-        database.add_data("G2", "mingen", lower_bound["G2"])
-    elif thermal_cluster == "G3":
-        failures_3 = pd.DataFrame(
-            np.repeat(get_failures_for_cluster3(week, scenario), 24),
-            index=[i for i in range(number_hours)],
-            columns=[0],
-        )
-
-        database.add_data("G3", "p_max", ConstantData(275))
-        database.add_data("G3", "p_min", ConstantData(150))
-        database.add_data("G3", "cost", ConstantData(107))
-        database.add_data("G3", "startup_cost", ConstantData(69500))
-        database.add_data("G3", "fixed_cost", ConstantData(1))
-        database.add_data("G3", "d_min_up", ConstantData(9))
-        database.add_data("G3", "d_min_down", ConstantData(9))
-        database.add_data("G3", "nb_units_min", lower_bound["G3"])
-        database.add_data("G3", "nb_units_max", ConstantData(4))
-        database.add_data("G3", "failures", TimeScenarioSeriesData(failures_3))
-        database.add_data("G3", "mingen", lower_bound["G3"])
+    database = generate_database(
+        lower_bound=lower_bound, number_hours=number_hours, week=week, scenario=scenario
+    )
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
     scenarios = 1
 
     gen = create_component(
-        model=get_accurate_heuristic_model(THERMAL_CLUSTER_MODEL_MILP), id=thermal_cluster
+        model=get_accurate_heuristic_model(THERMAL_CLUSTER_MODEL_MILP),
+        id=thermal_cluster,
     )
 
     network = Network("test")
