@@ -396,7 +396,7 @@ def expression_range(
     )
 
 
-@dataclass
+@dataclass(frozen=True)
 class InstancesTimeIndex:
     """
     Defines a set of time indices on which a time operator operates.
@@ -429,9 +429,9 @@ class InstancesTimeIndex:
             )
 
         if isinstance(expressions, (int, ExpressionNodeEfficient)):
-            self.expressions = [wrap_in_node(expressions)]
+            object.__setattr__(self, "expressions", [wrap_in_node(expressions)])
         else:
-            self.expressions = expressions
+            object.__setattr__(self, "expressions", expressions)
 
     def is_simple(self) -> bool:
         if isinstance(self.expressions, list):

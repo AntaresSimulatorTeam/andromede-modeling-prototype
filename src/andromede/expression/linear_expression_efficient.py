@@ -14,6 +14,7 @@
 Specific modelling for "instantiated" linear expressions,
 with only variables and literal coefficients.
 """
+import dataclasses
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
@@ -22,17 +23,26 @@ from andromede.expression.evaluate import ValueProvider, evaluate
 from andromede.expression.expression_efficient import (
     ComponentParameterNode,
     ExpressionNodeEfficient,
+    ExpressionRange,
+    Instances,
+    InstancesTimeIndex,
     LiteralNode,
     ParameterNode,
+    TimeOperatorNode,
     is_minus_one,
     is_one,
     is_zero,
     wrap_in_node,
 )
+from andromede.expression.indexing import (
+    IndexingStructureProvider,
+    TimeScenarioIndexingVisitor,
+    compute_indexation,
+)
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.print import print_expr
 from andromede.expression.scenario_operator import ScenarioOperator
-from andromede.expression.time_operator import TimeAggregator, TimeOperator
+from andromede.expression.time_operator import TimeAggregator, TimeOperator, TimeShift
 
 T = TypeVar("T")
 
@@ -70,10 +80,22 @@ class TermEfficient:
     time_aggregator: Optional[TimeAggregator] = None
     scenario_operator: Optional[ScenarioOperator] = None
 
-    # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
+    # TODO: Try to remove this
+    instances: Instances = field(init=False, default=Instances.SIMPLE)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "coefficient", wrap_in_node(self.coefficient))
+
+        if self.time_operator is not None and self.time_aggregator is None:
+            
+            # TODO: Make a fuinction in time operator class
+            time_op_instances = Instances.SIMPLE if self.time_operator.time_ids.is_simple() else Instances.MULTIPLE
+
+            if self.coefficient.instances != time_op_instances:
+                raise ValueError(
+                    f"Cannot build term with coefficient {self.coefficient} and operator {self.time_operator} as they do not have the same number of instances."
+                )
+            self.instances = self.coefficient.instances
 
     def __eq__(self, other: "TermEfficient") -> bool:
         return (
@@ -130,6 +152,58 @@ class TermEfficient:
         else:
             variable_value = context.get_variable_value(self.variable_name)
         return evaluate(self.coefficient, context) * variable_value
+
+    def compute_indexation(
+        self, provider: IndexingStructureProvider
+    ) -> IndexingStructure:
+
+        # TODO: Improve this if/else structure
+        if self.component_id:
+            time = (
+                provider.get_component_variable_structure(self.variable_name).time
+                == True
+            )
+            scenario = (
+                provider.get_component_variable_structure(self.variable_name).scenario
+                == True
+            )
+        else:
+            time = provider.get_variable_structure(self.variable_name).time == True
+            scenario = (
+                provider.get_variable_structure(self.variable_name).scenario == True
+            )
+        return IndexingStructure(time, scenario)
+
+    def shift(
+        self,
+        expressions: Union[
+            int,
+            "ExpressionNodeEfficient",
+            List["ExpressionNodeEfficient"],
+            "ExpressionRange",
+        ],
+    ) -> "TermEfficient":
+        """
+        Time shift of term
+        """
+        # The behavior is richer/different than the previous implementation (with linear expr as trees) as we can now apply a shift operator on a whole expression, rather than just on the variables of an expression
+
+        # Example : (param("p") * var("x")).shift(1)
+        # Previous behavior : p[t]x[t-1]
+        # New behavior : p[t-1]x[t-1]
+
+        if self.time_operator is not None:
+            raise ValueError(
+                f"Composition of time operators {self.time_operator} and {TimeShift(InstancesTimeIndex(expressions))} is not allowed"
+            )
+
+        return dataclasses.replace(
+            self,
+            coefficient=TimeOperatorNode(
+                self.coefficient, "TimeShift", InstancesTimeIndex(expressions)
+            ),
+            time_operator=TimeShift(InstancesTimeIndex(expressions)),
+        )
 
 
 def generate_key(term: TermEfficient) -> TermKeyEfficient:
@@ -240,6 +314,8 @@ class LinearExpressionEfficient:
 
     terms: Dict[TermKeyEfficient, TermEfficient]
     constant: ExpressionNodeEfficient
+    # TODO: Probably not necessary, for now we replicate old implementation functioning
+    instances: Instances
 
     # TODO: We need to check that terms.key is indeed a TermKey and change the tests that this will break
     def __init__(
@@ -272,6 +348,9 @@ class LinearExpressionEfficient:
                 raise TypeError(
                     f"Terms must be either of type Dict[str, Term] or List[Term], whereas {terms} is of type {type(terms)}"
                 )
+            
+    def _compute_instances(self):
+
 
     def is_zero(self) -> bool:
         return len(self.terms) == 0 and is_zero(self.constant)
@@ -484,6 +563,90 @@ class LinearExpressionEfficient:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
         return not self.terms
 
+    def compute_indexation(
+        self, provider: IndexingStructureProvider
+    ) -> IndexingStructure:
+
+        indexing = compute_indexation(self.constant, provider)
+        for term in self.terms.values():
+            indexing = indexing | term.compute_indexation(provider)
+
+        return indexing
+
+    # def sum(self) -> "ExpressionNode":
+    #     if isinstance(self, TimeOperatorNode):
+    #         return TimeAggregatorNode(self, "TimeSum", stay_roll=True)
+    #     else:
+    #         return _apply_if_node(
+    #             self, lambda x: TimeAggregatorNode(x, "TimeSum", stay_roll=False)
+    #         )
+
+    # def sum_connections(self) -> "ExpressionNode":
+    #     if isinstance(self, PortFieldNode):
+    #         return PortFieldAggregatorNode(self, aggregator="PortSum")
+    #     raise ValueError(
+    #         f"sum_connections() applies only for PortFieldNode, whereas the current node is of type {type(self)}."
+    #     )
+
+    def shift(
+        self,
+        expressions: Union[
+            int,
+            "ExpressionNodeEfficient",
+            List["ExpressionNodeEfficient"],
+            "ExpressionRange",
+        ],
+    ) -> "LinearExpressionEfficient":
+        """
+        Time shift of variables
+
+        Examples:
+            >>> x.shift([1, 2, 4]) represents the vector of variables (x[t+1], x[t+2], x[t+4])
+
+        No variables allowed in shift argument, but parameter trees are ok
+
+        It is assumed that the shift operator is linear and distributes to all terms and to the constant of the linear expression on which it is applied.
+
+        Examples:
+            >>> (param("a") * var("x") + param("b")).shift([1, 2, 4]) represents the vector of variables (a[t+1]x[t+1] + b[t+1], a[t+2]x[t+2] + b[t+2], a[t+4]x[t+4] + b[t+4])
+        """
+
+        # The behavior is richer/different than the previous implementation (with linear expr as trees) as we can now apply a shift operator on a whole expression, rather than just on the variables of an expression
+
+        # Example : (param("p") * var("x")).shift(1)
+        # Previous behavior : p[t]x[t-1]
+        # New behavior : p[t-1]x[t-1]
+
+        result_terms = {}
+        for term in self.terms.values():
+            term_with_operator = term.shift(expressions)
+            result_terms[generate_key(term_with_operator)] = term_with_operator
+
+        result_constant = TimeOperatorNode(
+            self.constant, "TimeShift", InstancesTimeIndex(expressions)
+        )
+        result_expr = LinearExpressionEfficient(result_terms, result_constant)
+        return result_expr
+
+    # def eval(
+    #     self,
+    #     expressions: Union[
+    #         int, "ExpressionNode", List["ExpressionNode"], "ExpressionRange"
+    #     ],
+    # ) -> "ExpressionNode":
+    #     return _apply_if_node(
+    #         self,
+    #         lambda x: TimeOperatorNode(
+    #             x, "TimeEvaluation", InstancesTimeIndex(expressions)
+    #         ),
+    #     )
+
+    # def expec(self) -> "ExpressionNode":
+    #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Expectation"))
+
+    # def variance(self) -> "ExpressionNode":
+    #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Variance"))
+
 
 def linear_expressions_equal(
     lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
@@ -542,13 +705,13 @@ def _wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:
     raise TypeError(f"Unable to wrap {obj} into a linear expression")
 
 
-def _apply_if_node(
-    obj: Any, func: Callable[[LinearExpressionEfficient], LinearExpressionEfficient]
-) -> LinearExpressionEfficient:
-    if as_linear_expr := _wrap_in_linear_expr(obj):
-        return func(as_linear_expr)
-    else:
-        return NotImplemented
+# def _apply_if_node(
+#     obj: Any, func: Callable[[LinearExpressionEfficient], LinearExpressionEfficient]
+# ) -> LinearExpressionEfficient:
+#     if as_linear_expr := _wrap_in_linear_expr(obj):
+#         return func(as_linear_expr)
+#     else:
+#         return NotImplemented
 
 
 def _copy_expression(
