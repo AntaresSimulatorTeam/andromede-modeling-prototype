@@ -58,11 +58,13 @@ def test_milp_version() -> None:
     number_hours = 168
 
     problem = create_main_problem(
-        ConstantData(0),
+        {"G": ConstantData(0)},
         number_hours,
         lp_relaxation=False,
         fast=False,
         data_dir=Path(__file__).parent / "data_simple_case",
+        week=0,
+        scenario=0,
     )
     status = problem.solver.Solve()
 
@@ -134,11 +136,13 @@ def test_lp_version() -> None:
     """
     number_hours = 168
     problem = create_main_problem(
-        ConstantData(0),
+        {"G": ConstantData(0)},
         number_hours,
         lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data_simple_case",
+        week=0,
+        scenario=0,
     )
     status = problem.solver.Solve()
 
@@ -188,11 +192,13 @@ def test_accurate_heuristic() -> None:
 
     # First optimization
     problem_optimization_1 = create_main_problem(
-        ConstantData(0),
+        {"G": ConstantData(0)},
         number_hours,
         lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data_simple_case",
+        week=0,
+        scenario=0,
     )
     status = problem_optimization_1.solver.Solve()
 
@@ -213,9 +219,12 @@ def test_accurate_heuristic() -> None:
 
     # Solve heuristic problem
     problem_accurate_heuristic = create_problem_accurate_heuristic(
-        n_guide,
+        {"G": n_guide},
         number_hours,
         data_dir=Path(__file__).parent / "data_simple_case",
+        thermal_cluster="G",
+        week=0,
+        scenario=0,
     )
     status = problem_accurate_heuristic.solver.Solve()
 
@@ -236,11 +245,13 @@ def test_accurate_heuristic() -> None:
 
     # Second optimization with lower bound modified
     problem_optimization_2 = create_main_problem(
-        nb_on_min,
+        {"G": nb_on_min},
         number_hours,
         lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data_simple_case",
+        week=0,
+        scenario=0,
     )
     status = problem_optimization_2.solver.Solve()
 
@@ -313,11 +324,13 @@ def test_fast_heuristic() -> None:
 
     # First optimization
     problem_optimization_1 = create_main_problem(
-        ConstantData(0),
+        {"G": ConstantData(0)},
         number_hours,
         lp_relaxation=True,
         fast=True,
         data_dir=Path(__file__).parent / "data_simple_case",
+        week=0,
+        scenario=0,
     )
     status = problem_optimization_1.solver.Solve()
 
@@ -332,6 +345,8 @@ def test_fast_heuristic() -> None:
         number_hours,
         thermal_cluster="G",
         data_dir=Path(__file__).parent / "data_simple_case",
+        week=0,
+        scenario=0,
     )
 
     mingen = TimeScenarioSeriesData(mingen_heuristic)
@@ -345,11 +360,13 @@ def test_fast_heuristic() -> None:
 
     # Second optimization with lower bound modified
     problem_optimization_2 = create_main_problem(
-        mingen,
+        {"G": mingen},
         number_hours,
         lp_relaxation=True,
         fast=True,
         data_dir=Path(__file__).parent / "data_simple_case",
+        week=0,
+        scenario=0,
     )
     status = problem_optimization_2.solver.Solve()
 
