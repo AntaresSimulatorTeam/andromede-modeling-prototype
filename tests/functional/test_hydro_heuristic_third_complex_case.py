@@ -48,6 +48,7 @@ from andromede.study.data import AbstractDataStructure
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.variable import Variable
+from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
@@ -56,66 +57,6 @@ NON_ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, False)
 CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
 
 capacity = 1e07
-
-HYDRO_MODEL = model(
-    id="H",
-    parameters=[
-        float_parameter("max_generating", NON_ANTICIPATIVE_TIME_VARYING),
-        float_parameter("min_generating", NON_ANTICIPATIVE_TIME_VARYING),
-        float_parameter("capacity", CONSTANT),
-        float_parameter("initial_level", CONSTANT_PER_SCENARIO),
-        float_parameter("inflow", TIME_AND_SCENARIO_FREE),
-        float_parameter(
-            "max_epsilon", NON_ANTICIPATIVE_TIME_VARYING
-        ),  # not really a parameter, it is just to implement correctly one constraint
-        float_parameter("lower_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
-        float_parameter("upper_rule_curve", NON_ANTICIPATIVE_TIME_VARYING),
-    ],
-    variables=[
-        float_variable(
-            "generating",
-            lower_bound=param("min_generating"),
-            upper_bound=param("max_generating"),
-            structure=TIME_AND_SCENARIO_FREE,
-        ),
-        float_variable(
-            "level",
-            lower_bound=literal(0),
-            upper_bound=param("capacity"),
-            structure=TIME_AND_SCENARIO_FREE,
-        ),
-        float_variable(
-            "overflow",
-            lower_bound=literal(0),
-            structure=TIME_AND_SCENARIO_FREE,
-        ),
-        float_variable(
-            "epsilon",
-            lower_bound=-param("max_epsilon"),
-            upper_bound=param("max_epsilon"),
-            structure=TIME_AND_SCENARIO_FREE,
-        ),
-    ],
-    constraints=[
-        Constraint(
-            "Level balance",
-            var("level")
-            == var("level").shift(-1)
-            - var("generating")
-            - var("overflow")
-            + param("inflow")
-            + var("epsilon"),
-        ),
-        Constraint(
-            "Initial level",
-            var("level").eval(literal(0))
-            == param("initial_level")
-            - var("generating").eval(literal(0))
-            - var("overflow").eval(literal(0))
-            + param("inflow").eval(literal(0)),
-        ),
-    ],
-)
 
 
 def get_heuristic_hydro_model(
