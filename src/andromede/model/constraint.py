@@ -10,17 +10,24 @@
 #
 # This file is part of the Antares project.
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from andromede.expression.degree import is_constant
 from andromede.expression.equality import (
     expressions_equal,
     expressions_equal_if_present,
 )
-from andromede.expression.expression import (
-    Comparator,
-    ComparisonNode,
-    ExpressionNode,
+
+# from andromede.expression.expression import (
+#     Comparator,
+#     ComparisonNode,
+#     ExpressionNode,
+#     literal,
+# )
+from andromede.expression.expression_efficient import Comparator, ComparisonNode
+from andromede.expression.linear_expression_efficient import (
+    LinearExpressionEfficient,
+    StandaloneConstraint,
     literal,
 )
 from andromede.expression.print import print_expr
@@ -36,42 +43,31 @@ class Constraint:
     """
 
     name: str
-    expression: ExpressionNode
-    lower_bound: ExpressionNode
-    upper_bound: ExpressionNode
+    expression: LinearExpressionEfficient
+    lower_bound: LinearExpressionEfficient
+    upper_bound: LinearExpressionEfficient
     context: ProblemContext
 
     def __init__(
         self,
         name: str,
-        expression: ExpressionNode,
-        lower_bound: Optional[ExpressionNode] = None,
-        upper_bound: Optional[ExpressionNode] = None,
+        expression: Union[LinearExpressionEfficient, StandaloneConstraint],
+        lower_bound: Optional[LinearExpressionEfficient] = None,
+        upper_bound: Optional[LinearExpressionEfficient] = None,
         context: ProblemContext = ProblemContext.OPERATIONAL,
     ) -> None:
         self.name = name
         self.context = context
 
-        if isinstance(expression, ComparisonNode):
+        if isinstance(expression, StandaloneConstraint):
             if lower_bound is not None or upper_bound is not None:
                 raise ValueError(
                     "Both comparison between two expressions and a bound are specfied, set either only a comparison between expressions or a single linear expression with bounds."
                 )
 
-            merged_expr = expression.left - expression.right
-            self.expression = merged_expr
-
-            if expression.comparator == Comparator.LESS_THAN:
-                # lhs - rhs <= 0
-                self.upper_bound = literal(0)
-                self.lower_bound = literal(-float("inf"))
-            elif expression.comparator == Comparator.GREATER_THAN:
-                # lhs - rhs >= 0
-                self.lower_bound = literal(0)
-                self.upper_bound = literal(float("inf"))
-            else:  # lhs - rhs == 0
-                self.lower_bound = literal(0)
-                self.upper_bound = literal(0)
+            self.expression = expression.expression
+            self.lower_bound = expression.lower_bound
+            self.upper_bound = expression.upper_bound
         else:
             for bound in [lower_bound, upper_bound]:
                 if bound is not None and not is_constant(bound):
@@ -99,3 +95,6 @@ class Constraint:
             and expressions_equal_if_present(self.lower_bound, other.lower_bound)
             and expressions_equal_if_present(self.upper_bound, other.upper_bound)
         )
+
+    def __str__(self) -> str:
+        return f"{str(self.lower_bound)} <= {str(self.expression)} <= {str(self.upper_bound)}"

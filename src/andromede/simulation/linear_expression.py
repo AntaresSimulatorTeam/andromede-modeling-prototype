@@ -45,7 +45,6 @@ def is_minus_one(value: float) -> bool:
 
 @dataclass(frozen=True)
 class TermKey:
-
     """
     Utility class to provide key for a term that contains all term information except coefficient
     """

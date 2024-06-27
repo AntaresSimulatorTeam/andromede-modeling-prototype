@@ -14,14 +14,21 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List
 
-from andromede.expression import CopyVisitor, sum_expressions, visit
-from andromede.expression.expression import (
-    AdditionNode,
-    ExpressionNode,
-    LiteralNode,
+from andromede.expression import CopyVisitor, visit
+
+# from andromede.expression.expression import (
+#     AdditionNode,
+#     ExpressionNode,
+#     LiteralNode,
+#     PortFieldAggregatorNode,
+#     PortFieldNode,
+# )
+from andromede.expression.expression_efficient import (
     PortFieldAggregatorNode,
     PortFieldNode,
+    sum_expressions,
 )
+from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
 from andromede.model.model import PortFieldId
 
 
@@ -43,9 +50,9 @@ class PortResolver(CopyVisitor):
     """
 
     component_id: str
-    ports_expressions: Dict[PortFieldKey, List[ExpressionNode]]
+    ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]]
 
-    def port_field(self, node: PortFieldNode) -> ExpressionNode:
+    def port_field(self, node: PortFieldNode) -> LinearExpressionEfficient:
         expressions = self.ports_expressions[
             PortFieldKey(
                 self.component_id, PortFieldId(node.port_name, node.field_name)
@@ -58,7 +65,9 @@ class PortResolver(CopyVisitor):
         else:
             return expressions[0]
 
-    def port_field_aggregator(self, node: PortFieldAggregatorNode) -> ExpressionNode:
+    def port_field_aggregator(
+        self, node: PortFieldAggregatorNode
+    ) -> LinearExpressionEfficient:
         if node.aggregator != "PortSum":
             raise NotImplementedError("Only PortSum is supported.")
         port_field_node = node.operand
@@ -76,8 +85,8 @@ class PortResolver(CopyVisitor):
 
 
 def resolve_port(
-    expression: ExpressionNode,
+    expression: LinearExpressionEfficient,
     component_id: str,
-    ports_expressions: Dict[PortFieldKey, List[ExpressionNode]],
-) -> ExpressionNode:
+    ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]],
+) -> LinearExpressionEfficient:
     return visit(expression, PortResolver(component_id, ports_expressions))
