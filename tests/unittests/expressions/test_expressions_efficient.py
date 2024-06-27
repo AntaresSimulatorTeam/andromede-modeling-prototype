@@ -358,23 +358,25 @@ class StructureProvider(IndexingStructureProvider):
         return IndexingStructure(True, True)
 
 
-def test_shift() -> None:
+def test_shift_on_time_step_list_raises_value_error() -> None:
     x = var("x")
-    expr = x.shift(ExpressionRange(1, 4))
+    with pytest.raises(ValueError):
+        _ = x.shift(ExpressionRange(1, 4))
 
+def test_shift_on_single_time_step() -> None:
+    x = var("x")
+    expr = x.shift(1)
+    
     provider = StructureProvider()
-
     assert expr.compute_indexation(provider) == IndexingStructure(True, True)
-    assert expr.instances == Instances.MULTIPLE
 
 
 def test_shifting_sum() -> None:
     x = var("x")
-    expr = x.shift(ExpressionRange(1, 4)).sum()
+    expr = x.sum(shift=ExpressionRange(1, 4))
+    
     provider = StructureProvider()
-
     assert expr.compute_indexation(provider) == IndexingStructure(True, True)
-    assert expr.instances == Instances.SIMPLE
 
 
 def test_eval() -> None:
