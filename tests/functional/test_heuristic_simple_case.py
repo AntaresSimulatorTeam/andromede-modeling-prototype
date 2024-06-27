@@ -13,39 +13,19 @@
 import pandas as pd
 import pytest
 import numpy as np
-import ortools.linear_solver.pywraplp as pywraplp
 
-from andromede.libs.standard import (
-    DEMAND_MODEL,
-    NODE_BALANCE_MODEL,
-    SPILLAGE_MODEL,
-    UNSUPPLIED_ENERGY_MODEL,
-)
-from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 from andromede.simulation import (
-    BlockBorderManagement,
     OutputValues,
-    TimeBlock,
-    build_problem,
 )
-from andromede.simulation.optimization import OptimizationProblem
 from andromede.study import (
     ConstantData,
-    DataBase,
-    Network,
-    Node,
-    PortRef,
     TimeScenarioSeriesData,
-    TimeSeriesData,
-    TimeIndex,
-    create_component,
 )
-from andromede.study.data import AbstractDataStructure
-from andromede.thermal_heuristic.model import (
-    get_accurate_heuristic_model,
-    get_model_fast_heuristic,
-    get_thermal_cluster_accurate_model,
-    get_thermal_cluster_fast_model,
+from pathlib import Path
+from andromede.thermal_heuristic.problem import (
+    create_main_problem,
+    create_problem_accurate_heuristic,
+    create_problem_fast_heuristic,
 )
 
 
@@ -77,8 +57,12 @@ def test_milp_version() -> None:
     """
     number_hours = 168
 
-    problem = create_simple_problem(
-        ConstantData(0), number_hours, lp_relaxation=False, fast=False
+    problem = create_main_problem(
+        ConstantData(0),
+        number_hours,
+        lp_relaxation=False,
+        fast=False,
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
     status = problem.solver.Solve()
 
@@ -149,8 +133,12 @@ def test_lp_version() -> None:
         = 16 802 840,55
     """
     number_hours = 168
-    problem = create_simple_problem(
-        ConstantData(0), number_hours, lp_relaxation=True, fast=False
+    problem = create_main_problem(
+        ConstantData(0),
+        number_hours,
+        lp_relaxation=True,
+        fast=False,
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
     status = problem.solver.Solve()
 
@@ -199,8 +187,12 @@ def test_accurate_heuristic() -> None:
     number_hours = 168
 
     # First optimization
-    problem_optimization_1 = create_simple_problem(
-        ConstantData(0), number_hours, lp_relaxation=True, fast=False
+    problem_optimization_1 = create_main_problem(
+        ConstantData(0),
+        number_hours,
+        lp_relaxation=True,
+        fast=False,
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
     status = problem_optimization_1.solver.Solve()
 
@@ -221,7 +213,9 @@ def test_accurate_heuristic() -> None:
 
     # Solve heuristic problem
     problem_accurate_heuristic = create_problem_accurate_heuristic(
-        n_guide, number_hours
+        n_guide,
+        number_hours,
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
     status = problem_accurate_heuristic.solver.Solve()
 
@@ -241,8 +235,12 @@ def test_accurate_heuristic() -> None:
         assert nb_on_heuristic.iloc[time_step, 0] == 2 if time_step != 12 else 3
 
     # Second optimization with lower bound modified
-    problem_optimization_2 = create_simple_problem(
-        nb_on_min, number_hours, lp_relaxation=True, fast=False
+    problem_optimization_2 = create_main_problem(
+        nb_on_min,
+        number_hours,
+        lp_relaxation=True,
+        fast=False,
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
     status = problem_optimization_2.solver.Solve()
 
@@ -312,11 +310,14 @@ def test_fast_heuristic() -> None:
     """
 
     number_hours = 168
-    pmax = 1000
 
     # First optimization
-    problem_optimization_1 = create_simple_problem(
-        ConstantData(0), number_hours, lp_relaxation=True, fast=True
+    problem_optimization_1 = create_main_problem(
+        ConstantData(0),
+        number_hours,
+        lp_relaxation=True,
+        fast=True,
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
     status = problem_optimization_1.solver.Solve()
 
@@ -325,29 +326,12 @@ def test_fast_heuristic() -> None:
     # Get number of on units
     output_1 = OutputValues(problem_optimization_1)
 
-    nb_on_1 = pd.DataFrame(
-        np.transpose(
-            np.ceil(
-                np.round(
-                    np.array(
-                        output_1.component("G")
-                        .var("generation")
-                        .value[0]  # type:ignore
-                    )
-                    / pmax,
-                    12,
-                )
-            )
-        ),
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-    n_guide = TimeScenarioSeriesData(nb_on_1)
-
     # Solve heuristic problem
     mingen_heuristic = create_problem_fast_heuristic(
-        n_guide,
+        output_1.component("G").var("generation").value[0],  # type:ignore
         number_hours,
+        thermal_cluster="G",
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
 
     mingen = TimeScenarioSeriesData(mingen_heuristic)
@@ -360,8 +344,12 @@ def test_fast_heuristic() -> None:
         )
 
     # Second optimization with lower bound modified
-    problem_optimization_2 = create_simple_problem(
-        mingen, number_hours, lp_relaxation=True, fast=True
+    problem_optimization_2 = create_main_problem(
+        mingen,
+        number_hours,
+        lp_relaxation=True,
+        fast=True,
+        data_dir=Path(__file__).parent / "data_simple_case",
     )
     status = problem_optimization_2.solver.Solve()
 
@@ -393,204 +381,3 @@ def test_fast_heuristic() -> None:
     assert output.component("U").var("unsupplied_energy").value == [
         [pytest.approx(0.0)] * number_hours
     ]
-
-
-def create_simple_problem(
-    lower_bound: AbstractDataStructure,
-    number_hours: int,
-    lp_relaxation: bool,
-    fast: bool,
-) -> OptimizationProblem:
-
-    database = DataBase()
-
-    database.add_data("G", "p_max", ConstantData(1000))
-    database.add_data("G", "p_min", ConstantData(700))
-    database.add_data("G", "cost", ConstantData(50))
-    database.add_data("G", "startup_cost", ConstantData(50))
-    database.add_data("G", "fixed_cost", ConstantData(1))
-    database.add_data("G", "d_min_up", ConstantData(3))
-    database.add_data("G", "d_min_down", ConstantData(10))
-    database.add_data("G", "nb_units_min", lower_bound)
-    database.add_data("G", "nb_units_max", ConstantData(3))
-    database.add_data("G", "max_failure", ConstantData(0))
-    database.add_data("G", "min_generating", lower_bound)
-    database.add_data("G", "max_generating", ConstantData(3000))
-    database.add_data("G", "nb_units_max_min_down_time", ConstantData(3))
-
-    database.add_data("U", "cost", ConstantData(1000))
-    database.add_data("S", "cost", ConstantData(0))
-
-    demand_data = pd.DataFrame(
-        [[2000.0]] * number_hours,
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-    demand_data.iloc[12, 0] = 2050.0
-
-    demand_time_scenario_series = TimeScenarioSeriesData(demand_data)
-    database.add_data("D", "demand", demand_time_scenario_series)
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = 1
-
-    node = Node(model=NODE_BALANCE_MODEL, id="1")
-    demand = create_component(model=DEMAND_MODEL, id="D")
-
-    if fast:
-        gen = create_component(
-            model=get_thermal_cluster_fast_model(THERMAL_CLUSTER_MODEL_MILP), id="G"
-        )
-    elif lp_relaxation:
-        gen = create_component(
-            model=get_thermal_cluster_accurate_model(THERMAL_CLUSTER_MODEL_MILP), id="G"
-        )
-    else:
-        gen = create_component(model=THERMAL_CLUSTER_MODEL_MILP, id="G")
-
-    spillage = create_component(model=SPILLAGE_MODEL, id="S")
-
-    unsupplied_energy = create_component(model=UNSUPPLIED_ENERGY_MODEL, id="U")
-
-    network = Network("test")
-    network.add_node(node)
-    network.add_component(demand)
-    network.add_component(gen)
-    network.add_component(spillage)
-    network.add_component(unsupplied_energy)
-    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
-    network.connect(
-        PortRef(unsupplied_energy, "balance_port"), PortRef(node, "balance_port")
-    )
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
-
-    return problem
-
-
-def create_problem_accurate_heuristic(
-    lower_bound: AbstractDataStructure, number_hours: int
-) -> OptimizationProblem:
-
-    database = DataBase()
-
-    database.add_data("G", "p_max", ConstantData(1000))
-    database.add_data("G", "p_min", ConstantData(700))
-    database.add_data("G", "cost", ConstantData(50))
-    database.add_data("G", "startup_cost", ConstantData(50))
-    database.add_data("G", "fixed_cost", ConstantData(1))
-    database.add_data("G", "d_min_up", ConstantData(3))
-    database.add_data("G", "d_min_down", ConstantData(10))
-    database.add_data("G", "nb_units_min", lower_bound)
-    database.add_data("G", "nb_units_max", ConstantData(3))
-    database.add_data("G", "max_failure", ConstantData(0))
-    database.add_data("G", "min_generating", lower_bound)
-    database.add_data("G", "max_generating", ConstantData(3000))
-    database.add_data("G", "nb_units_max_min_down_time", ConstantData(3))
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = 1
-
-    gen = create_component(
-        model=get_accurate_heuristic_model(THERMAL_CLUSTER_MODEL_MILP), id="G"
-    )
-
-    network = Network("test")
-    network.add_component(gen)
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        scenarios,
-        border_management=BlockBorderManagement.CYCLE,
-    )
-
-    return problem
-
-
-def create_problem_fast_heuristic(
-    lower_bound: AbstractDataStructure, number_hours: int
-) -> pd.DataFrame:
-
-    delta = 10
-    pmin = 700
-    pdispo = np.array(3000)
-    nmax = 3
-    Q = 16
-
-    database = DataBase()
-
-    database.add_data("B", "n_max", ConstantData(nmax))
-    database.add_data("B", "delta", ConstantData(delta))
-    database.add_data("B", "n_guide", lower_bound)
-    for h in range(delta):
-        start_ajust = number_hours - delta + h
-        database.add_data(
-            "B",
-            f"alpha_ajust_{h}",
-            TimeSeriesData(
-                {
-                    TimeIndex(t): 1 if (t >= start_ajust) or (t < h) else 0
-                    for t in range(number_hours)
-                }
-            ),
-        )
-        for k in range(Q):
-            start_k = k * delta + h
-            end_k = min(start_ajust, (k + 1) * delta + h)
-            database.add_data(
-                "B",
-                f"alpha_{k}_{h}",
-                TimeSeriesData(
-                    {
-                        TimeIndex(t): 1 if (t >= start_k) and (t < end_k) else 0
-                        for t in range(number_hours)
-                    }
-                ),
-            )
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-
-    block = create_component(model=get_model_fast_heuristic(Q=Q, delta=delta), id="B")
-
-    network = Network("test")
-    network.add_component(block)
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        1,
-        border_management=BlockBorderManagement.CYCLE,
-        solver_id="XPRESS",
-    )
-
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
-    problem.solver.EnableOutput()
-
-    status = problem.solver.Solve(parameters)
-
-    assert status == problem.solver.OPTIMAL
-
-    output_heuristic = OutputValues(problem)
-    n_heuristic = np.array(
-        output_heuristic.component("B").var("n").value[0]  # type:ignore
-    )
-    mingen_heuristic = pd.DataFrame(
-        np.minimum(n_heuristic * pmin, pdispo),
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-
-    return mingen_heuristic
