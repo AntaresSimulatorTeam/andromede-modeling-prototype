@@ -14,23 +14,9 @@ import pandas as pd
 import pytest
 import numpy as np
 from typing import List, Dict
-from math import ceil
 import ortools.linear_solver.pywraplp as pywraplp
 
-from andromede.expression import (
-    literal,
-    param,
-    var,
-    visit,
-    PrinterVisitor,
-    ExpressionNode,
-)
-from andromede.expression.indexing_structure import IndexingStructure
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
-from andromede.model import Model, float_parameter, float_variable, model
-from andromede.model.parameter import float_parameter, int_parameter
-from andromede.model.variable import float_variable, int_variable
-from andromede.model.constraint import Constraint
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
@@ -48,218 +34,15 @@ from andromede.study import (
     create_component,
 )
 from andromede.study.data import AbstractDataStructure
-
-CONSTANT = IndexingStructure(False, False)
-TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
-ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, True)
-NON_ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, False)
-CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
-
-
-def variable_in_constraint(c: Constraint, variables: List[str]) -> bool:
-    res = False
-    if variable_in_expression(c.lower_bound, variables):
-        res = True
-    elif variable_in_expression(c.expression, variables):
-        res = True
-    elif variable_in_expression(c.upper_bound, variables):
-        res = True
-    return res
-
-
-def variable_in_expression(expr: ExpressionNode, variables: List[str]) -> bool:
-    res = False
-    str_expr = visit(expr, PrinterVisitor())
-    for v in variables:
-        if v in str_expr:
-            res = True
-    return res
-
-
-def get_accurate_heuristic_model(initial_model: Model) -> Model:
-
-    generation_variable = ["generation"]
-
-    THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
-        id=initial_model.id,
-        parameters=[p for p in initial_model.parameters.values()],
-        variables=[
-            v
-            for v in initial_model.variables.values()
-            if v.name not in generation_variable
-        ],
-        constraints=[
-            c
-            for c in initial_model.constraints.values()
-            if not (variable_in_constraint(c, generation_variable))
-        ],
-        objective_operational_contribution=(var("nb_on")).sum().expec(),
-    )
-    return THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC
-
-
-def get_model_fast_heuristic(Q: int, delta: int) -> Model:
-    BLOCK_MODEL_FAST_HEURISTIC = model(
-        id="BLOCK_FAST",
-        parameters=[
-            float_parameter("n_guide", TIME_AND_SCENARIO_FREE),
-            float_parameter("delta", CONSTANT),
-            float_parameter("n_max", CONSTANT),
-        ]
-        + [
-            int_parameter(f"alpha_{k}_{h}", NON_ANTICIPATIVE_TIME_VARYING)
-            for k in range(Q)
-            for h in range(delta)
-        ]
-        + [
-            int_parameter(f"alpha_ajust_{h}", NON_ANTICIPATIVE_TIME_VARYING)
-            for h in range(delta)
-        ],
-        variables=[
-            float_variable(
-                f"n_block_{k}",
-                lower_bound=literal(0),
-                upper_bound=param("n_max"),
-                structure=CONSTANT_PER_SCENARIO,
-            )
-            for k in range(Q)
-        ]
-        + [
-            float_variable(
-                "n_ajust",
-                lower_bound=literal(0),
-                upper_bound=param("n_max"),
-                structure=CONSTANT_PER_SCENARIO,
-            )
-        ]
-        + [
-            int_variable(
-                f"t_ajust_{h}",
-                lower_bound=literal(0),
-                upper_bound=literal(1),
-                structure=CONSTANT_PER_SCENARIO,
-            )
-            for h in range(delta)
-        ]
-        + [
-            float_variable(
-                "n",
-                lower_bound=literal(0),
-                upper_bound=param("n_max"),
-                structure=TIME_AND_SCENARIO_FREE,
-            )
-        ],
-        constraints=[
-            Constraint(
-                f"Definition of n block {k} for {h}",
-                var(f"n_block_{k}")
-                >= param("n_guide") * param(f"alpha_{k}_{h}")
-                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
-            )
-            for k in range(Q)
-            for h in range(delta)
-        ]
-        + [
-            Constraint(
-                f"Definition of n ajust for {h}",
-                var(f"n_ajust")
-                >= param("n_guide") * param(f"alpha_ajust_{h}")
-                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
-            )
-            for h in range(delta)
-        ]
-        + [
-            Constraint(
-                f"Definition of n with relation to block {k} for {h}",
-                var(f"n")
-                >= param(f"alpha_{k}_{h}") * var(f"n_block_{k}")
-                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
-            )
-            for k in range(Q)
-            for h in range(delta)
-        ]
-        + [
-            Constraint(
-                f"Definition of n with relation to ajust for {h}",
-                var(f"n")
-                >= param(f"alpha_ajust_{h}") * var(f"n_ajust")
-                - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
-            )
-            for h in range(delta)
-        ]
-        + [
-            Constraint(
-                "Choose one t ajust",
-                literal(0) + sum([var(f"t_ajust_{h}") for h in range(delta)])
-                == literal(1),
-            )
-        ],
-        objective_operational_contribution=(var("n")).sum().expec()
-        + sum(
-            [var(f"t_ajust_{h}") * (h + 1) / 10 / delta for h in range(delta)]
-        ).expec(),  # type:ignore
-    )
-    return BLOCK_MODEL_FAST_HEURISTIC
-
-
-def check_output_values(
-    problem: OptimizationProblem, mode: str, week: int, scenario: int
-) -> None:
-    output = OutputValues(problem)
-
-    expected_output_clusters_file = open(
-        "tests/functional/data_second_complex_case/"
-        + mode
-        + "/"
-        + str(scenario)
-        + "/details-hourly.txt",
-        "r",
-    )
-    expected_output_clusters = expected_output_clusters_file.readlines()
-
-    expected_output_general_file = open(
-        "tests/functional/data_second_complex_case/"
-        + mode
-        + "/"
-        + str(scenario)
-        + "/values-hourly.txt",
-        "r",
-    )
-    expected_output_general = expected_output_general_file.readlines()
-
-    for i, cluster in enumerate(["G" + str(i) for i in [2]]):
-
-        assert output.component(cluster).var("generation").value == [
-            [
-                pytest.approx(float(line.strip().split("\t")[4 + i]), abs=1e-10)
-                for line in expected_output_clusters[
-                    168 * week + 7 : 168 * week + 7 + 168
-                ]
-            ]
-        ]
-        if mode != "fast":
-            assert output.component(cluster).var("nb_on").value == [
-                [
-                    pytest.approx(float(line.strip().split("\t")[6 + i]))
-                    for line in expected_output_clusters[
-                        168 * week + 7 : 168 * week + 7 + 168
-                    ]
-                ]
-            ]
-
-    assert output.component("S").var("spillage").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[11 if mode == "milp" else 12]))
-            for line in expected_output_general[168 * week + 7 : 168 * week + 7 + 168]
-        ]
-    ]
-
-    assert output.component("U").var("unsupplied_energy").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[10 if mode == "milp" else 11]))
-            for line in expected_output_general[168 * week + 7 : 168 * week + 7 + 168]
-        ]
-    ]
+from andromede.thermal_heuristic.model import (
+    get_accurate_heuristic_model,
+    get_model_fast_heuristic,
+)
+from andromede.thermal_heuristic.data import (
+    get_max_failures,
+    get_max_unit,
+    get_max_unit_for_min_down_time,
+)
 
 
 def test_accurate_heuristic() -> None:
@@ -399,38 +182,6 @@ def generate_database(
         database.add_data(cluster, "min_generating", lower_bound[cluster])
 
     return database
-
-
-def get_max_unit_for_min_down_time(delta: int, max_units: pd.DataFrame) -> pd.DataFrame:
-    nb_units_max_min_down_time = pd.DataFrame(
-        np.roll(max_units.values, delta), index=max_units.index
-    )
-    end_failures = max_units - pd.DataFrame(
-        np.roll(max_units.values, 1), index=max_units.index
-    )
-    end_failures.where(end_failures > 0, 0, inplace=True)
-    for j in range(delta):
-        nb_units_max_min_down_time += pd.DataFrame(
-            np.roll(end_failures.values, j), index=end_failures.index
-        )
-
-    return nb_units_max_min_down_time
-
-
-def get_max_failures(max_units: pd.DataFrame) -> pd.DataFrame:
-    max_failures = (
-        pd.DataFrame(np.roll(max_units.values, 1), index=max_units.index) - max_units
-    )
-    max_failures.where(max_failures > 0, 0, inplace=True)
-    return max_failures
-
-
-def get_max_unit(
-    pmax: float, units: float, max_generating: pd.DataFrame
-) -> pd.DataFrame:
-    max_units = max_generating / pmax
-    max_units.where(max_units < units, units, inplace=True)
-    return max_units
 
 
 def get_data() -> (
@@ -606,7 +357,3 @@ def create_problem_fast_heuristic(
     )
 
     return mingen_heuristic
-
-
-def convert_to_integer(x: float) -> int:
-    return ceil(round(x, 12))
