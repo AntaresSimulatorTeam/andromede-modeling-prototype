@@ -13,7 +13,7 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import pandas as pd
 
@@ -114,6 +114,19 @@ def load_ts_from_txt(
         return pd.read_csv(ts_path, header=None, sep="\s+")
     except Exception:
         raise Exception(f"An error has arrived when processing '{ts_path}'")
+
+
+def filter_ts_on_scenarios_and_timesteps(
+    raw_ts: pd.DataFrame,
+    scenarios: Optional[List[int]],
+    timesteps: Optional[List[int]],
+) -> pd.DataFrame:
+    filtered_ts = raw_ts
+    if scenarios is not None:
+        filtered_ts = filtered_ts.filter(items=scenarios, axis=1)
+    if timesteps is not None:
+        filtered_ts = filtered_ts.filter(items=timesteps, axis=0)
+    return filtered_ts.reset_index(drop=True)
 
 
 @dataclass(frozen=True)
