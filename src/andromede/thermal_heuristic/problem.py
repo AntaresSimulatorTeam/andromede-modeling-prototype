@@ -13,7 +13,7 @@
 import pandas as pd
 import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -88,7 +88,13 @@ def create_main_problem(
         ],
     )
 
-    network, database = get_network_and_database(data_dir, lib, "components.yml")
+    network, database = get_network_and_database(
+        data_dir,
+        lib,
+        "components.yml",
+        scenarios=[scenario],
+        timesteps=list(range(week * number_hours, (week + 1) * number_hours)),
+    )
 
     modify_parameters_of_cluster(
         lower_bound,
@@ -110,6 +116,7 @@ def create_main_problem(
         time_block,
         scenarios,
         border_management=BlockBorderManagement.CYCLE,
+        solver_id="XPRESS",
     )
 
     return problem
@@ -177,7 +184,11 @@ def get_cluster_id(network: Network, cluster_model_id: str) -> list[str]:
 
 
 def get_network_and_database(
-    data_dir: Path, lib: Library, yml_file: str
+    data_dir: Path,
+    lib: Library,
+    yml_file: str,
+    scenarios: Optional[List[int]],
+    timesteps: Optional[List[int]],
 ) -> tuple[Network, DataBase]:
     compo_file = data_dir / yml_file
 
@@ -186,7 +197,9 @@ def get_network_and_database(
     components_input = resolve_components_and_cnx(components_file, lib)
     network = build_network(components_input)
 
-    database = build_data_base(components_file, data_dir)
+    database = build_data_base(
+        components_file, data_dir, scenarios=scenarios, timesteps=timesteps
+    )
     return network, database
 
 
@@ -219,7 +232,11 @@ def create_problem_accurate_heuristic(
     )
 
     network, database = get_network_and_database(
-        data_dir, lib, "components_heuristic.yml"
+        data_dir,
+        lib,
+        "components_heuristic.yml",
+        scenarios=[scenario],
+        timesteps=list(range(week * number_hours, (week + 1) * number_hours)),
     )
 
     modify_parameters_of_cluster(
@@ -242,6 +259,7 @@ def create_problem_accurate_heuristic(
         time_block,
         scenarios,
         border_management=BlockBorderManagement.CYCLE,
+        solver_id="XPRESS",
     )
 
     return problem
@@ -367,6 +385,7 @@ def create_problem_fast_heuristic(
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
+    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-7)
     problem.solver.EnableOutput()
 
     status = problem.solver.Solve(parameters)
