@@ -17,7 +17,8 @@ from andromede.hydro_heuristic.data import (
     get_number_of_days_in_month,
     HydroHeuristicData,
 )
-from andromede.hydro_heuristic.problem import create_hydro_problem, solve_hydro_problem
+from andromede.hydro_heuristic.problem import HydroHeuristicProblem
+import ortools.linear_solver.pywraplp as pywraplp
 
 
 def test_hydro_heuristic() -> None:
@@ -42,14 +43,14 @@ def test_hydro_heuristic() -> None:
         monthly_data.compute_target(sum(monthly_data.inflow))
 
         # Ajustement de la réapartition mensuelle
-        problem = create_hydro_problem(
+        heuristic_problem = HydroHeuristicProblem(
             horizon="monthly",
             hydro_data=monthly_data,
         )
 
-        status, monthly_generation, _ = solve_hydro_problem(problem)
+        status, _, monthly_generation, _ = heuristic_problem.solve_hydro_problem()
 
-        assert status == problem.solver.OPTIMAL
+        assert status == pywraplp.Solver.OPTIMAL
 
         all_daily_generation: List[float] = []
         day_in_year = 0
@@ -72,14 +73,16 @@ def test_hydro_heuristic() -> None:
                 inter_breakdown=interdaily_breakdown,
             )
             # Ajustement de la répartition jour par jour
-            problem = create_hydro_problem(
+            heuristic_problem = HydroHeuristicProblem(
                 horizon="daily",
                 hydro_data=daily_data,
             )
 
-            status, daily_generation, initial_level = solve_hydro_problem(problem)
+            status, _, daily_generation, initial_level = (
+                heuristic_problem.solve_hydro_problem()
+            )
 
-            assert status == problem.solver.OPTIMAL
+            assert status == pywraplp.Solver.OPTIMAL
 
             all_daily_generation = all_daily_generation + daily_generation
             day_in_year += number_day_month

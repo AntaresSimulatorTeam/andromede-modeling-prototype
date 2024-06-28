@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from typing import List
-
+import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.hydro_heuristic.data import (
@@ -19,7 +19,7 @@ from andromede.hydro_heuristic.data import (
     get_number_of_days_in_month,
     HydroHeuristicData,
 )
-from andromede.hydro_heuristic.problem import create_hydro_problem, solve_hydro_problem
+from andromede.hydro_heuristic.problem import HydroHeuristicProblem
 
 
 def test_hydro_heuristic() -> None:
@@ -42,15 +42,13 @@ def test_hydro_heuristic() -> None:
         monthly_data.compute_target(sum(monthly_data.inflow))
 
         # Ajustement de la réapartition mensuelle
-        problem = create_hydro_problem(horizon="monthly", hydro_data=monthly_data)
+        problem = HydroHeuristicProblem(horizon="monthly", hydro_data=monthly_data)
 
-        status, monthly_generation, _ = solve_hydro_problem(problem)
+        status, obj, monthly_generation, _ = problem.solve_hydro_problem()
 
-        assert status == problem.solver.OPTIMAL
+        assert status == pywraplp.Solver.OPTIMAL
 
-        assert problem.solver.Objective().Value() / capacity == pytest.approx(
-            10.1423117689793
-        )
+        assert obj / capacity == pytest.approx(10.1423117689793)
 
         monthly_generation = [
             capacity * target
@@ -89,12 +87,11 @@ def test_hydro_heuristic() -> None:
                 total_target=monthly_generation[month],
             )
             # Ajustement de la répartition jour par jour
-            problem = create_hydro_problem(horizon="daily", hydro_data=daily_data)
+            problem = HydroHeuristicProblem(horizon="daily", hydro_data=daily_data)
 
-            status, daily_generation, initial_level = solve_hydro_problem(problem)
-
-            assert status == problem.solver.OPTIMAL
-            assert problem.solver.Objective().Value() / capacity == pytest.approx(
+            status, obj, daily_generation, initial_level = problem.solve_hydro_problem()
+            assert status == pywraplp.Solver.OPTIMAL
+            assert obj / capacity == pytest.approx(
                 [
                     -0.405595,
                     -0.354666,
