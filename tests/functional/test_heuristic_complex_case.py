@@ -208,7 +208,6 @@ def test_fast_heuristic() -> None:
             # Solve heuristic problem
             mingen: Dict[str, AbstractDataStructure] = {}
             for g in ["G1", "G2", "G3"]:  #
-
                 mingen_heuristic = create_problem_fast_heuristic(
                     output_1.component(g).var("generation").value[0],  # type:ignore
                     number_hours,

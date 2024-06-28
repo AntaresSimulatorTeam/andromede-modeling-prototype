@@ -64,8 +64,8 @@ ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, True)
 NON_ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, False)
 CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
 
-def get_thermal_cluster_accurate_model(initial_model: Model) -> Model:
 
+def get_thermal_cluster_accurate_model(initial_model: Model) -> Model:
     THERMAL_CLUSTER_MODEL_LP = model(
         id=initial_model.id,
         parameters=[p for p in initial_model.parameters.values()],
@@ -90,7 +90,6 @@ def get_thermal_cluster_accurate_model(initial_model: Model) -> Model:
 
 
 def get_thermal_cluster_fast_model(initial_model: Model) -> Model:
-
     integer_variables = [
         v.name
         for v in initial_model.variables.values()
@@ -149,7 +148,6 @@ def variable_in_expression(expr: ExpressionNode, variables: List[str]) -> bool:
 
 
 def get_accurate_heuristic_model(initial_model: Model) -> Model:
-
     generation_variable = ["generation"]
 
     THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(

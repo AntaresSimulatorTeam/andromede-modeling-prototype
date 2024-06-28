@@ -287,7 +287,6 @@ def create_complex_problem(
     week: int,
     scenarios: List[int],
 ) -> OptimizationProblem:
-
     database = generate_database(
         lower_bound, number_hours, week=week, scenarios=scenarios
     )

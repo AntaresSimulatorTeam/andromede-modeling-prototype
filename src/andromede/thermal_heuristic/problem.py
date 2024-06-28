@@ -75,7 +75,6 @@ def create_main_problem(
     week: int,
     scenario: int,
 ) -> OptimizationProblem:
-
     thermal_model = choose_thermal_model(lp_relaxation, fast)
 
     lib = library(
@@ -134,7 +133,6 @@ def modify_parameters_of_cluster(
     scenario: int,
 ) -> None:
     for cluster_id in get_cluster_id(network, cluster_model_id):
-
         data = get_data(
             dir_path,
             "components.yml",
@@ -222,7 +220,6 @@ def create_problem_accurate_heuristic(
     week: int,
     scenario: int,
 ) -> OptimizationProblem:
-
     thermal_model = get_accurate_heuristic_model(THERMAL_CLUSTER_MODEL_MILP)
 
     lib = library(
@@ -302,7 +299,6 @@ def create_problem_fast_heuristic(
     week: int,
     scenario: int,
 ) -> pd.DataFrame:
-
     data = get_data(
         data_dir=data_dir,
         yml_file="components.yml",
