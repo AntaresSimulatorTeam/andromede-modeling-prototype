@@ -62,7 +62,6 @@ def test_one_problem_per_scenario() -> None:
 
     solver = pywraplp.Solver.CreateSolver("XPRESS")
     if solver:
-
         for scenario in range(scenarios):
             for week in range(2):
                 problem = create_complex_problem(
@@ -102,7 +101,6 @@ def test_one_problem_per_scenario_with_different_parameters() -> None:
 
     solver = pywraplp.Solver.CreateSolver("XPRESS")
     if solver:
-
         for scenario in range(scenarios):
             for week in range(2):
                 problem = create_complex_problem(
@@ -144,7 +142,6 @@ def test_one_problem_for_all_scenarios() -> None:
 
     solver = pywraplp.Solver.CreateSolver("XPRESS")
     if solver:
-
         for week in range(2):
             problem = create_complex_problem(
                 {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
@@ -179,7 +176,6 @@ def test_one_problem_for_all_scenarios_with_different_parameters() -> None:
 
     solver = pywraplp.Solver.CreateSolver("XPRESS")
     if solver:
-
         for week in range(2):
             problem = create_complex_problem(
                 {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
