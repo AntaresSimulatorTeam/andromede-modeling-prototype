@@ -48,7 +48,8 @@ def test_milp_version() -> None:
                 fast=False,
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent / "data_complex_case",
+                data_dir=Path(__file__).parent
+                / "data/thermal_heuristic_three_clusters",
             )
 
             parameters = pywraplp.MPSolverParameters()
@@ -61,7 +62,11 @@ def test_milp_version() -> None:
             assert status == problem.solver.OPTIMAL
 
             check_output_values(
-                problem, "milp", week, scenario=scenario, dir_path="data_complex_case"
+                problem,
+                "milp",
+                week,
+                scenario=scenario,
+                dir_path="data/thermal_heuristic_three_clusters",
             )
 
             expected_cost = [[78933742, 102103587], [17472101, 17424769]]
@@ -92,7 +97,8 @@ def test_accurate_heuristic() -> None:
                 fast=False,
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent / "data_complex_case",
+                data_dir=Path(__file__).parent
+                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_1.solver.Solve(parameters)
 
@@ -125,7 +131,8 @@ def test_accurate_heuristic() -> None:
                     thermal_cluster=g,
                     week=week,
                     scenario=scenario,
-                    data_dir=Path(__file__).parent / "data_complex_case",
+                    data_dir=Path(__file__).parent
+                    / "data/thermal_heuristic_three_clusters",
                 )
                 status = problem_accurate_heuristic.solver.Solve(parameters)
 
@@ -151,7 +158,8 @@ def test_accurate_heuristic() -> None:
                 fast=False,
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent / "data_complex_case",
+                data_dir=Path(__file__).parent
+                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_2.solver.Solve(parameters)
 
@@ -162,7 +170,7 @@ def test_accurate_heuristic() -> None:
                 "accurate",
                 week,
                 scenario=scenario,
-                dir_path="data_complex_case",
+                dir_path="data/thermal_heuristic_three_clusters",
             )
 
             expected_cost = [
@@ -197,7 +205,8 @@ def test_fast_heuristic() -> None:
                 fast=True,
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent / "data_complex_case",
+                data_dir=Path(__file__).parent
+                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_1.solver.Solve(parameters)
 
@@ -215,7 +224,8 @@ def test_fast_heuristic() -> None:
                     thermal_cluster=g,
                     week=week,
                     scenario=scenario,
-                    data_dir=Path(__file__).parent / "data_complex_case",
+                    data_dir=Path(__file__).parent
+                    / "data/thermal_heuristic_three_clusters",
                 )
 
                 mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
@@ -228,7 +238,8 @@ def test_fast_heuristic() -> None:
                 fast=True,
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent / "data_complex_case",
+                data_dir=Path(__file__).parent
+                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_2.solver.Solve(parameters)
 
@@ -239,7 +250,7 @@ def test_fast_heuristic() -> None:
                 "fast",
                 week,
                 scenario,
-                dir_path="data_complex_case",
+                dir_path="data/thermal_heuristic_three_clusters",
             )
 
             expected_cost = [

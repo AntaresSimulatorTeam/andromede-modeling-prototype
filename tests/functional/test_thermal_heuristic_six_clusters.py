@@ -44,7 +44,7 @@ def test_accurate_heuristic() -> None:
                 np.ceil(
                     np.round(
                         np.loadtxt(
-                            f"tests/functional/data_second_complex_case/accurate/itr1_accurate_cluster{j+1}.txt"
+                            f"tests/functional/data/thermal_heuristic_six_clusters/accurate/itr1_accurate_cluster{j+1}.txt"
                         ),
                         12,
                     )
@@ -62,7 +62,7 @@ def test_accurate_heuristic() -> None:
                 for i in range(1, 7)
             },
             number_hours,
-            data_dir=Path(__file__).parent / "data_second_complex_case",
+            data_dir=Path(__file__).parent / "data/thermal_heuristic_six_clusters",
             thermal_cluster=cluster,
             week=week,
             scenario=scenario,
@@ -77,7 +77,7 @@ def test_accurate_heuristic() -> None:
         )
 
         expected_output = np.loadtxt(
-            f"tests/functional/data_second_complex_case/accurate/itr2_accurate_cluster{j+1}.txt"
+            f"tests/functional/data/thermal_heuristic_six_clusters/accurate/itr2_accurate_cluster{j+1}.txt"
         )
         for time_step in range(number_hours):
             assert nb_on_heuristic[time_step, 0] == expected_output[time_step]
@@ -93,7 +93,7 @@ def test_fast_heuristic() -> None:
 
     for j, cluster in enumerate(["G" + str(i) for i in range(1, 7)]):
         nb_on_1 = np.loadtxt(
-            f"tests/functional/data_second_complex_case/fast/itr1_fast_cluster{j+1}.txt"
+            f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr1_fast_cluster{j+1}.txt"
         )
 
         # Solve heuristic problem
@@ -101,13 +101,13 @@ def test_fast_heuristic() -> None:
             nb_on_1,  # type:ignore
             number_hours,
             thermal_cluster=cluster,
-            data_dir=Path(__file__).parent / "data_second_complex_case",
+            data_dir=Path(__file__).parent / "data/thermal_heuristic_six_clusters",
             week=week,
             scenario=scenario,
         )
 
         expected_output = np.loadtxt(
-            f"tests/functional/data_second_complex_case/fast/itr2_fast_cluster{j+1}.txt"
+            f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr2_fast_cluster{j+1}.txt"
         )
         for time_step in range(number_hours):
             assert mingen_heuristic.values[time_step, 0] == pytest.approx(

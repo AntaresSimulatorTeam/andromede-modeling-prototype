@@ -58,7 +58,7 @@ def test_milp_version() -> None:
         number_hours,
         lp_relaxation=False,
         fast=False,
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         week=0,
         scenario=0,
     )
@@ -136,7 +136,7 @@ def test_lp_version() -> None:
         number_hours,
         lp_relaxation=True,
         fast=False,
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         week=0,
         scenario=0,
     )
@@ -192,7 +192,7 @@ def test_accurate_heuristic() -> None:
         number_hours,
         lp_relaxation=True,
         fast=False,
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         week=0,
         scenario=0,
     )
@@ -217,7 +217,7 @@ def test_accurate_heuristic() -> None:
     problem_accurate_heuristic = create_problem_accurate_heuristic(
         {"G": n_guide},
         number_hours,
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         thermal_cluster="G",
         week=0,
         scenario=0,
@@ -245,7 +245,7 @@ def test_accurate_heuristic() -> None:
         number_hours,
         lp_relaxation=True,
         fast=False,
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         week=0,
         scenario=0,
     )
@@ -324,7 +324,7 @@ def test_fast_heuristic() -> None:
         number_hours,
         lp_relaxation=True,
         fast=True,
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         week=0,
         scenario=0,
     )
@@ -340,7 +340,7 @@ def test_fast_heuristic() -> None:
         output_1.component("G").var("generation").value[0],  # type:ignore
         number_hours,
         thermal_cluster="G",
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         week=0,
         scenario=0,
     )
@@ -360,7 +360,7 @@ def test_fast_heuristic() -> None:
         number_hours,
         lp_relaxation=True,
         fast=True,
-        data_dir=Path(__file__).parent / "data_simple_case",
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         week=0,
         scenario=0,
     )
