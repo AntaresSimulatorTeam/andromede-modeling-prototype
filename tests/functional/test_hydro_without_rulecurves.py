@@ -12,13 +12,15 @@
 
 from typing import List
 
+import ortools.linear_solver.pywraplp as pywraplp
+
 from andromede.hydro_heuristic.data import (
+    HydroHeuristicData,
     calculate_weekly_target,
     get_number_of_days_in_month,
-    HydroHeuristicData,
+    update_generation_target,
 )
 from andromede.hydro_heuristic.problem import HydroHeuristicProblem
-import ortools.linear_solver.pywraplp as pywraplp
 
 
 def test_hydro_heuristic() -> None:
@@ -56,7 +58,6 @@ def test_hydro_heuristic() -> None:
         day_in_year = 0
 
         for month in range(12):
-
             number_day_month = get_number_of_days_in_month(month)
             daily_data = HydroHeuristicData(
                 scenario,
@@ -78,13 +79,18 @@ def test_hydro_heuristic() -> None:
                 hydro_data=daily_data,
             )
 
-            status, _, daily_generation, initial_level = (
-                heuristic_problem.solve_hydro_problem()
-            )
+            (
+                status,
+                _,
+                daily_generation,
+                initial_level,
+            ) = heuristic_problem.solve_hydro_problem()
 
             assert status == pywraplp.Solver.OPTIMAL
 
-            all_daily_generation = all_daily_generation + daily_generation
+            all_daily_generation = update_generation_target(
+                all_daily_generation, daily_generation
+            )
             day_in_year += number_day_month
 
         # Calcul des cibles hebdomadaires

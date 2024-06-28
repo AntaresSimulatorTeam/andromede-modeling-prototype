@@ -27,7 +27,6 @@ CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
 
 
 class HeuristicHydroModelBuilder:
-
     def __init__(
         self,
         hydro_model: Model,

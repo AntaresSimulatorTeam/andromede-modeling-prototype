@@ -21,7 +21,6 @@ def get_number_of_days_in_month(month: int) -> int:
 
 
 class HydroHeuristicData:
-
     def __init__(
         self,
         scenario: int,
@@ -112,18 +111,17 @@ class HydroHeuristicData:
         self.target = list(target)
 
 
+def update_generation_target(
+    all_daily_generation: list[float], daily_generation: list[float]
+) -> list[float]:
+    all_daily_generation = all_daily_generation + daily_generation
+    return all_daily_generation
+
+
 def calculate_weekly_target(all_daily_generation: list[float]) -> list[float]:
-    weekly_target = np.zeros(52)
-    week = 0
-    day_in_week = 0
-    day_in_year = 0
+    weekly_target = [
+        sum([all_daily_generation[day] for day in range(7 * week, 7 * (week + 1))])
+        for week in range(len(all_daily_generation) // 7)
+    ]
 
-    while week < 52:
-        weekly_target[week] += all_daily_generation[day_in_year]
-        day_in_year += 1
-        day_in_week += 1
-        if day_in_week >= 7:
-            week += 1
-            day_in_week = 0
-
-    return list(weekly_target)
+    return weekly_target

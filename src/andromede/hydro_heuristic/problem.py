@@ -13,6 +13,7 @@
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
+from andromede.hydro_heuristic.data import HydroHeuristicData
 from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
 from andromede.simulation import (
     BlockBorderManagement,
@@ -30,17 +31,14 @@ from andromede.study import (
     create_component,
 )
 from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL
-from andromede.hydro_heuristic.data import HydroHeuristicData
 
 
 class HydroHeuristicProblem:
-
     def __init__(
         self,
         horizon: str,
         hydro_data: HydroHeuristicData,
     ) -> None:
-
         self.hydro_data = hydro_data
         database = self.generate_database()
 

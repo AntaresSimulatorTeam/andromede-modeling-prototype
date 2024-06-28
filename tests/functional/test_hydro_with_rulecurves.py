@@ -11,13 +11,15 @@
 # This file is part of the Antares project.
 
 from typing import List
+
 import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.hydro_heuristic.data import (
+    HydroHeuristicData,
     calculate_weekly_target,
     get_number_of_days_in_month,
-    HydroHeuristicData,
+    update_generation_target,
 )
 from andromede.hydro_heuristic.problem import HydroHeuristicProblem
 
@@ -109,7 +111,9 @@ def test_hydro_heuristic() -> None:
                 abs=0.02,
             )
 
-            all_daily_generation = all_daily_generation + daily_generation
+            all_daily_generation = update_generation_target(
+                all_daily_generation, daily_generation
+            )
             day_in_year += number_day_month
 
         # Calcul des cibles hebdomadaires
