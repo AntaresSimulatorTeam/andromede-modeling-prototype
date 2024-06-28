@@ -16,7 +16,6 @@ from andromede.model import float_parameter, float_variable, model
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import float_parameter
 from andromede.model.variable import float_variable
-from andromede.model.constraint import Constraint
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)

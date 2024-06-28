@@ -15,12 +15,14 @@ from typing import List
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
+from andromede.hydro_heuristic.heuristic_model import get_heuristic_hydro_model
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
     TimeBlock,
     build_problem,
 )
+from andromede.simulation.optimization import OptimizationProblem
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -30,9 +32,7 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from andromede.simulation.optimization import OptimizationProblem
 from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL
-from andromede.hydro_heuristic.heuristic_model import get_heuristic_hydro_model
 
 
 def create_hydro_problem(
@@ -73,7 +73,6 @@ def create_hydro_problem(
         time_block,
         scenarios,
         border_management=(BlockBorderManagement.CYCLE),
-        solver_id="XPRESS",
     )
 
     return problem

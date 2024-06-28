@@ -15,10 +15,10 @@ from typing import List
 import pytest
 
 from andromede.hydro_heuristic.data import (
+    calculate_weekly_target,
     get_all_data,
     get_number_of_days_in_month,
     get_target,
-    calculate_weekly_target,
 )
 from andromede.hydro_heuristic.problem import create_hydro_problem, solve_hydro_problem
 

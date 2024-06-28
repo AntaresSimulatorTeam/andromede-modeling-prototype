@@ -12,15 +12,12 @@
 
 from typing import List
 
-from andromede.expression import literal, param, var, ExpressionNode
+from andromede.expression import ExpressionNode, literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import Model, float_parameter, float_variable, model
 from andromede.model.constraint import Constraint
-from andromede.model.parameter import float_parameter
-from andromede.model.variable import float_variable
-from andromede.model.constraint import Constraint
-from andromede.model.parameter import Parameter
-from andromede.model.variable import Variable
+from andromede.model.parameter import Parameter, float_parameter
+from andromede.model.variable import Variable, float_variable
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
@@ -33,7 +30,6 @@ def get_heuristic_hydro_model(
     hydro_model: Model,
     horizon: str,
 ) -> Model:
-
     HYDRO_HEURISTIC = model(
         id="H",
         parameters=[p for p in hydro_model.parameters.values()]
