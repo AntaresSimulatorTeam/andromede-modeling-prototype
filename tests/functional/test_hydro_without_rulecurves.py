@@ -14,9 +14,8 @@ from typing import List
 
 from andromede.hydro_heuristic.data import (
     calculate_weekly_target,
-    get_all_data,
     get_number_of_days_in_month,
-    get_target,
+    HydroHeuristicData,
 )
 from andromede.hydro_heuristic.problem import create_hydro_problem, solve_hydro_problem
 
@@ -32,25 +31,20 @@ def test_hydro_heuristic() -> None:
         initial_level = 0.5 * capacity
 
         # Répartition des apports mensuels
-        (
-            monthly_demand,
-            monthly_inflow,
-            monthly_max_generating,
-            monthly_lowerrulecurve,
-            monthly_upperrulecurve,
-        ) = get_all_data(scenario, "monthly", folder_name="hydro_without_rulecurves")
-        monthly_target = get_target(monthly_demand, sum(monthly_inflow))
+        monthly_data = HydroHeuristicData(
+            scenario,
+            "monthly",
+            folder_name="hydro_without_rulecurves",
+            timesteps=list(range(12)),
+            capacity=capacity,
+            initial_level=initial_level,
+        )
+        monthly_data.compute_target(sum(monthly_data.inflow))
 
         # Ajustement de la réapartition mensuelle
         problem = create_hydro_problem(
             horizon="monthly",
-            target=monthly_target,
-            inflow=monthly_inflow,
-            max_generating=monthly_max_generating,
-            lower_rule_curve=monthly_lowerrulecurve,
-            upper_rule_curve=monthly_upperrulecurve,
-            initial_level=initial_level,
-            capacity=capacity,
+            hydro_data=monthly_data,
         )
 
         status, monthly_generation, _ = solve_hydro_problem(problem)
@@ -59,35 +53,28 @@ def test_hydro_heuristic() -> None:
 
         all_daily_generation: List[float] = []
         day_in_year = 0
-        (
-            daily_demand,
-            daily_inflow,
-            daily_max_generating,
-            daily_lowerrulecurve,
-            daily_upperrulecurve,
-        ) = get_all_data(scenario, "daily", folder_name="hydro_without_rulecurves")
 
         for month in range(12):
+
             number_day_month = get_number_of_days_in_month(month)
+            daily_data = HydroHeuristicData(
+                scenario,
+                "daily",
+                folder_name="hydro_without_rulecurves",
+                timesteps=list(range(day_in_year, day_in_year + number_day_month)),
+                capacity=capacity,
+                initial_level=initial_level,
+            )
             # Répartition des crédits de turbinage jour par jour
 
-            daily_target = get_target(
-                demand=daily_demand[day_in_year : day_in_year + number_day_month],
+            daily_data.compute_target(
                 total_target=monthly_generation[month],
                 inter_breakdown=interdaily_breakdown,
             )
             # Ajustement de la répartition jour par jour
             problem = create_hydro_problem(
                 horizon="daily",
-                target=daily_target,
-                inflow=daily_inflow[day_in_year : day_in_year + number_day_month],
-                max_generating=daily_max_generating[
-                    day_in_year : day_in_year + number_day_month
-                ],
-                lower_rule_curve=daily_lowerrulecurve,
-                upper_rule_curve=daily_upperrulecurve,
-                initial_level=initial_level,
-                capacity=capacity,
+                hydro_data=daily_data,
             )
 
             status, daily_generation, initial_level = solve_hydro_problem(problem)

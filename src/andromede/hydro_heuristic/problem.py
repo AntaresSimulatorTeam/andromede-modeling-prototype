@@ -33,31 +33,20 @@ from andromede.study import (
     create_component,
 )
 from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL
+from andromede.hydro_heuristic.data import HydroHeuristicData
 
 
 def create_hydro_problem(
     horizon: str,
-    target: List[float],
-    inflow: List[float],
-    max_generating: List[float],
-    lower_rule_curve: List[float],
-    upper_rule_curve: List[float],
-    initial_level: float,
-    capacity: float,
+    hydro_data: HydroHeuristicData,
 ) -> OptimizationProblem:
     database = generate_database(
-        target=target,
-        inflow=inflow,
-        max_generating=max_generating,
-        lower_rule_curve=lower_rule_curve,
-        upper_rule_curve=upper_rule_curve,
-        initial_level=initial_level,
-        capacity=capacity,
+        hydro_data=hydro_data,
     )
 
     database = add_objective_coefficients_to_database(database, horizon)
 
-    time_block = TimeBlock(1, [i for i in range(len(target))])
+    time_block = TimeBlock(1, [i for i in range(len(hydro_data.target))])
     scenarios = 1
 
     hydro = create_component(
@@ -96,41 +85,35 @@ def solve_hydro_problem(problem: OptimizationProblem) -> tuple[int, list[float],
 
 
 def generate_database(
-    target: List[float],
-    inflow: List[float],
-    max_generating: List[float],
-    lower_rule_curve: List[float],
-    upper_rule_curve: List[float],
-    initial_level: float,
-    capacity: float,
+    hydro_data: HydroHeuristicData,
 ) -> DataBase:
     database = DataBase()
 
-    database.add_data("H", "capacity", ConstantData(capacity))
-    database.add_data("H", "initial_level", ConstantData(initial_level))
+    database.add_data("H", "capacity", ConstantData(hydro_data.capacity))
+    database.add_data("H", "initial_level", ConstantData(hydro_data.initial_level))
 
     inflow_data = pd.DataFrame(
-        inflow,
-        index=[i for i in range(len(inflow))],
+        hydro_data.inflow,
+        index=[i for i in range(len(hydro_data.inflow))],
         columns=[0],
     )
     database.add_data("H", "inflow", TimeScenarioSeriesData(inflow_data))
 
     target_data = pd.DataFrame(
-        target,
-        index=[i for i in range(len(target))],
+        hydro_data.target,
+        index=[i for i in range(len(hydro_data.target))],
         columns=[0],
     )
     database.add_data("H", "generating_target", TimeScenarioSeriesData(target_data))
-    database.add_data("H", "overall_target", ConstantData(sum(target)))
+    database.add_data("H", "overall_target", ConstantData(sum(hydro_data.target)))
 
     database.add_data(
         "H",
         "lower_rule_curve",
         TimeSeriesData(
             {
-                TimeIndex(i): lower_rule_curve[i] * capacity
-                for i in range(len(lower_rule_curve))
+                TimeIndex(i): hydro_data.lower_rule_curve[i] * hydro_data.capacity
+                for i in range(len(hydro_data.lower_rule_curve))
             }
         ),
     )
@@ -139,8 +122,8 @@ def generate_database(
         "upper_rule_curve",
         TimeSeriesData(
             {
-                TimeIndex(i): upper_rule_curve[i] * capacity
-                for i in range(len(lower_rule_curve))
+                TimeIndex(i): hydro_data.upper_rule_curve[i] * hydro_data.capacity
+                for i in range(len(hydro_data.lower_rule_curve))
             }
         ),
     )
@@ -150,7 +133,10 @@ def generate_database(
         "H",
         "max_generating",
         TimeSeriesData(
-            {TimeIndex(i): max_generating[i] for i in range(len(max_generating))}
+            {
+                TimeIndex(i): hydro_data.max_generating[i]
+                for i in range(len(hydro_data.max_generating))
+            }
         ),
     )
 
@@ -159,8 +145,8 @@ def generate_database(
         "max_epsilon",
         TimeSeriesData(
             {
-                TimeIndex(i): capacity if i == 0 else 0
-                for i in range(len(max_generating))
+                TimeIndex(i): hydro_data.capacity if i == 0 else 0
+                for i in range(len(hydro_data.max_generating))
             }
         ),
     )

@@ -20,91 +20,96 @@ def get_number_of_days_in_month(month: int) -> int:
     return number_day_month
 
 
-def get_all_data(
-    scenario: int, horizon: str, folder_name: str
-) -> tuple[List[float], List[float], List[float], List[float], List[float]]:
-    if horizon == "monthly":
-        hours_aggregated_time_steps = [
-            24 * get_number_of_days_in_month(m) for m in range(12)
-        ]
-    elif horizon == "daily":
-        hours_aggregated_time_steps = [24 for d in range(365)]
+class HydroHeuristicData:
 
-    demand = get_input_data(
-        name_file="load",
-        column=scenario,
-        hours_aggregated_time_steps=hours_aggregated_time_steps,
-        hours_input=1,
-        operator="sum",
-        folder_name=folder_name,
-    )
-    inflow = get_input_data(
-        name_file="mod",
-        column=scenario,
-        hours_aggregated_time_steps=hours_aggregated_time_steps,
-        hours_input=24,
-        operator="sum",
-        folder_name=folder_name,
-    )
-    lowerrulecruve = get_input_data(
-        name_file="reservoir",
-        column=0,
-        hours_aggregated_time_steps=hours_aggregated_time_steps,
-        hours_input=24,
-        operator="lag_first_element",
-        folder_name=folder_name,
-    )
-    upperrulecruve = get_input_data(
-        name_file="reservoir",
-        column=2,
-        hours_aggregated_time_steps=hours_aggregated_time_steps,
-        hours_input=24,
-        operator="lag_first_element",
-        folder_name=folder_name,
-    )
-    max_generating = get_input_data(
-        name_file="maxpower",
-        column=0,
-        hours_aggregated_time_steps=hours_aggregated_time_steps,
-        hours_input=24,
-        operator="sum",
-        folder_name=folder_name,
-    )
-    max_generating = [x * 24 for x in max_generating]
+    def __init__(
+        self,
+        scenario: int,
+        horizon: str,
+        folder_name: str,
+        timesteps: List[int],
+        capacity: float,
+        initial_level: float,
+    ):
+        self.folder_name = folder_name
+        if horizon == "monthly":
+            hours_aggregated_time_steps = [
+                24 * get_number_of_days_in_month(m) for m in range(12)
+            ]
+        elif horizon == "daily":
+            hours_aggregated_time_steps = [24 for d in range(365)]
+        self.hours_aggregated_time_steps = hours_aggregated_time_steps
+        self.timesteps = timesteps
+        self.capacity = capacity
+        self.initial_level = initial_level
 
-    return (
-        demand,
-        inflow,
-        max_generating,
-        lowerrulecruve,
-        upperrulecruve,
-    )
+        self.demand = self.get_input_data(
+            name_file="load",
+            column=scenario,
+            hours_input=1,
+            operator="sum",
+        )
+        self.inflow = self.get_input_data(
+            name_file="mod",
+            column=scenario,
+            hours_input=24,
+            operator="sum",
+        )
+        self.lower_rule_curve = self.get_input_data(
+            name_file="reservoir",
+            column=0,
+            hours_input=24,
+            operator="lag_first_element",
+        )
+        self.upper_rule_curve = self.get_input_data(
+            name_file="reservoir",
+            column=2,
+            hours_input=24,
+            operator="lag_first_element",
+        )
+        max_generating = self.get_input_data(
+            name_file="maxpower",
+            column=0,
+            hours_input=24,
+            operator="sum",
+        )
+        self.max_generating = [x * 24 for x in max_generating]
 
+    def get_input_data(
+        self,
+        name_file: str,
+        column: int,
+        hours_input: int,
+        operator: str,
+    ) -> List[float]:
+        data = np.loadtxt(
+            "tests/functional/data/" + self.folder_name + "/" + name_file + ".txt"
+        )
+        data = data[:, column]
+        aggregated_data: List[float] = []
+        hour = 0
+        for time_step, hours_time_step in enumerate(self.hours_aggregated_time_steps):
+            assert hours_time_step % hours_input == 0
+            if time_step in self.timesteps:
+                if operator == "sum":
+                    aggregated_data.append(
+                        np.sum(data[hour : hour + hours_time_step // hours_input])
+                    )
+                elif operator == "lag_first_element":
+                    aggregated_data.append(
+                        data[(hour + hours_time_step // hours_input) % len(data)]
+                    )
+            hour += hours_time_step // hours_input
+        return aggregated_data
 
-def get_input_data(
-    name_file: str,
-    column: int,
-    hours_aggregated_time_steps: List[int],
-    hours_input: int,
-    operator: str,
-    folder_name: str,
-) -> List[float]:
-    data = np.loadtxt("tests/functional/data/" + folder_name + "/" + name_file + ".txt")
-    data = data[:, column]
-    aggregated_data: List[float] = []
-    hour = 0
-    for hours_time_step in hours_aggregated_time_steps:
-        assert hours_time_step % hours_input == 0
-        if operator == "sum":
-            aggregated_data.append(
-                np.sum(data[hour : hour + hours_time_step // hours_input])
-            )
-        elif operator == "lag_first_element":
-            aggregated_data.append(
-                data[(hour + hours_time_step // hours_input) % len(data)]
-            )
-        hour += hours_time_step // hours_input
-    return aggregated_data
+    def compute_target(self, total_target: float, inter_breakdown: int = 1) -> None:
+        target = (
+            total_target
+            * np.power(self.demand, inter_breakdown)
+            / sum(np.power(self.demand, inter_breakdown))
+        )
+
+        self.target = list(target)
 
 
 def calculate_weekly_target(all_daily_generation: list[float]) -> list[float]:
@@ -122,15 +127,3 @@ def calculate_weekly_target(all_daily_generation: list[float]) -> list[float]:
             day_in_week = 0
 
     return list(weekly_target)
-
-
-def get_target(
-    demand: List[float], total_target: float, inter_breakdown: int = 1
-) -> List[float]:
-    target = (
-        total_target
-        * np.power(demand, inter_breakdown)
-        / sum(np.power(demand, inter_breakdown))
-    )
-
-    return list(target)
