@@ -10,20 +10,21 @@
 #
 # This file is part of the Antares project.
 
+from math import ceil
+from typing import List
+
+import numpy as np
+import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
-import numpy as np
-from typing import List
-from math import ceil
-import ortools.linear_solver.pywraplp as pywraplp
 
 from andromede.expression import (
+    ExpressionNode,
+    PrinterVisitor,
     literal,
     param,
     var,
-    PrinterVisitor,
     visit,
-    ExpressionNode,
 )
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
@@ -32,11 +33,10 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 from andromede.model import Model, float_parameter, float_variable, model
-from andromede.model.parameter import float_parameter, int_parameter
-from andromede.model.variable import float_variable, int_variable, ValueType
 from andromede.model.constraint import Constraint
+from andromede.model.parameter import float_parameter, int_parameter
+from andromede.model.variable import ValueType, float_variable, int_variable
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
@@ -50,12 +50,13 @@ from andromede.study import (
     Network,
     Node,
     PortRef,
+    TimeIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
-    TimeIndex,
     create_component,
 )
 from andromede.study.data import AbstractDataStructure
+from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)

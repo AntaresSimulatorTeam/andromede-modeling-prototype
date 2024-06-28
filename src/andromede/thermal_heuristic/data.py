@@ -10,22 +10,16 @@
 #
 # This file is part of the Antares project.
 
-import pandas as pd
-import pytest
-import numpy as np
 from math import ceil
-
 from typing import List
 
-from andromede.simulation.optimization import OptimizationProblem
+import numpy as np
+import pandas as pd
+import pytest
 
-from andromede.simulation import (
-    OutputValues,
-)
-from andromede.study import (
-    ConstantData,
-    TimeScenarioSeriesData,
-)
+from andromede.simulation import OutputValues
+from andromede.simulation.optimization import OptimizationProblem
+from andromede.study import ConstantData, TimeScenarioSeriesData
 
 
 def get_max_unit_for_min_down_time(delta: int, max_units: pd.DataFrame) -> pd.DataFrame:

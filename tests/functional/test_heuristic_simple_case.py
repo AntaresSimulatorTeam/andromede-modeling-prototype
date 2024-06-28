@@ -10,18 +10,14 @@
 #
 # This file is part of the Antares project.
 
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import pytest
-import numpy as np
 
-from andromede.simulation import (
-    OutputValues,
-)
-from andromede.study import (
-    ConstantData,
-    TimeScenarioSeriesData,
-)
-from pathlib import Path
+from andromede.simulation import OutputValues
+from andromede.study import ConstantData, TimeScenarioSeriesData
 from andromede.thermal_heuristic.problem import (
     create_main_problem,
     create_problem_accurate_heuristic,

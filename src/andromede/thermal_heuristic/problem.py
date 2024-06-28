@@ -10,10 +10,12 @@
 #
 # This file is part of the Antares project.
 
-import pandas as pd
+from pathlib import Path
+from typing import Dict, List, Optional
+
 import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
-from typing import List, Dict, Optional
+import pandas as pd
 
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -22,7 +24,8 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
+from andromede.model import Model
+from andromede.model.library import Library, library
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
@@ -36,33 +39,31 @@ from andromede.study import (
     Network,
     Node,
     PortRef,
+    TimeIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
-    TimeIndex,
     create_component,
 )
 from andromede.study.data import AbstractDataStructure
-from andromede.thermal_heuristic.model import (
-    get_accurate_heuristic_model,
-    get_model_fast_heuristic,
-    get_thermal_cluster_accurate_model,
-    get_thermal_cluster_fast_model,
-)
 from andromede.study.parsing import parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
     build_network,
     resolve_components_and_cnx,
 )
-from andromede.model.library import library, Library
-from pathlib import Path
-from andromede.model import Model
 from andromede.thermal_heuristic.data import (
     get_failures_for_cluster,
     get_max_failures,
     get_max_unit,
     get_max_unit_for_min_down_time,
 )
+from andromede.thermal_heuristic.model import (
+    get_accurate_heuristic_model,
+    get_model_fast_heuristic,
+    get_thermal_cluster_accurate_model,
+    get_thermal_cluster_fast_model,
+)
+from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 def create_main_problem(

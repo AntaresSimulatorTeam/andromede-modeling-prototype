@@ -10,26 +10,23 @@
 #
 # This file is part of the Antares project.
 
+from pathlib import Path
+from typing import Dict
+
+import numpy as np
+import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
-import numpy as np
-from typing import Dict
-import ortools.linear_solver.pywraplp as pywraplp
-from pathlib import Path
 
-from andromede.simulation import (
-    OutputValues,
-)
+from andromede.simulation import OutputValues
 from andromede.study import (
     ConstantData,
+    TimeIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
-    TimeIndex,
 )
 from andromede.study.data import AbstractDataStructure
-from andromede.thermal_heuristic.data import (
-    check_output_values,
-)
+from andromede.thermal_heuristic.data import check_output_values
 from andromede.thermal_heuristic.problem import (
     create_main_problem,
     create_problem_accurate_heuristic,

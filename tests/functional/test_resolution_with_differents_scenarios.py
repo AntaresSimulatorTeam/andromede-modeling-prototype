@@ -10,12 +10,13 @@
 #
 # This file is part of the Antares project.
 
+from math import ceil, floor
+from typing import Dict, List
+
+import numpy as np
+import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
-import numpy as np
-from typing import List, Dict
-from math import ceil, floor
-import ortools.linear_solver.pywraplp as pywraplp
 
 from andromede.expression import literal, param, var
 from andromede.expression.expression import ExpressionRange, port_field
@@ -28,10 +29,10 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
+from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parameter import float_parameter, int_parameter
 from andromede.model.variable import float_variable, int_variable
-from andromede.model.constraint import Constraint
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
@@ -45,10 +46,10 @@ from andromede.study import (
     Network,
     Node,
     PortRef,
+    TimeIndex,
     TimeScenarioIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
-    TimeIndex,
     create_component,
 )
 from andromede.study.data import AbstractDataStructure

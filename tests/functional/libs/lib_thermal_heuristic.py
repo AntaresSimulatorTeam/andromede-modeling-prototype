@@ -10,21 +10,15 @@
 #
 # This file is part of the Antares project.
 
-from andromede.expression import (
-    literal,
-    param,
-    var,
-)
+from andromede.expression import literal, param, var
 from andromede.expression.expression import ExpressionRange
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-)
+from andromede.libs.standard import BALANCE_PORT_TYPE
 from andromede.model import ModelPort, float_parameter, float_variable, model
+from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parameter import float_parameter, int_parameter
 from andromede.model.variable import float_variable, int_variable
-from andromede.model.constraint import Constraint
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
