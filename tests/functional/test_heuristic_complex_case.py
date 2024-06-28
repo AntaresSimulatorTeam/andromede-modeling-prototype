@@ -54,6 +54,7 @@ def test_milp_version() -> None:
             parameters = pywraplp.MPSolverParameters()
             parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
             parameters.SetIntegerParam(parameters.SCALING, 0)
+            parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-5)
 
             status = problem.solver.Solve(parameters)
 
@@ -63,7 +64,7 @@ def test_milp_version() -> None:
                 problem, "milp", week, scenario=scenario, dir_path="data_complex_case"
             )
 
-            expected_cost = [[78933742, 102109698], [17472101, 17424769]]
+            expected_cost = [[78933742, 102103587], [17472101, 17424769]]
             assert problem.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
@@ -166,7 +167,7 @@ def test_accurate_heuristic() -> None:
 
             expected_cost = [
                 [78996726, 102215087 - 69500],
-                [17587733, 17641808],
+                [17589534, 17641808],
             ]
             assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]

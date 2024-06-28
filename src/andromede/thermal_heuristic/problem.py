@@ -116,7 +116,6 @@ def create_main_problem(
         time_block,
         scenarios,
         border_management=BlockBorderManagement.CYCLE,
-        solver_id="XPRESS",
     )
 
     return problem
@@ -257,7 +256,6 @@ def create_problem_accurate_heuristic(
         time_block,
         scenarios,
         border_management=BlockBorderManagement.CYCLE,
-        solver_id="XPRESS",
     )
 
     return problem
@@ -376,7 +374,6 @@ def create_problem_fast_heuristic(
         time_block,
         1,
         border_management=BlockBorderManagement.CYCLE,
-        solver_id="XPRESS",
     )
 
     parameters = pywraplp.MPSolverParameters()

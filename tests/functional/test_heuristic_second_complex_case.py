@@ -110,4 +110,6 @@ def test_fast_heuristic() -> None:
             f"tests/functional/data_second_complex_case/fast/itr2_fast_cluster{j+1}.txt"
         )
         for time_step in range(number_hours):
-            assert mingen_heuristic.values[time_step, 0] == expected_output[time_step]
+            assert mingen_heuristic.values[time_step, 0] == pytest.approx(
+                expected_output[time_step]
+            )
