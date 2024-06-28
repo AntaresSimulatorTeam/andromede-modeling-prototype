@@ -15,7 +15,7 @@ from typing import List
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
-from andromede.hydro_heuristic.heuristic_model import get_heuristic_hydro_model
+from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
@@ -61,7 +61,7 @@ def create_hydro_problem(
     scenarios = 1
 
     hydro = create_component(
-        model=get_heuristic_hydro_model(HYDRO_MODEL, horizon), id="H"
+        model=HeuristicHydroModelBuilder(HYDRO_MODEL, horizon).get_model(), id="H"
     )
 
     network = Network("test")
