@@ -89,9 +89,7 @@ def get_input_data(
     operator: str,
     folder_name: str,
 ) -> List[float]:
-    data = np.loadtxt(
-        "tests/functional/" + folder_name + "/hydro/" + name_file + ".txt"
-    )
+    data = np.loadtxt("tests/functional/data/" + folder_name + "/" + name_file + ".txt")
     data = data[:, column]
     aggregated_data: List[float] = []
     hour = 0
