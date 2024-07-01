@@ -16,37 +16,34 @@ import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.hydro_heuristic.data import (
-    HydroHeuristicData,
     calculate_weekly_target,
     get_number_of_days_in_month,
     update_generation_target,
 )
-from andromede.hydro_heuristic.problem import HydroHeuristicProblem
+from andromede.hydro_heuristic.problem import optimize_target
 
 
 def test_hydro_heuristic() -> None:
     """ """
     scenarios = 1
     capacity = 1e07
+    intermonthly_breakdown = 1
+    interdaily_breakdown = 1
+    folder_name = "hydro_with_rulecurves"
 
     for scenario in range(scenarios):
         initial_level = 0.445 * capacity
 
-        # Répartition des apports mensuels
-        monthly_data = HydroHeuristicData(
-            scenario,
-            "monthly",
-            folder_name="hydro_with_rulecurves",
-            timesteps=list(range(12)),
+        initial_level, status, obj, monthly_generation = optimize_target(
+            inter_breakdown=intermonthly_breakdown,
+            folder_name=folder_name,
             capacity=capacity,
+            scenario=scenario,
             initial_level=initial_level,
+            horizon="monthly",
+            timesteps=list(range(12)),
+            total_target=None,
         )
-        monthly_data.compute_target(sum(monthly_data.inflow))
-
-        # Ajustement de la réapartition mensuelle
-        problem = HydroHeuristicProblem(horizon="monthly", hydro_data=monthly_data)
-
-        status, obj, monthly_generation, _ = problem.solve_hydro_problem()
 
         assert status == pywraplp.Solver.OPTIMAL
 
@@ -75,23 +72,17 @@ def test_hydro_heuristic() -> None:
 
         for month in range(12):
             number_day_month = get_number_of_days_in_month(month)
-            daily_data = HydroHeuristicData(
-                scenario,
-                "daily",
-                folder_name="hydro_with_rulecurves",
-                timesteps=list(range(day_in_year, day_in_year + number_day_month)),
-                capacity=capacity,
-                initial_level=initial_level,
-            )
-            # Répartition des crédits de turbinage jour par jour
 
-            daily_data.compute_target(
+            initial_level, status, obj, daily_generation = optimize_target(
+                inter_breakdown=interdaily_breakdown,
+                folder_name=folder_name,
+                capacity=capacity,
+                scenario=scenario,
+                initial_level=initial_level,
+                horizon="daily",
+                timesteps=list(range(day_in_year, day_in_year + number_day_month)),
                 total_target=monthly_generation[month],
             )
-            # Ajustement de la répartition jour par jour
-            problem = HydroHeuristicProblem(horizon="daily", hydro_data=daily_data)
-
-            status, obj, daily_generation, initial_level = problem.solve_hydro_problem()
             assert status == pywraplp.Solver.OPTIMAL
             assert obj / capacity == pytest.approx(
                 [

@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+from typing import Optional
+
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
@@ -174,3 +176,36 @@ class HydroHeuristicProblem:
             database.add_data("H", name, ConstantData(coeff))
 
         return database
+
+
+def optimize_target(
+    inter_breakdown: int,
+    folder_name: str,
+    capacity: float,
+    scenario: int,
+    initial_level: float,
+    horizon: str,
+    timesteps: list[int],
+    total_target: Optional[float],
+) -> tuple[float, int, float, list[float]]:
+    # Récupération des données
+    data = HydroHeuristicData(
+        scenario,
+        horizon,
+        folder_name=folder_name,
+        timesteps=timesteps,
+        capacity=capacity,
+        initial_level=initial_level,
+    )
+    # Calcul de la préallocation
+    data.compute_target(total_target, inter_breakdown=inter_breakdown)
+
+    # Ajustement de la réapartition
+    heuristic_problem = HydroHeuristicProblem(
+        horizon=horizon,
+        hydro_data=data,
+    )
+
+    status, obj, generation, initial_level = heuristic_problem.solve_hydro_problem()
+
+    return initial_level, status, obj, generation

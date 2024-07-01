@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -101,7 +101,11 @@ class HydroHeuristicData:
             hour += hours_time_step // hours_input
         return aggregated_data
 
-    def compute_target(self, total_target: float, inter_breakdown: int = 1) -> None:
+    def compute_target(
+        self, total_target: Optional[float], inter_breakdown: int = 1
+    ) -> None:
+        if total_target is None:
+            total_target = sum(self.inflow)
         target = (
             total_target
             * np.power(self.demand, inter_breakdown)
