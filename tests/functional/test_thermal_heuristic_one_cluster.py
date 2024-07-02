@@ -18,6 +18,11 @@ import pytest
 
 from andromede.simulation import OutputValues
 from andromede.study import ConstantData, TimeScenarioSeriesData
+from andromede.thermal_heuristic.data import (
+    OutputIndexes,
+    OutputValuesParameters,
+    check_output_values,
+)
 from andromede.thermal_heuristic.problem import (
     create_main_problem,
     create_problem_accurate_heuristic,
@@ -67,41 +72,19 @@ def test_milp_version() -> None:
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 16805387
 
-    output = OutputValues(problem)
-    assert output.component("G").var("generation").value == [
-        [
-            pytest.approx(2000.0) if time_step != 12 else pytest.approx(2100.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_on").value == [
-        [
-            pytest.approx(2.0) if time_step != 12 else pytest.approx(3.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_start").value == [
-        [
-            pytest.approx(0.0) if time_step != 12 else pytest.approx(1.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_stop").value == [
-        [
-            pytest.approx(0.0) if time_step != 13 else pytest.approx(1.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-
-    assert output.component("S").var("spillage").value == [
-        [
-            pytest.approx(0.0) if time_step != 12 else pytest.approx(50.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("U").var("unsupplied_energy").value == [
-        [pytest.approx(0.0)] * number_hours
-    ]
+    check_output_values(
+        problem,
+        OutputValuesParameters(
+            mode="milp",
+            week=0,
+            scenario=0,
+            dir_path="data/thermal_heuristic_one_cluster",
+            list_cluster=["G"],
+            output_idx=OutputIndexes(
+                idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
+            ),
+        ),
+    )
 
 
 def test_lp_version() -> None:
@@ -145,38 +128,19 @@ def test_lp_version() -> None:
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == pytest.approx(16802840.55)
 
-    output = OutputValues(problem)
-    assert output.component("G").var("generation").value == [
-        [
-            pytest.approx(2000.0) if time_step != 12 else 2050.0
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_on").value == [
-        [
-            pytest.approx(2) if time_step != 12 else pytest.approx(2050 / 1000)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_start").value == [
-        [
-            pytest.approx(0.0) if time_step != 12 else pytest.approx(0.05)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_stop").value == [
-        [
-            pytest.approx(0.0) if time_step != 13 else pytest.approx(0.05)
-            for time_step in range(number_hours)
-        ]
-    ]
-
-    assert output.component("S").var("spillage").value == [
-        [pytest.approx(0.0)] * number_hours
-    ]
-    assert output.component("U").var("unsupplied_energy").value == [
-        [pytest.approx(0.0)] * number_hours
-    ]
+    check_output_values(
+        problem,
+        OutputValuesParameters(
+            mode="lp",
+            week=0,
+            scenario=0,
+            dir_path="data/thermal_heuristic_one_cluster",
+            list_cluster=["G"],
+            output_idx=OutputIndexes(
+                idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
+            ),
+        ),
+    )
 
 
 def test_accurate_heuristic() -> None:
@@ -254,41 +218,19 @@ def test_accurate_heuristic() -> None:
     assert status == problem_optimization_2.solver.OPTIMAL
     assert problem_optimization_2.solver.Objective().Value() == 16805387
 
-    output = OutputValues(problem_optimization_2)
-    assert output.component("G").var("generation").value == [
-        [
-            pytest.approx(2000.0) if time_step != 12 else pytest.approx(2100.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_on").value == [
-        [
-            pytest.approx(2.0) if time_step != 12 else pytest.approx(3.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_start").value == [
-        [
-            pytest.approx(0.0) if time_step != 12 else pytest.approx(1.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("G").var("nb_stop").value == [
-        [
-            pytest.approx(0.0) if time_step != 13 else pytest.approx(1.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-
-    assert output.component("S").var("spillage").value == [
-        [
-            pytest.approx(0.0) if time_step != 12 else pytest.approx(50.0)
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("U").var("unsupplied_energy").value == [
-        [pytest.approx(0.0)] * number_hours
-    ]
+    check_output_values(
+        problem_optimization_2,
+        OutputValuesParameters(
+            mode="accurate",
+            week=0,
+            scenario=0,
+            dir_path="data/thermal_heuristic_one_cluster",
+            list_cluster=["G"],
+            output_idx=OutputIndexes(
+                idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
+            ),
+        ),
+    )
 
 
 def test_fast_heuristic() -> None:
@@ -369,28 +311,16 @@ def test_fast_heuristic() -> None:
     assert status == problem_optimization_2.solver.OPTIMAL
     assert problem_optimization_2.solver.Objective().Value() == pytest.approx(16850000)
 
-    output = OutputValues(problem_optimization_2)
-    assert output.component("G").var("generation").value == [
-        [
-            (
-                pytest.approx(2100.0)
-                if time_step in [t for t in range(10, 20)]
-                else pytest.approx(2000.0)
-            )
-            for time_step in range(number_hours)
-        ]
-    ]
-
-    assert output.component("S").var("spillage").value == [
-        [
-            (
-                pytest.approx(100.0)
-                if time_step in [t for t in range(10, 20) if t != 12]
-                else (pytest.approx(0.0) if time_step != 12 else pytest.approx(50.0))
-            )
-            for time_step in range(number_hours)
-        ]
-    ]
-    assert output.component("U").var("unsupplied_energy").value == [
-        [pytest.approx(0.0)] * number_hours
-    ]
+    check_output_values(
+        problem_optimization_2,
+        OutputValuesParameters(
+            mode="fast",
+            week=0,
+            scenario=0,
+            dir_path="data/thermal_heuristic_one_cluster",
+            list_cluster=["G"],
+            output_idx=OutputIndexes(
+                idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
+            ),
+        ),
+    )

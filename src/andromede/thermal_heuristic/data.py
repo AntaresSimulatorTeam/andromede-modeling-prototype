@@ -10,8 +10,7 @@
 #
 # This file is part of the Antares project.
 
-from math import ceil
-from typing import List
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -19,7 +18,6 @@ import pytest
 
 from andromede.simulation import OutputValues
 from andromede.simulation.optimization import OptimizationProblem
-from andromede.study import ConstantData, TimeScenarioSeriesData
 
 
 def get_max_unit_for_min_down_time(delta: int, max_units: pd.DataFrame) -> pd.DataFrame:
@@ -73,93 +71,101 @@ def get_failures_for_cluster(
     return failures_data
 
 
+@dataclass
+class OutputIndexes:
+    idx_generation: int
+    idx_nodu: int
+    idx_spillage: int
+    idx_unsupplied: int
+
+
+@dataclass
+class OutputValuesParameters:
+    mode: str
+    week: int
+    scenario: int
+    dir_path: str
+    list_cluster: list[str]
+    output_idx: OutputIndexes
+
+
 def check_output_values(
-    problem: OptimizationProblem, mode: str, week: int, scenario: int, dir_path: str
+    problem: OptimizationProblem, parameters: OutputValuesParameters
 ) -> None:
     output = OutputValues(problem)
 
-    expected_output_clusters_file = open(
-        "tests/functional/"
-        + dir_path
-        + "/"
-        + mode
-        + "/"
-        + str(scenario)
-        + "/details-hourly.txt",
-        "r",
+    expected_output_clusters, expected_output_general = read_expected_output(
+        parameters.mode, parameters.scenario, parameters.dir_path, parameters.week
     )
-    expected_output_clusters = expected_output_clusters_file.readlines()
 
-    expected_output_general_file = open(
-        "tests/functional/"
-        + dir_path
-        + "/"
-        + mode
-        + "/"
-        + str(scenario)
-        + "/values-hourly.txt",
-        "r",
-    )
-    expected_output_general = expected_output_general_file.readlines()
-
-    assert output.component("G1").var("generation").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[4]))
-            for line in expected_output_clusters[168 * week + 7 : 168 * week + 7 + 168]
-        ]
-    ]
-    if mode != "fast":
-        assert output.component("G1").var("nb_on").value == [
-            [
-                pytest.approx(float(line.strip().split("\t")[12]))
-                for line in expected_output_clusters[
-                    168 * week + 7 : 168 * week + 7 + 168
-                ]
-            ]
-        ]
-
-    assert output.component("G2").var("generation").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[5]))
-            for line in expected_output_clusters[168 * week + 7 : 168 * week + 7 + 168]
-        ]
-    ]
-    if mode != "fast":
-        assert output.component("G2").var("nb_on").value == [
-            [
-                pytest.approx(float(line.strip().split("\t")[13]))
-                for line in expected_output_clusters[
-                    168 * week + 7 : 168 * week + 7 + 168
-                ]
-            ]
-        ]
-
-    assert output.component("G3").var("generation").value == [
-        [
-            pytest.approx(float(line.strip().split("\t")[6]))
-            for line in expected_output_clusters[168 * week + 7 : 168 * week + 7 + 168]
-        ]
-    ]
-    if mode != "fast":
-        assert output.component("G3").var("nb_on").value == [
-            [
-                pytest.approx(float(line.strip().split("\t")[14]))
-                for line in expected_output_clusters[
-                    168 * week + 7 : 168 * week + 7 + 168
-                ]
-            ]
-        ]
+    for i, cluster in enumerate(parameters.list_cluster):
+        check_output_cluster(
+            parameters.mode,
+            output,
+            expected_output_clusters,
+            idx_generation=parameters.output_idx.idx_generation + i,
+            idx_nodu=parameters.output_idx.idx_nodu + i,
+            cluster_id=cluster,
+        )
 
     assert output.component("S").var("spillage").value == [
         [
-            pytest.approx(float(line.strip().split("\t")[20 if mode == "milp" else 21]))
-            for line in expected_output_general[168 * week + 7 : 168 * week + 7 + 168]
+            pytest.approx(float(line[parameters.output_idx.idx_spillage]))
+            for line in expected_output_general
         ]
     ]
 
     assert output.component("U").var("unsupplied_energy").value == [
         [
-            pytest.approx(float(line.strip().split("\t")[19 if mode == "milp" else 20]))
-            for line in expected_output_general[168 * week + 7 : 168 * week + 7 + 168]
+            pytest.approx(float(line[parameters.output_idx.idx_unsupplied]))
+            for line in expected_output_general
         ]
     ]
+
+
+def check_output_cluster(
+    mode: str,
+    output: OutputValues,
+    expected_output_clusters: list[list[str]],
+    idx_generation: int,
+    idx_nodu: int,
+    cluster_id: str,
+) -> None:
+    assert output.component(cluster_id).var("generation").value == [
+        [
+            pytest.approx(float(line[idx_generation]))
+            for line in expected_output_clusters
+        ]
+    ]
+    if mode != "fast":
+        assert output.component(cluster_id).var("nb_on").value == [
+            [pytest.approx(float(line[idx_nodu])) for line in expected_output_clusters]
+        ]
+
+
+def read_expected_output(
+    mode: str, scenario: int, dir_path: str, week: int
+) -> tuple[list[list[str]], list[list[str]]]:
+    folder_name = "tests/functional/" + dir_path + "/" + mode + "/" + str(scenario)
+
+    expected_output_clusters_file = open(
+        folder_name + "/details-hourly.txt",
+        "r",
+    )
+    expected_output_clusters = expected_output_clusters_file.readlines()
+
+    expected_output_general_file = open(
+        folder_name + "/values-hourly.txt",
+        "r",
+    )
+    expected_output_general = expected_output_general_file.readlines()
+    return (
+        [
+            line.strip().split("\t")
+            for line in expected_output_clusters[168 * week + 7 : 168 * week + 7 + 168]
+        ],
+        [
+            line.strip().split("\t")
+            for line in expected_output_general[168 * week + 7 : 168 * week + 7 + 168]
+        ],
+    )

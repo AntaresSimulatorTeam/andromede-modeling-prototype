@@ -19,14 +19,13 @@ import pandas as pd
 import pytest
 
 from andromede.simulation import OutputValues
-from andromede.study import (
-    ConstantData,
-    TimeIndex,
-    TimeScenarioSeriesData,
-    TimeSeriesData,
-)
+from andromede.study import ConstantData, TimeScenarioSeriesData
 from andromede.study.data import AbstractDataStructure
-from andromede.thermal_heuristic.data import check_output_values
+from andromede.thermal_heuristic.data import (
+    OutputIndexes,
+    OutputValuesParameters,
+    check_output_values,
+)
 from andromede.thermal_heuristic.problem import (
     create_main_problem,
     create_problem_accurate_heuristic,
@@ -38,6 +37,9 @@ def test_milp_version() -> None:
     """ """
     number_hours = 168
     scenarios = 2
+    output_indexes = OutputIndexes(
+        idx_generation=4, idx_nodu=12, idx_spillage=20, idx_unsupplied=19
+    )
 
     for scenario in range(scenarios):
         for week in range(2):
@@ -63,10 +65,14 @@ def test_milp_version() -> None:
 
             check_output_values(
                 problem,
-                "milp",
-                week,
-                scenario=scenario,
-                dir_path="data/thermal_heuristic_three_clusters",
+                OutputValuesParameters(
+                    mode="milp",
+                    week=week,
+                    scenario=scenario,
+                    dir_path="data/thermal_heuristic_three_clusters",
+                    list_cluster=["G1", "G2", "G3"],
+                    output_idx=output_indexes,
+                ),
             )
 
             expected_cost = [[78933742, 102103587], [17472101, 17424769]]
@@ -79,6 +85,10 @@ def test_accurate_heuristic() -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares
     """
+
+    output_indexes = OutputIndexes(
+        idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
+    )
 
     number_hours = 168
     scenarios = 2
@@ -167,10 +177,14 @@ def test_accurate_heuristic() -> None:
 
             check_output_values(
                 problem_optimization_2,
-                "accurate",
-                week,
-                scenario=scenario,
-                dir_path="data/thermal_heuristic_three_clusters",
+                OutputValuesParameters(
+                    mode="accurate",
+                    week=week,
+                    scenario=scenario,
+                    dir_path="data/thermal_heuristic_three_clusters",
+                    list_cluster=["G1", "G2", "G3"],
+                    output_idx=output_indexes,
+                ),
             )
 
             expected_cost = [
@@ -186,6 +200,9 @@ def test_fast_heuristic() -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
     """
+    output_indexes = OutputIndexes(
+        idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
+    )
 
     number_hours = 168
     scenarios = 2
@@ -247,10 +264,14 @@ def test_fast_heuristic() -> None:
 
             check_output_values(
                 problem_optimization_2,
-                "fast",
-                week,
-                scenario,
-                dir_path="data/thermal_heuristic_three_clusters",
+                OutputValuesParameters(
+                    mode="fast",
+                    week=week,
+                    scenario=scenario,
+                    dir_path="data/thermal_heuristic_three_clusters",
+                    list_cluster=["G1", "G2", "G3"],
+                    output_idx=output_indexes,
+                ),
             )
 
             expected_cost = [
