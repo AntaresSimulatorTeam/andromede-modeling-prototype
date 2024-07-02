@@ -21,11 +21,7 @@ import pytest
 from andromede.simulation import OutputValues
 from andromede.study import ConstantData, TimeScenarioSeriesData
 from andromede.study.data import AbstractDataStructure
-from andromede.thermal_heuristic.data import (
-    OutputIndexes,
-    OutputValuesParameters,
-    check_output_values,
-)
+from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.problem import (
     create_main_problem,
     create_problem_accurate_heuristic,
@@ -37,7 +33,7 @@ def test_milp_version() -> None:
     """ """
     number_hours = 168
     scenarios = 2
-    output_indexes = OutputIndexes(
+    output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=20, idx_unsupplied=19
     )
 
@@ -63,16 +59,16 @@ def test_milp_version() -> None:
 
             assert status == problem.solver.OPTIMAL
 
-            check_output_values(
+            expected_output = ExpectedOutput(
+                mode="milp",
+                week=week,
+                scenario=scenario,
+                dir_path="data/thermal_heuristic_three_clusters",
+                list_cluster=["G1", "G2", "G3"],
+                output_idx=output_indexes,
+            )
+            expected_output.check_output_values(
                 problem,
-                OutputValuesParameters(
-                    mode="milp",
-                    week=week,
-                    scenario=scenario,
-                    dir_path="data/thermal_heuristic_three_clusters",
-                    list_cluster=["G1", "G2", "G3"],
-                    output_idx=output_indexes,
-                ),
             )
 
             expected_cost = [[78933742, 102103587], [17472101, 17424769]]
@@ -86,7 +82,7 @@ def test_accurate_heuristic() -> None:
     Solve the same problem as before with the heuristic accurate of Antares
     """
 
-    output_indexes = OutputIndexes(
+    output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
     )
 
@@ -175,16 +171,16 @@ def test_accurate_heuristic() -> None:
 
             assert status == problem_optimization_2.solver.OPTIMAL
 
-            check_output_values(
+            expected_output = ExpectedOutput(
+                mode="accurate",
+                week=week,
+                scenario=scenario,
+                dir_path="data/thermal_heuristic_three_clusters",
+                list_cluster=["G1", "G2", "G3"],
+                output_idx=output_indexes,
+            )
+            expected_output.check_output_values(
                 problem_optimization_2,
-                OutputValuesParameters(
-                    mode="accurate",
-                    week=week,
-                    scenario=scenario,
-                    dir_path="data/thermal_heuristic_three_clusters",
-                    list_cluster=["G1", "G2", "G3"],
-                    output_idx=output_indexes,
-                ),
             )
 
             expected_cost = [
@@ -200,7 +196,7 @@ def test_fast_heuristic() -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
     """
-    output_indexes = OutputIndexes(
+    output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
     )
 
@@ -262,16 +258,16 @@ def test_fast_heuristic() -> None:
 
             assert status == problem_optimization_2.solver.OPTIMAL
 
-            check_output_values(
+            expected_output = ExpectedOutput(
+                mode="fast",
+                week=week,
+                scenario=scenario,
+                dir_path="data/thermal_heuristic_three_clusters",
+                list_cluster=["G1", "G2", "G3"],
+                output_idx=output_indexes,
+            )
+            expected_output.check_output_values(
                 problem_optimization_2,
-                OutputValuesParameters(
-                    mode="fast",
-                    week=week,
-                    scenario=scenario,
-                    dir_path="data/thermal_heuristic_three_clusters",
-                    list_cluster=["G1", "G2", "G3"],
-                    output_idx=output_indexes,
-                ),
             )
 
             expected_cost = [

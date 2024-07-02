@@ -18,11 +18,7 @@ import pytest
 
 from andromede.simulation import OutputValues
 from andromede.study import ConstantData, TimeScenarioSeriesData
-from andromede.thermal_heuristic.data import (
-    OutputIndexes,
-    OutputValuesParameters,
-    check_output_values,
-)
+from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.problem import (
     create_main_problem,
     create_problem_accurate_heuristic,
@@ -72,19 +68,17 @@ def test_milp_version() -> None:
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 16805387
 
-    check_output_values(
-        problem,
-        OutputValuesParameters(
-            mode="milp",
-            week=0,
-            scenario=0,
-            dir_path="data/thermal_heuristic_one_cluster",
-            list_cluster=["G"],
-            output_idx=OutputIndexes(
-                idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
-            ),
+    expected_output = ExpectedOutput(
+        mode="milp",
+        week=0,
+        scenario=0,
+        dir_path="data/thermal_heuristic_one_cluster",
+        list_cluster=["G"],
+        output_idx=ExpectedOutputIndexes(
+            idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
     )
+    expected_output.check_output_values(problem)
 
 
 def test_lp_version() -> None:
@@ -128,18 +122,18 @@ def test_lp_version() -> None:
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == pytest.approx(16802840.55)
 
-    check_output_values(
-        problem,
-        OutputValuesParameters(
-            mode="lp",
-            week=0,
-            scenario=0,
-            dir_path="data/thermal_heuristic_one_cluster",
-            list_cluster=["G"],
-            output_idx=OutputIndexes(
-                idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
-            ),
+    expected_output = ExpectedOutput(
+        mode="lp",
+        week=0,
+        scenario=0,
+        dir_path="data/thermal_heuristic_one_cluster",
+        list_cluster=["G"],
+        output_idx=ExpectedOutputIndexes(
+            idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
+    )
+    expected_output.check_output_values(
+        problem,
     )
 
 
@@ -218,19 +212,17 @@ def test_accurate_heuristic() -> None:
     assert status == problem_optimization_2.solver.OPTIMAL
     assert problem_optimization_2.solver.Objective().Value() == 16805387
 
-    check_output_values(
-        problem_optimization_2,
-        OutputValuesParameters(
-            mode="accurate",
-            week=0,
-            scenario=0,
-            dir_path="data/thermal_heuristic_one_cluster",
-            list_cluster=["G"],
-            output_idx=OutputIndexes(
-                idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
-            ),
+    expected_output = ExpectedOutput(
+        mode="accurate",
+        week=0,
+        scenario=0,
+        dir_path="data/thermal_heuristic_one_cluster",
+        list_cluster=["G"],
+        output_idx=ExpectedOutputIndexes(
+            idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
         ),
     )
+    expected_output.check_output_values(problem_optimization_2)
 
 
 def test_fast_heuristic() -> None:
@@ -311,16 +303,14 @@ def test_fast_heuristic() -> None:
     assert status == problem_optimization_2.solver.OPTIMAL
     assert problem_optimization_2.solver.Objective().Value() == pytest.approx(16850000)
 
-    check_output_values(
-        problem_optimization_2,
-        OutputValuesParameters(
-            mode="fast",
-            week=0,
-            scenario=0,
-            dir_path="data/thermal_heuristic_one_cluster",
-            list_cluster=["G"],
-            output_idx=OutputIndexes(
-                idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
-            ),
+    expected_output = ExpectedOutput(
+        mode="fast",
+        week=0,
+        scenario=0,
+        dir_path="data/thermal_heuristic_one_cluster",
+        list_cluster=["G"],
+        output_idx=ExpectedOutputIndexes(
+            idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
         ),
     )
+    expected_output.check_output_values(problem_optimization_2)

@@ -79,7 +79,9 @@ def test_accurate_heuristic() -> None:
         expected_output = np.loadtxt(
             f"tests/functional/data/thermal_heuristic_six_clusters/accurate/itr2_accurate_cluster{j+1}.txt"
         )
-        assert nb_on_heuristic[:, 0] == [pytest.approx(x) for x in expected_output]
+        assert list(nb_on_heuristic[:, 0]) == [
+            pytest.approx(x) for x in expected_output
+        ]
 
 
 def test_fast_heuristic() -> None:
@@ -108,6 +110,6 @@ def test_fast_heuristic() -> None:
         expected_output = np.loadtxt(
             f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr2_fast_cluster{j+1}.txt"
         )
-        assert mingen_heuristic.values[:, 0] == [
+        assert list(mingen_heuristic.values[:, 0]) == [
             pytest.approx(x) for x in expected_output
         ]

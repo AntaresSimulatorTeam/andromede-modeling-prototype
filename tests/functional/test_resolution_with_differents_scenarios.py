@@ -421,7 +421,7 @@ def generate_database(
     output = {}
     for scenario in scenarios:
         output_file = open(
-            "tests/functional/data_complex_case/milp/"
+            "tests/functional/data/thermal_heuristic_three_clusters/milp/"
             + str(scenario)
             + "/values-hourly.txt",
             "r",
