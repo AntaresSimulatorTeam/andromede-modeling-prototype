@@ -50,8 +50,8 @@ def test_accurate_heuristic() -> None:
                     )
                 )
             ),
-            index=[i for i in range(number_hours)],
-            columns=[0],
+            index=list(range(week * number_hours, (week + 1) * number_hours)),
+            columns=[scenario],
         )
         n_guide = TimeScenarioSeriesData(nb_on_1)
 

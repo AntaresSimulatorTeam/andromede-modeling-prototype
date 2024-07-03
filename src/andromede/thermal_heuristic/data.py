@@ -21,27 +21,39 @@ from andromede.simulation import OutputValues
 from andromede.simulation.optimization import OptimizationProblem
 
 
-def get_max_unit_for_min_down_time(delta: int, max_units: pd.DataFrame) -> pd.DataFrame:
-    nb_units_max_min_down_time = pd.DataFrame(
-        np.roll(max_units.values, delta, axis=0), index=max_units.index
-    )
-    end_failures = max_units - pd.DataFrame(
-        np.roll(max_units.values, 1, axis=0), index=max_units.index
-    )
+def get_max_unit_for_min_down_time(
+    delta: int, max_units: pd.DataFrame, hours_in_week: int
+) -> pd.DataFrame:
+    max_units = shorten_df(max_units, hours_in_week)
+    nb_units_max_min_down_time = shift_df(max_units, delta, hours_in_week)
+    end_failures = max_units - shift_df(max_units, 1, hours_in_week)
     end_failures.where(end_failures > 0, 0, inplace=True)
     for j in range(delta):
-        nb_units_max_min_down_time += pd.DataFrame(
-            np.roll(end_failures.values, j, axis=0), index=end_failures.index
-        )
+        nb_units_max_min_down_time += shift_df(end_failures, j, hours_in_week)
 
     return nb_units_max_min_down_time
 
 
-def get_max_failures(max_units: pd.DataFrame) -> pd.DataFrame:
-    max_failures = (
-        pd.DataFrame(np.roll(max_units.values, 1, axis=0), index=max_units.index)
-        - max_units
+def shorten_df(df: pd.DataFrame, length_block: int) -> pd.DataFrame:
+    blocks = len(df) // length_block
+    df = df[: blocks * length_block]
+    return df
+
+
+def shift_df(df: pd.DataFrame, shift: int, length_block: int) -> pd.DataFrame:
+    assert len(df) % length_block == 0
+    blocks = len(df) // length_block
+    values = df.values.reshape((blocks, length_block, df.shape[1]))
+    shifted_values = np.roll(values, shift, axis=1)
+    return pd.DataFrame(
+        shifted_values.reshape((length_block * blocks, df.shape[1])),
+        index=df.index,
     )
+
+
+def get_max_failures(max_units: pd.DataFrame, hours_in_week: int) -> pd.DataFrame:
+    max_units = shorten_df(max_units, hours_in_week)
+    max_failures = shift_df(max_units, 1, hours_in_week) - max_units
     max_failures.where(max_failures > 0, 0, inplace=True)
     return max_failures
 

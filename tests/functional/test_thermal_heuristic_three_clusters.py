@@ -122,8 +122,8 @@ def test_accurate_heuristic() -> None:
                             )
                         )
                     ),
-                    index=[i for i in range(number_hours)],
-                    columns=[0],
+                    index=list(range(number_hours * week, number_hours * (week + 1))),
+                    columns=[scenario],
                 )
                 n_guide = TimeScenarioSeriesData(nb_on_1)
 
@@ -150,8 +150,8 @@ def test_accurate_heuristic() -> None:
                             np.array(output_heuristic.component(g).var("nb_on").value)
                         )
                     ),
-                    index=[i for i in range(number_hours)],
-                    columns=[0],
+                    index=list(range(number_hours * week, number_hours * (week + 1))),
+                    columns=[scenario],
                 )
                 nb_on_min[g] = TimeScenarioSeriesData(nb_on_heuristic)
 

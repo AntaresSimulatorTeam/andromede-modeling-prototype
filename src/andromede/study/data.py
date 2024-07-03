@@ -140,7 +140,10 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     time_scenario_series: pd.DataFrame
 
     def get_value(self, timestep: int, scenario: int) -> float:
-        value = str(self.time_scenario_series.iloc[timestep, scenario])
+        if self.time_scenario_series.shape[1] == 1:
+            value = str(self.time_scenario_series.loc[[timestep]].iloc[0, 0])
+            return float(value)
+        value = str(self.time_scenario_series.loc[timestep, scenario])
         return float(value)
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:

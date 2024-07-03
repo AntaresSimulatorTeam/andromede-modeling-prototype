@@ -119,12 +119,8 @@ def create_main_problem(
     database = get_database(
         data_dir,
         "components.yml",
-        [scenario],
-        list(range(week * number_hours, (week + 1) * number_hours)),
-        number_hours,
-        week,
-        scenario,
         get_cluster_id(network, initial_thermal_model.id),
+        number_hours,
     )
 
     modify_lower_bound_of_cluster(
@@ -134,8 +130,8 @@ def create_main_problem(
     problem = build_problem(
         network,
         database,
-        TimeBlock(1, [i for i in range(number_hours)]),
-        1,
+        TimeBlock(1, list(range(week * number_hours, (week + 1) * number_hours))),
+        [scenario],
         border_management=BlockBorderManagement.CYCLE,
     )
 
@@ -153,49 +149,57 @@ def modify_lower_bound_of_cluster(
 
 
 def complete_database_with_cluster_parameters(
-    database: DataBase,
-    list_cluster_id: List[str],
-    dir_path: Path,
-    number_hours: int,
-    week: int,
-    scenario: int,
+    database: DataBase, list_cluster_id: List[str], dir_path: Path, hours_in_week: int
 ) -> None:
     for cluster_id in list_cluster_id:
         data = get_data(
             dir_path,
             "components.yml",
             cluster_id,
-            number_hours=number_hours,
-            week=week,
-            scenario=scenario,
         )
 
-        max_generating = pd.DataFrame(
-            np.repeat(
-                data["max_generating"],
-                1 if type(data["max_generating"]) is list else number_hours,
-            ).reshape((number_hours, 1))
-        )
-        max_units = get_max_unit(data["p_max"], data["nb_units_max"], max_generating)
-        max_failures = get_max_failures(max_units)
-        nb_units_max_min_down_time = get_max_unit_for_min_down_time(
-            int(max(data["d_min_up"], data["d_min_down"])), max_units
-        )
-        database.add_data(
-            cluster_id,
-            "nb_units_max",
-            TimeScenarioSeriesData(max_units),
-        )
-        database.add_data(
-            cluster_id,
-            "max_failure",
-            TimeScenarioSeriesData(max_failures),
-        )
-        database.add_data(
-            cluster_id,
-            "nb_units_max_min_down_time",
-            TimeScenarioSeriesData(nb_units_max_min_down_time),
-        )
+        if type(data["max_generating"]) is float:
+            database.add_data(
+                cluster_id,
+                "max_failure",
+                ConstantData(0),
+            )
+            database.add_data(
+                cluster_id,
+                "nb_units_max_min_down_time",
+                ConstantData(data["nb_units_max"]),
+            )
+
+        else:
+            max_generating_shape = data["max_generating"].shape
+            if len(max_generating_shape) == 1:
+                max_generating = pd.DataFrame(
+                    data["max_generating"].reshape((max_generating_shape[0], 1))
+                )
+            else:
+                max_generating = pd.DataFrame(data["max_generating"])
+            max_units = get_max_unit(
+                data["p_max"], data["nb_units_max"], max_generating
+            )
+            max_failures = get_max_failures(max_units, hours_in_week)
+            nb_units_max_min_down_time = get_max_unit_for_min_down_time(
+                int(max(data["d_min_up"], data["d_min_down"])), max_units, hours_in_week
+            )
+            database.add_data(
+                cluster_id,
+                "nb_units_max",
+                TimeScenarioSeriesData(max_units),
+            )
+            database.add_data(
+                cluster_id,
+                "max_failure",
+                TimeScenarioSeriesData(max_failures),
+            )
+            database.add_data(
+                cluster_id,
+                "nb_units_max_min_down_time",
+                TimeScenarioSeriesData(nb_units_max_min_down_time),
+            )
 
 
 def get_cluster_id(network: Network, cluster_model_id: str) -> list[str]:
@@ -203,27 +207,16 @@ def get_cluster_id(network: Network, cluster_model_id: str) -> list[str]:
 
 
 def get_database(
-    data_dir: Path,
-    yml_file: str,
-    scenarios: Optional[List[int]],
-    timesteps: Optional[List[int]],
-    number_hours: int,
-    week: int,
-    scenario: int,
-    cluster_id: List[str],
+    data_dir: Path, yml_file: str, cluster_id: List[str], hours_in_week: int
 ) -> DataBase:
     components_file = get_input_components(data_dir / yml_file)
-    database = build_data_base(
-        components_file, data_dir, scenarios=scenarios, timesteps=timesteps
-    )
+    database = build_data_base(components_file, data_dir)
 
     complete_database_with_cluster_parameters(
         database,
         list_cluster_id=cluster_id,
         dir_path=data_dir,
-        number_hours=number_hours,
-        week=week,
-        scenario=scenario,
+        hours_in_week=hours_in_week,
     )
 
     return database
@@ -276,12 +269,8 @@ def create_problem_accurate_heuristic(
     database = get_database(
         data_dir,
         "components_heuristic.yml",
-        [scenario],
-        list(range(week * number_hours, (week + 1) * number_hours)),
-        number_hours,
-        week,
-        scenario,
         get_cluster_id(network, initial_thermal_model.id),
+        number_hours,
     )
 
     modify_lower_bound_of_cluster(
@@ -291,8 +280,8 @@ def create_problem_accurate_heuristic(
     problem = build_problem(
         network,
         database,
-        TimeBlock(1, [i for i in range(number_hours)]),
-        1,
+        TimeBlock(1, list(range(week * number_hours, (week + 1) * number_hours))),
+        [scenario],
         border_management=BlockBorderManagement.CYCLE,
     )
 
@@ -303,9 +292,6 @@ def get_data(
     data_dir: Path,
     yml_file: str,
     id_cluster: str,
-    week: int,
-    number_hours: int,
-    scenario: int,
 ) -> Dict:
     compo_file = data_dir / yml_file
 
@@ -316,11 +302,7 @@ def get_data(
         p.name: (
             p.value
             if p.value is not None
-            else list(
-                np.loadtxt(data_dir / (p.timeseries + ".txt"))[  # type:ignore
-                    week * number_hours : (week + 1) * number_hours, scenario
-                ]
-            )
+            else np.loadtxt(data_dir / (p.timeseries + ".txt"))  # type:ignore
         )
         for p in cluster.parameters  # type:ignore
     }
@@ -339,18 +321,20 @@ def create_problem_fast_heuristic(
         data_dir=data_dir,
         yml_file="components.yml",
         id_cluster=thermal_cluster,
-        week=week,
-        number_hours=number_hours,
-        scenario=scenario,
     )
     delta = int(max(data["d_min_up"], data["d_min_down"]))
     pmax = data["p_max"]
     pmin = data["p_min"]
     nmax = data["nb_units_max"]
-    pdispo = np.repeat(
-        data["max_generating"],
-        1 if type(data["max_generating"]) is list else number_hours,
-    ).reshape((number_hours, 1))
+    if type(data["max_generating"]) is float:
+        pdispo = np.repeat(
+            data["max_generating"],
+            number_hours,
+        ).reshape((number_hours, 1))
+    else:
+        pdispo = data["max_generating"][
+            number_hours * week : number_hours * (week + 1), scenario
+        ].reshape((number_hours, 1))
 
     number_blocks = number_hours // delta
 
@@ -431,8 +415,8 @@ def create_problem_fast_heuristic(
 
     mingen_heuristic = pd.DataFrame(
         np.minimum(n_heuristic * pmin, pdispo),
-        index=[i for i in range(number_hours)],
-        columns=[0],
+        index=[list(range(week * number_hours, (week + 1) * number_hours))],
+        columns=[scenario],
     )
 
     return mingen_heuristic

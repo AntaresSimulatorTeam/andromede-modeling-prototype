@@ -143,21 +143,13 @@ def build_network(comp_network: NetworkComponents) -> Network:
 
 
 def build_data_base(
-    input_comp: InputComponents,
-    timeseries_dir: Optional[Path],
-    scenarios: Optional[List[int]] = None,
-    timesteps: Optional[List[int]] = None,
+    input_comp: InputComponents, timeseries_dir: Optional[Path]
 ) -> DataBase:
     database = DataBase()
     for comp in input_comp.components:
         for param in comp.parameters or []:
             param_value = _evaluate_param_type(
-                param.type,
-                param.value,
-                param.timeseries,
-                timeseries_dir,
-                scenarios,
-                timesteps,
+                param.type, param.value, param.timeseries, timeseries_dir
             )
             database.add_data(comp.id, param.name, param_value)
 
@@ -169,17 +161,11 @@ def _evaluate_param_type(
     param_value: Optional[float],
     timeseries_name: Optional[str],
     timeseries_dir: Optional[Path],
-    scenarios: Optional[List[int]],
-    timesteps: Optional[List[int]],
 ) -> AbstractDataStructure:
     if param_type == "constant" and param_value is not None:
         return ConstantData(float(param_value))
 
     elif param_type == "timeseries":
-        return TimeScenarioSeriesData(
-            filter_ts_on_scenarios_and_timesteps(
-                load_ts_from_txt(timeseries_name, timeseries_dir), scenarios, timesteps
-            )
-        )
+        return TimeScenarioSeriesData(load_ts_from_txt(timeseries_name, timeseries_dir))
 
     raise ValueError(f"Data should be either constant or timeseries ")

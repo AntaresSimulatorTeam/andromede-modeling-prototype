@@ -17,6 +17,7 @@ from andromede.thermal_heuristic.data import (
     get_max_failures,
     get_max_unit,
     get_max_unit_for_min_down_time,
+    shift_df,
 )
 
 
@@ -33,7 +34,7 @@ def test_get_max_failures() -> None:
         np.transpose([[0, 1, 1, 2, 2, 1, 2], [1, 1, 1, 2, 2, 1, 0]])
     )
 
-    max_failures = get_max_failures(max_unit)
+    max_failures = get_max_failures(max_unit, 7)
 
     assert list(max_failures.values[:, 0]) == [2, 0, 0, 0, 0, 1, 0]
     assert list(max_failures.values[:, 1]) == [0, 0, 0, 0, 0, 1, 1]
@@ -44,7 +45,18 @@ def test_get_max_unit_for_min_down_time() -> None:
         np.transpose([[0, 1, 1, 2, 2, 1, 2], [1, 1, 1, 2, 2, 1, 0]])
     )
 
-    max_unit_for_min_down_time = get_max_unit_for_min_down_time(2, max_unit)
+    max_unit_for_min_down_time = get_max_unit_for_min_down_time(2, max_unit, 7)
 
     assert list(max_unit_for_min_down_time.values[:, 0]) == [2, 3, 1, 2, 2, 2, 3]
     assert list(max_unit_for_min_down_time.values[:, 1]) == [2, 1, 1, 2, 2, 2, 2]
+
+
+def test_shift_df() -> None:
+    A = np.array([[1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12]])
+
+    df = pd.DataFrame(A.transpose())
+
+    shifted = shift_df(df, 1, 3)
+
+    assert list(shifted.values[:, 0]) == [3, 1, 2, 6, 4, 5]
+    assert list(shifted.values[:, 1]) == [9, 7, 8, 12, 10, 11]
