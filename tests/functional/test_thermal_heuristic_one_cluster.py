@@ -176,7 +176,6 @@ def test_accurate_heuristic() -> None:
         {"G": n_guide},
         number_hours,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
-        thermal_cluster="G",
         week=0,
         scenario=0,
     )

@@ -55,25 +55,6 @@ def get_max_unit(
     return max_units
 
 
-def get_failures_for_cluster(
-    week: int, scenario: int, cluster: str, number_hours: int, dir_path: str
-) -> pd.DataFrame:
-    input_file = np.loadtxt(
-        "tests/functional/" + dir_path + f"/series_{cluster}.txt",
-        delimiter="\t",
-    )
-
-    failures_data = pd.DataFrame(
-        data=input_file[
-            number_hours * week : number_hours * week + number_hours, scenario
-        ],
-        index=[i for i in range(number_hours)],
-        columns=[0],
-    )
-
-    return failures_data
-
-
 @dataclass
 class ExpectedOutputIndexes:
     idx_generation: int

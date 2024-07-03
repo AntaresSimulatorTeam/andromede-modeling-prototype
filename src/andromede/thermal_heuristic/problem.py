@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
@@ -24,7 +24,7 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from andromede.model import Model
+from andromede.model import Model, PortType
 from andromede.model.library import Library, library
 from andromede.simulation import (
     BlockBorderManagement,
@@ -37,22 +37,19 @@ from andromede.study import (
     ConstantData,
     DataBase,
     Network,
-    Node,
-    PortRef,
     TimeIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
     create_component,
 )
 from andromede.study.data import AbstractDataStructure
-from andromede.study.parsing import parse_yaml_components
+from andromede.study.parsing import InputComponents, parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
     build_network,
     resolve_components_and_cnx,
 )
 from andromede.thermal_heuristic.data import (
-    get_failures_for_cluster,
     get_max_failures,
     get_max_unit,
     get_max_unit_for_min_down_time,
@@ -66,6 +63,36 @@ from andromede.thermal_heuristic.model import (
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
+def library_thermal_problem(
+    port_types: Iterable[PortType],
+    models: List[Model],
+    lp_relaxation: bool,
+    fast: bool,
+    initial_thermal_model: Model,
+) -> Library:
+    thermal_model = edit_thermal_model(lp_relaxation, fast, initial_thermal_model)
+    lib = library(
+        port_types=port_types,
+        models=models + [thermal_model],
+    )
+    return lib
+
+
+# class ThermalProblemBuilder:
+
+#     def __init__(
+#         self,
+#         lower_bound: Dict[str, AbstractDataStructure],
+#         number_hours: int,
+#         lp_relaxation: bool,
+#         fast: bool,
+#         data_dir: Path,
+#         week: int,
+#         scenario: int,
+#     ) -> None:
+#         pass
+
+
 def create_main_problem(
     lower_bound: Dict[str, AbstractDataStructure],
     number_hours: int,
@@ -74,64 +101,66 @@ def create_main_problem(
     data_dir: Path,
     week: int,
     scenario: int,
+    initial_thermal_model: Model = THERMAL_CLUSTER_MODEL_MILP,
+    port_types: List[PortType] = [BALANCE_PORT_TYPE],
+    models: List[Model] = [
+        NODE_BALANCE_MODEL,
+        DEMAND_MODEL,
+        SPILLAGE_MODEL,
+        UNSUPPLIED_ENERGY_MODEL,
+    ],
 ) -> OptimizationProblem:
-    thermal_model = choose_thermal_model(lp_relaxation, fast)
-
-    lib = library(
-        port_types=[BALANCE_PORT_TYPE],
-        models=[
-            NODE_BALANCE_MODEL,
-            DEMAND_MODEL,
-            SPILLAGE_MODEL,
-            UNSUPPLIED_ENERGY_MODEL,
-            thermal_model,
-        ],
+    lib = library_thermal_problem(
+        port_types, models, lp_relaxation, fast, initial_thermal_model
     )
 
-    network, database = get_network_and_database(
+    network = get_network(data_dir / "components.yml", lib)
+
+    database = get_database(
         data_dir,
-        lib,
         "components.yml",
-        scenarios=[scenario],
-        timesteps=list(range(week * number_hours, (week + 1) * number_hours)),
+        [scenario],
+        list(range(week * number_hours, (week + 1) * number_hours)),
+        number_hours,
+        week,
+        scenario,
+        get_cluster_id(network, initial_thermal_model.id),
     )
 
-    modify_parameters_of_cluster(
-        lower_bound,
-        database,
-        network,
-        THERMAL_CLUSTER_MODEL_MILP.id,
-        dir_path=data_dir,
-        number_hours=number_hours,
-        week=week,
-        scenario=scenario,
+    modify_lower_bound_of_cluster(
+        lower_bound, database, get_cluster_id(network, initial_thermal_model.id)
     )
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = 1
 
     problem = build_problem(
         network,
         database,
-        time_block,
-        scenarios,
+        TimeBlock(1, [i for i in range(number_hours)]),
+        1,
         border_management=BlockBorderManagement.CYCLE,
     )
 
     return problem
 
 
-def modify_parameters_of_cluster(
+def modify_lower_bound_of_cluster(
     lower_bound: Dict[str, AbstractDataStructure],
     database: DataBase,
-    network: Network,
-    cluster_model_id: str,
+    list_cluster_id: List[str],
+) -> None:
+    for cluster_id in list_cluster_id:
+        database.add_data(cluster_id, "nb_units_min", lower_bound[cluster_id])
+        database.add_data(cluster_id, "min_generating", lower_bound[cluster_id])
+
+
+def complete_database_with_cluster_parameters(
+    database: DataBase,
+    list_cluster_id: List[str],
     dir_path: Path,
     number_hours: int,
     week: int,
     scenario: int,
 ) -> None:
-    for cluster_id in get_cluster_id(network, cluster_model_id):
+    for cluster_id in list_cluster_id:
         data = get_data(
             dir_path,
             "components.yml",
@@ -152,17 +181,10 @@ def modify_parameters_of_cluster(
         nb_units_max_min_down_time = get_max_unit_for_min_down_time(
             int(max(data["d_min_up"], data["d_min_down"])), max_units
         )
-
-        database.add_data(cluster_id, "nb_units_min", lower_bound[cluster_id])
         database.add_data(
             cluster_id,
             "nb_units_max",
             TimeScenarioSeriesData(max_units),
-        )
-        database.add_data(
-            cluster_id,
-            "max_generating",
-            TimeScenarioSeriesData(max_generating),
         )
         database.add_data(
             cluster_id,
@@ -174,40 +196,61 @@ def modify_parameters_of_cluster(
             "nb_units_max_min_down_time",
             TimeScenarioSeriesData(nb_units_max_min_down_time),
         )
-        database.add_data(cluster_id, "min_generating", lower_bound[cluster_id])
 
 
 def get_cluster_id(network: Network, cluster_model_id: str) -> list[str]:
     return [c.id for c in network.components if c.model.id == cluster_model_id]
 
 
-def get_network_and_database(
+def get_database(
     data_dir: Path,
-    lib: Library,
     yml_file: str,
     scenarios: Optional[List[int]],
     timesteps: Optional[List[int]],
-) -> tuple[Network, DataBase]:
-    compo_file = data_dir / yml_file
-
-    with compo_file.open() as c:
-        components_file = parse_yaml_components(c)
-    components_input = resolve_components_and_cnx(components_file, lib)
-    network = build_network(components_input)
-
+    number_hours: int,
+    week: int,
+    scenario: int,
+    cluster_id: List[str],
+) -> DataBase:
+    components_file = get_input_components(data_dir / yml_file)
     database = build_data_base(
         components_file, data_dir, scenarios=scenarios, timesteps=timesteps
     )
-    return network, database
+
+    complete_database_with_cluster_parameters(
+        database,
+        list_cluster_id=cluster_id,
+        dir_path=data_dir,
+        number_hours=number_hours,
+        week=week,
+        scenario=scenario,
+    )
+
+    return database
 
 
-def choose_thermal_model(lp_relaxation: bool, fast: bool) -> Model:
+def get_network(compo_file: Path, lib: Library) -> Network:
+    components_file = get_input_components(compo_file)
+    components_input = resolve_components_and_cnx(components_file, lib)
+    network = build_network(components_input)
+    return network
+
+
+def get_input_components(compo_file: Path) -> InputComponents:
+    with compo_file.open() as c:
+        components_file = parse_yaml_components(c)
+    return components_file
+
+
+def edit_thermal_model(
+    lp_relaxation: bool, fast: bool, initial_thermal_model: Model
+) -> Model:
     if fast:
-        thermal_model = FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model
+        thermal_model = FastModelBuilder(initial_thermal_model).model
     elif lp_relaxation:
-        thermal_model = AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model
+        thermal_model = AccurateModelBuilder(initial_thermal_model).model
     else:
-        thermal_model = THERMAL_CLUSTER_MODEL_MILP
+        thermal_model = initial_thermal_model
     return thermal_model
 
 
@@ -215,46 +258,41 @@ def create_problem_accurate_heuristic(
     lower_bound: Dict[str, AbstractDataStructure],
     number_hours: int,
     data_dir: Path,
-    thermal_cluster: str,
     week: int,
     scenario: int,
+    initial_thermal_model: Model = THERMAL_CLUSTER_MODEL_MILP,
 ) -> OptimizationProblem:
-    thermal_model = HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model
+    thermal_model_builder = HeuristicAccurateModelBuilder(initial_thermal_model)
 
     lib = library(
         port_types=[],
         models=[
-            thermal_model,
+            thermal_model_builder.model,
         ],
     )
 
-    network, database = get_network_and_database(
+    network = get_network(data_dir / "components_heuristic.yml", lib)
+
+    database = get_database(
         data_dir,
-        lib,
         "components_heuristic.yml",
-        scenarios=[scenario],
-        timesteps=list(range(week * number_hours, (week + 1) * number_hours)),
+        [scenario],
+        list(range(week * number_hours, (week + 1) * number_hours)),
+        number_hours,
+        week,
+        scenario,
+        get_cluster_id(network, initial_thermal_model.id),
     )
 
-    modify_parameters_of_cluster(
-        lower_bound,
-        database,
-        network,
-        THERMAL_CLUSTER_MODEL_MILP.id,
-        dir_path=data_dir,
-        number_hours=number_hours,
-        week=week,
-        scenario=scenario,
+    modify_lower_bound_of_cluster(
+        lower_bound, database, get_cluster_id(network, initial_thermal_model.id)
     )
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-    scenarios = 1
 
     problem = build_problem(
         network,
         database,
-        time_block,
-        scenarios,
+        TimeBlock(1, [i for i in range(number_hours)]),
+        1,
         border_management=BlockBorderManagement.CYCLE,
     )
 

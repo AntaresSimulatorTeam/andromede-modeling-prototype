@@ -134,7 +134,6 @@ def test_accurate_heuristic() -> None:
                         for th in ["G1", "G2", "G3"]
                     },
                     number_hours,
-                    thermal_cluster=g,
                     week=week,
                     scenario=scenario,
                     data_dir=Path(__file__).parent
