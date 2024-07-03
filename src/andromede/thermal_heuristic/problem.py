@@ -58,10 +58,10 @@ from andromede.thermal_heuristic.data import (
     get_max_unit_for_min_down_time,
 )
 from andromede.thermal_heuristic.model import (
-    get_accurate_heuristic_model,
-    get_model_fast_heuristic,
-    get_thermal_cluster_accurate_model,
-    get_thermal_cluster_fast_model,
+    AccurateModelBuilder,
+    FastModelBuilder,
+    HeuristicAccurateModelBuilder,
+    HeuristicFastModelBuilder,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -203,9 +203,9 @@ def get_network_and_database(
 
 def choose_thermal_model(lp_relaxation: bool, fast: bool) -> Model:
     if fast:
-        thermal_model = get_thermal_cluster_fast_model(THERMAL_CLUSTER_MODEL_MILP)
+        thermal_model = FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model
     elif lp_relaxation:
-        thermal_model = get_thermal_cluster_accurate_model(THERMAL_CLUSTER_MODEL_MILP)
+        thermal_model = AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model
     else:
         thermal_model = THERMAL_CLUSTER_MODEL_MILP
     return thermal_model
@@ -219,7 +219,7 @@ def create_problem_accurate_heuristic(
     week: int,
     scenario: int,
 ) -> OptimizationProblem:
-    thermal_model = get_accurate_heuristic_model(THERMAL_CLUSTER_MODEL_MILP)
+    thermal_model = HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model
 
     lib = library(
         port_types=[],
@@ -362,7 +362,7 @@ def create_problem_fast_heuristic(
     time_block = TimeBlock(1, [i for i in range(number_hours)])
 
     block = create_component(
-        model=get_model_fast_heuristic(number_blocks, delta=delta), id="B"
+        model=HeuristicFastModelBuilder(number_blocks, delta=delta).model, id="B"
     )
 
     network = Network("test")
