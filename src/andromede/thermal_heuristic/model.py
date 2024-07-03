@@ -123,9 +123,16 @@ class ModelEditer:
             if not (self.variable_in_constraint(c, variables))
         ]
 
-    def filter_variables(self, variables: List[str]) -> List[Variable]:
+    def filter_and_linearize_variables(self, variables: List[str]) -> List[Variable]:
         return [
-            v for v in self.initial_model.variables.values() if v.name not in variables
+            float_variable(
+                v.name,
+                lower_bound=v.lower_bound,
+                upper_bound=v.upper_bound,
+                structure=v.structure,
+            )
+            for v in self.initial_model.variables.values()
+            if v.name not in variables
         ]
 
 
@@ -170,7 +177,7 @@ class HeuristicAccurateModelBuilder(ModelEditer):
         THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
             id=self.keep_id(),
             parameters=self.keep_parameters(),
-            variables=self.filter_variables(generation_variable),
+            variables=self.filter_and_linearize_variables(generation_variable),
             constraints=self.filter_constraints_on_variable(generation_variable),
             objective_operational_contribution=(var("nb_on")).sum().expec(),
         )
