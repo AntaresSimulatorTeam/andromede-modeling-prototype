@@ -17,13 +17,6 @@ import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-    DEMAND_MODEL,
-    NODE_BALANCE_MODEL,
-    SPILLAGE_MODEL,
-    UNSUPPLIED_ENERGY_MODEL,
-)
 from andromede.model import Model, PortType
 from andromede.model.library import Library, library
 from andromede.simulation import (
@@ -60,7 +53,6 @@ from andromede.thermal_heuristic.model import (
     HeuristicAccurateModelBuilder,
     HeuristicFastModelBuilder,
 )
-from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 def library_thermal_problem(
@@ -78,64 +70,244 @@ def library_thermal_problem(
     return lib
 
 
-# class ThermalProblemBuilder:
+class ThermalProblemBuilder:
 
-#     def __init__(
-#         self,
-#         lower_bound: Dict[str, AbstractDataStructure],
-#         number_hours: int,
-#         lp_relaxation: bool,
-#         fast: bool,
-#         data_dir: Path,
-#         week: int,
-#         scenario: int,
-#     ) -> None:
-#         pass
+    def __init__(
+        self,
+        number_hours: int,
+        lp_relaxation: bool,
+        fast: bool,
+        data_dir: Path,
+        initial_thermal_model: Model,
+        port_types: List[PortType],
+        models: List[Model],
+    ) -> None:
+        lib = library_thermal_problem(
+            port_types, models, lp_relaxation, fast, initial_thermal_model
+        )
 
+        self.network = get_network(data_dir / "components.yml", lib)
 
-def create_main_problem(
-    lower_bound: Dict[str, AbstractDataStructure],
-    number_hours: int,
-    lp_relaxation: bool,
-    fast: bool,
-    data_dir: Path,
-    week: int,
-    scenario: int,
-    initial_thermal_model: Model = THERMAL_CLUSTER_MODEL_MILP,
-    port_types: List[PortType] = [BALANCE_PORT_TYPE],
-    models: List[Model] = [
-        NODE_BALANCE_MODEL,
-        DEMAND_MODEL,
-        SPILLAGE_MODEL,
-        UNSUPPLIED_ENERGY_MODEL,
-    ],
-) -> OptimizationProblem:
-    lib = library_thermal_problem(
-        port_types, models, lp_relaxation, fast, initial_thermal_model
-    )
+        self.database = get_database(
+            data_dir,
+            "components.yml",
+            get_cluster_id(self.network, initial_thermal_model.id),
+            number_hours,
+        )
+        self.initial_thermal_model = initial_thermal_model
+        self.number_hours = number_hours
+        self.data_dir = data_dir
 
-    network = get_network(data_dir / "components.yml", lib)
+    def get_main_problem(
+        self, week: int, scenario: int, lower_bound: Dict[str, AbstractDataStructure]
+    ) -> OptimizationProblem:
+        modify_lower_bound_of_cluster(
+            lower_bound,
+            self.database,
+            get_cluster_id(self.network, self.initial_thermal_model.id),
+        )
 
-    database = get_database(
-        data_dir,
-        "components.yml",
-        get_cluster_id(network, initial_thermal_model.id),
-        number_hours,
-    )
+        problem = build_problem(
+            self.network,
+            self.database,
+            TimeBlock(
+                1, list(range(week * self.number_hours, (week + 1) * self.number_hours))
+            ),
+            [scenario],
+            border_management=BlockBorderManagement.CYCLE,
+        )
 
-    modify_lower_bound_of_cluster(
-        lower_bound, database, get_cluster_id(network, initial_thermal_model.id)
-    )
+        return problem
 
-    problem = build_problem(
-        network,
-        database,
-        TimeBlock(1, list(range(week * number_hours, (week + 1) * number_hours))),
-        [scenario],
-        border_management=BlockBorderManagement.CYCLE,
-    )
+    def get_problem_accurate_heuristic(
+        self,
+        lower_bound: Dict[str, AbstractDataStructure],
+        week: int,
+        scenario: int,
+        cluster_id: str,
+    ) -> OptimizationProblem:
+        thermal_model_builder = HeuristicAccurateModelBuilder(
+            self.initial_thermal_model
+        )
 
-    return problem
+        cluster = create_component(model=thermal_model_builder.model, id=cluster_id)
+
+        network = Network("test")
+        network.add_component(cluster)
+
+        modify_lower_bound_of_cluster(
+            lower_bound,
+            self.database,
+            [cluster_id],
+        )
+
+        problem = build_problem(
+            network,
+            self.database,
+            TimeBlock(
+                1, list(range(week * self.number_hours, (week + 1) * self.number_hours))
+            ),
+            [scenario],
+            border_management=BlockBorderManagement.CYCLE,
+        )
+
+        return problem
+
+    def get_problem_fast_heuristic(
+        self,
+        lower_bound: List[float],
+        thermal_cluster: str,
+        week: int,
+        scenario: int,
+    ) -> OptimizationProblem:
+        delta, pmax, nmax, _, _, number_blocks = self.get_data_fast_heuristic(
+            thermal_cluster, week, scenario
+        )
+
+        database = self.get_database_fast_heuristic(
+            lower_bound, delta, pmax, nmax, number_blocks
+        )
+
+        network = self.get_network_fast_heuristic(delta, number_blocks)
+
+        problem = build_problem(
+            network,
+            database,
+            TimeBlock(1, [i for i in range(self.number_hours)]),
+            1,
+            border_management=BlockBorderManagement.CYCLE,
+        )
+
+        return problem
+
+    def get_database_fast_heuristic(
+        self,
+        lower_bound: list[float],
+        delta: int,
+        pmax: int,
+        nmax: int,
+        number_blocks: int,
+    ) -> DataBase:
+        database = DataBase()
+
+        database.add_data("B", "n_max", ConstantData(nmax))
+        database.add_data("B", "delta", ConstantData(delta))
+
+        nb_on_1 = np.ceil(
+            np.round(
+                np.array(lower_bound) / pmax,
+                12,
+            )
+        )
+
+        database.add_data(
+            "B",
+            "n_guide",
+            TimeSeriesData(
+                {TimeIndex(i): nb_on_1[i] for i in range(self.number_hours)}
+            ),
+        )
+        for h in range(delta):
+            start_ajust = self.number_hours - delta + h
+            database.add_data(
+                "B",
+                f"alpha_ajust_{h}",
+                TimeSeriesData(
+                    {
+                        TimeIndex(t): 1 if (t >= start_ajust) or (t < h) else 0
+                        for t in range(self.number_hours)
+                    }
+                ),
+            )
+            for k in range(number_blocks):
+                start_k = k * delta + h
+                end_k = min(start_ajust, (k + 1) * delta + h)
+                database.add_data(
+                    "B",
+                    f"alpha_{k}_{h}",
+                    TimeSeriesData(
+                        {
+                            TimeIndex(t): 1 if (t >= start_k) and (t < end_k) else 0
+                            for t in range(self.number_hours)
+                        }
+                    ),
+                )
+
+        return database
+
+    def get_data_fast_heuristic(
+        self, thermal_cluster: str, week: int, scenario: int
+    ) -> tuple[int, int, int, int, list[float], int]:
+        data = get_data(
+            data_dir=self.data_dir,
+            yml_file="components.yml",
+            id_cluster=thermal_cluster,
+        )
+        delta = int(max(data["d_min_up"], data["d_min_down"]))
+        pmax = data["p_max"]
+        pmin = data["p_min"]
+        nmax = data["nb_units_max"]
+        if type(data["max_generating"]) is float:
+            pdispo = np.repeat(
+                data["max_generating"],
+                self.number_hours,
+            ).reshape((self.number_hours, 1))
+        else:
+            pdispo = data["max_generating"][
+                self.number_hours * week : self.number_hours * (week + 1), scenario
+            ].reshape((self.number_hours, 1))
+
+        number_blocks = self.number_hours // delta
+
+        return delta, pmax, nmax, pmin, list(pdispo), number_blocks
+
+    def get_output_heuristic_fast(
+        self,
+        problem: OptimizationProblem,
+        week: int,
+        scenario: int,
+        thermal_cluster: str,
+    ) -> pd.DataFrame:
+
+        _, _, _, pmin, pdispo, _ = self.get_data_fast_heuristic(
+            thermal_cluster, week, scenario
+        )
+
+        parameters = pywraplp.MPSolverParameters()
+        parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+        parameters.SetIntegerParam(parameters.SCALING, 0)
+        parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-7)
+        problem.solver.EnableOutput()
+
+        status = problem.solver.Solve(parameters)
+
+        assert status == problem.solver.OPTIMAL
+
+        output_heuristic = OutputValues(problem)
+        n_heuristic = np.array(
+            output_heuristic.component("B").var("n").value[0]  # type:ignore
+        ).reshape((self.number_hours, 1))
+
+        mingen_heuristic = pd.DataFrame(
+            np.minimum(
+                n_heuristic * pmin, np.array(pdispo).reshape((self.number_hours, 1))
+            ),
+            index=[
+                list(range(week * self.number_hours, (week + 1) * self.number_hours))
+            ],
+            columns=[scenario],
+        )
+
+        return mingen_heuristic
+
+    def get_network_fast_heuristic(self, delta: int, number_blocks: int) -> Network:
+        block = create_component(
+            model=HeuristicFastModelBuilder(number_blocks, delta=delta).model, id="B"
+        )
+
+        network = Network("test")
+        network.add_component(block)
+        return network
 
 
 def modify_lower_bound_of_cluster(
@@ -171,19 +343,8 @@ def complete_database_with_cluster_parameters(
             )
 
         else:
-            max_generating_shape = data["max_generating"].shape
-            if len(max_generating_shape) == 1:
-                max_generating = pd.DataFrame(
-                    data["max_generating"].reshape((max_generating_shape[0], 1))
-                )
-            else:
-                max_generating = pd.DataFrame(data["max_generating"])
-            max_units = get_max_unit(
-                data["p_max"], data["nb_units_max"], max_generating
-            )
-            max_failures = get_max_failures(max_units, hours_in_week)
-            nb_units_max_min_down_time = get_max_unit_for_min_down_time(
-                int(max(data["d_min_up"], data["d_min_down"])), max_units, hours_in_week
+            max_units, max_failures, nb_units_max_min_down_time = (
+                compute_cluster_parameters(hours_in_week, data)
             )
             database.add_data(
                 cluster_id,
@@ -200,6 +361,25 @@ def complete_database_with_cluster_parameters(
                 "nb_units_max_min_down_time",
                 TimeScenarioSeriesData(nb_units_max_min_down_time),
             )
+
+
+def compute_cluster_parameters(
+    hours_in_week: int, data: Dict
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    max_generating_shape = data["max_generating"].shape
+    if len(max_generating_shape) == 1:
+        max_generating = pd.DataFrame(
+            data["max_generating"].reshape((max_generating_shape[0], 1))
+        )
+    else:
+        max_generating = pd.DataFrame(data["max_generating"])
+    max_units = get_max_unit(data["p_max"], data["nb_units_max"], max_generating)
+    max_failures = get_max_failures(max_units, hours_in_week)
+    nb_units_max_min_down_time = get_max_unit_for_min_down_time(
+        int(max(data["d_min_up"], data["d_min_down"])), max_units, hours_in_week
+    )
+
+    return max_units, max_failures, nb_units_max_min_down_time
 
 
 def get_cluster_id(network: Network, cluster_model_id: str) -> list[str]:
@@ -247,47 +427,6 @@ def edit_thermal_model(
     return thermal_model
 
 
-def create_problem_accurate_heuristic(
-    lower_bound: Dict[str, AbstractDataStructure],
-    number_hours: int,
-    data_dir: Path,
-    week: int,
-    scenario: int,
-    initial_thermal_model: Model = THERMAL_CLUSTER_MODEL_MILP,
-) -> OptimizationProblem:
-    thermal_model_builder = HeuristicAccurateModelBuilder(initial_thermal_model)
-
-    lib = library(
-        port_types=[],
-        models=[
-            thermal_model_builder.model,
-        ],
-    )
-
-    network = get_network(data_dir / "components_heuristic.yml", lib)
-
-    database = get_database(
-        data_dir,
-        "components_heuristic.yml",
-        get_cluster_id(network, initial_thermal_model.id),
-        number_hours,
-    )
-
-    modify_lower_bound_of_cluster(
-        lower_bound, database, get_cluster_id(network, initial_thermal_model.id)
-    )
-
-    problem = build_problem(
-        network,
-        database,
-        TimeBlock(1, list(range(week * number_hours, (week + 1) * number_hours))),
-        [scenario],
-        border_management=BlockBorderManagement.CYCLE,
-    )
-
-    return problem
-
-
 def get_data(
     data_dir: Path,
     yml_file: str,
@@ -307,116 +446,3 @@ def get_data(
         for p in cluster.parameters  # type:ignore
     }
     return parameters  # type:ignore
-
-
-def create_problem_fast_heuristic(
-    lower_bound: List[float],
-    number_hours: int,
-    thermal_cluster: str,
-    data_dir: Path,
-    week: int,
-    scenario: int,
-) -> pd.DataFrame:
-    data = get_data(
-        data_dir=data_dir,
-        yml_file="components.yml",
-        id_cluster=thermal_cluster,
-    )
-    delta = int(max(data["d_min_up"], data["d_min_down"]))
-    pmax = data["p_max"]
-    pmin = data["p_min"]
-    nmax = data["nb_units_max"]
-    if type(data["max_generating"]) is float:
-        pdispo = np.repeat(
-            data["max_generating"],
-            number_hours,
-        ).reshape((number_hours, 1))
-    else:
-        pdispo = data["max_generating"][
-            number_hours * week : number_hours * (week + 1), scenario
-        ].reshape((number_hours, 1))
-
-    number_blocks = number_hours // delta
-
-    database = DataBase()
-
-    database.add_data("B", "n_max", ConstantData(nmax))
-    database.add_data("B", "delta", ConstantData(delta))
-
-    nb_on_1 = np.ceil(
-        np.round(
-            np.array(lower_bound) / pmax,
-            12,
-        )
-    )
-
-    database.add_data(
-        "B",
-        "n_guide",
-        TimeSeriesData({TimeIndex(i): nb_on_1[i] for i in range(number_hours)}),
-    )
-    for h in range(delta):
-        start_ajust = number_hours - delta + h
-        database.add_data(
-            "B",
-            f"alpha_ajust_{h}",
-            TimeSeriesData(
-                {
-                    TimeIndex(t): 1 if (t >= start_ajust) or (t < h) else 0
-                    for t in range(number_hours)
-                }
-            ),
-        )
-        for k in range(number_blocks):
-            start_k = k * delta + h
-            end_k = min(start_ajust, (k + 1) * delta + h)
-            database.add_data(
-                "B",
-                f"alpha_{k}_{h}",
-                TimeSeriesData(
-                    {
-                        TimeIndex(t): 1 if (t >= start_k) and (t < end_k) else 0
-                        for t in range(number_hours)
-                    }
-                ),
-            )
-
-    time_block = TimeBlock(1, [i for i in range(number_hours)])
-
-    block = create_component(
-        model=HeuristicFastModelBuilder(number_blocks, delta=delta).model, id="B"
-    )
-
-    network = Network("test")
-    network.add_component(block)
-
-    problem = build_problem(
-        network,
-        database,
-        time_block,
-        1,
-        border_management=BlockBorderManagement.CYCLE,
-    )
-
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
-    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-7)
-    problem.solver.EnableOutput()
-
-    status = problem.solver.Solve(parameters)
-
-    assert status == problem.solver.OPTIMAL
-
-    output_heuristic = OutputValues(problem)
-    n_heuristic = np.array(
-        output_heuristic.component("B").var("n").value[0]  # type:ignore
-    ).reshape((number_hours, 1))
-
-    mingen_heuristic = pd.DataFrame(
-        np.minimum(n_heuristic * pmin, pdispo),
-        index=[list(range(week * number_hours, (week + 1) * number_hours))],
-        columns=[scenario],
-    )
-
-    return mingen_heuristic

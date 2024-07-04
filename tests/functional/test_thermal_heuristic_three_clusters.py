@@ -23,10 +23,17 @@ from andromede.study import ConstantData, TimeScenarioSeriesData
 from andromede.study.data import AbstractDataStructure
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.problem import (
-    create_main_problem,
-    create_problem_accurate_heuristic,
-    create_problem_fast_heuristic,
+    ThermalProblemBuilder,
 )
+
+from andromede.libs.standard import (
+    BALANCE_PORT_TYPE,
+    DEMAND_MODEL,
+    NODE_BALANCE_MODEL,
+    SPILLAGE_MODEL,
+    UNSUPPLIED_ENERGY_MODEL,
+)
+from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 def test_milp_version() -> None:
@@ -37,17 +44,31 @@ def test_milp_version() -> None:
         idx_generation=4, idx_nodu=12, idx_spillage=20, idx_unsupplied=19
     )
 
+    thermal_problem_builder = ThermalProblemBuilder(
+        number_hours=number_hours,
+        lp_relaxation=False,
+        fast=False,
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
+        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        port_types=[BALANCE_PORT_TYPE],
+        models=[
+            DEMAND_MODEL,
+            NODE_BALANCE_MODEL,
+            SPILLAGE_MODEL,
+            UNSUPPLIED_ENERGY_MODEL,
+        ],
+    )
+
     for scenario in range(scenarios):
         for week in range(2):
-            problem = create_main_problem(
-                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-                number_hours,
-                lp_relaxation=False,
-                fast=False,
+            problem = thermal_problem_builder.get_main_problem(
+                lower_bound={
+                    "G1": ConstantData(0),
+                    "G2": ConstantData(0),
+                    "G3": ConstantData(0),
+                },
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent
-                / "data/thermal_heuristic_three_clusters",
             )
 
             parameters = pywraplp.MPSolverParameters()
@@ -93,18 +114,32 @@ def test_accurate_heuristic() -> None:
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
+    thermal_problem_builder = ThermalProblemBuilder(
+        number_hours=number_hours,
+        lp_relaxation=True,
+        fast=False,
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
+        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        port_types=[BALANCE_PORT_TYPE],
+        models=[
+            DEMAND_MODEL,
+            NODE_BALANCE_MODEL,
+            SPILLAGE_MODEL,
+            UNSUPPLIED_ENERGY_MODEL,
+        ],
+    )
+
     for scenario in range(scenarios):
         for week in range(2):
             # First optimization
-            problem_optimization_1 = create_main_problem(
-                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-                number_hours,
-                lp_relaxation=True,
-                fast=False,
+            problem_optimization_1 = thermal_problem_builder.get_main_problem(
+                lower_bound={
+                    "G1": ConstantData(0),
+                    "G2": ConstantData(0),
+                    "G3": ConstantData(0),
+                },
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent
-                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_1.solver.Solve(parameters)
 
@@ -128,16 +163,16 @@ def test_accurate_heuristic() -> None:
                 n_guide = TimeScenarioSeriesData(nb_on_1)
 
                 # Solve heuristic problem
-                problem_accurate_heuristic = create_problem_accurate_heuristic(
-                    {
-                        th: n_guide if th == g else ConstantData(0)
-                        for th in ["G1", "G2", "G3"]
-                    },
-                    number_hours,
-                    week=week,
-                    scenario=scenario,
-                    data_dir=Path(__file__).parent
-                    / "data/thermal_heuristic_three_clusters",
+                problem_accurate_heuristic = (
+                    thermal_problem_builder.get_problem_accurate_heuristic(
+                        {
+                            th: n_guide if th == g else ConstantData(0)
+                            for th in ["G1", "G2", "G3"]
+                        },
+                        week=week,
+                        scenario=scenario,
+                        cluster_id=g,
+                    )
                 )
                 status = problem_accurate_heuristic.solver.Solve(parameters)
 
@@ -156,15 +191,10 @@ def test_accurate_heuristic() -> None:
                 nb_on_min[g] = TimeScenarioSeriesData(nb_on_heuristic)
 
             # Second optimization with lower bound modified
-            problem_optimization_2 = create_main_problem(
-                nb_on_min,
-                number_hours,
-                lp_relaxation=True,
-                fast=False,
+            problem_optimization_2 = thermal_problem_builder.get_main_problem(
+                lower_bound=nb_on_min,
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent
-                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_2.solver.Solve(parameters)
 
@@ -207,18 +237,32 @@ def test_fast_heuristic() -> None:
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
+    thermal_problem_builder = ThermalProblemBuilder(
+        number_hours=number_hours,
+        lp_relaxation=True,
+        fast=True,
+        data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
+        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        port_types=[BALANCE_PORT_TYPE],
+        models=[
+            DEMAND_MODEL,
+            NODE_BALANCE_MODEL,
+            SPILLAGE_MODEL,
+            UNSUPPLIED_ENERGY_MODEL,
+        ],
+    )
+
     for scenario in range(scenarios):
         for week in range(weeks):
             # First optimization
-            problem_optimization_1 = create_main_problem(
-                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-                number_hours,
-                lp_relaxation=True,
-                fast=True,
+            problem_optimization_1 = thermal_problem_builder.get_main_problem(
+                lower_bound={
+                    "G1": ConstantData(0),
+                    "G2": ConstantData(0),
+                    "G3": ConstantData(0),
+                },
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent
-                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_1.solver.Solve(parameters)
 
@@ -230,28 +274,26 @@ def test_fast_heuristic() -> None:
             # Solve heuristic problem
             mingen: Dict[str, AbstractDataStructure] = {}
             for g in ["G1", "G2", "G3"]:  #
-                mingen_heuristic = create_problem_fast_heuristic(
+                problem_heuristic = thermal_problem_builder.get_problem_fast_heuristic(
                     output_1.component(g).var("generation").value[0],  # type:ignore
-                    number_hours,
                     thermal_cluster=g,
                     week=week,
                     scenario=scenario,
-                    data_dir=Path(__file__).parent
-                    / "data/thermal_heuristic_three_clusters",
+                )
+                mingen_heuristic = thermal_problem_builder.get_output_heuristic_fast(
+                    problem_heuristic,
+                    thermal_cluster=g,
+                    week=week,
+                    scenario=scenario,
                 )
 
                 mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
 
             # Second optimization with lower bound modified
-            problem_optimization_2 = create_main_problem(
-                mingen,
-                number_hours,
-                lp_relaxation=True,
-                fast=True,
+            problem_optimization_2 = thermal_problem_builder.get_main_problem(
+                lower_bound=mingen,
                 week=week,
                 scenario=scenario,
-                data_dir=Path(__file__).parent
-                / "data/thermal_heuristic_three_clusters",
             )
             status = problem_optimization_2.solver.Solve(parameters)
 
