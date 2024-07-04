@@ -30,7 +30,6 @@ from andromede.study.data import (
     AbstractDataStructure,
     TimeScenarioIndex,
     TimeScenarioSeriesData,
-    filter_ts_on_scenarios_and_timesteps,
     load_ts_from_txt,
 )
 from andromede.study.parsing import (

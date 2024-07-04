@@ -13,15 +13,9 @@
 from pathlib import Path
 
 import numpy as np
+import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
-
-from andromede.simulation import OutputValues
-from andromede.study import ConstantData, TimeScenarioSeriesData
-from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
-from andromede.thermal_heuristic.problem import (
-    ThermalProblemBuilder,
-)
 
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -30,6 +24,11 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
+from andromede.simulation import OutputValues
+from andromede.study import ConstantData, TimeScenarioSeriesData
+from andromede.study.data import ComponentParameterIndex
+from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
+from andromede.thermal_heuristic.problem import ThermalProblemBuilder
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
@@ -59,10 +58,8 @@ def test_milp_version() -> None:
         + 3 x 1 (fixed cost step 13)
         = 16 805 387
     """
-    number_hours = 168
-
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
+        number_hours=168,
         lp_relaxation=False,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
@@ -74,17 +71,18 @@ def test_milp_version() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
+        number_week=1,
+        list_scenario=list(range(1)),
     )
 
-    problem = thermal_problem_builder.get_main_problem(
-        lower_bound={"G": ConstantData(0)},
+    main_resolution_step = thermal_problem_builder.get_main_resolution_step(
         week=0,
         scenario=0,
     )
-    status = problem.solver.Solve()
+    status = main_resolution_step.solve()
 
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 16805387
+    assert status == pywraplp.Solver.OPTIMAL
+    assert main_resolution_step.objective == 16805387
 
     expected_output = ExpectedOutput(
         mode="milp",
@@ -96,7 +94,7 @@ def test_milp_version() -> None:
             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
     )
-    expected_output.check_output_values(problem)
+    expected_output.check_output_values(main_resolution_step.output)
 
 
 def test_lp_version() -> None:
@@ -125,10 +123,8 @@ def test_lp_version() -> None:
         + 0,05 x 50 (start up cost step 13)
         = 16 802 840,55
     """
-    number_hours = 168
-
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
+        number_hours=168,
         lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
@@ -140,17 +136,18 @@ def test_lp_version() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
+        number_week=1,
+        list_scenario=list(range(1)),
     )
 
-    problem = thermal_problem_builder.get_main_problem(
-        lower_bound={"G": ConstantData(0)},
+    main_resolution_step = thermal_problem_builder.get_main_resolution_step(
         week=0,
         scenario=0,
     )
-    status = problem.solver.Solve()
+    status = main_resolution_step.solve()
 
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == pytest.approx(16802840.55)
+    assert status == pywraplp.Solver.OPTIMAL
+    assert main_resolution_step.objective == pytest.approx(16802840.55)
 
     expected_output = ExpectedOutput(
         mode="lp",
@@ -162,9 +159,7 @@ def test_lp_version() -> None:
             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
     )
-    expected_output.check_output_values(
-        problem,
-    )
+    expected_output.check_output_values(main_resolution_step.output)
 
 
 def test_accurate_heuristic() -> None:
@@ -172,10 +167,8 @@ def test_accurate_heuristic() -> None:
     Solve the same problem as before with the heuristic accurate of Antares
     """
 
-    number_hours = 168
-
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
+        number_hours=168,
         lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
@@ -187,62 +180,63 @@ def test_accurate_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
+        number_week=1,
+        list_scenario=list(range(1)),
     )
 
     # First optimization
-    problem_optimization_1 = thermal_problem_builder.get_main_problem(
-        lower_bound={"G": ConstantData(0)},
+    resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
         week=0,
         scenario=0,
     )
-    status = problem_optimization_1.solver.Solve()
-
-    assert status == problem_optimization_1.solver.OPTIMAL
+    status = resolution_step_1.solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
     # Get number of on units and round it to integer
-    output_1 = OutputValues(problem_optimization_1)
-    nb_on_1 = pd.DataFrame(
-        np.transpose(
-            np.ceil(np.round(np.array(output_1.component("G").var("nb_on").value), 12))
-        ),
-        index=[i for i in range(number_hours)],
-        columns=[0],
+    thermal_problem_builder.update_database_accurate(
+        resolution_step_1.output, 0, 0, None
     )
-    n_guide = TimeScenarioSeriesData(nb_on_1)
-    for time_step in range(number_hours):
-        assert nb_on_1.iloc[time_step, 0] == 2 if time_step != 12 else 3
+    for time_step in range(thermal_problem_builder.number_hours):
+        assert (
+            thermal_problem_builder.database.get_value(
+                ComponentParameterIndex("G", "nb_units_min"), time_step, 0
+            )
+            == 2
+            if time_step != 12
+            else 3
+        )
 
     # Solve heuristic problem
-    problem_accurate_heuristic = thermal_problem_builder.get_problem_accurate_heuristic(
-        {"G": n_guide}, week=0, scenario=0, cluster_id="G"
+    resolution_step_accurate_heuristic = (
+        thermal_problem_builder.get_resolution_step_accurate_heuristic(
+            week=0, scenario=0, cluster_id="G"
+        )
     )
-    status = problem_accurate_heuristic.solver.Solve()
+    status = resolution_step_accurate_heuristic.solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
-    assert status == problem_accurate_heuristic.solver.OPTIMAL
-
-    output_heuristic = OutputValues(problem_accurate_heuristic)
-    nb_on_heuristic = pd.DataFrame(
-        np.transpose(
-            np.ceil(np.array(output_heuristic.component("G").var("nb_on").value))
-        ),
-        index=[i for i in range(number_hours)],
-        columns=[0],
+    thermal_problem_builder.update_database_accurate(
+        resolution_step_accurate_heuristic.output, 0, 0, None
     )
-    nb_on_min = TimeScenarioSeriesData(nb_on_heuristic)
 
-    for time_step in range(number_hours):
-        assert nb_on_heuristic.iloc[time_step, 0] == 2 if time_step != 12 else 3
+    for time_step in range(thermal_problem_builder.number_hours):
+        assert (
+            thermal_problem_builder.database.get_value(
+                ComponentParameterIndex("G", "nb_units_min"), time_step, 0
+            )
+            == 2
+            if time_step != 12
+            else 3
+        )
 
     # Second optimization with lower bound modified
-    problem_optimization_2 = thermal_problem_builder.get_main_problem(
-        lower_bound={"G": nb_on_min},
+    resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
         week=0,
         scenario=0,
     )
-    status = problem_optimization_2.solver.Solve()
-
-    assert status == problem_optimization_2.solver.OPTIMAL
-    assert problem_optimization_2.solver.Objective().Value() == 16805387
+    status = resolution_step_2.solve()
+    assert status == pywraplp.Solver.OPTIMAL
+    assert resolution_step_2.objective == 16805387
 
     expected_output = ExpectedOutput(
         mode="accurate",
@@ -254,7 +248,7 @@ def test_accurate_heuristic() -> None:
             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
         ),
     )
-    expected_output.check_output_values(problem_optimization_2)
+    expected_output.check_output_values(resolution_step_2.output)
 
 
 def test_fast_heuristic() -> None:
@@ -297,51 +291,52 @@ def test_fast_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
+        number_week=1,
+        list_scenario=list(range(1)),
     )
 
     # First optimization
-    problem_optimization_1 = thermal_problem_builder.get_main_problem(
-        lower_bound={"G": ConstantData(0)},
+    resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
         week=0,
         scenario=0,
     )
-    status = problem_optimization_1.solver.Solve()
+    status = resolution_step_1.solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
-    assert status == problem_optimization_1.solver.OPTIMAL
-
-    # Get number of on units
-    output_1 = OutputValues(problem_optimization_1)
-
+    thermal_problem_builder.update_database_fast_before_heuristic(
+        resolution_step_1.output, 0
+    )
     # Solve heuristic problem
-    problem_heuristic = thermal_problem_builder.get_problem_fast_heuristic(
-        output_1.component("G").var("generation").value[0],  # type:ignore
-        thermal_cluster="G",
-        week=0,
-        scenario=0,
+    resolution_step_heuristic = (
+        thermal_problem_builder.get_resolution_step_fast_heuristic(
+            thermal_cluster="G",
+            week=0,
+            scenario=0,
+        )
     )
-    mingen_heuristic = thermal_problem_builder.get_output_heuristic_fast(
-        problem_heuristic, 0, 0, "G"
+    resolution_step_heuristic.solve()
+    thermal_problem_builder.update_database_fast_after_heuristic(
+        resolution_step_heuristic.output, 0, 0, None
     )
-
-    mingen = TimeScenarioSeriesData(mingen_heuristic)
 
     for time_step in range(number_hours):
         assert (
-            mingen_heuristic.iloc[time_step, 0] == 3 * 700
+            thermal_problem_builder.database.get_value(
+                ComponentParameterIndex("G", "min_generating"), time_step, 0
+            )
+            == 3 * 700
             if time_step in [t for t in range(10, 20)]
             else 2 * 700
         )
 
     # Second optimization with lower bound modified
-    problem_optimization_2 = thermal_problem_builder.get_main_problem(
-        lower_bound={"G": mingen},
+    resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
         week=0,
         scenario=0,
     )
-    status = problem_optimization_2.solver.Solve()
-
-    assert status == problem_optimization_2.solver.OPTIMAL
-    assert problem_optimization_2.solver.Objective().Value() == pytest.approx(16850000)
+    status = resolution_step_2.solve()
+    assert status == pywraplp.Solver.OPTIMAL
+    assert resolution_step_2.objective == pytest.approx(16850000)
 
     expected_output = ExpectedOutput(
         mode="fast",
@@ -353,4 +348,4 @@ def test_fast_heuristic() -> None:
             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
         ),
     )
-    expected_output.check_output_values(problem_optimization_2)
+    expected_output.check_output_values(resolution_step_2.output)

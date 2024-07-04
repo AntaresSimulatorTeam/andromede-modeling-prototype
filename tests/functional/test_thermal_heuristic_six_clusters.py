@@ -19,10 +19,8 @@ import pytest
 
 from andromede.simulation import OutputValues
 from andromede.study import ConstantData, TimeScenarioSeriesData
-from andromede.thermal_heuristic.problem import (
-    ThermalProblemBuilder,
-)
-
+from andromede.study.data import ComponentParameterIndex
+from andromede.thermal_heuristic.problem import ThermalProblemBuilder
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
@@ -43,6 +41,8 @@ def test_accurate_heuristic() -> None:
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[],
         models=[],
+        number_week=1,
+        list_scenario=list(range(1)),
     )
 
     parameters = pywraplp.MPSolverParameters()
@@ -64,28 +64,30 @@ def test_accurate_heuristic() -> None:
             index=list(range(week * number_hours, (week + 1) * number_hours)),
             columns=[scenario],
         )
-        n_guide = TimeScenarioSeriesData(nb_on_1)
+        thermal_problem_builder.database.add_data(
+            cluster, "nb_units_min", TimeScenarioSeriesData(nb_on_1)
+        )
 
         # Solve heuristic problem
-        problem_accurate_heuristic = (
-            thermal_problem_builder.get_problem_accurate_heuristic(
-                {
-                    "G"
-                    + str(i): ConstantData(0) if "G" + str(i) != cluster else n_guide
-                    for i in range(1, 7)
-                },
+        resolution_step_accurate_heuristic = (
+            thermal_problem_builder.get_resolution_step_accurate_heuristic(
                 week=week,
                 scenario=scenario,
                 cluster_id=cluster,
             )
         )
-        status = problem_accurate_heuristic.solver.Solve(parameters)
+        status = resolution_step_accurate_heuristic.solve(parameters)
 
-        assert status == problem_accurate_heuristic.solver.OPTIMAL
+        assert status == pywraplp.Solver.OPTIMAL
 
-        output_heuristic = OutputValues(problem_accurate_heuristic)
         nb_on_heuristic = np.transpose(
-            np.ceil(np.array(output_heuristic.component(cluster).var("nb_on").value))
+            np.ceil(
+                np.array(
+                    resolution_step_accurate_heuristic.output.component(cluster)
+                    .var("nb_on")
+                    .value
+                )
+            )
         )
 
         expected_output = np.loadtxt(
@@ -112,28 +114,51 @@ def test_fast_heuristic() -> None:
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[],
         models=[],
+        number_week=1,
+        list_scenario=list(range(1)),
     )
 
     for j, cluster in enumerate(["G" + str(i) for i in range(1, 7)]):
-        nb_on_1 = np.loadtxt(
-            f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr1_fast_cluster{j+1}.txt"
+        pmax = thermal_problem_builder.database.get_value(
+            ComponentParameterIndex(cluster, "p_max"), 0, 0
+        )
+        nb_on_1 = pd.DataFrame(
+            np.ceil(
+                np.round(
+                    np.loadtxt(
+                        f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr1_fast_cluster{j+1}.txt"
+                    )  # type: ignore
+                    / pmax,
+                    12,
+                )
+            ),
+            index=list(range(week * number_hours, (week + 1) * number_hours)),
+            columns=[scenario],
+        )
+
+        thermal_problem_builder.database.add_data(
+            cluster, "n_guide", TimeScenarioSeriesData(nb_on_1)
         )
 
         # Solve heuristic problem
-        problem_heuristic = thermal_problem_builder.get_problem_fast_heuristic(
-            nb_on_1,  # type:ignore
-            thermal_cluster=cluster,
-            week=week,
-            scenario=scenario,
+        resolution_step_heuristic = (
+            thermal_problem_builder.get_resolution_step_fast_heuristic(
+                thermal_cluster=cluster,
+                week=week,
+                scenario=scenario,
+            )
         )
 
-        mingen_heuristic = thermal_problem_builder.get_output_heuristic_fast(
-            problem_heuristic, week, scenario, cluster
+        status = resolution_step_heuristic.solve()
+        assert status == pywraplp.Solver.OPTIMAL
+        thermal_problem_builder.update_database_fast_after_heuristic(
+            resolution_step_heuristic.output, week, scenario, [cluster]
         )
 
         expected_output = np.loadtxt(
             f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr2_fast_cluster{j+1}.txt"
         )
-        assert list(mingen_heuristic.values[:, 0]) == [
-            pytest.approx(x) for x in expected_output
-        ]
+        for t in range(number_hours):
+            assert thermal_problem_builder.database.get_value(
+                ComponentParameterIndex(cluster, "min_generating"), t, scenario
+            ) == pytest.approx(expected_output[t])

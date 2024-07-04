@@ -18,14 +18,6 @@ import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
 
-from andromede.simulation import OutputValues
-from andromede.study import ConstantData, TimeScenarioSeriesData
-from andromede.study.data import AbstractDataStructure
-from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
-from andromede.thermal_heuristic.problem import (
-    ThermalProblemBuilder,
-)
-
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     DEMAND_MODEL,
@@ -33,6 +25,11 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
+from andromede.simulation import OutputValues
+from andromede.study import ConstantData, TimeScenarioSeriesData
+from andromede.study.data import AbstractDataStructure
+from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
+from andromede.thermal_heuristic.problem import ThermalProblemBuilder
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
@@ -57,28 +54,25 @@ def test_milp_version() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
+        number_week=2,
+        list_scenario=list(range(scenarios)),
     )
+
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-5)
 
     for scenario in range(scenarios):
         for week in range(2):
-            problem = thermal_problem_builder.get_main_problem(
-                lower_bound={
-                    "G1": ConstantData(0),
-                    "G2": ConstantData(0),
-                    "G3": ConstantData(0),
-                },
+            resolution_step = thermal_problem_builder.get_main_resolution_step(
                 week=week,
                 scenario=scenario,
             )
 
-            parameters = pywraplp.MPSolverParameters()
-            parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-            parameters.SetIntegerParam(parameters.SCALING, 0)
-            parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-5)
+            status = resolution_step.solve(parameters)
 
-            status = problem.solver.Solve(parameters)
-
-            assert status == problem.solver.OPTIMAL
+            assert status == pywraplp.Solver.OPTIMAL
 
             expected_output = ExpectedOutput(
                 mode="milp",
@@ -88,12 +82,10 @@ def test_milp_version() -> None:
                 list_cluster=["G1", "G2", "G3"],
                 output_idx=output_indexes,
             )
-            expected_output.check_output_values(
-                problem,
-            )
+            expected_output.check_output_values(resolution_step.output)
 
             expected_cost = [[78933742, 102103587], [17472101, 17424769]]
-            assert problem.solver.Objective().Value() == pytest.approx(
+            assert resolution_step.objective == pytest.approx(
                 expected_cost[scenario][week]
             )
 
@@ -127,78 +119,47 @@ def test_accurate_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
+        number_week=2,
+        list_scenario=list(range(scenarios)),
     )
 
     for scenario in range(scenarios):
         for week in range(2):
             # First optimization
-            problem_optimization_1 = thermal_problem_builder.get_main_problem(
-                lower_bound={
-                    "G1": ConstantData(0),
-                    "G2": ConstantData(0),
-                    "G3": ConstantData(0),
-                },
+            resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
                 week=week,
                 scenario=scenario,
             )
-            status = problem_optimization_1.solver.Solve(parameters)
+            status = resolution_step_1.solve(parameters)
+            assert status == pywraplp.Solver.OPTIMAL
 
-            assert status == problem_optimization_1.solver.OPTIMAL
+            thermal_problem_builder.update_database_accurate(
+                resolution_step_1.output, week, scenario, None
+            )
 
-            # Get number of on units and round it to integer
-            output_1 = OutputValues(problem_optimization_1)
-            nb_on_min: Dict[str, AbstractDataStructure] = {}
             for g in ["G1", "G2", "G3"]:
-                nb_on_1 = pd.DataFrame(
-                    np.transpose(
-                        np.ceil(
-                            np.round(
-                                np.array(output_1.component(g).var("nb_on").value), 12
-                            )
-                        )
-                    ),
-                    index=list(range(number_hours * week, number_hours * (week + 1))),
-                    columns=[scenario],
-                )
-                n_guide = TimeScenarioSeriesData(nb_on_1)
-
                 # Solve heuristic problem
-                problem_accurate_heuristic = (
-                    thermal_problem_builder.get_problem_accurate_heuristic(
-                        {
-                            th: n_guide if th == g else ConstantData(0)
-                            for th in ["G1", "G2", "G3"]
-                        },
+                resolution_step_accurate_heuristic = (
+                    thermal_problem_builder.get_resolution_step_accurate_heuristic(
                         week=week,
                         scenario=scenario,
                         cluster_id=g,
                     )
                 )
-                status = problem_accurate_heuristic.solver.Solve(parameters)
+                status = resolution_step_accurate_heuristic.solve(parameters)
+                assert status == pywraplp.Solver.OPTIMAL
 
-                assert status == problem_accurate_heuristic.solver.OPTIMAL
-
-                output_heuristic = OutputValues(problem_accurate_heuristic)
-                nb_on_heuristic = pd.DataFrame(
-                    np.transpose(
-                        np.ceil(
-                            np.array(output_heuristic.component(g).var("nb_on").value)
-                        )
-                    ),
-                    index=list(range(number_hours * week, number_hours * (week + 1))),
-                    columns=[scenario],
+                thermal_problem_builder.update_database_accurate(
+                    resolution_step_accurate_heuristic.output, week, scenario, [g]
                 )
-                nb_on_min[g] = TimeScenarioSeriesData(nb_on_heuristic)
 
             # Second optimization with lower bound modified
-            problem_optimization_2 = thermal_problem_builder.get_main_problem(
-                lower_bound=nb_on_min,
+            resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
                 week=week,
                 scenario=scenario,
             )
-            status = problem_optimization_2.solver.Solve(parameters)
-
-            assert status == problem_optimization_2.solver.OPTIMAL
+            status = resolution_step_2.solve(parameters)
+            assert status == pywraplp.Solver.OPTIMAL
 
             expected_output = ExpectedOutput(
                 mode="accurate",
@@ -208,15 +169,13 @@ def test_accurate_heuristic() -> None:
                 list_cluster=["G1", "G2", "G3"],
                 output_idx=output_indexes,
             )
-            expected_output.check_output_values(
-                problem_optimization_2,
-            )
+            expected_output.check_output_values(resolution_step_2.output)
 
             expected_cost = [
                 [78996726, 102215087 - 69500],
                 [17589534, 17641808],
             ]
-            assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
+            assert resolution_step_2.objective == pytest.approx(
                 expected_cost[scenario][week]
             )
 
@@ -250,54 +209,46 @@ def test_fast_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
+        number_week=2,
+        list_scenario=list(range(scenarios)),
     )
 
     for scenario in range(scenarios):
         for week in range(weeks):
             # First optimization
-            problem_optimization_1 = thermal_problem_builder.get_main_problem(
-                lower_bound={
-                    "G1": ConstantData(0),
-                    "G2": ConstantData(0),
-                    "G3": ConstantData(0),
-                },
+            resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
                 week=week,
                 scenario=scenario,
             )
-            status = problem_optimization_1.solver.Solve(parameters)
+            status = resolution_step_1.solve(parameters)
+            assert status == pywraplp.Solver.OPTIMAL
 
-            assert status == problem_optimization_1.solver.OPTIMAL
+            thermal_problem_builder.update_database_fast_before_heuristic(
+                resolution_step_1.output, week
+            )
 
-            # Get number of on units
-            output_1 = OutputValues(problem_optimization_1)
-
-            # Solve heuristic problem
-            mingen: Dict[str, AbstractDataStructure] = {}
             for g in ["G1", "G2", "G3"]:  #
-                problem_heuristic = thermal_problem_builder.get_problem_fast_heuristic(
-                    output_1.component(g).var("generation").value[0],  # type:ignore
-                    thermal_cluster=g,
-                    week=week,
-                    scenario=scenario,
+                resolution_step_heuristic = (
+                    thermal_problem_builder.get_resolution_step_fast_heuristic(
+                        thermal_cluster=g,
+                        week=week,
+                        scenario=scenario,
+                    )
                 )
-                mingen_heuristic = thermal_problem_builder.get_output_heuristic_fast(
-                    problem_heuristic,
-                    thermal_cluster=g,
-                    week=week,
-                    scenario=scenario,
-                )
+                status = resolution_step_heuristic.solve()
+                assert status == pywraplp.Solver.OPTIMAL
 
-                mingen[g] = TimeScenarioSeriesData(mingen_heuristic)
+                thermal_problem_builder.update_database_fast_after_heuristic(
+                    resolution_step_heuristic.output, week, scenario, [g]
+                )
 
             # Second optimization with lower bound modified
-            problem_optimization_2 = thermal_problem_builder.get_main_problem(
-                lower_bound=mingen,
+            resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
                 week=week,
                 scenario=scenario,
             )
-            status = problem_optimization_2.solver.Solve(parameters)
-
-            assert status == problem_optimization_2.solver.OPTIMAL
+            status = resolution_step_2.solve(parameters)
+            assert status == pywraplp.Solver.OPTIMAL
 
             expected_output = ExpectedOutput(
                 mode="fast",
@@ -308,13 +259,13 @@ def test_fast_heuristic() -> None:
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(
-                problem_optimization_2,
+                resolution_step_2.output,
             )
 
             expected_cost = [
                 [79277215 - 630089, 102461792 - 699765],
                 [17803738 - 661246, 17720390 - 661246],
             ]
-            assert problem_optimization_2.solver.Objective().Value() == pytest.approx(
+            assert resolution_step_2.objective == pytest.approx(
                 expected_cost[scenario][week]
             )

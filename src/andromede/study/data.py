@@ -41,6 +41,9 @@ class AbstractDataStructure(ABC):
     def get_value(self, timestep: int, scenario: int) -> float:
         return NotImplemented
 
+    def get_max_value(self) -> float:
+        return NotImplemented
+
     @abstractmethod
     def check_requirement(self, time: bool, scenario: bool) -> bool:
         """
@@ -55,6 +58,9 @@ class ConstantData(AbstractDataStructure):
     value: float
 
     def get_value(self, timestep: int, scenario: int) -> float:
+        return self.value
+
+    def get_max_value(self) -> float:
         return self.value
 
     # ConstantData can be used for time varying or constant models
@@ -77,6 +83,9 @@ class TimeSeriesData(AbstractDataStructure):
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.time_series[TimeIndex(timestep)]
 
+    def get_max_value(self) -> float:
+        return max(self.time_series.values())
+
     def check_requirement(self, time: bool, scenario: bool) -> bool:
         if not isinstance(self, TimeSeriesData):
             raise ValueError("Invalid data type for TimeSeriesData")
@@ -97,6 +106,9 @@ class ScenarioSeriesData(AbstractDataStructure):
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.scenario_series[ScenarioIndex(scenario)]
 
+    def get_max_value(self) -> float:
+        return max(self.scenario_series.values())
+
     def check_requirement(self, time: bool, scenario: bool) -> bool:
         if not isinstance(self, ScenarioSeriesData):
             raise ValueError("Invalid data type for TimeSeriesData")
@@ -116,19 +128,6 @@ def load_ts_from_txt(
         raise Exception(f"An error has arrived when processing '{ts_path}'")
 
 
-def filter_ts_on_scenarios_and_timesteps(
-    raw_ts: pd.DataFrame,
-    scenarios: Optional[List[int]],
-    timesteps: Optional[List[int]],
-) -> pd.DataFrame:
-    filtered_ts = raw_ts
-    if scenarios is not None:
-        filtered_ts = filtered_ts.filter(items=scenarios, axis=1)
-    if timesteps is not None:
-        filtered_ts = filtered_ts.filter(items=timesteps, axis=0)
-    return filtered_ts.reset_index(drop=True)
-
-
 @dataclass(frozen=True)
 class TimeScenarioSeriesData(AbstractDataStructure):
     """
@@ -144,7 +143,13 @@ class TimeScenarioSeriesData(AbstractDataStructure):
             value = str(self.time_scenario_series.loc[[timestep]].iloc[0, 0])
             return float(value)
         value = str(self.time_scenario_series.loc[timestep, scenario])
-        return float(value)
+        try:
+            return float(value)
+        except ValueError:
+            return float(list(self.time_scenario_series.loc[timestep, scenario])[0])
+
+    def get_max_value(self) -> float:
+        return self.time_scenario_series.values.max()
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
         if not isinstance(self, TimeScenarioSeriesData):

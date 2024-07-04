@@ -92,9 +92,7 @@ class ExpectedOutput:
             scenario, dir_path, week
         )
 
-    def check_output_values(self, problem: OptimizationProblem) -> None:
-        output = OutputValues(problem)
-
+    def check_output_values(self, output: OutputValues) -> None:
         for i, cluster in enumerate(self.list_cluster):
             self.check_output_cluster(
                 output,
