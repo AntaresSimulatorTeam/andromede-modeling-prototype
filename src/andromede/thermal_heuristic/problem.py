@@ -177,8 +177,18 @@ class ThermalProblemBuilder:
                 "n_guide",
                 TimeSeriesData(
                     {
-                        TimeIndex(i + week * self.number_hours): nb_on_1[i]
-                        for i in range(self.number_hours)
+                        TimeIndex(i): (
+                            nb_on_1[i % self.number_hours]
+                            if i
+                            in list(
+                                range(
+                                    week * self.number_hours,
+                                    (week + 1) * self.number_hours,
+                                )
+                            )
+                            else 0
+                        )
+                        for i in range(self.number_hours * self.number_week)
                     }
                 ),
             )

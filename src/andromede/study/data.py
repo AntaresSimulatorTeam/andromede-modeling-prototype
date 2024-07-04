@@ -139,14 +139,8 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     time_scenario_series: pd.DataFrame
 
     def get_value(self, timestep: int, scenario: int) -> float:
-        if self.time_scenario_series.shape[1] == 1:
-            value = str(self.time_scenario_series.loc[[timestep]].iloc[0, 0])
-            return float(value)
-        value = str(self.time_scenario_series.loc[timestep, scenario])
-        try:
-            return float(value)
-        except ValueError:
-            return float(list(self.time_scenario_series.loc[timestep, scenario])[0])
+        value = str(self.time_scenario_series.iloc[timestep, scenario])
+        return float(value)
 
     def get_max_value(self) -> float:
         return self.time_scenario_series.values.max()
