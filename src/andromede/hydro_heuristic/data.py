@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
@@ -82,7 +83,14 @@ class HydroHeuristicData:
         operator: str,
     ) -> List[float]:
         data = np.loadtxt(
-            "tests/functional/data/" + self.folder_name + "/" + name_file + ".txt"
+            Path(__file__).parent
+            / (
+                "../../../tests/functional/data/"
+                + self.folder_name
+                + "/"
+                + name_file
+                + ".txt"
+            )
         )
         data = data[:, column]
         aggregated_data: List[float] = []
