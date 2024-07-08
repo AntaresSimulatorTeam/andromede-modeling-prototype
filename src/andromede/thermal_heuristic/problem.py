@@ -14,18 +14,15 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 import numpy as np
-import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
+
+from math import ceil
 
 from andromede.model import Model, PortType
 from andromede.model.library import Library, library
 from andromede.simulation import (
-    BlockBorderManagement,
     OutputValues,
-    TimeBlock,
-    build_problem,
 )
-from andromede.simulation.optimization import OptimizationProblem
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -35,7 +32,9 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from andromede.study.data import AbstractDataStructure, ComponentParameterIndex
+from andromede.study.data import (
+    ComponentParameterIndex,
+)
 from andromede.study.parsing import InputComponents, parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
@@ -124,74 +123,54 @@ class ThermalProblemBuilder:
                 self.network, self.initial_thermal_model.id
             )
         for cluster in list_cluster_id:
-            nb_on = np.zeros(
-                (self.number_hours * self.number_week, len(self.list_scenario))
-            )
-            nb_on[
-                range(week * self.number_hours, (week + 1) * self.number_hours),
-                scenario,
-            ] = np.ceil(
-                np.round(
-                    output.component(cluster).var("nb_on").value[0],  # type:ignore
-                    12,
-                )
-            )
-            for s in self.list_scenario:
-                if s != scenario:
-                    for t in range(self.number_week * self.number_hours):
-                        if t not in list(
-                            range(
-                                week * self.number_hours, (week + 1) * self.number_hours
-                            )
-                        ):
-                            nb_on[t, s] = self.database.get_value(
-                                ComponentParameterIndex(cluster, "nb_units_min"), t, s
-                            )
-            nb_on_min = TimeScenarioSeriesData(
-                pd.DataFrame(
-                    nb_on,
-                    index=[list(range(self.number_week * self.number_hours))],
-                    columns=self.list_scenario,
-                )
-            )
 
-            self.database.add_data(cluster, "nb_units_min", nb_on_min)
+            self.database.convert_to_time_scenario_series_data(
+                ComponentParameterIndex(cluster, "nb_units_min"),
+                self.number_hours * self.number_week,
+                len(self.list_scenario),
+            )
+            nb_on = output.component(cluster).var("nb_on").value[0]  # type:ignore
+
+            for i, t in enumerate(
+                list(range(week * self.number_hours, (week + 1) * self.number_hours))
+            ):
+                self.database.edit_value(
+                    ComponentParameterIndex(cluster, "nb_units_min"),
+                    ceil(round(nb_on[i], 12)),  # type:ignore
+                    t,
+                    scenario,
+                )
 
     def update_database_fast_before_heuristic(
-        self, output: OutputValues, week: int
+        self, output: OutputValues, week: int, scenario: int
     ) -> None:
         for cluster in get_cluster_id(self.network, self.initial_thermal_model.id):
             pmax = self.database.get_value(
                 ComponentParameterIndex(cluster, "p_max"), 0, 0
             )
-            nb_on_1 = np.ceil(
-                np.round(
-                    np.array(output.component(cluster).var("generation").value[0])  # type: ignore
-                    / pmax,
-                    12,
-                )
+            nb_on_1 = output.component(cluster).var("generation").value[0]  # type: ignore
+
+            self.database.add_data(cluster, "n_guide", ConstantData(0))
+            self.database.convert_to_time_scenario_series_data(
+                ComponentParameterIndex(cluster, "n_guide"),
+                self.number_hours * self.number_week,
+                len(self.list_scenario),
             )
 
-            self.database.add_data(
-                cluster,
-                "n_guide",
-                TimeSeriesData(
-                    {
-                        TimeIndex(i): (
-                            nb_on_1[i % self.number_hours]
-                            if i
-                            in list(
-                                range(
-                                    week * self.number_hours,
-                                    (week + 1) * self.number_hours,
-                                )
-                            )
-                            else 0
-                        )
-                        for i in range(self.number_hours * self.number_week)
-                    }
-                ),
-            )
+            for i, t in enumerate(
+                list(
+                    range(
+                        week * self.number_hours,
+                        (week + 1) * self.number_hours,
+                    )
+                )
+            ):
+                self.database.edit_value(
+                    ComponentParameterIndex(cluster, "n_guide"),
+                    ceil(round(nb_on_1[i] / pmax, 12)),  # type: ignore
+                    t,
+                    scenario,
+                )
 
     def update_database_fast_after_heuristic(
         self,
@@ -215,41 +194,29 @@ class ThermalProblemBuilder:
                 for t in range(week * self.number_hours, (week + 1) * self.number_hours)
             ]
 
-            min_gen = np.zeros(
-                (self.number_hours * self.number_week, len(self.list_scenario))
+            self.database.convert_to_time_scenario_series_data(
+                ComponentParameterIndex(cluster, "min_generating"),
+                self.number_hours * self.number_week,
+                len(self.list_scenario),
             )
-            min_gen[
-                range(week * self.number_hours, (week + 1) * self.number_hours),
-                scenario,
-            ] = np.minimum(
+
+            min_gen = np.minimum(
                 np.array(
                     output.component(cluster).var("n").value[0]  # type:ignore
                 ).reshape((self.number_hours, 1))
                 * pmin,
                 np.array(pdispo).reshape((self.number_hours, 1)),
-            ).reshape(
-                self.number_hours
-            )
+            ).reshape(self.number_hours)
 
-            for s in self.list_scenario:
-                if s != scenario:
-                    for t in range(self.number_week * self.number_hours):
-                        if t not in list(
-                            range(
-                                week * self.number_hours, (week + 1) * self.number_hours
-                            )
-                        ):
-                            min_gen[t, s] = self.database.get_value(
-                                ComponentParameterIndex(cluster, "min_generating"), t, s
-                            )
-            min_gen_df = TimeScenarioSeriesData(
-                pd.DataFrame(
-                    min_gen,
-                    index=[list(range(self.number_week * self.number_hours))],
-                    columns=self.list_scenario,
+            for i, t in enumerate(
+                list(range(week * self.number_hours, (week + 1) * self.number_hours))
+            ):
+                self.database.edit_value(
+                    ComponentParameterIndex(cluster, "min_generating"),
+                    min_gen[i],
+                    t,
+                    scenario,
                 )
-            )
-            self.database.add_data(cluster, "min_generating", min_gen_df)
 
     def get_resolution_step_accurate_heuristic(
         self,

@@ -224,7 +224,7 @@ def test_fast_heuristic() -> None:
             assert status == pywraplp.Solver.OPTIMAL
 
             thermal_problem_builder.update_database_fast_before_heuristic(
-                resolution_step_1.output, week
+                resolution_step_1.output, week, scenario
             )
 
             for g in ["G1", "G2", "G3"]:  #

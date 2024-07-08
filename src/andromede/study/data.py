@@ -41,6 +41,9 @@ class AbstractDataStructure(ABC):
     def get_value(self, timestep: int, scenario: int) -> float:
         return NotImplemented
 
+    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+        return NotImplemented
+
     def get_max_value(self) -> float:
         return NotImplemented
 
@@ -59,6 +62,9 @@ class ConstantData(AbstractDataStructure):
 
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.value
+
+    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+        return NotImplemented
 
     def get_max_value(self) -> float:
         return self.value
@@ -83,6 +89,10 @@ class TimeSeriesData(AbstractDataStructure):
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.time_series[TimeIndex(timestep)]
 
+    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+        self.time_series[TimeIndex(timestep)] = value
+        return True
+
     def get_max_value(self) -> float:
         return max(self.time_series.values())
 
@@ -105,6 +115,10 @@ class ScenarioSeriesData(AbstractDataStructure):
 
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.scenario_series[ScenarioIndex(scenario)]
+
+    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+        self.scenario_series[ScenarioIndex(scenario)] = value
+        return True
 
     def get_max_value(self) -> float:
         return max(self.scenario_series.values())
@@ -141,6 +155,10 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     def get_value(self, timestep: int, scenario: int) -> float:
         value = str(self.time_scenario_series.iloc[timestep, scenario])
         return float(value)
+
+    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+        self.time_scenario_series.iloc[timestep, scenario] = value
+        return True
 
     def get_max_value(self) -> float:
         return self.time_scenario_series.values.max()
@@ -187,6 +205,20 @@ class DataBase:
         else:
             raise KeyError(f"Index {index} not found.")
 
+    def edit_value(
+        self, index: ComponentParameterIndex, value: float, timestep: int, scenario: int
+    ) -> None:
+        done = self._data[index].edit_value(value, timestep, scenario)
+        if done is not True:
+            raise ValueError
+
+    def convert_to_time_scenario_series_data(
+        self, index: ComponentParameterIndex, timesteps: int, scenarios: int
+    ) -> None:
+        self._data[index] = convert_to_time_scenario_series_data(
+            self._data[index], timesteps, scenarios
+        )
+
     def requirements_consistency(self, network: Network) -> None:
         for component in network.components:
             for param in component.model.parameters.values():
@@ -199,3 +231,18 @@ class DataBase:
                     raise ValueError(
                         f"Data inconsistency for component: {component.id}, parameter: {param.name}. Requirement not met."
                     )
+
+
+def convert_to_time_scenario_series_data(
+    initial_data: AbstractDataStructure, timesteps: int, scenarios: int
+) -> TimeScenarioSeriesData:
+
+    data = pd.DataFrame(
+        [
+            [initial_data.get_value(t, s) for s in range(scenarios)]
+            for t in range(timesteps)
+        ],
+        index=list(range(timesteps)),
+        columns=list(range(scenarios)),
+    )
+    return TimeScenarioSeriesData(data)
