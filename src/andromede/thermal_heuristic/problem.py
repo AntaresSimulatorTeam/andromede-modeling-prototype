@@ -10,19 +10,16 @@
 #
 # This file is part of the Antares project.
 
+from math import ceil
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 import numpy as np
 import pandas as pd
 
-from math import ceil
-
 from andromede.model import Model, PortType
 from andromede.model.library import Library, library
-from andromede.simulation import (
-    OutputValues,
-)
+from andromede.simulation import OutputValues
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -32,9 +29,7 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from andromede.study.data import (
-    ComponentParameterIndex,
-)
+from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import InputComponents, parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
@@ -123,7 +118,6 @@ class ThermalProblemBuilder:
                 self.network, self.initial_thermal_model.id
             )
         for cluster in list_cluster_id:
-
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "nb_units_min"),
                 self.number_hours * self.number_week,

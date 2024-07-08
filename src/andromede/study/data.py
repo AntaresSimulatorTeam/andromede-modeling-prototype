@@ -236,7 +236,6 @@ class DataBase:
 def convert_to_time_scenario_series_data(
     initial_data: AbstractDataStructure, timesteps: int, scenarios: int
 ) -> TimeScenarioSeriesData:
-
     data = pd.DataFrame(
         [
             [initial_data.get_value(t, s) for s in range(scenarios)]
