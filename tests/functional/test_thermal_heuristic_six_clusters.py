@@ -17,8 +17,7 @@ import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
 
-from andromede.simulation import OutputValues
-from andromede.study import ConstantData, TimeScenarioSeriesData
+from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.problem import ThermalProblemBuilder
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP

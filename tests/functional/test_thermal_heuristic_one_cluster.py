@@ -12,9 +12,7 @@
 
 from pathlib import Path
 
-import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
-import pandas as pd
 import pytest
 
 from andromede.libs.standard import (
@@ -24,8 +22,6 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from andromede.simulation import OutputValues
-from andromede.study import ConstantData, TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.problem import ThermalProblemBuilder
