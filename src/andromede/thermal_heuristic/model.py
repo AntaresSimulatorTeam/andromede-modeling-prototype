@@ -1,0 +1,308 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+from typing import List, Optional
+
+from andromede.expression import (
+    ExpressionNode,
+    PrinterVisitor,
+    literal,
+    param,
+    var,
+    visit,
+)
+from andromede.expression.indexing_structure import IndexingStructure
+from andromede.model import (
+    Model,
+    ModelPort,
+    Variable,
+    float_parameter,
+    float_variable,
+    model,
+)
+from andromede.model.constraint import Constraint
+from andromede.model.model import PortFieldDefinition
+from andromede.model.parameter import Parameter, float_parameter, int_parameter
+from andromede.model.variable import ValueType, float_variable, int_variable
+
+CONSTANT = IndexingStructure(False, False)
+TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
+ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, True)
+NON_ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, False)
+CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
+
+
+class ModelEditer:
+    def __init__(self, initial_model: Model) -> None:
+        self.initial_model = initial_model
+
+    def keep_id(self) -> str:
+        return self.initial_model.id
+
+    def keep_parameters(self) -> List[Parameter]:
+        return [p for p in self.initial_model.parameters.values()]
+
+    def keep_ports(self) -> List[ModelPort]:
+        return [p for p in self.initial_model.ports.values()]
+
+    def keep_port_fields_definitions(self) -> List[PortFieldDefinition]:
+        return [p for p in self.initial_model.port_fields_definitions.values()]
+
+    def keep_constraints(self) -> List[Constraint]:
+        return [c for c in self.initial_model.constraints.values()]
+
+    def keep_objective_operational_contribution(self) -> Optional[ExpressionNode]:
+        return self.initial_model.objective_operational_contribution
+
+    def linearize_variables(self) -> List[Variable]:
+        return [
+            float_variable(
+                v.name,
+                lower_bound=v.lower_bound,
+                upper_bound=v.upper_bound,
+                structure=v.structure,
+            )
+            for v in self.initial_model.variables.values()
+        ]
+
+    def variable_in_constraint(self, c: Constraint, variables: List[str]) -> bool:
+        res = False
+        if self.variable_in_expression(c.lower_bound, variables):
+            res = True
+        elif self.variable_in_expression(c.expression, variables):
+            res = True
+        elif self.variable_in_expression(c.upper_bound, variables):
+            res = True
+        return res
+
+    def variable_in_expression(
+        self, expr: ExpressionNode, variables: List[str]
+    ) -> bool:
+        res = False
+        str_expr = visit(expr, PrinterVisitor())
+        for v in variables:
+            if v in str_expr:
+                res = True
+        return res
+
+    def get_name_integer_variables(self) -> List[str]:
+        return [
+            v.name
+            for v in self.initial_model.variables.values()
+            if v.data_type == ValueType.INTEGER
+        ]
+
+    def fix_integer_variables_to_zero_and_keep_others(self) -> List[Variable]:
+        return [
+            float_variable(
+                v.name,
+                lower_bound=(
+                    v.lower_bound if v.data_type == ValueType.FLOAT else literal(0)
+                ),
+                upper_bound=(
+                    v.upper_bound if v.data_type == ValueType.FLOAT else literal(0)
+                ),
+                structure=v.structure,
+            )
+            for v in self.initial_model.variables.values()
+        ]
+
+    def filter_constraints_on_variable(self, variables: List[str]) -> List[Constraint]:
+        return [
+            c
+            for c in self.initial_model.constraints.values()
+            if not (self.variable_in_constraint(c, variables))
+        ]
+
+    def filter_and_linearize_variables(self, variables: List[str]) -> List[Variable]:
+        return [
+            float_variable(
+                v.name,
+                lower_bound=v.lower_bound,
+                upper_bound=v.upper_bound,
+                structure=v.structure,
+            )
+            for v in self.initial_model.variables.values()
+            if v.name not in variables
+        ]
+
+
+class AccurateModelBuilder(ModelEditer):
+    def __init__(self, initial_model: Model) -> None:
+        super().__init__(initial_model)
+        THERMAL_CLUSTER_MODEL_LP = model(
+            id=self.keep_id(),
+            parameters=self.keep_parameters(),
+            variables=self.linearize_variables(),
+            ports=self.keep_ports(),
+            port_fields_definitions=self.keep_port_fields_definitions(),
+            constraints=self.keep_constraints(),
+            objective_operational_contribution=self.keep_objective_operational_contribution(),
+        )
+        self.model = THERMAL_CLUSTER_MODEL_LP
+
+
+class FastModelBuilder(ModelEditer):
+    def __init__(self, initial_model: Model) -> None:
+        super().__init__(initial_model)
+        integer_variables = self.get_name_integer_variables()
+
+        THERMAL_CLUSTER_MODEL_FAST = model(
+            id=self.keep_id(),
+            parameters=self.keep_parameters(),
+            variables=self.fix_integer_variables_to_zero_and_keep_others(),
+            ports=self.keep_ports(),
+            port_fields_definitions=self.keep_port_fields_definitions(),
+            constraints=self.filter_constraints_on_variable(integer_variables),
+            objective_operational_contribution=self.keep_objective_operational_contribution(),
+        )
+
+        self.model = THERMAL_CLUSTER_MODEL_FAST
+
+
+class HeuristicAccurateModelBuilder(ModelEditer):
+    def __init__(self, initial_model: Model) -> None:
+        super().__init__(initial_model)
+        generation_variable = ["generation"]
+
+        THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
+            id=self.keep_id(),
+            parameters=self.keep_parameters(),
+            variables=self.filter_and_linearize_variables(generation_variable),
+            constraints=self.filter_constraints_on_variable(generation_variable),
+            objective_operational_contribution=(var("nb_on")).sum().expec(),
+        )
+        self.model = THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC
+
+
+class HeuristicFastModelBuilder:
+    def __init__(self, Q: int, delta: int):
+        BLOCK_MODEL_FAST_HEURISTIC = model(
+            id="BLOCK_FAST",
+            parameters=self.get_parameters(Q, delta),
+            variables=self.get_variables(Q, delta),
+            constraints=self.get_constraints(Q, delta),
+            objective_operational_contribution=self.get_objective_operational_contribution(
+                delta
+            ),
+        )
+        self.model = BLOCK_MODEL_FAST_HEURISTIC
+
+    def get_objective_operational_contribution(self, delta: int) -> ExpressionNode:
+        return (var("n")).sum().expec() + sum(
+            [var(f"t_ajust_{h}") * (h + 1) / 10 / delta for h in range(delta)]
+        ).expec()  # type:ignore
+
+    def get_constraints(self, Q: int, delta: int) -> List[Constraint]:
+        return (
+            [
+                Constraint(
+                    f"Definition of n block {k} for {h}",
+                    var(f"n_block_{k}")
+                    >= param("n_guide") * param(f"alpha_{k}_{h}")
+                    - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+                )
+                for k in range(Q)
+                for h in range(delta)
+            ]
+            + [
+                Constraint(
+                    f"Definition of n ajust for {h}",
+                    var(f"n_ajust")
+                    >= param("n_guide") * param(f"alpha_ajust_{h}")
+                    - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+                )
+                for h in range(delta)
+            ]
+            + [
+                Constraint(
+                    f"Definition of n with relation to block {k} for {h}",
+                    var(f"n")
+                    >= param(f"alpha_{k}_{h}") * var(f"n_block_{k}")
+                    - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+                )
+                for k in range(Q)
+                for h in range(delta)
+            ]
+            + [
+                Constraint(
+                    f"Definition of n with relation to ajust for {h}",
+                    var(f"n")
+                    >= param(f"alpha_ajust_{h}") * var(f"n_ajust")
+                    - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
+                )
+                for h in range(delta)
+            ]
+            + [
+                Constraint(
+                    "Choose one t ajust",
+                    literal(0) + sum([var(f"t_ajust_{h}") for h in range(delta)])
+                    == literal(1),
+                )
+            ]
+        )
+
+    def get_variables(self, Q: int, delta: int) -> List[Variable]:
+        return (
+            [
+                float_variable(
+                    f"n_block_{k}",
+                    lower_bound=literal(0),
+                    upper_bound=param("n_max"),
+                    structure=CONSTANT_PER_SCENARIO,
+                )
+                for k in range(Q)
+            ]
+            + [
+                float_variable(
+                    "n_ajust",
+                    lower_bound=literal(0),
+                    upper_bound=param("n_max"),
+                    structure=CONSTANT_PER_SCENARIO,
+                )
+            ]
+            + [
+                int_variable(
+                    f"t_ajust_{h}",
+                    lower_bound=literal(0),
+                    upper_bound=literal(1),
+                    structure=CONSTANT_PER_SCENARIO,
+                )
+                for h in range(delta)
+            ]
+            + [
+                float_variable(
+                    "n",
+                    lower_bound=literal(0),
+                    upper_bound=param("n_max"),
+                    structure=TIME_AND_SCENARIO_FREE,
+                )
+            ]
+        )
+
+    def get_parameters(self, Q: int, delta: int) -> List[Parameter]:
+        return (
+            [
+                float_parameter("n_guide", TIME_AND_SCENARIO_FREE),
+                float_parameter("delta", CONSTANT),
+                float_parameter("n_max", CONSTANT),
+            ]
+            + [
+                int_parameter(f"alpha_{k}_{h}", NON_ANTICIPATIVE_TIME_VARYING)
+                for k in range(Q)
+                for h in range(delta)
+            ]
+            + [
+                int_parameter(f"alpha_ajust_{h}", NON_ANTICIPATIVE_TIME_VARYING)
+                for h in range(delta)
+            ]
+        )
