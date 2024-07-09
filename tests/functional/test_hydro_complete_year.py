@@ -10,10 +10,7 @@
 #
 # This file is part of the Antares project.
 
-from typing import List
-
 import numpy as np
-import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.libs.standard import (
@@ -201,7 +198,6 @@ def test_complete_year_as_weekly_blocks() -> None:
     initial_level = 0.445 * capacity
 
     scenarios = 1
-    total_cost = 0
 
     for week in range(52):
         database.add_data("H", "overall_target", ConstantData(weekly_generation[week]))
