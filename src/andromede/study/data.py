@@ -12,11 +12,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Mapping, Optional
+from typing import Dict, Mapping, Type, TypeVar, Optional
 
 import pandas as pd
 
 from andromede.study.network import Network
+
+T = TypeVar("T", bound="AbstractDataStructure")
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,15 @@ class AbstractDataStructure(ABC):
         """
         pass
 
+    @classmethod
+    @abstractmethod
+    def from_dataframe(cls: Type[T], df: pd.DataFrame) -> T:
+        """
+        Constructor of DataStructure from a pandas DataFrame.
+        Implement this method in subclasses as needed.
+        """
+        pass
+
 
 @dataclass(frozen=True)
 class ConstantData(AbstractDataStructure):
@@ -66,6 +77,10 @@ class ConstantData(AbstractDataStructure):
         if not isinstance(self, ConstantData):
             raise ValueError("Invalid data type for ConstantData")
         return True
+
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> "ConstantData":
+        return cls(df.iat[0, 0])
 
 
 @dataclass(frozen=True)
@@ -87,6 +102,12 @@ class TimeSeriesData(AbstractDataStructure):
 
         return time
 
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> "TimeSeriesData":
+        return cls(
+            {TimeIndex(time): v[1] for time, v in enumerate(df.iloc[:, 0].items())}
+        )
+
 
 @dataclass(frozen=True)
 class ScenarioSeriesData(AbstractDataStructure):
@@ -106,6 +127,15 @@ class ScenarioSeriesData(AbstractDataStructure):
             raise ValueError("Invalid data type for TimeSeriesData")
 
         return scenario
+
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> "ScenarioSeriesData":
+        return cls(
+            {
+                ScenarioIndex(scenario): v[1]
+                for scenario, v in enumerate(df.iloc[0, :].items())
+            }
+        )
 
 
 def load_ts_from_txt(
@@ -140,6 +170,10 @@ class TimeScenarioSeriesData(AbstractDataStructure):
 
         return time and scenario
 
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> "TimeScenarioSeriesData":
+        return cls(df)
+
 
 @dataclass(frozen=True)
 class TreeData(AbstractDataStructure):
@@ -153,6 +187,11 @@ class TreeData(AbstractDataStructure):
             node_data.check_requirement(time, scenario)
             for node_data in self.data.values()
         )
+
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> "TreeData":
+        # TODO if needed
+        return cls({})
 
 
 @dataclass(frozen=True)
