@@ -13,7 +13,7 @@
 from abc import ABC, abstractmethod
 from typing import Generator, Optional
 
-from andromede.expression import ExpressionNode
+from andromede.expression import ExpressionNode, literal
 from andromede.model import Constraint, Model, ProblemContext, Variable
 
 
@@ -80,3 +80,34 @@ class OperationalProblemStrategy(ModelSelectionStrategy):
         self, model: Model
     ) -> Generator[Optional[ExpressionNode], None, None]:
         yield model.objective_operational_contribution
+
+
+class RiskManagementStrategy(ABC):
+    """
+    Abstract functor class for risk management
+    Its derived classes will implement risk measures:
+        - UniformRisk   : The default case. All expressions have the same weight
+        - ExpectedValue : Computes the product prob * expression
+    TODO For now, it will only take into account the Expected Value
+    TODO In the future could have other risk measures?
+    """
+
+    def __call__(self, expr: ExpressionNode) -> ExpressionNode:
+        return self._modify_expression(expr)
+
+    @abstractmethod
+    def _modify_expression(self, expr: ExpressionNode) -> ExpressionNode:
+        ...
+
+
+class UniformRisk(RiskManagementStrategy):
+    def _modify_expression(self, expr: ExpressionNode) -> ExpressionNode:
+        return expr
+
+
+class ExpectedValue(RiskManagementStrategy):
+    def __init__(self, prob: float) -> None:
+        self._prob = prob
+
+    def _modify_expression(self, expr: ExpressionNode) -> ExpressionNode:
+        return literal(self._prob) * expr

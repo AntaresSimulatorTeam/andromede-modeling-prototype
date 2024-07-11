@@ -32,6 +32,7 @@ from andromede.simulation.output_values import (
 )
 from andromede.simulation.runner import BendersRunner, MergeMPSRunner
 from andromede.simulation.strategy import (
+    ExpectedValue,
     InvestmentProblemStrategy,
     OperationalProblemStrategy,
 )
@@ -221,6 +222,9 @@ def build_benders_decomposed_problem(
     Returns a Benders Decomposed problem
     """
 
+    if not decision_tree_root.is_leaves_prob_sum_one():
+        raise RuntimeError("Decision tree must have leaves' probability sum equal one!")
+
     null_time_block = TimeBlock(
         0, [0]
     )  # Not necessary for master, but list must be non-empty
@@ -234,6 +238,7 @@ def build_benders_decomposed_problem(
         problem_name="coupler",
         solver_id=solver_id,
         build_strategy=InvestmentProblemStrategy(),
+        risk_strategy=ExpectedValue(0.0),
     )
 
     masters = []  # Benders Decomposed Master Problem
@@ -252,6 +257,7 @@ def build_benders_decomposed_problem(
                 solver_id=solver_id,
                 build_strategy=InvestmentProblemStrategy(),
                 decision_tree_node=tree_node.id,
+                risk_strategy=ExpectedValue(tree_node.prob),
             )
         )
 
@@ -269,6 +275,7 @@ def build_benders_decomposed_problem(
                     solver_id=solver_id,
                     build_strategy=OperationalProblemStrategy(),
                     decision_tree_node=tree_node.id,
+                    risk_strategy=ExpectedValue(tree_node.prob),
                 )
             )
 

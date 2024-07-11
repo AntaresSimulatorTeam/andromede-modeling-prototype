@@ -309,9 +309,6 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         - 100 in child B
     """
 
-    # Either we duplicate all network for each node : Lots of duplications
-    # or we index all data, parameters, variables by the resolution node : Make the data structure dependent of the resolution tree...
-
     database = DataBase()
     database.add_data("N", "spillage_cost", ConstantData(10))
     database.add_data("N", "ens_cost", ConstantData(10_000))
@@ -458,7 +455,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
 
     data = {
         "solution": {
-            "overall_cost": 49_000,
+            "overall_cost": 39_200,
             "values": {
                 "root_CAND_delta_invest": 300,
                 "childA_CAND_delta_invest": 0,

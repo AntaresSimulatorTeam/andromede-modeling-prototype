@@ -40,7 +40,12 @@ from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
-from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
+from andromede.simulation.strategy import (
+    MergedProblemStrategy,
+    ModelSelectionStrategy,
+    RiskManagementStrategy,
+    UniformRisk,
+)
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
@@ -290,6 +295,7 @@ class OptimizationContext:
         scenarios: int,
         border_management: BlockBorderManagement,
         build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+        risk_strategy: RiskManagementStrategy = UniformRisk(),
         decision_tree_node: str = "",
     ):
         self._network = network
@@ -298,6 +304,7 @@ class OptimizationContext:
         self._scenarios = scenarios
         self._border_management = border_management
         self._build_strategy = build_strategy
+        self._risk_strategy = risk_strategy
         self._tree_node = decision_tree_node
 
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
@@ -319,8 +326,12 @@ class OptimizationContext:
         return self._tree_node
 
     @property
-    def strategy(self) -> ModelSelectionStrategy:
+    def build_strategy(self) -> ModelSelectionStrategy:
         return self._build_strategy
+
+    @property
+    def risk_strategy(self) -> RiskManagementStrategy:
+        return self._risk_strategy
 
     def block_length(self) -> int:
         return len(self._block.timesteps)
@@ -714,7 +725,7 @@ class OptimizationProblem:
             component_context = self.context.create_component_context(component)
             model = component.model
 
-            for model_var in self.context.strategy.get_variables(model):
+            for model_var in self.context.build_strategy.get_variables(model):
                 var_indexing = IndexingStructure(
                     model_var.structure.time, model_var.structure.scenario
                 )
@@ -770,7 +781,9 @@ class OptimizationProblem:
 
     def _create_constraints(self) -> None:
         for component in self.context.network.all_components:
-            for constraint in self.context.strategy.get_constraints(component.model):
+            for constraint in self.context.build_strategy.get_constraints(
+                component.model
+            ):
                 instantiated_expr = _instantiate_model_expression(
                     constraint.expression, component.id, self.context
                 )
@@ -798,14 +811,14 @@ class OptimizationProblem:
             component_context = self.context.create_component_context(component)
             model = component.model
 
-            for objective in self.context.strategy.get_objectives(model):
+            for objective in self.context.build_strategy.get_objectives(model):
                 if objective is not None:
                     _create_objective(
                         self.solver,
                         self.context,
                         component,
                         component_context,
-                        objective,
+                        self.context.risk_strategy(objective),
                     )
 
     def export_as_mps(self) -> str:
@@ -825,6 +838,7 @@ def build_problem(
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
     build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+    risk_strategy: RiskManagementStrategy = UniformRisk(),
     decision_tree_node: str = "",
 ) -> OptimizationProblem:
     """
@@ -841,6 +855,7 @@ def build_problem(
         scenarios,
         border_management,
         build_strategy,
+        risk_strategy,
         decision_tree_node,
     )
 
