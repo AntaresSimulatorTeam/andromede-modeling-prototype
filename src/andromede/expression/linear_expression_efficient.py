@@ -24,7 +24,6 @@ from andromede.expression.expression_efficient import (
     ComponentParameterNode,
     ExpressionNodeEfficient,
     ExpressionRange,
-    Instances,
     InstancesTimeIndex,
     LiteralNode,
     ParameterNode,
@@ -35,11 +34,7 @@ from andromede.expression.expression_efficient import (
     is_zero,
     wrap_in_node,
 )
-from andromede.expression.indexing import (
-    IndexingStructureProvider,
-    TimeScenarioIndexingVisitor,
-    compute_indexation,
-)
+from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.print import print_expr
 from andromede.expression.scenario_operator import ScenarioOperator
@@ -120,15 +115,6 @@ class TermEfficient:
             result += f".{str(self.scenario_operator)}"
         return result
 
-    # def number_of_instances(self) -> int:
-    #     if self.time_aggregator is not None:
-    #         return self.time_aggregator.size()
-    #     else:
-    #         if self.time_operator is not None:
-    #             return self.time_operator.size()
-    #         else:
-    #             return 1
-
     def evaluate(self, context: ValueProvider) -> float:
         # TODO: Take care of component variables, multiple time scenarios, operators, etc
         # Probably very error prone
@@ -161,6 +147,44 @@ class TermEfficient:
             )
         return IndexingStructure(time, scenario)
 
+    def sum(
+        self,
+        shift: Union[
+            int,
+            "ExpressionNodeEfficient",
+            List["ExpressionNodeEfficient"],
+            "ExpressionRange",
+            None,
+        ] = None,
+        eval: Union[
+            int,
+            "ExpressionNodeEfficient",
+            List["ExpressionNodeEfficient"],
+            "ExpressionRange",
+            None,
+        ] = None,
+    ) -> "TermEfficient":
+        
+        if shift is not None and eval is not None:
+            raise ValueError("Only shift or eval arguments should specified, not both.")
+
+        if shift is not None:
+            return dataclasses.replace(
+                    self,
+                    coefficient=TimeOperatorNode(
+                        self.coefficient, "TimeShift", InstancesTimeIndex(shift)
+                    ),
+                    time_operator=TimeShift(InstancesTimeIndex(shift)),
+                )
+            sum_args = {"shift": shift}
+            stay_roll = True
+        elif eval is not None:
+            sum_args = {"eval": eval}
+            stay_roll = True
+        else:  # x.sum() -> Sum over all time block
+            sum_args = {}
+            stay_roll = False
+
     def shift(
         self,
         expressions: Union[
@@ -186,9 +210,13 @@ class TermEfficient:
 
         return dataclasses.replace(
             self,
-            coefficient=TimeOperatorNode(
-                self.coefficient, "TimeShift", InstancesTimeIndex(expressions)
+            coefficient=TimeAggregatorNode(
+            TimeOperatorNode(
+                self.constant, "TimeShift", InstancesTimeIndex(sum_args.values()[0])
             ),
+            "TimeSum",
+            stay_roll=stay_roll,
+        ),
             time_operator=TimeShift(InstancesTimeIndex(expressions)),
         )
 
@@ -369,14 +397,14 @@ class LinearExpressionEfficient:
             upper_bound=literal(0),
         )
 
-    def __ge__(self, rhs: Any) -> "ExpressionNodeEfficient":
+    def __ge__(self, rhs: Any) -> "StandaloneConstraint":
         return StandaloneConstraint(
             expression=self - rhs,
             lower_bound=literal(0),
             upper_bound=literal(float("inf")),
         )
 
-    def __eq__(self, rhs: Any) -> "ExpressionNodeEfficient":  # type: ignore
+    def __eq__(self, rhs: Any) -> "StandaloneConstraint":  # type: ignore
         return StandaloneConstraint(
             expression=self - rhs,
             lower_bound=literal(0),
@@ -516,26 +544,6 @@ class LinearExpressionEfficient:
             if is_zero(term.coefficient):
                 del self.terms[term_key]
 
-    # def is_valid(self) -> bool:
-    #     nb_instances = None
-    #     for term in self.terms.values():
-    #         term_instances = term.number_of_instances()
-    #         if nb_instances is None:
-    #             nb_instances = term_instances
-    #         else:
-    #             if term_instances != nb_instances:
-    #                 raise ValueError(
-    #                     "The terms of the linear expression {self} do not have the same number of instances"
-    #                 )
-    #     return True
-
-    # def number_of_instances(self) -> int:
-    #     if self.is_valid():
-    #         # All terms have the same number of instances, just pick one
-    #         return self.terms[next(iter(self.terms))].number_of_instances()
-    #     else:
-    #         raise ValueError(f"{self} is not a valid linear expression")
-
     def evaluate(self, context: ValueProvider) -> float:
         return sum([term.evaluate(context) for term in self.terms.values()]) + evaluate(
             self.constant, context
@@ -595,48 +603,45 @@ class LinearExpressionEfficient:
             raise ValueError("Only shift or eval arguments should specified, not both.")
 
         if shift is not None:
-            result_terms = {}
-            for term in self.terms.values():
-                term_with_operator = term.sum(shift=shift)
-                result_terms[generate_key(term_with_operator)] = term_with_operator
-
-            result_constant = TimeAggregatorNode(
-                TimeOperatorNode(self.constant, "TimeShift", InstancesTimeIndex(shift)),
-                "TimeSum",
-                stay_roll=True,
-            )
-            result_expr = LinearExpressionEfficient(result_terms, result_constant)
-            return result_expr
-
-        if eval is not None:
-            result_terms = {}
-            for term in self.terms.values():
-                term_with_operator = term.sum(eval=eval)
-                result_terms[generate_key(term_with_operator)] = term_with_operator
-
-            result_constant = TimeAggregatorNode(
-                TimeOperatorNode(
-                    self.constant, "TimeEvaluation", InstancesTimeIndex(eval)
-                ),
-                "TimeSum",
-                stay_roll=False,
-            )
-            result_expr = LinearExpressionEfficient(result_terms, result_constant)
-            return result_expr
-
+            sum_args = {"shift": shift}
+            stay_roll = True
+        elif eval is not None:
+            sum_args = {"eval": eval}
+            stay_roll = True
         else:  # x.sum() -> Sum over all time block
-            result_terms = {}
-            for term in self.terms.values():
-                term_with_operator = term.sum()
-                result_terms[generate_key(term_with_operator)] = term_with_operator
+            sum_args = {}
+            stay_roll = False
 
-            result_constant = TimeAggregatorNode(
-                self.constant,
-                "TimeSum",
-                stay_roll=False,
-            )
-            result_expr = LinearExpressionEfficient(result_terms, result_constant)
-            return result_expr
+        return self._apply_operator(sum_args, stay_roll)
+
+    def _apply_operator(
+        self,
+        sum_args: Dict[
+            str,
+            Union[
+                int,
+                "ExpressionNodeEfficient",
+                List["ExpressionNodeEfficient"],
+                "ExpressionRange",
+                None,
+            ],
+        ],
+        stay_roll: bool,
+    ):
+        result_terms = {}
+        for term in self.terms.values():
+            term_with_operator = term.sum(**sum_args)
+            result_terms[generate_key(term_with_operator)] = term_with_operator
+
+        result_constant = TimeAggregatorNode(
+            TimeOperatorNode(
+                self.constant, "TimeShift", InstancesTimeIndex(sum_args.values()[0])
+            ),
+            "TimeSum",
+            stay_roll=stay_roll,
+        )
+        result_expr = LinearExpressionEfficient(result_terms, result_constant)
+        return result_expr
 
     # def sum_connections(self) -> "ExpressionNode":
     #     if isinstance(self, PortFieldNode):
