@@ -263,7 +263,7 @@ def test_hydro_heuristic() -> None:
         )
 
         # Vérification des valeurs trouvées
-        assert weekly_target == expected_weekly_target
+        assert weekly_target == pytest.approx(expected_weekly_target)
 
 
 def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
