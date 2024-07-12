@@ -36,12 +36,6 @@ class TimeOperator(ABC):
     def rolling(cls) -> bool:
         raise NotImplementedError
 
-    # def __post_init__(self) -> None:
-    #     if isinstance(self.time_ids, int):
-    #         object.__setattr__(self, "time_ids", [self.time_ids])
-    #     elif isinstance(self.time_ids, range):
-    #         object.__setattr__(self, "time_ids", list(self.time_ids))
-
     def key(self) -> Tuple[int, ...]:
         return self.time_ids
 

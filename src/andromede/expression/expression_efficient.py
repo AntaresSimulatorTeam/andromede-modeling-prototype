@@ -433,6 +433,13 @@ class InstancesTimeIndex:
         else:
             object.__setattr__(self, "expressions", expressions)
 
+    def __hash__(self) -> int:
+        # Maybe if/else not needed and always using the tuple works ?
+        if isinstance(self.expressions, list):
+            return hash(tuple(self.expressions))
+        else:
+            return hash(self.expressions)
+
     def is_simple(self) -> bool:
         if isinstance(self.expressions, list):
             return len(self.expressions) == 1

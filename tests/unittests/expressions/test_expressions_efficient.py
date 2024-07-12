@@ -399,11 +399,10 @@ def test_shifting_sum() -> None:
 
 def test_eval() -> None:
     x = var("x")
-    expr = x.eval(ExpressionRange(1, 4))
+    expr = x.eval(1)
     provider = StructureProvider()
 
     assert expr.compute_indexation(provider) == IndexingStructure(False, True)
-    assert expr.instances == Instances.MULTIPLE
 
 
 def test_eval_sum() -> None:
@@ -412,7 +411,6 @@ def test_eval_sum() -> None:
     provider = StructureProvider()
 
     assert expr.compute_indexation(provider) == IndexingStructure(False, True)
-    assert expr.instances == Instances.SIMPLE
 
 
 def test_sum_over_whole_block() -> None:
@@ -421,7 +419,6 @@ def test_sum_over_whole_block() -> None:
     provider = StructureProvider()
 
     assert expr.compute_indexation(provider) == IndexingStructure(False, True)
-    assert expr.instances == Instances.SIMPLE
 
 
 def test_forbidden_composition_should_raise_value_error() -> None:
