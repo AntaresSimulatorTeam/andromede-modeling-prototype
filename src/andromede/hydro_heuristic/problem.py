@@ -70,7 +70,6 @@ class HydroHeuristicProblem:
         parameters = pywraplp.MPSolverParameters()
         parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
         parameters.SetIntegerParam(parameters.SCALING, 0)
-        self.problem.solver.EnableOutput()
 
         status = self.problem.solver.Solve(parameters)
 

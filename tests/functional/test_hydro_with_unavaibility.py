@@ -183,7 +183,6 @@ def test_complete_year_as_one_block() -> None:
     problem = build_problem(
         network, database, TimeBlock(1, list(range(8736))), scenarios
     )
-    problem.solver.EnableOutput()
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == pytest.approx(57079450112.5)

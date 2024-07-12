@@ -193,7 +193,8 @@ def test_hydro_heuristic_daily_part() -> None:
     assert all_daily_generation == pytest.approx(
         list(
             np.loadtxt(
-                "tests\\functional\\data\\hydro_with_rulecurves\\daily_target.txt"
+                Path(__file__).parent
+                / "../../tests/functional/data/hydro_with_rulecurves/daily_target.txt"
             )
             * capacity
             / 100
