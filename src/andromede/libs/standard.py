@@ -112,7 +112,7 @@ A standard model for a linear cost generation, limited by a maximum generation.
 GENERATOR_MODEL = model(
     id="GEN",
     parameters=[
-        float_parameter("p_max", CONSTANT),
+        float_parameter("p_max", TIME_AND_SCENARIO_FREE),
         float_parameter("cost", CONSTANT),
     ],
     variables=[float_variable("generation", lower_bound=literal(0))],
