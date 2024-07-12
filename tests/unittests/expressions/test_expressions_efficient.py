@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import re
 from dataclasses import dataclass, field
 from typing import Dict
 
@@ -360,13 +361,30 @@ class StructureProvider(IndexingStructureProvider):
 
 def test_shift_on_time_step_list_raises_value_error() -> None:
     x = var("x")
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The shift operator can only be applied on expressions refering to a single time step. To apply a shifting sum on multiple time indices on an expression x, you should use x.sum(shift=...)"
+        ),
+    ):
         _ = x.shift(ExpressionRange(1, 4))
+
+
+def test_eval_on_time_step_list_raises_value_error() -> None:
+    x = var("x")
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The eval operator can only be applied on expressions refering to a single time step. To apply a evaluation sum on multiple time indices on an expression x, you should use x.sum(eval=...)"
+        ),
+    ):
+        _ = x.eval(ExpressionRange(1, 4))
+
 
 def test_shift_on_single_time_step() -> None:
     x = var("x")
     expr = x.shift(1)
-    
+
     provider = StructureProvider()
     assert expr.compute_indexation(provider) == IndexingStructure(True, True)
 
@@ -374,7 +392,7 @@ def test_shift_on_single_time_step() -> None:
 def test_shifting_sum() -> None:
     x = var("x")
     expr = x.sum(shift=ExpressionRange(1, 4))
-    
+
     provider = StructureProvider()
     assert expr.compute_indexation(provider) == IndexingStructure(True, True)
 

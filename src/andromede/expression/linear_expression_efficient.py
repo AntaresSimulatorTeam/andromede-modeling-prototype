@@ -38,7 +38,13 @@ from andromede.expression.indexing import IndexingStructureProvider, compute_ind
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.print import print_expr
 from andromede.expression.scenario_operator import ScenarioOperator
-from andromede.expression.time_operator import TimeAggregator, TimeOperator, TimeShift
+from andromede.expression.time_operator import (
+    TimeAggregator,
+    TimeEvaluation,
+    TimeOperator,
+    TimeShift,
+    TimeSum,
+)
 
 T = TypeVar("T")
 
@@ -129,7 +135,6 @@ class TermEfficient:
     def compute_indexation(
         self, provider: IndexingStructureProvider
     ) -> IndexingStructure:
-
         # TODO: Improve this if/else structure
         if self.component_id:
             time = (
@@ -164,26 +169,32 @@ class TermEfficient:
             None,
         ] = None,
     ) -> "TermEfficient":
-        
         if shift is not None and eval is not None:
             raise ValueError("Only shift or eval arguments should specified, not both.")
 
+        # The shift or eval operators distribute over the coefficients whereas the sum only applies to the whole as (param("a") * var("x")).shift([1,5]) represents: a[t+1]x[t+1] + ... + a[t+5]x[t+5]
+        # And (param("a") * var("x")).eval([1,5]) represents: a[1]x[1] + ... + a[5]x[5]
+
         if shift is not None:
             return dataclasses.replace(
-                    self,
-                    coefficient=TimeOperatorNode(
-                        self.coefficient, "TimeShift", InstancesTimeIndex(shift)
-                    ),
-                    time_operator=TimeShift(InstancesTimeIndex(shift)),
-                )
-            sum_args = {"shift": shift}
-            stay_roll = True
+                self,
+                coefficient=TimeOperatorNode(
+                    self.coefficient, "TimeShift", InstancesTimeIndex(shift)
+                ),
+                time_operator=TimeShift(InstancesTimeIndex(shift)),
+                time_aggregator=TimeSum(stay_roll=True),
+            )
         elif eval is not None:
-            sum_args = {"eval": eval}
-            stay_roll = True
+            return dataclasses.replace(
+                self,
+                coefficient=TimeOperatorNode(
+                    self.coefficient, "TimeEvaluation", InstancesTimeIndex(eval)
+                ),
+                time_operator=TimeEvaluation(InstancesTimeIndex(eval)),
+                time_aggregator=TimeSum(stay_roll=True),
+            )
         else:  # x.sum() -> Sum over all time block
-            sum_args = {}
-            stay_roll = False
+            return dataclasses.replace(self, time_aggregator=TimeSum(stay_roll=False))
 
     def shift(
         self,
@@ -193,32 +204,61 @@ class TermEfficient:
             List["ExpressionNodeEfficient"],
             "ExpressionRange",
         ],
-    ) -> "TermEfficient":
+    ) -> "LinearExpressionEfficient":
         """
-        Time shift of term
+        Shorthand for shift on a single time step
+
+        To refer to x[t-1], it is more natural to write x.shift(-1) than x.sum(shift=-1).
+
+        This function provides the shorthand x.sum(shift=expr), valid only in the case when expr refers to a single time step.
+
         """
+
         # The behavior is richer/different than the previous implementation (with linear expr as trees) as we can now apply a shift operator on a whole expression, rather than just on the variables of an expression
 
         # Example : (param("p") * var("x")).shift(1)
         # Previous behavior : p[t]x[t-1]
         # New behavior : p[t-1]x[t-1]
 
-        if self.time_operator is not None:
+        if not InstancesTimeIndex(expressions).is_simple():
             raise ValueError(
-                f"Composition of time operators {self.time_operator} and {TimeShift(InstancesTimeIndex(expressions))} is not allowed"
+                "The shift operator can only be applied on expressions refering to a single time step. To apply a shifting sum on multiple time indices on an expression x, you should use x.sum(shift=...)"
             )
 
-        return dataclasses.replace(
-            self,
-            coefficient=TimeAggregatorNode(
-            TimeOperatorNode(
-                self.constant, "TimeShift", InstancesTimeIndex(sum_args.values()[0])
-            ),
-            "TimeSum",
-            stay_roll=stay_roll,
-        ),
-            time_operator=TimeShift(InstancesTimeIndex(expressions)),
-        )
+        else:
+            return self.sum(shift=expressions)
+
+    def eval(
+        self,
+        expressions: Union[
+            int,
+            "ExpressionNodeEfficient",
+            List["ExpressionNodeEfficient"],
+            "ExpressionRange",
+        ],
+    ) -> "LinearExpressionEfficient":
+        """
+        Shorthand for eval on a single time step
+
+        To refer to x[1], it is more natural to write x.eval(1) than x.sum(eval=1).
+
+        This function provides the shorthand x.sum(eval=expr), valid only in the case when expr refers to a single time step.
+
+        """
+
+        # The behavior is richer/different than the previous implementation (with linear expr as trees) as we can now apply a eval operator on a whole expression, rather than just on the variables of an expression
+
+        # Example : (param("p") * var("x")).eval(1)
+        # Previous behavior : p[t]x[1]
+        # New behavior : p[1]x[1]
+
+        if not InstancesTimeIndex(expressions).is_simple():
+            raise ValueError(
+                "The eval operator can only be applied on expressions refering to a single time step. To apply a evaluating sum on multiple time indices on an expression x, you should use x.sum(eval=...)"
+            )
+
+        else:
+            return self.sum(eval=expressions)
 
 
 def generate_key(term: TermEfficient) -> TermKeyEfficient:
@@ -338,7 +378,6 @@ class LinearExpressionEfficient:
         ] = None,
         constant: Optional[Union[float, ExpressionNodeEfficient]] = None,
     ) -> None:
-
         if constant is None:
             self.constant = LiteralNode(0)
         else:
@@ -556,7 +595,6 @@ class LinearExpressionEfficient:
     def compute_indexation(
         self, provider: IndexingStructureProvider
     ) -> IndexingStructure:
-
         indexing = compute_indexation(self.constant, provider)
         for term in self.terms.values():
             indexing = indexing | term.compute_indexation(provider)
@@ -591,13 +629,6 @@ class LinearExpressionEfficient:
         Examples:
             >>> (param("a") * var("x") + param("b")).sum(shift=[1, 2, 4]) represents a[t+1]x[t+1] + b[t+1] + a[t+2]x[t+2] + b[t+2] + a[t+4]x[t+4] + b[t+4]
         """
-
-        # if isinstance(self, TimeOperatorNode):
-        #     return TimeAggregatorNode(self, "TimeSum", stay_roll=True)
-        # else:
-        #     return _apply_if_node(
-        #         self, lambda x: TimeAggregatorNode(x, "TimeSum", stay_roll=False)
-        #     )
 
         if shift is not None and eval is not None:
             raise ValueError("Only shift or eval arguments should specified, not both.")
@@ -635,7 +666,11 @@ class LinearExpressionEfficient:
 
         result_constant = TimeAggregatorNode(
             TimeOperatorNode(
-                self.constant, "TimeShift", InstancesTimeIndex(sum_args.values()[0])
+                self.constant,
+                "TimeShift",
+                InstancesTimeIndex(
+                    sum_args.popitem()[1]
+                ),  # Dangerous as it modifies sum_args ?
             ),
             "TimeSum",
             stay_roll=stay_roll,
@@ -668,12 +703,6 @@ class LinearExpressionEfficient:
 
         """
 
-        # The behavior is richer/different than the previous implementation (with linear expr as trees) as we can now apply a shift operator on a whole expression, rather than just on the variables of an expression
-
-        # Example : (param("p") * var("x")).shift(1)
-        # Previous behavior : p[t]x[t-1]
-        # New behavior : p[t-1]x[t-1]
-
         if not InstancesTimeIndex(expressions).is_simple():
             raise ValueError(
                 "The shift operator can only be applied on expressions refering to a single time step. To apply a shifting sum on multiple time indices on an expression x, you should use x.sum(shift=...)"
@@ -682,18 +711,31 @@ class LinearExpressionEfficient:
         else:
             return self.sum(shift=expressions)
 
-    # def eval(
-    #     self,
-    #     expressions: Union[
-    #         int, "ExpressionNode", List["ExpressionNode"], "ExpressionRange"
-    #     ],
-    # ) -> "ExpressionNode":
-    #     return _apply_if_node(
-    #         self,
-    #         lambda x: TimeOperatorNode(
-    #             x, "TimeEvaluation", InstancesTimeIndex(expressions)
-    #         ),
-    #     )
+    def eval(
+        self,
+        expressions: Union[
+            int,
+            "ExpressionNodeEfficient",
+            List["ExpressionNodeEfficient"],
+            "ExpressionRange",
+        ],
+    ) -> "LinearExpressionEfficient":
+        """
+        Shorthand for eval on a single time step
+
+        To refer to x[1], it is more natural to write x.eval(1) than x.sum(eval=1).
+
+        This function provides the shorthand x.sum(eval=expr), valid only in the case when expr refers to a single time step.
+
+        """
+
+        if not InstancesTimeIndex(expressions).is_simple():
+            raise ValueError(
+                "The eval operator can only be applied on expressions refering to a single time step. To apply a evaluation sum on multiple time indices on an expression x, you should use x.sum(eval=...)"
+            )
+
+        else:
+            return self.sum(eval=expressions)
 
     # def expec(self) -> "ExpressionNode":
     #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Expectation"))
@@ -729,7 +771,6 @@ class StandaloneConstraint:
         lower_bound: LinearExpressionEfficient,
         upper_bound: LinearExpressionEfficient,
     ) -> None:
-
         for bound in [lower_bound, upper_bound]:
             if bound is not None and not bound.is_constant():
                 raise ValueError(
