@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -43,8 +44,6 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL,
     HYDRO_MODEL_WITH_TARGET,
 )
-
-from pathlib import Path
 
 weekly_generation = np.array(
     [

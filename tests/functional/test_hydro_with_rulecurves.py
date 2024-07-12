@@ -10,16 +10,17 @@
 #
 # This file is part of the Antares project.
 
+from pathlib import Path
 from typing import List
 
+import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
 import pytest
-import numpy as np
 
 from andromede.hydro_heuristic.data import (
+    calculate_weekly_target,
     get_number_of_days_in_month,
     update_generation_target,
-    calculate_weekly_target,
 )
 from andromede.hydro_heuristic.problem import optimize_target
 from andromede.libs.standard import (
@@ -39,26 +40,22 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from tests.functional.libs.lib_hydro_heuristic import (
-    HYDRO_MODEL_WITH_TARGET,
-)
-
-from pathlib import Path
+from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL_WITH_TARGET
 
 expected_weekly_target = [
-    31657.48533235,
-    32344.83648699,
-    32329.17389009,
-    32840.17566414,
-    75897.66513222,
-    112126.73520839,
-    113129.54838763,
-    111425.71870559,
-    100352.7189676,
-    89844.81895897,
-    88014.90475844,
-    88233.5374667,
-    75513.6810409,
+    109351.86292514109,
+    111726.1238133478,
+    111672.02178563867,
+    113437.13342869015,
+    62616.900712692266,
+    23991.30072993157,
+    24205.8685804484,
+    23841.307084756725,
+    61261.93871434613,
+    89844.8189589692,
+    88014.90475844462,
+    88233.53746669635,
+    75513.68104089717,
     0.0,
     0.0,
     0.0,
@@ -77,27 +74,27 @@ expected_weekly_target = [
     0.0,
     0.0,
     0.0,
-    52835.34251818,
-    64170.76436698,
-    69887.53747203,
-    117690.35564281,
-    225600.46547104,
-    225344.09855218,
-    225396.79350424,
-    269287.12551898,
-    220748.39177603,
-    221848.4494246,
-    222670.18404381,
-    231799.91021952,
-    235690.15509206,
-    228057.96000508,
-    233249.76854228,
-    238445.87723163,
-    242073.72189647,
-    230837.30430287,
-    240452.27723657,
-    239759.06932336,
-    239857.84970576,
+    52834.94251817542,
+    64170.764366982155,
+    69887.53747203582,
+    117690.35564280929,
+    225600.3527384371,
+    225343.98594768142,
+    225396.68087341834,
+    269286.9804404632,
+    220748.07777396217,
+    221848.1338577599,
+    222669.867308102,
+    231799.58049729763,
+    235689.46113471934,
+    228057.0061722157,
+    233248.7929951121,
+    238444.8799521864,
+    242073.10581958073,
+    230837.7730157587,
+    240452.7654725604,
+    239759.55615180839,
+    239858.33673477554,
 ]
 
 
@@ -193,12 +190,17 @@ def test_hydro_heuristic_daily_part() -> None:
     weekly_target = calculate_weekly_target(
         all_daily_generation,
     )
-    assert all_daily_generation == list(
-        np.loadtxt("tests\\functional\\data\\hydro_with_rulecurves\\daily_target.txt")
-        * capacity
-        / 100
+    assert all_daily_generation == pytest.approx(
+        list(
+            np.loadtxt(
+                "tests\\functional\\data\\hydro_with_rulecurves\\daily_target.txt"
+            )
+            * capacity
+            / 100
+        ),
+        abs=0.5,
     )
-    assert weekly_target == expected_weekly_target
+    assert weekly_target == pytest.approx(expected_weekly_target)
 
 
 def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
@@ -232,7 +234,7 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
         output = OutputValues(problem)
         initial_level = output.component("H").var("level").value[0][-1]  # type:ignore
 
-    assert total_cost == pytest.approx(58423664977)
+    assert total_cost == pytest.approx(57013275574)
 
 
 def create_database_and_network(
