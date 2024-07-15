@@ -38,6 +38,7 @@ from andromede.expression.linear_expression_efficient import (
     TermKeyEfficient,
     comp_param,
     comp_var,
+    linear_expressions_equal,
     literal,
     param,
     var,
@@ -620,9 +621,10 @@ def test_multiplication_of_differently_indexed_terms() -> None:
 
 
 def test_sum_expressions() -> None:
-    assert sum_expressions([]) == literal(0)
-    assert sum_expressions([literal(1)]) == literal(1)
-    assert sum_expressions([literal(1), var("x")]) == 1 + var("x")
-    assert sum_expressions([literal(1), var("x"), param("p")]) == 1 + (
-        var("x") + param("p")
+
+
+    assert linear_expressions_equal(sum([literal(1)]), literal(1))
+    assert linear_expressions_equal(sum([literal(1), var("x")]), 1 + var("x"))
+    assert linear_expressions_equal(
+        sum([literal(1), var("x"), param("p")]), (1 + var("x")) + param("p")
     )
