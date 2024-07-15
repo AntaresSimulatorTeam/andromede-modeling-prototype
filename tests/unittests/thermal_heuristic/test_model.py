@@ -13,11 +13,11 @@
 from andromede.expression import literal, param, var
 from andromede.model import model
 from andromede.model.constraint import Constraint
-from andromede.thermal_heuristic.model import ModelEditer
+from andromede.thermal_heuristic.model import ModelEditor
 
 
 def test_variable_in_expression() -> None:
-    model_editer = ModelEditer(model("model"))
+    model_editer = ModelEditor(model("model"))
 
     expression_1 = var("x").sum() + var("y")
     expression_2 = (
@@ -33,7 +33,7 @@ def test_variable_in_expression() -> None:
 
 
 def test_variable_in_constraint() -> None:
-    model_editer = ModelEditer(model("model"))
+    model_editer = ModelEditor(model("model"))
 
     expression_1 = var("x").sum() + var("y")
     expression_2 = (

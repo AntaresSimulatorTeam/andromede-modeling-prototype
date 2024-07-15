@@ -41,7 +41,7 @@ NON_ANTICIPATIVE_TIME_VARYING = IndexingStructure(True, False)
 CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
 
 
-class ModelEditer:
+class ModelEditor:
     def __init__(self, initial_model: Model) -> None:
         self.initial_model = initial_model
 
@@ -136,7 +136,7 @@ class ModelEditer:
         ]
 
 
-class AccurateModelBuilder(ModelEditer):
+class AccurateModelBuilder(ModelEditor):
     def __init__(self, initial_model: Model) -> None:
         super().__init__(initial_model)
         THERMAL_CLUSTER_MODEL_LP = model(
@@ -151,7 +151,7 @@ class AccurateModelBuilder(ModelEditer):
         self.model = THERMAL_CLUSTER_MODEL_LP
 
 
-class FastModelBuilder(ModelEditer):
+class FastModelBuilder(ModelEditor):
     def __init__(self, initial_model: Model) -> None:
         super().__init__(initial_model)
         integer_variables = self.get_name_integer_variables()
@@ -169,7 +169,7 @@ class FastModelBuilder(ModelEditer):
         self.model = THERMAL_CLUSTER_MODEL_FAST
 
 
-class HeuristicAccurateModelBuilder(ModelEditer):
+class HeuristicAccurateModelBuilder(ModelEditor):
     def __init__(self, initial_model: Model) -> None:
         super().__init__(initial_model)
         generation_variable = ["generation"]
