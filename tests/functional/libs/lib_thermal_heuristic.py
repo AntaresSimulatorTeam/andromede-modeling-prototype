@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from andromede.expression import literal, param, var
-from andromede.expression.expression import ExpressionRange
+from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import BALANCE_PORT_TYPE
 from andromede.model import ModelPort, float_parameter, float_variable, model
@@ -123,4 +123,17 @@ THERMAL_CLUSTER_MODEL_MILP = model(
     )
     .sum()
     .expec(),
+)
+
+BINDING_CONSTRAINT = model(
+    id="BC",
+    parameters=[float_parameter("upper_bound", structure=CONSTANT)],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    binding_constraints=[
+        Constraint(
+            name="Binding constraint",
+            expression=port_field("balance_port", "flow").sum_connections()
+            <= param("upper_bound"),
+        )
+    ],
 )
