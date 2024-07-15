@@ -89,20 +89,20 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
     def comparison(self, node: ComparisonNode) -> IndexingStructure:
         return visit(node.left, self) | visit(node.right, self)
 
-    def variable(self, node: VariableNode) -> IndexingStructure:
-        time = self.context.get_variable_structure(node.name).time == True
-        scenario = self.context.get_variable_structure(node.name).scenario == True
-        return IndexingStructure(time, scenario)
+    # def variable(self, node: VariableNode) -> IndexingStructure:
+    #     time = self.context.get_variable_structure(node.name).time == True
+    #     scenario = self.context.get_variable_structure(node.name).scenario == True
+    #     return IndexingStructure(time, scenario)
 
     def parameter(self, node: ParameterNode) -> IndexingStructure:
         time = self.context.get_parameter_structure(node.name).time == True
         scenario = self.context.get_parameter_structure(node.name).scenario == True
         return IndexingStructure(time, scenario)
 
-    def comp_variable(self, node: ComponentVariableNode) -> IndexingStructure:
-        return self.context.get_component_variable_structure(
-            node.component_id, node.name
-        )
+    # def comp_variable(self, node: ComponentVariableNode) -> IndexingStructure:
+    #     return self.context.get_component_variable_structure(
+    #         node.component_id, node.name
+    #     )
 
     def comp_parameter(self, node: ComponentParameterNode) -> IndexingStructure:
         return self.context.get_component_parameter_structure(

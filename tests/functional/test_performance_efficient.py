@@ -1,0 +1,51 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+
+import pytest
+
+from andromede.expression.evaluate import EvaluationContext
+from andromede.expression.linear_expression_efficient import param, var
+
+
+def test_large_number_of_parameters_sum() -> None:
+    """
+    Test performance when the problem involves an expression with a high number of terms.
+
+    This test pass with 476 terms but fails with 477 locally due to recursion depth, and even less terms are possible with Jenkins...
+    """
+    nb_terms = 500
+
+    parameters_value = {}
+    for i in range(1, nb_terms):
+        parameters_value[f"cost_{i}"] = 1 / i
+
+    # Still the recursion depth error with parameters
+    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
+        expr = sum(param(f"cost_{i}") for i in range(1, nb_terms))
+        expr.evaluate(EvaluationContext(parameters=parameters_value))
+
+
+def test_large_number_of_variables_sum() -> None:
+    """
+    Test performance when the problem involves an expression with a high number of terms. No problem when there is a large number of variables as this is derecusified.
+    """
+    nb_terms = 500
+
+    variables_value = {}
+    for i in range(1, nb_terms):
+        variables_value[f"cost_{i}"] = 1 / i
+
+    expr = sum(var(f"cost_{i}") for i in range(1, nb_terms))
+    assert expr.evaluate(EvaluationContext(variables=variables_value)) == sum(
+        1 / i for i in range(1, nb_terms)
+    )
