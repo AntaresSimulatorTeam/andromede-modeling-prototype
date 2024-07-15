@@ -16,12 +16,18 @@ from typing import Dict
 
 import pytest
 
+from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import EvaluationContext, ValueProvider
 from andromede.expression.evaluate_parameters import ParameterValueProvider
 from andromede.expression.expression_efficient import (
     ComponentParameterNode,
+    ExpressionNodeEfficient,
     ExpressionRange,
+    InstancesTimeIndex,
+    LiteralNode,
     ParameterNode,
+    TimeAggregatorNode,
+    TimeOperatorNode,
 )
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
@@ -29,12 +35,14 @@ from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     StandaloneConstraint,
     TermEfficient,
+    TermKeyEfficient,
     comp_param,
     comp_var,
     literal,
     param,
     var,
 )
+from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.constraint import Constraint
 from andromede.simulation.linearize import linearize_expression
 
@@ -341,6 +349,149 @@ def test_comparison() -> None:
     assert str(expr_eq) == "0 <= 5.0x + (3.0 - (p - 2.0)) <= 0"
 
 
+# TODO: Maybe imagine other use cases, that should be forbidden (composition of operators...)
+@pytest.mark.parametrize(
+    "expr, expec_terms, expec_constant",
+    [
+        (
+            (var("x") + var("y") + literal(1)).shift(1),
+            {
+                TermKeyEfficient(
+                    "",
+                    "x",
+                    TimeShift(InstancesTimeIndex(1)),
+                    time_aggregator=TimeSum(
+                        stay_roll=True
+                    ),  # The internal representation of shift(1) is sum(shift=1)
+                    scenario_operator=None,
+                ): TermEfficient(
+                    TimeOperatorNode(
+                        LiteralNode(1), "TimeShift", InstancesTimeIndex(1)
+                    ),
+                    "",
+                    "x",
+                    time_operator=TimeShift(
+                        InstancesTimeIndex(1),
+                    ),
+                    time_aggregator=TimeSum(stay_roll=True),
+                ),
+                TermKeyEfficient(
+                    "",
+                    "y",
+                    TimeShift(
+                        InstancesTimeIndex(1),
+                    ),
+                    time_aggregator=TimeSum(stay_roll=True),
+                    scenario_operator=None,
+                ): TermEfficient(
+                    TimeOperatorNode(
+                        LiteralNode(1), "TimeShift", InstancesTimeIndex(1)
+                    ),
+                    "",
+                    "y",
+                    time_operator=TimeShift(InstancesTimeIndex(1)),
+                    time_aggregator=TimeSum(stay_roll=True),
+                ),
+            },
+            TimeAggregatorNode(
+                TimeOperatorNode(LiteralNode(1), "TimeShift", InstancesTimeIndex(1)),
+                "TimeSum",
+                stay_roll=True,
+            ),  # TODO: Could it be simplified online ?
+        ),
+        (
+            (var("x") + var("y") + literal(1)).eval(1),
+            {
+                TermKeyEfficient(
+                    "",
+                    "x",
+                    TimeEvaluation(InstancesTimeIndex(1)),
+                    time_aggregator=TimeSum(
+                        stay_roll=True
+                    ),  # The internal representation of eval(1) is sum(eval=1)
+                    scenario_operator=None,
+                ): TermEfficient(
+                    TimeOperatorNode(
+                        LiteralNode(1), "TimeEvaluation", InstancesTimeIndex(1)
+                    ),
+                    "",
+                    "x",
+                    time_operator=TimeEvaluation(
+                        InstancesTimeIndex(1),
+                    ),
+                    time_aggregator=TimeSum(stay_roll=True),
+                ),
+                TermKeyEfficient(
+                    "",
+                    "y",
+                    TimeEvaluation(
+                        InstancesTimeIndex(1),
+                    ),
+                    time_aggregator=TimeSum(stay_roll=True),
+                    scenario_operator=None,
+                ): TermEfficient(
+                    TimeOperatorNode(
+                        LiteralNode(1), "TimeEvaluation", InstancesTimeIndex(1)
+                    ),
+                    "",
+                    "y",
+                    time_operator=TimeEvaluation(InstancesTimeIndex(1)),
+                    time_aggregator=TimeSum(stay_roll=True),
+                ),
+            },
+            TimeAggregatorNode(
+                TimeOperatorNode(
+                    LiteralNode(1), "TimeEvaluation", InstancesTimeIndex(1)
+                ),
+                "TimeSum",
+                stay_roll=True,
+            ),  # TODO: Could it be simplified online ?
+        ),
+        (
+            (var("x") + var("y") + literal(1)).sum(),
+            {
+                TermKeyEfficient(
+                    "",
+                    "x",
+                    time_operator=None,
+                    time_aggregator=TimeSum(stay_roll=False),
+                    scenario_operator=None,
+                ): TermEfficient(
+                    LiteralNode(1),  # Sum is not distributed to coeff
+                    "",
+                    "x",
+                    time_operator=None,
+                    time_aggregator=TimeSum(stay_roll=False),
+                ),
+                TermKeyEfficient(
+                    "",
+                    "y",
+                    time_operator=None,
+                    time_aggregator=TimeSum(stay_roll=False),
+                    scenario_operator=None,
+                ): TermEfficient(
+                    LiteralNode(1),  # Sum is not distributed to coeff
+                    "",
+                    "y",
+                    time_operator=None,
+                    time_aggregator=TimeSum(stay_roll=False),
+                ),
+            },
+            TimeAggregatorNode(
+                LiteralNode(1), "TimeSum", stay_roll=False
+            ),  # TODO: Could it be simplified online ?
+        ),
+    ],
+)
+def test_operators_are_correctly_distributed_over_terms(
+    expr: LinearExpressionEfficient,
+    expec_terms: Dict[TermKeyEfficient, TermEfficient],
+    expec_constant: ExpressionNodeEfficient,
+) -> None:
+    assert expr.terms == expec_terms
+    assert expressions_equal(expr.constant, expec_constant)
+
+
 class StructureProvider(IndexingStructureProvider):
     def get_component_variable_structure(
         self, component_id: str, name: str
@@ -381,59 +532,58 @@ def test_eval_on_time_step_list_raises_value_error() -> None:
         _ = x.eval(ExpressionRange(1, 4))
 
 
-def test_shift_on_single_time_step() -> None:
-    x = var("x")
-    expr = x.shift(1)
-
+@pytest.mark.parametrize(
+    "linear_expr, expected_indexation",
+    [
+        (
+            var("x").shift(1),
+            IndexingStructure(True, True),
+        ),
+        (
+            var("x").sum(shift=ExpressionRange(1, 4)),
+            IndexingStructure(True, True),
+        ),
+        (
+            var("x").eval(1),
+            IndexingStructure(False, True),
+        ),
+        (
+            var("x").sum(eval=ExpressionRange(1, 4)),
+            IndexingStructure(False, True),
+        ),
+        (
+            var("x").sum(),
+            IndexingStructure(False, True),
+        ),
+        (
+            var("x").expec(),
+            IndexingStructure(True, False),
+        ),
+        (
+            var("x").sum().expec(),
+            IndexingStructure(False, False),
+        ),
+        (
+            var("x").shift(1).expec(),
+            IndexingStructure(True, False),
+        ),
+        (
+            var("x").eval(1).expec(),
+            IndexingStructure(False, False),
+        ),
+    ],
+)
+def test_compute_indexation(
+    linear_expr: LinearExpressionEfficient, expected_indexation: IndexingStructure
+) -> None:
     provider = StructureProvider()
-    assert expr.compute_indexation(provider) == IndexingStructure(True, True)
-
-
-def test_shifting_sum() -> None:
-    x = var("x")
-    expr = x.sum(shift=ExpressionRange(1, 4))
-
-    provider = StructureProvider()
-    assert expr.compute_indexation(provider) == IndexingStructure(True, True)
-
-
-def test_eval() -> None:
-    x = var("x")
-    expr = x.eval(1)
-    provider = StructureProvider()
-
-    assert expr.compute_indexation(provider) == IndexingStructure(False, True)
-
-
-def test_eval_sum() -> None:
-    x = var("x")
-    expr = x.eval(ExpressionRange(1, 4)).sum()
-    provider = StructureProvider()
-
-    assert expr.compute_indexation(provider) == IndexingStructure(False, True)
-
-
-def test_sum_over_whole_block() -> None:
-    x = var("x")
-    expr = x.sum()
-    provider = StructureProvider()
-
-    assert expr.compute_indexation(provider) == IndexingStructure(False, True)
+    assert linear_expr.compute_indexation(provider) == expected_indexation
 
 
 def test_forbidden_composition_should_raise_value_error() -> None:
     x = var("x")
     with pytest.raises(ValueError):
         _ = x.shift(ExpressionRange(1, 4)) + var("y")
-
-
-def test_expectation() -> None:
-    x = var("x")
-    expr = x.expec()
-    provider = StructureProvider()
-
-    assert expr.compute_indexation(provider) == IndexingStructure(True, False)
-    assert expr.instances == Instances.SIMPLE
 
 
 def test_indexing_structure_comparison() -> None:

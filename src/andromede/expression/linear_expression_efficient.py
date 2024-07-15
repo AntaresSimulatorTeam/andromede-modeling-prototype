@@ -27,6 +27,7 @@ from andromede.expression.expression_efficient import (
     InstancesTimeIndex,
     LiteralNode,
     ParameterNode,
+    ScenarioOperatorNode,
     TimeAggregatorNode,
     TimeOperatorNode,
     is_minus_one,
@@ -37,7 +38,7 @@ from andromede.expression.expression_efficient import (
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.print import print_expr
-from andromede.expression.scenario_operator import ScenarioOperator
+from andromede.expression.scenario_operator import Expectation, ScenarioOperator
 from andromede.expression.time_operator import (
     TimeAggregator,
     TimeEvaluation,
@@ -135,22 +136,39 @@ class TermEfficient:
     def compute_indexation(
         self, provider: IndexingStructureProvider
     ) -> IndexingStructure:
-        # TODO: Improve this if/else structure
-        if self.component_id:
-            time = (
-                provider.get_component_variable_structure(self.variable_name).time
-                == True
-            )
-            scenario = (
-                provider.get_component_variable_structure(self.variable_name).scenario
-                == True
-            )
+
+        return IndexingStructure(
+            self._compute_time_indexing(provider),
+            self._compute_scenario_indexing(provider),
+        )
+
+    def _compute_time_indexing(self, provider: IndexingStructureProvider) -> bool:
+        if (self.time_aggregator and not self.time_aggregator.stay_roll) or (
+            self.time_operator and not self.time_operator.rolling()
+        ):
+            time = False
         else:
-            time = provider.get_variable_structure(self.variable_name).time == True
-            scenario = (
-                provider.get_variable_structure(self.variable_name).scenario == True
-            )
-        return IndexingStructure(time, scenario)
+            if self.component_id:
+                time = provider.get_component_variable_structure(
+                    self.component_id, self.variable_name
+                ).time
+            else:
+                time = provider.get_variable_structure(self.variable_name).time
+        return time
+
+    def _compute_scenario_indexing(self, provider: IndexingStructureProvider) -> bool:
+        if self.scenario_operator:
+            scenario = False
+        else:
+            # TODO: Improve this if/else structure, probably simplify IndexingStructureProvider
+            if self.component_id:
+                scenario = provider.get_component_variable_structure(
+                    self.component_id, self.variable_name
+                ).scenario
+
+            else:
+                scenario = provider.get_variable_structure(self.variable_name).scenario
+        return scenario
 
     def sum(
         self,
@@ -204,7 +222,7 @@ class TermEfficient:
             List["ExpressionNodeEfficient"],
             "ExpressionRange",
         ],
-    ) -> "LinearExpressionEfficient":
+    ) -> "TermEfficient":
         """
         Shorthand for shift on a single time step
 
@@ -236,7 +254,7 @@ class TermEfficient:
             List["ExpressionNodeEfficient"],
             "ExpressionRange",
         ],
-    ) -> "LinearExpressionEfficient":
+    ) -> "TermEfficient":
         """
         Shorthand for eval on a single time step
 
@@ -259,6 +277,10 @@ class TermEfficient:
 
         else:
             return self.sum(eval=expressions)
+
+    def expec(self) -> "TermEfficient":
+        # TODO: Do we need checks, in case a scenario operator is already specified ?
+        return dataclasses.replace(self, scenario_operator=Expectation())
 
 
 def generate_key(term: TermEfficient) -> TermKeyEfficient:
@@ -595,7 +617,12 @@ class LinearExpressionEfficient:
     def compute_indexation(
         self, provider: IndexingStructureProvider
     ) -> IndexingStructure:
-        indexing = compute_indexation(self.constant, provider)
+        """
+        Computes the (time, scenario) indexing of a linear expression.
+
+        Time and scenario indexation is driven by the indexation of variables in the expression. If a single term is indexed by time (resp. scenario), then the linear expression is indexed by time (resp. scenario).
+        """
+        indexing = IndexingStructure(False, False)
         for term in self.terms.values():
             indexing = indexing | term.compute_indexation(provider)
 
@@ -635,15 +662,40 @@ class LinearExpressionEfficient:
 
         if shift is not None:
             sum_args = {"shift": shift}
-            stay_roll = True
+
+            result_constant = TimeAggregatorNode(
+                TimeOperatorNode(
+                    self.constant,
+                    "TimeShift",
+                    InstancesTimeIndex(shift),
+                ),
+                "TimeSum",
+                stay_roll=True,
+            )
         elif eval is not None:
             sum_args = {"eval": eval}
-            stay_roll = True
+
+            result_constant = TimeAggregatorNode(
+                TimeOperatorNode(
+                    self.constant,
+                    "TimeEvaluation",
+                    InstancesTimeIndex(eval),
+                ),
+                "TimeSum",
+                stay_roll=True,
+            )
         else:  # x.sum() -> Sum over all time block
             sum_args = {}
-            stay_roll = False
 
-        return self._apply_operator(sum_args, stay_roll)
+            result_constant = TimeAggregatorNode(
+                self.constant,
+                "TimeSum",
+                stay_roll=False,
+            )
+
+        return LinearExpressionEfficient(
+            self._apply_operator(sum_args), result_constant
+        )
 
     def _apply_operator(
         self,
@@ -657,26 +709,13 @@ class LinearExpressionEfficient:
                 None,
             ],
         ],
-        stay_roll: bool,
     ):
         result_terms = {}
         for term in self.terms.values():
             term_with_operator = term.sum(**sum_args)
             result_terms[generate_key(term_with_operator)] = term_with_operator
 
-        result_constant = TimeAggregatorNode(
-            TimeOperatorNode(
-                self.constant,
-                "TimeShift",
-                InstancesTimeIndex(
-                    sum_args.popitem()[1]
-                ),  # Dangerous as it modifies sum_args ?
-            ),
-            "TimeSum",
-            stay_roll=stay_roll,
-        )
-        result_expr = LinearExpressionEfficient(result_terms, result_constant)
-        return result_expr
+        return result_terms
 
     # def sum_connections(self) -> "ExpressionNode":
     #     if isinstance(self, PortFieldNode):
@@ -737,8 +776,19 @@ class LinearExpressionEfficient:
         else:
             return self.sum(eval=expressions)
 
-    # def expec(self) -> "ExpressionNode":
-    #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Expectation"))
+    def expec(self) -> "LinearExpressionEfficient":
+        """
+        Expectation of linear expression. As the operator is linear, it distributes over all terms and the constant
+        """
+
+        result_terms = {}
+        for term in self.terms.values():
+            term_with_operator = term.expec()
+            result_terms[generate_key(term_with_operator)] = term_with_operator
+
+        result_constant = ScenarioOperatorNode(self.constant, "Expectation")
+        result_expr = LinearExpressionEfficient(result_terms, result_constant)
+        return result_expr
 
     # def variance(self) -> "ExpressionNode":
     #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Variance"))

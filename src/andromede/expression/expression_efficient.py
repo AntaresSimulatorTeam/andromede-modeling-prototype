@@ -26,9 +26,9 @@ import andromede.expression.time_operator
 EPS = 10 ** (-16)
 
 
-class Instances(enum.Enum):
-    SIMPLE = "SIMPLE"
-    MULTIPLE = "MULTIPLE"
+# class Instances(enum.Enum):
+#     SIMPLE = "SIMPLE"
+#     MULTIPLE = "MULTIPLE"
 
 
 @dataclass(frozen=True)
@@ -43,7 +43,7 @@ class ExpressionNodeEfficient:
         >>> expr = -var('x') + 5 / param('p')
     """
 
-    instances: Instances = field(init=False, default=Instances.SIMPLE)
+    # instances: Instances = field(init=False, default=Instances.SIMPLE)
 
     def __neg__(self) -> "ExpressionNodeEfficient":
         return _negate_node(self)
@@ -286,8 +286,8 @@ class LiteralNode(ExpressionNodeEfficient):
 class UnaryOperatorNode(ExpressionNodeEfficient):
     operand: ExpressionNodeEfficient
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "instances", self.operand.instances)
+    # def __post_init__(self) -> None:
+    #     object.__setattr__(self, "instances", self.operand.instances)
 
 
 @dataclass(frozen=True, eq=False)
@@ -318,17 +318,17 @@ class BinaryOperatorNode(ExpressionNodeEfficient):
     left: ExpressionNodeEfficient
     right: ExpressionNodeEfficient
 
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "apply binary operation with")
+    # def __post_init__(self) -> None:
+    #     binary_operator_post_init(self, "apply binary operation with")
 
 
-def binary_operator_post_init(node: BinaryOperatorNode, operation: str) -> None:
-    if node.left.instances != node.right.instances:
-        raise ValueError(
-            f"Cannot {operation} {node.left} and {node.right} as they do not have the same number of instances."
-        )
-    else:
-        object.__setattr__(node, "instances", node.left.instances)
+# def binary_operator_post_init(node: BinaryOperatorNode, operation: str) -> None:
+#     if node.left.instances != node.right.instances:
+#         raise ValueError(
+#             f"Cannot {operation} {node.left} and {node.right} as they do not have the same number of instances."
+#         )
+#     else:
+#         object.__setattr__(node, "instances", node.left.instances)
 
 
 class Comparator(enum.Enum):
@@ -341,32 +341,36 @@ class Comparator(enum.Enum):
 class ComparisonNode(BinaryOperatorNode):
     comparator: Comparator
 
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "compare")
+    # def __post_init__(self) -> None:
+    #     binary_operator_post_init(self, "compare")
 
 
 @dataclass(frozen=True, eq=False)
 class AdditionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "add")
+    pass
+    # def __post_init__(self) -> None:
+    #     binary_operator_post_init(self, "add")
 
 
 @dataclass(frozen=True, eq=False)
 class SubstractionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "substract")
+    pass
+    # def __post_init__(self) -> None:
+    #     binary_operator_post_init(self, "substract")
 
 
 @dataclass(frozen=True, eq=False)
 class MultiplicationNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "multiply")
+    pass
+    # def __post_init__(self) -> None:
+    #     binary_operator_post_init(self, "multiply")
 
 
 @dataclass(frozen=True, eq=False)
 class DivisionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "divide")
+    pass
+    # def __post_init__(self) -> None:
+    #     binary_operator_post_init(self, "divide")
 
 
 @dataclass(frozen=True, eq=False)
@@ -465,15 +469,15 @@ class TimeOperatorNode(UnaryOperatorNode):
             raise ValueError(
                 f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
             )
-        if self.operand.instances == Instances.SIMPLE:
-            if self.instances_index.is_simple():
-                object.__setattr__(self, "instances", Instances.SIMPLE)
-            else:
-                object.__setattr__(self, "instances", Instances.MULTIPLE)
-        else:
-            raise ValueError(
-                "Cannot apply time operator on an expression that already represents multiple instances"
-            )
+        # if self.operand.instances == Instances.SIMPLE:
+        #     if self.instances_index.is_simple():
+        #         object.__setattr__(self, "instances", Instances.SIMPLE)
+        #     else:
+        #         object.__setattr__(self, "instances", Instances.MULTIPLE)
+        # else:
+        #     raise ValueError(
+        #         "Cannot apply time operator on an expression that already represents multiple instances"
+        #     )
 
 
 @dataclass(frozen=True, eq=False)
@@ -493,7 +497,7 @@ class TimeAggregatorNode(UnaryOperatorNode):
             raise ValueError(
                 f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
             )
-        object.__setattr__(self, "instances", Instances.SIMPLE)
+        # object.__setattr__(self, "instances", Instances.SIMPLE)
 
 
 @dataclass(frozen=True, eq=False)
@@ -512,7 +516,7 @@ class ScenarioOperatorNode(UnaryOperatorNode):
             raise ValueError(
                 f"{self.name} is not a valid scenario operator, valid scenario operators are {valid_names}"
             )
-        object.__setattr__(self, "instances", Instances.SIMPLE)
+        # object.__setattr__(self, "instances", Instances.SIMPLE)
 
 
 def sum_expressions(
