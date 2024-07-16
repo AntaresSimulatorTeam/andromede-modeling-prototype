@@ -52,6 +52,7 @@ class BendersDecomposedProblem:
 
     emplacement: pathlib.Path
     output_path: pathlib.Path
+    structure_filename: str
 
     solution: Optional[BendersSolution]
     is_merged: bool
@@ -62,12 +63,14 @@ class BendersDecomposedProblem:
         subproblems: List[OptimizationProblem],
         emplacement: str = "outputs/lp",
         output_path: str = "expansion",
+        struct_filename: str = "structure.txt",
     ) -> None:
         self.master = master
         self.subproblems = subproblems
 
         self.emplacement = pathlib.Path(emplacement)
         self.output_path = pathlib.Path(output_path)
+        self.structure_filename = struct_filename
 
         self.solution = None
         self.is_merged = False
@@ -124,7 +127,7 @@ class BendersDecomposedProblem:
             "SLAVE_WEIGHT": "CONSTANT",
             "SLAVE_WEIGHT_VALUE": 1,
             "MASTER_NAME": f"{self.master.name}",
-            "STRUCTURE_FILE": "structure.txt",
+            "STRUCTURE_FILE": f"{self.structure_filename}",
             "INPUTROOT": ".",
             "CSV_NAME": "benders_output_trace",
             "BOUND_ALPHA": True,
@@ -155,7 +158,9 @@ class BendersDecomposedProblem:
             serialize(
                 f"{subproblem.name}.mps", subproblem.export_as_mps(), self.emplacement
             )
-        serialize(f"structure.txt", self.export_structure(), self.emplacement)
+        serialize(
+            f"{self.structure_filename}", self.export_structure(), self.emplacement
+        )
         serialize_json(
             "options.json",
             self.export_options(solver_name=solver_name, log_level=log_level),
@@ -215,6 +220,7 @@ def build_benders_decomposed_problem(
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
     coupling_network: Network = Network(""),
+    struct_filename: str = "structure.txt",
 ) -> BendersDecomposedProblem:
     """
     Entry point to build the xpansion problem for a time period
@@ -281,4 +287,6 @@ def build_benders_decomposed_problem(
 
     master = fusion_problems(masters, coupler)
 
-    return BendersDecomposedProblem(master, subproblems)
+    return BendersDecomposedProblem(
+        master, subproblems, struct_filename=struct_filename
+    )

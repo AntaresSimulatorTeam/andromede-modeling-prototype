@@ -11,7 +11,6 @@
 # This file is part of the Antares project.
 
 import pytest
-from anytree import Node as TreeNode
 
 from andromede.expression import literal, var
 from andromede.expression.indexing_structure import IndexingStructure
@@ -72,6 +71,40 @@ def test_investment_pathway_on_sequential_nodes(
     demand: Component,
     candidate: Component,
 ) -> None:
+    """
+    A first simple test on the investment pathway
+    Here, only two nodes are represented, a parent and a child nodes
+    with probability one of going from parent to child
+
+    The goal here is to show that, in the parent node, the demand is already met
+    by the existing fixed production. However, for the child node without any new
+    investment, it would create some unsupplied energy, which is very expensive.
+
+    The investment on the child node, even though enough for the demand, is also
+    more expensive than on the parent (this should represent a late investment fee).
+
+    To minimize the expected cost in this 2-node tree, one should expect the maximum
+    investment on the parent node, and the rest on the child node.
+
+    Here below the values used:
+
+                         PARENT    |    CHILD
+         Demand (MW):     100            200
+     Fixed prod (MW):     100            100
+     Max invest (MW):      80            100
+        Op cost  ($):      10             10
+    Invest cost  ($):     100            300
+       ENS cost  ($):   10000          10000
+
+    The solution should be:
+
+                  prob   |   investment  |  operational
+    parent:          1 x [     100 x 80  +     10 x 100 ]
+    child :        + 1 x [     300 x 20  +     10 x 200 ]
+                   = 17 000
+
+    """
+    # === Populating Database ===
     database = DataBase()
     database.add_data("N", "spillage_cost", ConstantData(10))
     database.add_data("N", "ens_cost", ConstantData(10000))
@@ -112,6 +145,8 @@ def test_investment_pathway_on_sequential_nodes(
         ),
     )
 
+    # === Coupling model ===
+    # Used between nodes in the decision tree
     COUPLING_MODEL = model(
         id="COUPLING",
         variables=[
@@ -156,6 +191,7 @@ def test_investment_pathway_on_sequential_nodes(
         ],
     )
 
+    # === Network ===
     network_coupling = Network("coupling_test")
     network_coupling.add_component(create_component(model=COUPLING_MODEL, id=""))
 
@@ -187,6 +223,7 @@ def test_investment_pathway_on_sequential_nodes(
         PortRef(candidate_chd, "balance_port"), PortRef(node, "balance_port")
     )
 
+    # === Decision tree creation ===
     config = InterDecisionTimeScenarioConfig([TimeBlock(0, [0])], 1)
 
     decision_tree_par = DecisionTreeNode("parent", config, network_par)
@@ -194,6 +231,7 @@ def test_investment_pathway_on_sequential_nodes(
         "child", config, network_chd, parent=decision_tree_par
     )
 
+    # === Build problem ===
     xpansion = build_benders_decomposed_problem(
         decision_tree_par, database, coupling_network=network_coupling
     )
@@ -211,6 +249,7 @@ def test_investment_pathway_on_sequential_nodes(
     }
     solution = BendersSolution(data)
 
+    # === Run ===
     assert xpansion.run()
     decomposed_solution = xpansion.solution
     if decomposed_solution is not None:  # For mypy only
@@ -236,7 +275,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     This example models a case where investment decisions have to be made in 2030 and 2040.
         - In 2030, we have full knowledge of the existing assets
         - In 2040, two possible hypothesis are possible :
-            - P=0.2 => A case where there is no change in the generation assets since 2030 (except te potential investment in 2030)
+            - P=0.2 => A case where there is no change in the generation assets since 2030 (except the potential investment in 2030)
             - P=0.8 => A case where a base generation unit is present
 
     When taking the decision in 2030, we do not know which case will occur in 2040
@@ -440,7 +479,6 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         [TimeBlock(0, [0])], scenarios
     )
 
-    # TODO Implement the prob behavior for the Expected Value
     dt_root = DecisionTreeNode("root", time_scenario_config, network_root)
     dt_child_A = DecisionTreeNode(
         "childA", time_scenario_config, network_childA, parent=dt_root, prob=0.8

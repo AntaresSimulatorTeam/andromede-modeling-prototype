@@ -30,8 +30,6 @@ from andromede.model import Model, ModelPort, float_parameter, float_variable, m
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
     BlockBorderManagement,
-    DecisionTreeNode,
-    InterDecisionTimeScenarioConfig,
     OutputValues,
     TimeBlock,
     build_problem,

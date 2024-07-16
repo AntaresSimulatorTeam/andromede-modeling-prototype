@@ -742,17 +742,17 @@ class OptimizationProblem:
 
                 # Set solver var name
                 # Externally, for the Solver, this variable will have a full name
-                # Internally, it will be indexed by a structure that into account
+                # Internally, it will be indexed by a structure that takes into account
                 # the component id, variable name, timestep and scenario separately
                 solver_var_name: str = f"{model_var.name}"
                 if component.id:
-                    solver_var_name = f"{component.id}_" + solver_var_name
+                    solver_var_name = f"{component.id}_{solver_var_name}"
                 if self.context.tree_node:
-                    solver_var_name = f"{self.context.tree_node}_" + solver_var_name
+                    solver_var_name = f"{self.context.tree_node}_{solver_var_name}"
 
                 for block_timestep in self.context.get_time_indices(var_indexing):
                     if self.context.block_length() > 1:
-                        solver_var_name = solver_var_name + f"_t{block_timestep}"
+                        solver_var_name = f"{solver_var_name}_t{block_timestep}"
 
                     for scenario in self.context.get_scenario_indices(var_indexing):
                         lower_bound = -self.solver.infinity()
@@ -767,7 +767,7 @@ class OptimizationProblem:
                             ).get_value(block_timestep, scenario)
 
                         if self.context.scenarios > 1:
-                            solver_var_name = solver_var_name + f"_s{scenario}"
+                            solver_var_name = f"{solver_var_name}_s{scenario}"
 
                         # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
                         solver_var = self.solver.NumVar(
@@ -873,7 +873,7 @@ def fusion_problems(
     root_master.name = "master"
 
     root_vars: Dict[str, lp.Variable] = dict()
-    root_cstrs: Dict[str, lp.Constraint] = dict()
+    root_constraints: Dict[str, lp.Constraint] = dict()
     root_objective = root_master.solver.Objective()
 
     # We stock the coupler's variables to check for
@@ -910,11 +910,11 @@ def fusion_problems(
                 # If variable present in constraint, we add the constraint to root
                 if coeff != 0:
                     key = f"{master.name}_{cstr.name()}"
-                    if key not in root_cstrs:
-                        root_cstrs[key] = root_master.solver.Constraint(
+                    if key not in root_constraints:
+                        root_constraints[key] = root_master.solver.Constraint(
                             cstr.Lb(), cstr.Ub(), key
                         )
-                    root_cstr = root_cstrs[key]
+                    root_cstr = root_constraints[key]
                     root_cstr.SetCoefficient(root_var, coeff)
 
             obj_coeff = objective.GetCoefficient(var)

@@ -18,6 +18,7 @@ from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
     ExpressionNode,
+    is_non_negative,
     is_unbound,
     literal,
 )
@@ -68,6 +69,12 @@ class Constraint:
                     raise ValueError(
                         f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
                     )
+
+            if is_unbound(self.lower_bound) and is_non_negative(self.lower_bound):
+                raise ValueError("Lower bound should not be +Inf")
+
+            if is_unbound(self.upper_bound) and not is_non_negative(self.upper_bound):
+                raise ValueError("Upper bound should not be -Inf")
 
     def replicate(self, /, **changes: Any) -> "Constraint":
         return replace(self, **changes)
