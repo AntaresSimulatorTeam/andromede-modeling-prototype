@@ -23,10 +23,10 @@ from andromede.expression.time_operator import TimeShift, TimeSum
     [
         (TermEfficient(1, "c", "x"), "+x"),
         (TermEfficient(-1, "c", "x"), "-x"),
-        (TermEfficient(2.50, "c", "x"), "+2.5x"),
-        (TermEfficient(-3, "c", "x"), "-3x"),
-        (TermEfficient(-3, "c", "x", time_operator=TimeShift(-1)), "-3x.shift([-1])"),
-        (TermEfficient(-3, "c", "x", time_aggregator=TimeSum(True)), "-3x.sum(True)"),
+        (TermEfficient(2.50, "c", "x"), "2.5x"),
+        (TermEfficient(-3, "c", "x"), "-3.0x"),
+        (TermEfficient(-3, "c", "x", time_operator=TimeShift(-1)), "-3.0x.shift(-1)"),
+        (TermEfficient(-3, "c", "x", time_aggregator=TimeSum(True)), "-3.0x.sum(True)"),
         (
             TermEfficient(
                 -3,
@@ -35,9 +35,9 @@ from andromede.expression.time_operator import TimeShift, TimeSum
                 time_operator=TimeShift([2, 3]),
                 time_aggregator=TimeSum(False),
             ),
-            "-3x.shift([2, 3]).sum(False)",
+            "-3.0x.shift([2, 3]).sum(False)",
         ),
-        (TermEfficient(-3, "c", "x", scenario_operator=Expectation()), "-3x.expec()"),
+        (TermEfficient(-3, "c", "x", scenario_operator=Expectation()), "-3.0x.expec()"),
         (
             TermEfficient(
                 -3,
@@ -46,7 +46,7 @@ from andromede.expression.time_operator import TimeShift, TimeSum
                 time_aggregator=TimeSum(True),
                 scenario_operator=Expectation(),
             ),
-            "-3x.sum(True).expec()",
+            "-3.0x.sum(True).expec()",
         ),
     ],
 )

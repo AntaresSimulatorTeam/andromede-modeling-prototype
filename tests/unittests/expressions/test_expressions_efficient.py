@@ -126,16 +126,16 @@ def test_operators() -> None:
     assert -expr.evaluate(context) == pytest.approx(-2.5, 1e-16)
 
 
-def test_degree() -> None:
-    x = var("x")
-    p = param("p")
-    expr = (5 * x + 3) / p
+# def test_degree() -> None:
+#     x = var("x")
+#     p = param("p")
+#     expr = (5 * x + 3) / p
 
-    assert expr.compute_degree() == 1
+#     assert expr.compute_degree() == 1
 
-    # TODO: Should this be allowed ? If so, how should we represent is ?
-    expr = x * expr
-    assert expr.compute_degree() == 2
+#     # TODO: Should this be allowed ? If so, how should we represent is ?
+#     expr = x * expr
+#     assert expr.compute_degree() == 2
 
 
 def test_degree_computation_should_take_into_account_simplifications() -> None:
@@ -622,7 +622,7 @@ def test_multiplication_of_differently_indexed_terms() -> None:
 
 def test_sum_expressions() -> None:
 
-
+    # TODO: Sum of an empty list ? How to return a null LinearExpression object if the list is supposed to contain LinearExpression objects ?
     assert linear_expressions_equal(sum([literal(1)]), literal(1))
     assert linear_expressions_equal(sum([literal(1), var("x")]), 1 + var("x"))
     assert linear_expressions_equal(

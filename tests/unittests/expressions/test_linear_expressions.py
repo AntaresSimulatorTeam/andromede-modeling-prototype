@@ -26,7 +26,7 @@ from andromede.simulation.linear_expression import LinearExpression, Term
         (Term(-1, "c", "x"), "-x"),
         (Term(2.50, "c", "x"), "+2.5x"),
         (Term(-3, "c", "x"), "-3x"),
-        (Term(-3, "c", "x", time_operator=TimeShift(-1)), "-3x.shift([-1])"),
+        (Term(-3, "c", "x", time_operator=TimeShift(-1)), "-3x.shift(-1)"),
         (Term(-3, "c", "x", time_aggregator=TimeSum(True)), "-3x.sum(True)"),
         (
             Term(
