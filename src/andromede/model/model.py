@@ -330,6 +330,9 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
 
 
 def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
+    if not isinstance(definition.definition, LinearExpressionEfficient):
+        raise TypeError(f"Port field definition should be a LinearExpression, not a {type(definition.definition)}")
+
     for term in definition.definition.terms.values():
         visit(term.coefficient, _PortFieldExpressionChecker())
     visit(definition.definition.constant, _PortFieldExpressionChecker())

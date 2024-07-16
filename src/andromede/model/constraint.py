@@ -9,7 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Union
 
 from andromede.expression.degree import is_constant
@@ -24,10 +24,11 @@ from andromede.expression.equality import (
 #     ExpressionNode,
 #     literal,
 # )
-from andromede.expression.expression_efficient import Comparator, ComparisonNode
+from andromede.expression.expression_efficient import Comparator, ComparisonNode, is_unbound
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     StandaloneConstraint,
+    linear_expressions_equal,
     literal,
 )
 from andromede.expression.print import print_expr
@@ -44,56 +45,39 @@ class Constraint:
 
     name: str
     expression: LinearExpressionEfficient
-    lower_bound: LinearExpressionEfficient
-    upper_bound: LinearExpressionEfficient
-    context: ProblemContext
+    lower_bound: LinearExpressionEfficient = field(default=literal(-float("inf")))
+    upper_bound: LinearExpressionEfficient = field(default=literal(float("inf")))
+    context: ProblemContext = field(default=ProblemContext.OPERATIONAL)
 
-    def __init__(
+    def __post_init__(
         self,
-        name: str,
-        expression: Union[LinearExpressionEfficient, StandaloneConstraint],
-        lower_bound: Optional[LinearExpressionEfficient] = None,
-        upper_bound: Optional[LinearExpressionEfficient] = None,
-        context: ProblemContext = ProblemContext.OPERATIONAL,
     ) -> None:
-        self.name = name
-        self.context = context
-
-        if isinstance(expression, StandaloneConstraint):
-            if lower_bound is not None or upper_bound is not None:
+        if isinstance(self.expression, StandaloneConstraint):
+            # Case where constraint is initialized with something like Constraint(var("x") <= var("y"))
+            if not self.lower_bound.is_unbound() or not self.upper_bound.is_unbound():
                 raise ValueError(
                     "Both comparison between two expressions and a bound are specfied, set either only a comparison between expressions or a single linear expression with bounds."
                 )
 
-            self.expression = expression.expression
-            self.lower_bound = expression.lower_bound
-            self.upper_bound = expression.upper_bound
+            self.lower_bound = self.expression.lower_bound
+            self.upper_bound = self.expression.upper_bound
+            self.expression = self.expression.expression
+
         else:
-            for bound in [lower_bound, upper_bound]:
-                if bound is not None and not is_constant(bound):
+            for bound in [self.lower_bound, self.upper_bound]:
+                if not bound.is_constant():
                     raise ValueError(
-                        f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
+                        f"The bounds of a constraint should not contain variables, {str(bound)} was given."
                     )
-
-            self.expression = expression
-            if lower_bound is not None:
-                self.lower_bound = lower_bound
-            else:
-                self.lower_bound = literal(-float("inf"))
-
-            if upper_bound is not None:
-                self.upper_bound = upper_bound
-            else:
-                self.upper_bound = literal(float("inf"))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Constraint):
             return False
         return (
             self.name == other.name
-            and expressions_equal(self.expression, other.expression)
-            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
-            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and linear_expressions_equal(self.expression, other.expression)
+            and linear_expressions_equal(self.lower_bound, other.lower_bound)
+            and linear_expressions_equal(self.upper_bound, other.upper_bound)
         )
 
     def __str__(self) -> str:

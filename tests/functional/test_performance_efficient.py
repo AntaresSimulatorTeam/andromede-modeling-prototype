@@ -14,7 +14,7 @@
 import pytest
 
 from andromede.expression.evaluate import EvaluationContext
-from andromede.expression.linear_expression_efficient import param, var
+from andromede.expression.linear_expression_efficient import literal, param, var
 
 
 def test_large_number_of_parameters_sum() -> None:
@@ -33,6 +33,32 @@ def test_large_number_of_parameters_sum() -> None:
     with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
         expr = sum(param(f"cost_{i}") for i in range(1, nb_terms))
         expr.evaluate(EvaluationContext(parameters=parameters_value))
+
+
+def test_large_number_of_identical_parameters_sum() -> None:
+    """
+    With identical parameters sum, a simplification is performed online to avoid the recursivity.
+    """
+    nb_terms = 500
+
+    parameters_value = {"cost": 1.0}
+
+    # Still the recursion depth error with parameters
+    # with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
+    expr = sum(param("cost") for _ in range(nb_terms))
+    assert expr.evaluate(EvaluationContext(parameters=parameters_value)) == nb_terms
+
+
+def test_large_number_of_literal_sum() -> None:
+    """
+    Literal sums are computed online to avoid recursivity
+    """
+    nb_terms = 500
+
+    # # Still the recursion depth error with parameters
+    # with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
+    expr = sum(literal(1) for _ in range(nb_terms))
+    assert expr.evaluate(EvaluationContext()) == nb_terms
 
 
 def test_large_number_of_variables_sum() -> None:

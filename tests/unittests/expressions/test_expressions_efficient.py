@@ -18,7 +18,6 @@ import pytest
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import EvaluationContext, ValueProvider
-from andromede.expression.evaluate_parameters import ParameterValueProvider
 from andromede.expression.expression_efficient import (
     ComponentParameterNode,
     ExpressionNodeEfficient,
@@ -41,11 +40,10 @@ from andromede.expression.linear_expression_efficient import (
     linear_expressions_equal,
     literal,
     param,
+    sum_expressions,
     var,
 )
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
-from andromede.model.constraint import Constraint
-from andromede.simulation.linearize import linearize_expression
 
 
 @dataclass(frozen=True)
@@ -217,6 +215,16 @@ def test_degree_computation_should_take_into_account_simplifications() -> None:
             param("p"),
             2 * param("p"),
         ),
+        (
+            literal(4) * param("p"),
+            param("p"),
+            5 * param("p"),
+        ),
+        (
+            param("p"),
+            param("p") * param("q"),
+            (1 + param("q")) * param("p"), # Equality visitor not able to handle commutativity
+        ),
     ],
 )
 def test_addition(
@@ -224,7 +232,7 @@ def test_addition(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    assert e1 + e2 == expected
+    assert linear_expressions_equal(e1 + e2, expected)
 
 
 @pytest.mark.parametrize(
@@ -280,6 +288,16 @@ def test_addition(
             param("p"),
             LinearExpressionEfficient(),
         ),
+        (
+            literal(4) * param("p"),
+            param("p"),
+            3 * param("p"),
+        ),
+        (
+            param("p"),
+            param("p") * param("q"),
+            param("p") * (1 - param("q")), # Equality visitor not able to handle commutativity
+        ),
     ],
 )
 def test_substraction(
@@ -287,7 +305,10 @@ def test_substraction(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    assert e1 - e2 == expected
+    print()
+    print(e1 - e2)
+    print(expected)
+    assert linear_expressions_equal(e1 - e2, expected)
 
 
 @pytest.mark.parametrize(
@@ -314,7 +335,7 @@ def test_substraction(
 def test_linear_expression_equality(
     lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
 ) -> None:
-    assert lhs == rhs
+    assert linear_expressions_equal(lhs, rhs)
 
 
 # TODO: What is the equivalent of this test ?
@@ -622,9 +643,25 @@ def test_multiplication_of_differently_indexed_terms() -> None:
 
 def test_sum_expressions() -> None:
 
-    # TODO: Sum of an empty list ? How to return a null LinearExpression object if the list is supposed to contain LinearExpression objects ?
-    assert linear_expressions_equal(sum([literal(1)]), literal(1))
-    assert linear_expressions_equal(sum([literal(1), var("x")]), 1 + var("x"))
+    assert linear_expressions_equal(sum_expressions([]), literal(0))
+    assert linear_expressions_equal(sum_expressions([literal(1)]), literal(1))
     assert linear_expressions_equal(
-        sum([literal(1), var("x"), param("p")]), (1 + var("x")) + param("p")
+        sum_expressions([literal(1), var("x")]), 1 + var("x")
     )
+    assert linear_expressions_equal(
+        sum_expressions([literal(1), var("x"), param("p")]), (1 + var("x")) + param("p")
+    )
+
+
+@pytest.mark.parametrize(
+    "expr, unbound",
+    [
+        (literal(float("inf")), True),
+        (literal(float("-inf")), True),
+        (literal(-float("inf")), True),
+        (var("x") + literal(float("-inf")), True),
+        (var("x") + literal(4), False),
+    ],
+)
+def test_is_unbound(expr: LinearExpressionEfficient, unbound: bool) -> None:
+    assert expr.is_unbound() == unbound

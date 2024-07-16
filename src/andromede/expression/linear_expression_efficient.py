@@ -16,7 +16,7 @@ with only variables and literal coefficients.
 """
 import dataclasses
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar, Union
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import ValueProvider, evaluate
@@ -32,11 +32,13 @@ from andromede.expression.expression_efficient import (
     TimeOperatorNode,
     is_minus_one,
     is_one,
+    is_unbound,
     is_zero,
     wrap_in_node,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.port_operator import PortAggregator, PortSum
 from andromede.expression.print import print_expr
 from andromede.expression.scenario_operator import Expectation, ScenarioOperator
 from andromede.expression.time_operator import (
@@ -511,6 +513,9 @@ class LinearExpressionEfficient:
         result -= rhs
         return result
 
+    def __rsub__(self, rhs: int) -> "LinearExpressionEfficient":
+        return -self + rhs
+
     def __neg__(self) -> "LinearExpressionEfficient":
         result = LinearExpressionEfficient()
         result -= self
@@ -614,6 +619,9 @@ class LinearExpressionEfficient:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
         return not self.terms
 
+    def is_unbound(self) -> bool:
+        return is_unbound(self.constant)
+
     def compute_indexation(
         self, provider: IndexingStructureProvider
     ) -> IndexingStructure:
@@ -709,7 +717,7 @@ class LinearExpressionEfficient:
                 None,
             ],
         ],
-    ):
+    ) -> Dict[TermKeyEfficient, TermEfficient]:
         result_terms = {}
         for term in self.terms.values():
             term_with_operator = term.sum(**sum_args)
@@ -805,38 +813,34 @@ def linear_expressions_equal(
     )
 
 
+# TODO: Is this function useful ? Could we just rely on the sum operator overloading ? Only the case with an empty list may make the function useful
+def sum_expressions(
+    expressions: Sequence[LinearExpressionEfficient],
+) -> LinearExpressionEfficient:
+    if len(expressions) == 0:
+        return literal(0)
+    else:
+        return sum(expressions)
+
+
 @dataclass
 class StandaloneConstraint:
     """
-    A standalone constraint, with rugid initialization.
+    A standalone constraint, with rigid initialization.
     """
 
     expression: LinearExpressionEfficient
     lower_bound: LinearExpressionEfficient
     upper_bound: LinearExpressionEfficient
 
-    def __init__(
+    def __post_init__(
         self,
-        expression: LinearExpressionEfficient,
-        lower_bound: LinearExpressionEfficient,
-        upper_bound: LinearExpressionEfficient,
     ) -> None:
-        for bound in [lower_bound, upper_bound]:
-            if bound is not None and not bound.is_constant():
+        for bound in [self.lower_bound, self.upper_bound]:
+            if not bound.is_constant():
                 raise ValueError(
                     f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
                 )
-
-            self.expression = expression
-            if lower_bound is not None:
-                self.lower_bound = lower_bound
-            else:
-                self.lower_bound = literal(-float("inf"))
-
-            if upper_bound is not None:
-                self.upper_bound = upper_bound
-            else:
-                self.upper_bound = literal(float("inf"))
 
     def __str__(self) -> str:
         return f"{str(self.lower_bound)} <= {str(self.expression)} <= {str(self.upper_bound)}"
@@ -905,3 +909,29 @@ def comp_param(component_id: str, name: str) -> LinearExpressionEfficient:
 
 def is_linear(expr: LinearExpressionEfficient) -> bool:
     return True
+
+
+@dataclass(frozen=True)
+class PortFieldTerm:
+    port_name: str
+    field_name: str
+    aggregator: Optional[PortAggregator] = None
+
+    def __str__(self) -> str:
+        result = f"{self.port_name}.{self.field_name}"
+        if self.aggregator is not None:
+            result += f".{str(self.aggregator)}"
+        return result
+
+    def sum_connections(self) -> "PortFieldTerm":
+        if self.aggregator is not None:
+            raise ValueError(f"Port field {str(self)} already has a port aggregator")
+        return dataclasses.replace(self, aggregator=PortSum())
+
+
+class PortFieldExpr:
+    terms: List[PortFieldTerm]
+
+
+def port_field(port_name: str, field_name: str) -> PortFieldTerm:
+    return PortFieldTerm(port_name, field_name)

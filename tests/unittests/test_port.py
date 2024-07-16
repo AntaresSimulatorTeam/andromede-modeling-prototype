@@ -12,8 +12,8 @@
 
 import pytest
 
-from andromede.expression import literal
 from andromede.expression.expression import port_field
+from andromede.expression.linear_expression_efficient import literal
 from andromede.libs.standard import DEMAND_MODEL
 from andromede.model import Constraint, ModelPort, PortType, model
 from andromede.study import Node, PortRef, PortsConnection, create_component
