@@ -197,8 +197,11 @@ class BendersDecomposedProblem:
         solver_name: str = "XPRESS",
         log_level: int = 0,
         should_merge: bool = False,
+        show_debug: bool = False,
     ) -> bool:
-        self.initialise(solver_name=solver_name, log_level=log_level)
+        self.initialise(
+            solver_name=solver_name, log_level=log_level, is_debug=show_debug
+        )
 
         if not should_merge:
             return_code = BendersRunner(self.emplacement).run()
@@ -251,15 +254,15 @@ def build_benders_decomposed_problem(
     subproblems = []  # Benders Decomposed Sub-problems
 
     for tree_node in decision_tree_root.traverse():
-        suffix = f"_{tree_node.id}" if decision_tree_root.size > 1 else ""
+        suffix_tree = f"_{tree_node.id}" if decision_tree_root.size > 1 else ""
 
         masters.append(
             build_problem(
                 tree_node.network,
                 database,
                 null_time_block,
-                null_scenario,
-                problem_name=f"master{suffix}",
+                tree_node.config.scenarios,
+                problem_name=f"master{suffix_tree}",
                 solver_id=solver_id,
                 build_strategy=InvestmentProblemStrategy(),
                 decision_tree_node=tree_node.id,
@@ -268,8 +271,7 @@ def build_benders_decomposed_problem(
         )
 
         for block in tree_node.config.blocks:
-            if len(tree_node.config.blocks) > 1:
-                suffix += f"_t{block.id}"
+            suffix_block = f"_b{block.id}" if len(tree_node.config.blocks) > 1 else ""
 
             subproblems.append(
                 build_problem(
@@ -277,7 +279,7 @@ def build_benders_decomposed_problem(
                     database,
                     block,
                     tree_node.config.scenarios,
-                    problem_name=f"subproblem{suffix}",
+                    problem_name=f"subproblem{suffix_tree}{suffix_block}",
                     solver_id=solver_id,
                     build_strategy=OperationalProblemStrategy(),
                     decision_tree_node=tree_node.id,

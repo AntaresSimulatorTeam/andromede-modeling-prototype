@@ -741,6 +741,10 @@ class OptimizationProblem:
                         model_var.upper_bound, component.id, self.context
                     )
 
+                # Set solver var name
+                # Externally, for the Solver, this variable will have a full name
+                # Internally, it will be indexed by a structure that takes into account
+                # the component id, variable name, timestep and scenario separately
                 var_name: str = f"{model_var.name}"
                 component_prefix = f"{component.id}_" if component.id else ""
                 tree_prefix = (

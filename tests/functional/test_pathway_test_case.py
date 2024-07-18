@@ -17,13 +17,28 @@ import pytest
 
 from andromede.libs.standard import (
     DEMAND_MODEL,
+    GENERATOR_MODEL,
     LINK_MODEL,
     NODE_WITH_SPILL_AND_ENS,
     RES_MODEL,
-    THERMAL_CLUSTER_MODEL_FAST,
+    THERMAL_CANDIDATE,
+)
+from andromede.simulation import (
+    BendersSolution,
+    TimeBlock,
+    build_benders_decomposed_problem,
+    build_problem,
+)
+from andromede.simulation.decision_tree import (
+    DecisionTreeNode,
+    InterDecisionTimeScenarioConfig,
 )
 from andromede.study.data import ConstantData, DataBase, TimeScenarioSeriesData
 from andromede.study.network import Network, Node, PortRef, create_component
+
+BLOCK_LENGTH = 1  # (24 * 7) # One week
+NB_BLOCKS = 2
+NB_SCENARIOS = 2
 
 
 @pytest.fixture
@@ -34,9 +49,9 @@ def network() -> Network:
     area1 = Node(model=NODE_WITH_SPILL_AND_ENS, id="Area1")
     load1 = create_component(model=DEMAND_MODEL, id="D1")
     wind1 = create_component(model=RES_MODEL, id="Wind1")
-    base1 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="Base1")
-    semi1 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="SemiBase1")
-    peak1 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="Peak1")
+    base1 = create_component(model=GENERATOR_MODEL, id="Base1")
+    semi1 = create_component(model=GENERATOR_MODEL, id="SemiBase1")
+    peak1 = create_component(model=GENERATOR_MODEL, id="Peak1")
 
     network.add_node(area1)
     network.add_component(load1)
@@ -54,9 +69,9 @@ def network() -> Network:
     area2 = Node(model=NODE_WITH_SPILL_AND_ENS, id="Area2")
     load2 = create_component(model=DEMAND_MODEL, id="D2")
     wind2 = create_component(model=RES_MODEL, id="Wind2")
-    base2 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="Base2")
-    semi2 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="SemiBase2")
-    peak2 = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="Peak2")
+    base2 = create_component(model=GENERATOR_MODEL, id="Base2")
+    semi2 = create_component(model=GENERATOR_MODEL, id="SemiBase2")
+    peak2 = create_component(model=GENERATOR_MODEL, id="Peak2")
 
     network.add_node(area2)
     network.add_component(load2)
@@ -72,19 +87,20 @@ def network() -> Network:
 
     # Link
     link12 = create_component(model=LINK_MODEL, id="Area1/Area2")
+    network.add_component(link12)
     network.connect(
         PortRef(link12, "balance_port_from"), PortRef(area1, "balance_port")
     )
     network.connect(PortRef(link12, "balance_port_to"), PortRef(area2, "balance_port"))
 
     # Candidates
-    cand_peak = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="Cand_Peak")
-    cand_semi = create_component(model=THERMAL_CLUSTER_MODEL_FAST, id="Cand_Semi")
+    cand_semi = create_component(model=THERMAL_CANDIDATE, id="Cand_Semi")
+    cand_peak = create_component(model=THERMAL_CANDIDATE, id="Cand_Peak")
 
-    network.add_component(cand_peak)
     network.add_component(cand_semi)
-    network.connect(PortRef(cand_peak, "balance_port"), PortRef(area1, "balance_port"))
+    network.add_component(cand_peak)
     network.connect(PortRef(cand_semi, "balance_port"), PortRef(area1, "balance_port"))
+    network.connect(PortRef(cand_peak, "balance_port"), PortRef(area1, "balance_port"))
 
     return network
 
@@ -92,7 +108,7 @@ def network() -> Network:
 @pytest.fixture
 def database() -> DataBase:
     path = Path("tests/functional/data/pathway_test_case/")
-    ts_len = 1  # 24 * 7 * 2 - 1 # Two weeks
+    ts_len = NB_BLOCKS * BLOCK_LENGTH - 1
 
     wind = pd.merge(
         left=pd.read_csv(
@@ -139,23 +155,14 @@ def database() -> DataBase:
         ),
     )
 
-    database.add_data("Base1", "p_max", ConstantData(900))
-    database.add_data("Base1", "nb_units_max", ConstantData(3))
     database.add_data("Base1", "cost", ConstantData(20))
-    database.add_data("Base1", "mingen", ConstantData(0))
-    database.add_data("Base1", "failures", ConstantData(3 * 900))
+    database.add_data("Base1", "p_max", ConstantData(3 * 900))
 
-    database.add_data("Peak1", "p_max", ConstantData(100))
-    database.add_data("Peak1", "nb_units_max", ConstantData(10))
-    database.add_data("Peak1", "cost", ConstantData(100))
-    database.add_data("Peak1", "mingen", ConstantData(0))
-    database.add_data("Peak1", "failures", ConstantData(10 * 100))
-
-    database.add_data("SemiBase1", "p_max", ConstantData(450))
-    database.add_data("SemiBase1", "nb_units_max", ConstantData(2))
     database.add_data("SemiBase1", "cost", ConstantData(45))
-    database.add_data("SemiBase1", "mingen", ConstantData(0))
-    database.add_data("SemiBase1", "failures", ConstantData(2 * 450))
+    database.add_data("SemiBase1", "p_max", ConstantData(2 * 450))
+
+    database.add_data("Peak1", "cost", ConstantData(100))
+    database.add_data("Peak1", "p_max", ConstantData(10 * 100))
 
     # Area 2
     database.add_data("Area2", "spillage_cost", ConstantData(0))
@@ -176,42 +183,50 @@ def database() -> DataBase:
         ),
     )
 
-    database.add_data("Base2", "p_max", ConstantData(900))
-    database.add_data("Base2", "nb_units_max", ConstantData(3))
     database.add_data("Base2", "cost", ConstantData(20))
-    database.add_data("Base2", "mingen", ConstantData(0))
-    database.add_data("Base2", "failures", ConstantData(3 * 900))
+    database.add_data("Base2", "p_max", ConstantData(3 * 900))
 
-    database.add_data("Peak2", "p_max", ConstantData(100))
-    database.add_data("Peak2", "nb_units_max", ConstantData(2))
-    database.add_data("Peak2", "cost", ConstantData(100))
-    database.add_data("Peak2", "mingen", ConstantData(0))
-    database.add_data("Peak2", "failures", ConstantData(2 * 100))
-
-    database.add_data("SemiBase2", "p_max", ConstantData(450))
-    database.add_data("SemiBase2", "nb_units_max", ConstantData(2))
     database.add_data("SemiBase2", "cost", ConstantData(45))
-    database.add_data("SemiBase2", "mingen", ConstantData(0))
-    database.add_data("SemiBase2", "failures", ConstantData(2 * 450))
+    database.add_data("SemiBase2", "p_max", ConstantData(2 * 450))
+
+    database.add_data("Peak2", "cost", ConstantData(100))
+    database.add_data("Peak2", "p_max", ConstantData(2 * 100))
 
     # Link
     database.add_data("Area1/Area2", "f_max", ConstantData(1_000))
 
     # Candidates
-    database.add_data("Cand_Peak", "p_max", ConstantData(100))
-    database.add_data("Cand_Peak", "nb_units_max", ConstantData(1))
-    database.add_data("Cand_Peak", "cost", ConstantData(180))
-    database.add_data("Cand_Peak", "mingen", ConstantData(0))
-    database.add_data("Cand_Peak", "failures", ConstantData(1 * 100))
+    database.add_data("Cand_Semi", "op_cost", ConstantData(50))
+    database.add_data("Cand_Semi", "max_invest", ConstantData(20 * 200))
+    database.add_data("Cand_Semi", "invest_cost", ConstantData(126_000))
 
-    database.add_data("Cand_Semi", "p_max", ConstantData(200))
-    database.add_data("Cand_Semi", "nb_units_max", ConstantData(10))
-    database.add_data("Cand_Semi", "cost", ConstantData(50))
-    database.add_data("Cand_Semi", "mingen", ConstantData(0))
-    database.add_data("Cand_Semi", "failures", ConstantData(10 * 200))
+    database.add_data("Cand_Peak", "op_cost", ConstantData(180))
+    database.add_data("Cand_Peak", "max_invest", ConstantData(30 * 100))
+    database.add_data("Cand_Peak", "invest_cost", ConstantData(60_000))
 
     return database
 
 
 def test_single_investment_node(network: Network, database: DataBase) -> None:
-    return
+    """
+    Single node investment tree with 2 weeks and 2 time-series
+    """
+    time_blocks = [
+        TimeBlock(i, list(range(i * (BLOCK_LENGTH), i * (BLOCK_LENGTH) + BLOCK_LENGTH)))
+        for i in range(NB_BLOCKS)
+    ]
+    config = InterDecisionTimeScenarioConfig(time_blocks, NB_SCENARIOS)
+    decision_tree_root = DecisionTreeNode("", config, network)
+
+    # No investment
+    # for block in time_blocks:
+    #     prob = build_problem(network, database, block, NB_SCENARIOS)
+    #     status = prob.solver.Solve()
+    #     assert status == prob.solver.OPTIMAL
+    #     print(prob.solver.Objective().Value())
+
+    xpansion = build_benders_decomposed_problem(decision_tree_root, database)
+    assert xpansion.run()
+    if (decomposed_solution := xpansion.solution) is not None:  # For mypy only
+        # print(decomposed_solution)
+        return
