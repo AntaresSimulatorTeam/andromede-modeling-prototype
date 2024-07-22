@@ -769,10 +769,8 @@ class OptimizationProblem:
                         solver_var = None
                         solver_var_name = f"{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
 
-                        if model_var.data_type == ValueType.FLOAT:
-                            solver_var = self.solver.NumVar(
-                                lower_bound,
-                                upper_bound,
+                        if model_var.data_type == ValueType.BOOL:
+                            solver_var = self.solver.BoolVar(
                                 solver_var_name,
                             )
                         elif model_var.data_type == ValueType.INTEGER:
@@ -782,10 +780,9 @@ class OptimizationProblem:
                                 solver_var_name,
                             )
                         else:
-                            # TODO: Add BoolVar if the variable is specified to be bool
                             solver_var = self.solver.NumVar(
-                                0,
-                                1,
+                                lower_bound,
+                                upper_bound,
                                 solver_var_name,
                             )
 
