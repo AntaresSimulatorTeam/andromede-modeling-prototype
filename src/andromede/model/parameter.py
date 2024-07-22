@@ -10,7 +10,8 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from typing import Any
 
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ValueType
@@ -27,6 +28,9 @@ class Parameter:
     name: str
     type: ValueType
     structure: IndexingStructure
+
+    def replicate(self, /, **changes: Any) -> "Parameter":
+        return replace(self, **changes)
 
 
 def int_parameter(

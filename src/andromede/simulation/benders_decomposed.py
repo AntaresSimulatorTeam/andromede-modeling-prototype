@@ -18,14 +18,12 @@ with Benders solver related functions
 import pathlib
 from typing import Any, Dict, List, Optional
 
-from anytree import Node as TreeNode
-
-from andromede.model.model import Model
-from andromede.simulation.decision_tree import ConfiguredTree, create_master_network
+from andromede.simulation.decision_tree import DecisionTreeNode
 from andromede.simulation.optimization import (
     BlockBorderManagement,
     OptimizationProblem,
     build_problem,
+    fusion_problems,
 )
 from andromede.simulation.output_values import (
     BendersDecomposedSolution,
@@ -34,6 +32,7 @@ from andromede.simulation.output_values import (
 )
 from andromede.simulation.runner import BendersRunner, MergeMPSRunner
 from andromede.simulation.strategy import (
+    ExpectedValue,
     InvestmentProblemStrategy,
     OperationalProblemStrategy,
 )
@@ -53,6 +52,7 @@ class BendersDecomposedProblem:
 
     emplacement: pathlib.Path
     output_path: pathlib.Path
+    structure_filename: str
 
     solution: Optional[BendersSolution]
     is_merged: bool
@@ -63,12 +63,14 @@ class BendersDecomposedProblem:
         subproblems: List[OptimizationProblem],
         emplacement: str = "outputs/lp",
         output_path: str = "expansion",
+        struct_filename: str = "structure.txt",
     ) -> None:
         self.master = master
         self.subproblems = subproblems
 
         self.emplacement = pathlib.Path(emplacement)
         self.output_path = pathlib.Path(output_path)
+        self.structure_filename = struct_filename
 
         self.solution = None
         self.is_merged = False
@@ -79,7 +81,6 @@ class BendersDecomposedProblem:
         """
 
         if not self.subproblems:
-            # TODO For now, only one master and one subproblem
             raise RuntimeError("Subproblem list must have at least one sub problem")
 
         # A mapping similar to the Xpansion mapping for keeping track of variable indexes
@@ -89,11 +90,10 @@ class BendersDecomposedProblem:
 
         problem_to_candidates["master"] = {}
         for solver_var_info in self.master.context._solver_variables.values():
-            if solver_var_info.is_in_objective:
-                problem_to_candidates["master"][
-                    solver_var_info.name
-                ] = solver_var_info.column_id
-                candidates.add(solver_var_info.name)
+            problem_to_candidates["master"][
+                solver_var_info.name
+            ] = solver_var_info.column_id
+            candidates.add(solver_var_info.name)
 
         for problem in self.subproblems:
             problem_to_candidates[problem.name] = {}
@@ -126,8 +126,8 @@ class BendersDecomposedProblem:
             "TRACE": True,
             "SLAVE_WEIGHT": "CONSTANT",
             "SLAVE_WEIGHT_VALUE": 1,
-            "MASTER_NAME": "master",
-            "STRUCTURE_FILE": "structure.txt",
+            "MASTER_NAME": f"{self.master.name}",
+            "STRUCTURE_FILE": f"{self.structure_filename}",
             "INPUTROOT": ".",
             "CSV_NAME": "benders_output_trace",
             "BOUND_ALPHA": True,
@@ -144,19 +144,23 @@ class BendersDecomposedProblem:
         }
         return options_values
 
-    def prepare(
+    def initialise(
         self,
         *,
         solver_name: str = "XPRESS",
         log_level: int = 0,
         is_debug: bool = False,
     ) -> None:
-        serialize("master.mps", self.master.export_as_mps(), self.emplacement)
+        serialize(
+            f"{self.master.name}.mps", self.master.export_as_mps(), self.emplacement
+        )
         for subproblem in self.subproblems:
             serialize(
                 f"{subproblem.name}.mps", subproblem.export_as_mps(), self.emplacement
             )
-        serialize("structure.txt", self.export_structure(), self.emplacement)
+        serialize(
+            f"{self.structure_filename}", self.export_structure(), self.emplacement
+        )
         serialize_json(
             "options.json",
             self.export_options(solver_name=solver_name, log_level=log_level),
@@ -164,7 +168,9 @@ class BendersDecomposedProblem:
         )
 
         if is_debug:
-            serialize("master.lp", self.master.export_as_lp(), self.emplacement)
+            serialize(
+                f"{self.master.name}.lp", self.master.export_as_lp(), self.emplacement
+            )
             for subproblem in self.subproblems:
                 serialize(
                     f"{subproblem.name}.lp", subproblem.export_as_lp(), self.emplacement
@@ -192,7 +198,7 @@ class BendersDecomposedProblem:
         log_level: int = 0,
         should_merge: bool = False,
     ) -> bool:
-        self.prepare(solver_name=solver_name, log_level=log_level)
+        self.initialise(solver_name=solver_name, log_level=log_level)
 
         if not should_merge:
             return_code = BendersRunner(self.emplacement).run()
@@ -208,13 +214,13 @@ class BendersDecomposedProblem:
 
 
 def build_benders_decomposed_problem(
-    network_on_tree: Dict[TreeNode, Network],
+    decision_tree_root: DecisionTreeNode,
     database: DataBase,
-    configured_tree: ConfiguredTree,
     *,
-    decision_coupling_model: Optional[Model] = None,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
+    coupling_network: Network = Network(""),
+    struct_filename: str = "structure.txt",
 ) -> BendersDecomposedProblem:
     """
     Entry point to build the xpansion problem for a time period
@@ -222,40 +228,65 @@ def build_benders_decomposed_problem(
     Returns a Benders Decomposed problem
     """
 
-    master_network = create_master_network(network_on_tree, decision_coupling_model)
+    if not decision_tree_root.is_leaves_prob_sum_one():
+        raise RuntimeError("Decision tree must have leaves' probability sum equal one!")
 
-    # Benders Decomposed Master Problem
-    master = build_problem(
-        master_network,
+    null_time_block = TimeBlock(
+        0, [0]
+    )  # Not necessary for master, but list must be non-empty
+    null_scenario = 0  # Not necessary for master
+
+    coupler = build_problem(
+        coupling_network,
         database,
-        null_time_block := TimeBlock(  # Not necessary for master, but list must be non-empty
-            0, [0]
-        ),
-        null_scenario := 0,  # Not necessary for master
-        problem_name="master",
-        border_management=border_management,
+        null_time_block,
+        null_scenario,
+        problem_name="coupler",
         solver_id=solver_id,
-        problem_strategy=InvestmentProblemStrategy(),
+        build_strategy=InvestmentProblemStrategy(),
+        risk_strategy=ExpectedValue(0.0),
     )
 
-    # Benders Decomposed Sub-problems
-    subproblems = []
-    for (
-        tree_node,
-        time_scenario_config,
-    ) in configured_tree.node_to_config.items():
-        for block in time_scenario_config.blocks:
-            # Xpansion Sub-problems
+    masters = []  # Benders Decomposed Master Problem
+    subproblems = []  # Benders Decomposed Sub-problems
+
+    for tree_node in decision_tree_root.traverse():
+        suffix = f"_{tree_node.id}" if decision_tree_root.size > 1 else ""
+
+        masters.append(
+            build_problem(
+                tree_node.network,
+                database,
+                null_time_block,
+                null_scenario,
+                problem_name=f"master{suffix}",
+                solver_id=solver_id,
+                build_strategy=InvestmentProblemStrategy(),
+                decision_tree_node=tree_node.id,
+                risk_strategy=ExpectedValue(tree_node.prob),
+            )
+        )
+
+        for block in tree_node.config.blocks:
+            if len(tree_node.config.blocks) > 1:
+                suffix += f"_t{block.id}"
+
             subproblems.append(
                 build_problem(
-                    network_on_tree[tree_node],
+                    tree_node.network,
                     database,
                     block,
-                    time_scenario_config.scenarios,
-                    problem_name=f"subproblem_{tree_node.name}_{block.id}",
+                    tree_node.config.scenarios,
+                    problem_name=f"subproblem{suffix}",
                     solver_id=solver_id,
-                    problem_strategy=OperationalProblemStrategy(),
+                    build_strategy=OperationalProblemStrategy(),
+                    decision_tree_node=tree_node.id,
+                    risk_strategy=ExpectedValue(tree_node.prob),
                 )
             )
 
-    return BendersDecomposedProblem(master, subproblems)
+    master = fusion_problems(masters, coupler)
+
+    return BendersDecomposedProblem(
+        master, subproblems, struct_filename=struct_filename
+    )
