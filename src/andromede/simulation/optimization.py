@@ -15,10 +15,11 @@ The optimization module contains the logic to translate the input model
 into a mathematical optimization problem.
 """
 
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Type
+from typing import Dict, Iterable, List, Optional
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -768,6 +769,11 @@ class OptimizationProblem:
                         # the component id, variable name, timestep and scenario separately
                         solver_var = None
                         solver_var_name = f"{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
+
+                        if math.isclose(lower_bound, upper_bound):
+                            raise ValueError(
+                                f"Upper and lower bounds of variable {solver_var_name} have the same value: {lower_bound}"
+                            )
 
                         if model_var.data_type == ValueType.BOOL:
                             solver_var = self.solver.BoolVar(
