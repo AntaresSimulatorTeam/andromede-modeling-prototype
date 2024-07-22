@@ -112,10 +112,10 @@ def database() -> DataBase:
 
     wind = pd.merge(
         left=pd.read_csv(
-            path / Path("wind_area1.txt"), sep="\s+", names=["TS1", "TS2"]
+            path / Path("wind_area1.txt"), sep=r"\s+", names=["TS1", "TS2"]
         ),
         right=pd.read_csv(
-            path / Path("wind_area2.txt"), sep="\s+", names=["TS1", "TS2"]
+            path / Path("wind_area2.txt"), sep=r"\s+", names=["TS1", "TS2"]
         ),
         left_index=True,
         right_index=True,
@@ -124,10 +124,10 @@ def database() -> DataBase:
 
     load = pd.merge(
         left=pd.read_csv(
-            path / Path("load_area1.txt"), sep="\s+", names=["TS1", "TS2"]
+            path / Path("load_area1.txt"), sep=r"\s+", names=["TS1", "TS2"]
         ),
         right=pd.read_csv(
-            path / Path("load_area2.txt"), sep="\s+", names=["TS1", "TS2"]
+            path / Path("load_area2.txt"), sep=r"\s+", names=["TS1", "TS2"]
         ),
         left_index=True,
         right_index=True,
