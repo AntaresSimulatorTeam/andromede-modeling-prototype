@@ -13,13 +13,17 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from andromede.expression.equality import (
-    expressions_equal,
-    expressions_equal_if_present,
-)
+from andromede.expression.equality import expressions_equal_if_present
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
-from andromede.model.common import ProblemContext, ValueType
+from andromede.expression.linear_expression_efficient import (
+    LinearExpressionEfficient,
+    wrap_in_linear_expr_if_present,
+)
+from andromede.model.common import (
+    ProblemContext,
+    ValueOrExprNodeOrLinearExpr,
+    ValueType,
+)
 
 
 @dataclass
@@ -55,21 +59,33 @@ class Variable:
 
 def int_variable(
     name: str,
-    lower_bound: Optional[LinearExpressionEfficient] = None,
-    upper_bound: Optional[LinearExpressionEfficient] = None,
+    lower_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
+    upper_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
     return Variable(
-        name, ValueType.INTEGER, lower_bound, upper_bound, structure, context
+        name,
+        ValueType.INTEGER,
+        wrap_in_linear_expr_if_present(lower_bound),
+        wrap_in_linear_expr_if_present(upper_bound),
+        structure,
+        context,
     )
 
 
 def float_variable(
     name: str,
-    lower_bound: Optional[LinearExpressionEfficient] = None,
-    upper_bound: Optional[LinearExpressionEfficient] = None,
+    lower_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
+    upper_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    return Variable(name, ValueType.FLOAT, lower_bound, upper_bound, structure, context)
+    return Variable(
+        name,
+        ValueType.FLOAT,
+        wrap_in_linear_expr_if_present(lower_bound),
+        wrap_in_linear_expr_if_present(upper_bound),
+        structure,
+        context,
+    )

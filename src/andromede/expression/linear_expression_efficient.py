@@ -21,12 +21,10 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar, Union
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import ValueProvider, evaluate
 from andromede.expression.expression_efficient import (
-    ComponentParameterNode,
     ExpressionNodeEfficient,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
-    ParameterNode,
     ScenarioOperatorNode,
     TimeAggregatorNode,
     TimeOperatorNode,
@@ -34,9 +32,10 @@ from andromede.expression.expression_efficient import (
     is_one,
     is_unbound,
     is_zero,
+    literal,
     wrap_in_node,
 )
-from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
+from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.port_operator import PortAggregator, PortSum
 from andromede.expression.print import print_expr
@@ -88,7 +87,7 @@ class TermEfficient:
     def __post_init__(self) -> None:
         object.__setattr__(self, "coefficient", wrap_in_node(self.coefficient))
 
-    def __eq__(self, other: "TermEfficient") -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, TermEfficient)
             and expressions_equal(self.coefficient, other.coefficient)
@@ -374,6 +373,32 @@ def _substract_terms(lhs: TermEfficient, rhs: TermEfficient) -> TermEfficient:
     )
 
 
+# TODO: Try to use PortField Id which is exactly the same ?
+@dataclass(frozen=True)
+class PortFieldKey:
+    port_name: str
+    field_name: str
+
+
+@dataclass(frozen=True)
+class PortFieldTerm:
+    coefficient: ExpressionNodeEfficient
+    port_name: str
+    field_name: str
+    aggregator: Optional[PortAggregator] = None
+
+    def __str__(self) -> str:
+        result = f"{self.port_name}.{self.field_name}"
+        if self.aggregator is not None:
+            result += f".{str(self.aggregator)}"
+        return result
+
+    def sum_connections(self) -> "LinearExpressionEfficient":
+        if self.aggregator is not None:
+            raise ValueError(f"Port field {str(self)} already has a port aggregator")
+        return dataclasses.replace(self, aggregator=PortSum())
+
+
 class LinearExpressionEfficient:
     """
     Represents a linear expression with respect to variable names, for example 10x + 5y + 2.
@@ -393,6 +418,7 @@ class LinearExpressionEfficient:
 
     terms: Dict[TermKeyEfficient, TermEfficient]
     constant: ExpressionNodeEfficient
+    port_field_terms: Dict[PortFieldKey, PortFieldTerm]
 
     # TODO: We need to check that terms.key is indeed a TermKey and change the tests that this will break
     def __init__(
@@ -401,6 +427,9 @@ class LinearExpressionEfficient:
             Union[Dict[TermKeyEfficient, TermEfficient], List[TermEfficient]]
         ] = None,
         constant: Optional[Union[float, ExpressionNodeEfficient]] = None,
+        port_field_terms: Optional[
+            Union[Dict[PortFieldKey, PortFieldTerm], List[PortFieldTerm]]
+        ] = None,
     ) -> None:
         if constant is None:
             self.constant = LiteralNode(0)
@@ -422,10 +451,28 @@ class LinearExpressionEfficient:
                         self.terms[generate_key(term)] = term
             else:
                 raise TypeError(
-                    f"Terms must be either of type Dict[str, Term] or List[Term], whereas {terms} is of type {type(terms)}"
+                    f"Terms must be either of type Dict[TermKeyEfficient, Term] or List[Term], whereas {terms} is of type {type(terms)}"
+                )
+
+        self.port_field_terms = {}
+        if port_field_terms is not None:
+            if isinstance(port_field_terms, dict):
+                for port_field_term_key, port_field_term in port_field_terms.items():
+                    self.port_field_terms[port_field_term_key] = port_field_term
+            elif isinstance(port_field_terms, list):
+                for port_field_term in port_field_terms:
+                    self.port_field_terms[
+                        PortFieldKey(
+                            port_field_term.port_name, port_field_term.field_name
+                        )
+                    ] = port_field_term
+            else:
+                raise TypeError(
+                    f"Port field terms must be either of type Dict[PortFieldKey, PortFieldTerm] or List[PortFieldTerm], whereas {port_field_terms} is of type {type(port_field_terms)}"
                 )
 
     def is_zero(self) -> bool:
+        # TODO : Contribution of portfield ?
         return len(self.terms) == 0 and is_zero(self.constant)
 
     def str_for_constant(self) -> str:
@@ -456,28 +503,28 @@ class LinearExpressionEfficient:
     def __le__(self, rhs: Any) -> "StandaloneConstraint":
         return StandaloneConstraint(
             expression=self - rhs,
-            lower_bound=literal(-float("inf")),
-            upper_bound=literal(0),
+            lower_bound=wrap_in_linear_expr(literal(-float("inf"))),
+            upper_bound=wrap_in_linear_expr(literal(0)),
         )
 
     def __ge__(self, rhs: Any) -> "StandaloneConstraint":
         return StandaloneConstraint(
             expression=self - rhs,
-            lower_bound=literal(0),
-            upper_bound=literal(float("inf")),
+            lower_bound=wrap_in_linear_expr(literal(0)),
+            upper_bound=wrap_in_linear_expr(literal(float("inf"))),
         )
 
     def __eq__(self, rhs: Any) -> "StandaloneConstraint":  # type: ignore
         return StandaloneConstraint(
             expression=self - rhs,
-            lower_bound=literal(0),
-            upper_bound=literal(0),
+            lower_bound=wrap_in_linear_expr(literal(0)),
+            upper_bound=wrap_in_linear_expr(literal(0)),
         )
 
     def __iadd__(
         self, rhs: Union["LinearExpressionEfficient", int, float]
     ) -> "LinearExpressionEfficient":
-        rhs = _wrap_in_linear_expr(rhs)
+        rhs = wrap_in_linear_expr(rhs)
         self.constant += rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms, 0)
         self.terms = aggregated_terms
@@ -498,7 +545,7 @@ class LinearExpressionEfficient:
     def __isub__(
         self, rhs: Union["LinearExpressionEfficient", int, float]
     ) -> "LinearExpressionEfficient":
-        rhs = _wrap_in_linear_expr(rhs)
+        rhs = wrap_in_linear_expr(rhs)
         self.constant -= rhs.constant
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms, 0)
         self.terms = aggregated_terms
@@ -524,7 +571,7 @@ class LinearExpressionEfficient:
     def __imul__(
         self, rhs: Union["LinearExpressionEfficient", int, float]
     ) -> "LinearExpressionEfficient":
-        rhs = _wrap_in_linear_expr(rhs)
+        rhs = wrap_in_linear_expr(rhs)
 
         if self.terms and rhs.terms:
             raise ValueError("Cannot multiply two non constant expression")
@@ -569,7 +616,7 @@ class LinearExpressionEfficient:
     def __itruediv__(
         self, rhs: Union["LinearExpressionEfficient", int, float]
     ) -> "LinearExpressionEfficient":
-        rhs = _wrap_in_linear_expr(rhs)
+        rhs = wrap_in_linear_expr(rhs)
 
         if rhs.terms:
             raise ValueError("Cannot divide by a non constant expression")
@@ -801,6 +848,16 @@ class LinearExpressionEfficient:
     # def variance(self) -> "ExpressionNode":
     #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Variance"))
 
+    def sum_connections(self) -> "LinearExpressionEfficient":
+        if not self.is_zero():
+            raise ValueError(
+                "sum_connections only after an expression created with port_field"
+            )
+        port_field_terms = {}
+        for port_field_key, port_field_value in self.port_field_terms.items():
+            port_field_terms[port_field_key] = port_field_value.sum_connections()
+        return LinearExpressionEfficient(port_field_terms=port_field_terms)
+
 
 def linear_expressions_equal(
     lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
@@ -818,7 +875,7 @@ def sum_expressions(
     expressions: Sequence[LinearExpressionEfficient],
 ) -> LinearExpressionEfficient:
     if len(expressions) == 0:
-        return literal(0)
+        return wrap_in_linear_expr(literal(0))
     else:
         return sum(expressions)
 
@@ -846,21 +903,21 @@ class StandaloneConstraint:
         return f"{str(self.lower_bound)} <= {str(self.expression)} <= {str(self.upper_bound)}"
 
 
-def _wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:
+def wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:
     if isinstance(obj, LinearExpressionEfficient):
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
         return LinearExpressionEfficient([], LiteralNode(float(obj)))
+    elif isinstance(obj, ExpressionNodeEfficient):
+        return LinearExpressionEfficient([], obj)
     raise TypeError(f"Unable to wrap {obj} into a linear expression")
 
 
-# def _apply_if_node(
-#     obj: Any, func: Callable[[LinearExpressionEfficient], LinearExpressionEfficient]
-# ) -> LinearExpressionEfficient:
-#     if as_linear_expr := _wrap_in_linear_expr(obj):
-#         return func(as_linear_expr)
-#     else:
-#         return NotImplemented
+def wrap_in_linear_expr_if_present(obj: Any) -> Union[None, LinearExpressionEfficient]:
+    if obj is None:
+        return None
+    else:
+        return wrap_in_linear_expr(obj)
 
 
 def _copy_expression(
@@ -868,10 +925,6 @@ def _copy_expression(
 ) -> None:
     dst.terms = src.terms
     dst.constant = src.constant
-
-
-def literal(value: float) -> LinearExpressionEfficient:
-    return LinearExpressionEfficient([], LiteralNode(value))
 
 
 # TODO : Define shortcuts for "x", is_one etc ....
@@ -899,39 +952,11 @@ def comp_var(component_id: str, name: str) -> LinearExpressionEfficient:
     )
 
 
-def param(name: str) -> LinearExpressionEfficient:
-    return LinearExpressionEfficient([], ParameterNode(name))
-
-
-def comp_param(component_id: str, name: str) -> LinearExpressionEfficient:
-    return LinearExpressionEfficient([], ComponentParameterNode(component_id, name))
+def port_field(port_name: str, field_name: str) -> LinearExpressionEfficient:
+    return LinearExpressionEfficient(
+        port_field_terms=[PortFieldTerm(literal(1), port_name, field_name)]
+    )
 
 
 def is_linear(expr: LinearExpressionEfficient) -> bool:
     return True
-
-
-@dataclass(frozen=True)
-class PortFieldTerm:
-    port_name: str
-    field_name: str
-    aggregator: Optional[PortAggregator] = None
-
-    def __str__(self) -> str:
-        result = f"{self.port_name}.{self.field_name}"
-        if self.aggregator is not None:
-            result += f".{str(self.aggregator)}"
-        return result
-
-    def sum_connections(self) -> "PortFieldTerm":
-        if self.aggregator is not None:
-            raise ValueError(f"Port field {str(self)} already has a port aggregator")
-        return dataclasses.replace(self, aggregator=PortSum())
-
-
-class PortFieldExpr:
-    terms: List[PortFieldTerm]
-
-
-def port_field(port_name: str, field_name: str) -> PortFieldTerm:
-    return PortFieldTerm(port_name, field_name)

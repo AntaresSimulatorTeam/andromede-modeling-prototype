@@ -14,6 +14,14 @@
 Module for common classes used in models.
 """
 from enum import Enum
+from typing import Union
+
+from andromede.expression.expression_efficient import ExpressionNodeEfficient
+from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
+
+ValueOrExprNodeOrLinearExpr = Union[
+    int, float, ExpressionNodeEfficient, LinearExpressionEfficient
+]
 
 
 class ValueType(Enum):

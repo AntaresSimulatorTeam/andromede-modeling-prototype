@@ -13,9 +13,10 @@
 """
 The standard module contains the definition of standard models.
 """
-from andromede.expression import literal, param, var
-from andromede.expression.expression import ExpressionRange, port_field
+
+from andromede.expression.expression_efficient import ExpressionRange, literal, param
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression_efficient import port_field, var
 from andromede.model.constraint import Constraint
 from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
 from andromede.model.parameter import float_parameter, int_parameter
@@ -254,16 +255,16 @@ THERMAL_CLUSTER_MODEL_HD = model(
         ),
         Constraint(
             "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            var("nb_start").sum(
+                shift=ExpressionRange(-param("d_min_up") + 1, literal(0))
+            )
             <= var("nb_on"),
         ),
         Constraint(
             "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
+            var("nb_stop").sum(
+                shift=ExpressionRange(-param("d_min_down") + 1, literal(0))
+            )
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
         ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
@@ -331,16 +332,16 @@ THERMAL_CLUSTER_MODEL_DHD = model(
         ),
         Constraint(
             "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            var("nb_start").sum(
+                shift=ExpressionRange(-param("d_min_up") + 1, literal(0))
+            )
             <= var("nb_on"),
         ),
         Constraint(
             "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
+            var("nb_stop").sum(
+                shift=ExpressionRange(-param("d_min_down") + 1, literal(0))
+            )
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
         ),
     ],

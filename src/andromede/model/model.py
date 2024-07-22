@@ -51,8 +51,11 @@ from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     is_linear,
+    wrap_in_linear_expr,
+    wrap_in_linear_expr_if_present,
 )
 from andromede.expression.visitor import ExpressionVisitor, visit
+from andromede.model.common import ValueOrExprNodeOrLinearExpr
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
@@ -124,8 +127,8 @@ def _is_objective_contribution_valid(
         raise ValueError("Objective contribution must be a linear expression.")
 
     data_structure_provider = _make_structure_provider(model)
-    objective_structure = compute_indexation(
-        objective_contribution, data_structure_provider
+    objective_structure = objective_contribution.compute_indexation(
+        data_structure_provider
     )
 
     if objective_structure != IndexingStructure(time=False, scenario=False):
@@ -163,6 +166,7 @@ class PortFieldDefinition:
     definition: LinearExpressionEfficient
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "definition", wrap_in_linear_expr(self.definition))
         _validate_port_field_expression(self)
 
 
@@ -229,8 +233,8 @@ def model(
     binding_constraints: Optional[Iterable[Constraint]] = None,
     parameters: Optional[Iterable[Parameter]] = None,
     variables: Optional[Iterable[Variable]] = None,
-    objective_operational_contribution: Optional[LinearExpressionEfficient] = None,
-    objective_investment_contribution: Optional[LinearExpressionEfficient] = None,
+    objective_operational_contribution: Optional[ValueOrExprNodeOrLinearExpr] = None,
+    objective_investment_contribution: Optional[ValueOrExprNodeOrLinearExpr] = None,
     inter_block_dyn: bool = False,
     ports: Optional[Iterable[ModelPort]] = None,
     port_fields_definitions: Optional[Iterable[PortFieldDefinition]] = None,
@@ -251,18 +255,24 @@ def model(
     return Model(
         id=id,
         constraints={c.name: c for c in constraints} if constraints else {},
-        binding_constraints={c.name: c for c in binding_constraints}
-        if binding_constraints
-        else {},
+        binding_constraints=(
+            {c.name: c for c in binding_constraints} if binding_constraints else {}
+        ),
         parameters={p.name: p for p in parameters} if parameters else {},
         variables={v.name: v for v in variables} if variables else {},
-        objective_operational_contribution=objective_operational_contribution,
-        objective_investment_contribution=objective_investment_contribution,
+        objective_operational_contribution=wrap_in_linear_expr_if_present(
+            objective_operational_contribution
+        ),
+        objective_investment_contribution=wrap_in_linear_expr_if_present(
+            objective_investment_contribution
+        ),
         inter_block_dyn=inter_block_dyn,
         ports=existing_port_names,
-        port_fields_definitions={d.port_field: d for d in port_fields_definitions}
-        if port_fields_definitions
-        else {},
+        port_fields_definitions=(
+            {d.port_field: d for d in port_fields_definitions}
+            if port_fields_definitions
+            else {}
+        ),
     )
 
 
@@ -331,7 +341,9 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
 
 def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
     if not isinstance(definition.definition, LinearExpressionEfficient):
-        raise TypeError(f"Port field definition should be a LinearExpression, not a {type(definition.definition)}")
+        raise TypeError(
+            f"Port field definition should be a LinearExpression, not a {type(definition.definition)}"
+        )
 
     for term in definition.definition.terms.values():
         visit(term.coefficient, _PortFieldExpressionChecker())

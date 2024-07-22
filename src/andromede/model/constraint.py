@@ -10,28 +10,15 @@
 #
 # This file is part of the Antares project.
 from dataclasses import dataclass, field
-from typing import Any, Optional, Union
+from typing import Any
 
-from andromede.expression.degree import is_constant
-from andromede.expression.equality import (
-    expressions_equal,
-    expressions_equal_if_present,
-)
-
-# from andromede.expression.expression import (
-#     Comparator,
-#     ComparisonNode,
-#     ExpressionNode,
-#     literal,
-# )
-from andromede.expression.expression_efficient import Comparator, ComparisonNode, is_unbound
+from andromede.expression.expression_efficient import literal
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     StandaloneConstraint,
     linear_expressions_equal,
-    literal,
+    wrap_in_linear_expr,
 )
-from andromede.expression.print import print_expr
 from andromede.model.common import ProblemContext
 
 
@@ -45,13 +32,20 @@ class Constraint:
 
     name: str
     expression: LinearExpressionEfficient
-    lower_bound: LinearExpressionEfficient = field(default=literal(-float("inf")))
-    upper_bound: LinearExpressionEfficient = field(default=literal(float("inf")))
+    lower_bound: LinearExpressionEfficient = field(
+        default=wrap_in_linear_expr(literal(-float("inf")))
+    )
+    upper_bound: LinearExpressionEfficient = field(
+        default=wrap_in_linear_expr(literal(float("inf")))
+    )
     context: ProblemContext = field(default=ProblemContext.OPERATIONAL)
 
     def __post_init__(
         self,
     ) -> None:
+        self.lower_bound = wrap_in_linear_expr(self.lower_bound)
+        self.upper_bound = wrap_in_linear_expr(self.upper_bound)
+
         if isinstance(self.expression, StandaloneConstraint):
             # Case where constraint is initialized with something like Constraint(var("x") <= var("y"))
             if not self.lower_bound.is_unbound() or not self.upper_bound.is_unbound():
@@ -64,6 +58,7 @@ class Constraint:
             self.expression = self.expression.expression
 
         else:
+            self.expression = wrap_in_linear_expr(self.expression)
             for bound in [self.lower_bound, self.upper_bound]:
                 if not bound.is_constant():
                     raise ValueError(

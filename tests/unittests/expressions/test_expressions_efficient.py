@@ -27,6 +27,9 @@ from andromede.expression.expression_efficient import (
     ParameterNode,
     TimeAggregatorNode,
     TimeOperatorNode,
+    comp_param,
+    literal,
+    param,
 )
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
@@ -35,13 +38,11 @@ from andromede.expression.linear_expression_efficient import (
     StandaloneConstraint,
     TermEfficient,
     TermKeyEfficient,
-    comp_param,
     comp_var,
     linear_expressions_equal,
-    literal,
-    param,
     sum_expressions,
     var,
+    wrap_in_linear_expr,
 )
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 
@@ -223,7 +224,8 @@ def test_degree_computation_should_take_into_account_simplifications() -> None:
         (
             param("p"),
             param("p") * param("q"),
-            (1 + param("q")) * param("p"), # Equality visitor not able to handle commutativity
+            (1 + param("q"))
+            * param("p"),  # Equality visitor not able to handle commutativity
         ),
     ],
 )
@@ -232,7 +234,9 @@ def test_addition(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    assert linear_expressions_equal(e1 + e2, expected)
+    assert linear_expressions_equal(
+        wrap_in_linear_expr(e1) + wrap_in_linear_expr(e2), wrap_in_linear_expr(expected)
+    )
 
 
 @pytest.mark.parametrize(
@@ -296,7 +300,8 @@ def test_addition(
         (
             param("p"),
             param("p") * param("q"),
-            param("p") * (1 - param("q")), # Equality visitor not able to handle commutativity
+            (1 - param("q"))
+            * param("p"),  # Equality visitor not able to handle commutativity
         ),
     ],
 )
@@ -305,10 +310,9 @@ def test_substraction(
     e2: LinearExpressionEfficient,
     expected: LinearExpressionEfficient,
 ) -> None:
-    print()
-    print(e1 - e2)
-    print(expected)
-    assert linear_expressions_equal(e1 - e2, expected)
+    assert linear_expressions_equal(
+        wrap_in_linear_expr(e1) - wrap_in_linear_expr(e2), wrap_in_linear_expr(expected)
+    )
 
 
 @pytest.mark.parametrize(
@@ -353,7 +357,9 @@ def test_linear_expression_equality(
 
 
 def test_standalone_constraint() -> None:
-    cst = StandaloneConstraint(var("x"), literal(0), literal(10))
+    cst = StandaloneConstraint(
+        var("x"), wrap_in_linear_expr(literal(0)), wrap_in_linear_expr(literal(10))
+    )
 
     assert str(cst) == "0 <= +x <=  + 10"
 
@@ -641,16 +647,29 @@ def test_multiplication_of_differently_indexed_terms() -> None:
     assert expr.compute_indexation(provider) == IndexingStructure(True, True)
 
 
-def test_sum_expressions() -> None:
+@pytest.mark.parametrize(
+    "sum_expr, expected",
+    [
+        (sum_expressions([]), literal(0)),
+        (sum_expressions([wrap_in_linear_expr(literal(1))]), literal(1)),
+        (sum_expressions([wrap_in_linear_expr(literal(1)), var("x")]), 1 + var("x")),
+        (
+            sum_expressions(
+                [
+                    wrap_in_linear_expr(literal(1)),
+                    var("x"),
+                    wrap_in_linear_expr(param("p")),
+                ]
+            ),
+            (1 + var("x")) + param("p"),
+        ),
+    ],
+)
+def test_sum_expressions(
+    sum_expr: LinearExpressionEfficient, expected: LinearExpressionEfficient
+) -> None:
 
-    assert linear_expressions_equal(sum_expressions([]), literal(0))
-    assert linear_expressions_equal(sum_expressions([literal(1)]), literal(1))
-    assert linear_expressions_equal(
-        sum_expressions([literal(1), var("x")]), 1 + var("x")
-    )
-    assert linear_expressions_equal(
-        sum_expressions([literal(1), var("x"), param("p")]), (1 + var("x")) + param("p")
-    )
+    assert linear_expressions_equal(sum_expr, wrap_in_linear_expr(expected))
 
 
 @pytest.mark.parametrize(
@@ -664,4 +683,4 @@ def test_sum_expressions() -> None:
     ],
 )
 def test_is_unbound(expr: LinearExpressionEfficient, unbound: bool) -> None:
-    assert expr.is_unbound() == unbound
+    assert wrap_in_linear_expr(expr).is_unbound() == unbound

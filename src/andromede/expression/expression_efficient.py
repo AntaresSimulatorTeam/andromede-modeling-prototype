@@ -135,7 +135,8 @@ def wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
         return LiteralNode(float(obj))
-    raise TypeError(f"Unable to wrap {obj} into an expression node")
+    # Do not raise excpetion so that we can return NotImplemented in _apply_if_node
+    # raise TypeError(f"Unable to wrap {obj} into an expression node")
 
 
 def _apply_if_node(
@@ -353,9 +354,21 @@ class ComponentParameterNode(ExpressionNodeEfficient):
     name: str
 
 
+def param(name: str) -> ExpressionNodeEfficient:
+    return ParameterNode(name)
+
+
+def comp_param(component_id: str, name: str) -> ExpressionNodeEfficient:
+    return ComponentParameterNode(component_id, name)
+
+
 @dataclass(frozen=True, eq=False)
 class LiteralNode(ExpressionNodeEfficient):
     value: float
+
+
+def literal(value: float) -> ExpressionNodeEfficient:
+    return LiteralNode(value)
 
 
 def is_unbound(expr: ExpressionNodeEfficient) -> bool:
@@ -429,6 +442,7 @@ class DivisionNode(BinaryOperatorNode):
 
 @dataclass(frozen=True, eq=False)
 class ExpressionRange:
+
     start: ExpressionNodeEfficient
     stop: ExpressionNodeEfficient
     step: Optional[ExpressionNodeEfficient] = None

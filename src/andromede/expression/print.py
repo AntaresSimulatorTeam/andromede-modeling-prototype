@@ -13,39 +13,19 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from andromede.expression.expression import (
-    ComponentParameterNode,
-    ComponentVariableNode,
-    ExpressionNode,
-    PortFieldAggregatorNode,
-    PortFieldNode,
-)
-from andromede.expression.visitor import T
-
-# from .expression import (
-#     AdditionNode,
-#     Comparator,
-#     ComparisonNode,
-#     DivisionNode,
-#     LiteralNode,
-#     MultiplicationNode,
-#     NegationNode,
-#     ParameterNode,
-#     ScenarioOperatorNode,
-#     SubstractionNode,
-#     TimeAggregatorNode,
-#     TimeOperatorNode,
-#     VariableNode,
-# )
 from .expression_efficient import (
     AdditionNode,
     Comparator,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
+    ExpressionNodeEfficient,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
     ScenarioOperatorNode,
     SubstractionNode,
     TimeAggregatorNode,
@@ -100,14 +80,8 @@ class PrinterVisitor(ExpressionVisitor[str]):
         right_value = visit(node.right, self)
         return f"{left_value} {op} {right_value}"
 
-    # def variable(self, node: VariableNode) -> str:
-    #     return node.name
-
     def parameter(self, node: ParameterNode) -> str:
         return node.name
-
-    def comp_variable(self, node: ComponentVariableNode) -> str:
-        return f"{node.component_id}.{node.name}"
 
     def comp_parameter(self, node: ComponentParameterNode) -> str:
         return f"{node.component_id}.{node.name}"
@@ -129,5 +103,5 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"({visit(node.operand, self)}.{node.aggregator})"
 
 
-def print_expr(expression: ExpressionNode) -> str:
+def print_expr(expression: ExpressionNodeEfficient) -> str:
     return visit(expression, PrinterVisitor())
