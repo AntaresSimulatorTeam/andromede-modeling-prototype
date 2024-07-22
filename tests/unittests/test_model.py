@@ -14,18 +14,18 @@ from typing import Optional, Type
 
 import pytest
 
-from andromede.expression.expression_efficient import ExpressionRange, port_field
+from andromede.expression.expression_efficient import ExpressionRange, comp_param, param
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
-    comp_param,
     comp_var,
     linear_expressions_equal,
     literal,
-    param,
+    port_field,
     var,
+    wrap_in_linear_expr,
 )
-from andromede.model import Constraint, float_parameter, float_variable, model
-from andromede.model.model import PortFieldDefinition, port_field_def
+from andromede.model import Constraint, float_variable, model
+from andromede.model.model import port_field_def
 
 
 @pytest.mark.parametrize(
@@ -38,8 +38,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             literal(10),
             "my_constraint",
             2 * var("my_var"),
-            literal(5),
-            literal(10),
+            wrap_in_linear_expr(literal(5)),
+            wrap_in_linear_expr(literal(10)),
         ),
         (
             "my_constraint",
@@ -48,8 +48,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             literal(10),
             "my_constraint",
             2 * var("my_var"),
-            literal(-float("inf")),
-            literal(10),
+            wrap_in_linear_expr(literal(-float("inf"))),
+            wrap_in_linear_expr(literal(10)),
         ),
         (
             "my_constraint",
@@ -58,8 +58,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var"),
-            literal(5),
-            literal(float("inf")),
+            wrap_in_linear_expr(literal(5)),
+            wrap_in_linear_expr(literal(float("inf"))),
         ),
         (
             "my_constraint",
@@ -68,8 +68,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var"),
-            literal(-float("inf")),
-            literal(float("inf")),
+            wrap_in_linear_expr(literal(-float("inf"))),
+            wrap_in_linear_expr(literal(float("inf"))),
         ),
         (
             "my_constraint",
@@ -78,8 +78,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var") - param("p"),
-            literal(-float("inf")),
-            literal(0),
+            wrap_in_linear_expr(literal(-float("inf"))),
+            wrap_in_linear_expr(literal(0)),
         ),
         (
             "my_constraint",
@@ -88,8 +88,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var") - param("p"),
-            literal(0),
-            literal(float("inf")),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(float("inf"))),
         ),
         (
             "my_constraint",
@@ -98,8 +98,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var") - param("p"),
-            literal(0),
-            literal(0),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(0)),
         ),
         (
             "my_constraint",
@@ -108,8 +108,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var").expec() - param("p"),
-            literal(0),
-            literal(0),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(0)),
         ),
         (
             "my_constraint",
@@ -118,8 +118,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var").shift(-1) - param("p"),
-            literal(0),
-            literal(0),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(0)),
         ),
     ],
 )
@@ -229,7 +229,7 @@ def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objectiv
         (comp_var("c", "x"), ValueError),
         (comp_param("c", "x"), ValueError),
         (port_field("p", "f"), ValueError),
-        (port_field("p", "f").sum_connections(), ValueError)
+        (port_field("p", "f").sum_connections(), ValueError),
     ],
 )
 def test_invalid_port_field_definition_should_raise(
