@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import re
 from typing import Optional, Type
 
 import pytest
@@ -223,19 +224,39 @@ def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objectiv
 
 
 @pytest.mark.parametrize(
-    "expression, error_type",
+    "expression, error_type, error_msg",
     [
-        (var("x") <= 0, TypeError),
-        (comp_var("c", "x"), ValueError),
-        (comp_param("c", "x"), ValueError),
-        (port_field("p", "f"), ValueError),
-        (port_field("p", "f").sum_connections(), ValueError),
+        (
+            var("x") <= 0,
+            TypeError,
+            "Unable to wrap  + (-inf) <= +x <= 0 into a linear expression",
+        ),
+        (
+            comp_var("c", "x"),
+            ValueError,
+            "Port definition must not contain a variable associated to a component.",
+        ),
+        (
+            comp_param("c", "x"),
+            ValueError,
+            "Port definition must not contain a parameter associated to a component.",
+        ),
+        (
+            port_field("p", "f"),
+            ValueError,
+            "Port definition cannot reference another port field.",
+        ),
+        (
+            port_field("p", "f").sum_connections(),
+            ValueError,
+            "Port definition cannot reference another port field.",
+        ),
     ],
 )
 def test_invalid_port_field_definition_should_raise(
-    expression: LinearExpressionEfficient, error_type: Type
+    expression: LinearExpressionEfficient, error_type: Type, error_msg: str
 ) -> None:
-    with pytest.raises(error_type):
+    with pytest.raises(error_type, match=re.escape(error_msg)):
         port_field_def(port_name="p", field_name="f", definition=expression)
 
 

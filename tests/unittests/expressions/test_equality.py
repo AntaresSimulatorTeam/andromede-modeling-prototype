@@ -10,17 +10,18 @@
 #
 # This file is part of the Antares project.
 
-import math
 
 import pytest
 
-from andromede.expression import ExpressionNode, copy_expression, literal, param, var
+
+from andromede.expression.copy import copy_expression
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
-    ExpressionRange,
     TimeAggregatorNode,
     expression_range,
 )
+from andromede.expression.expression_efficient import literal, param
+from andromede.expression.linear_expression_efficient import LinearExpressionEfficient, var
 
 
 def shifted_x():
@@ -44,7 +45,7 @@ def shifted_x():
         var("x").expec(),
     ],
 )
-def test_equals(expr: ExpressionNode) -> None:
+def test_equals(expr: LinearExpressionEfficient) -> None:
     copy = copy_expression(expr)
     assert expressions_equal(expr, copy)
 
@@ -74,7 +75,7 @@ def test_equals(expr: ExpressionNode) -> None:
         (var("x").expec(), var("y").expec()),
     ],
 )
-def test_not_equals(lhs: ExpressionNode, rhs: ExpressionNode) -> None:
+def test_not_equals(lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient) -> None:
     assert not expressions_equal(lhs, rhs)
 
 

@@ -13,14 +13,16 @@ from typing import Set
 
 import pytest
 
-from andromede.expression import ExpressionNode, literal, param, print_expr, var
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import ExpressionRange, port_field
+from andromede.expression.expression_efficient import literal, param
+from andromede.expression.linear_expression_efficient import LinearExpressionEfficient, var
 from andromede.expression.parsing.parse_expression import (
     AntaresParseException,
     ModelIdentifiers,
     parse_expression,
 )
+from andromede.expression.print import print_expr
 
 
 @pytest.mark.parametrize(
@@ -151,7 +153,7 @@ def test_parsing_visitor(
     variables: Set[str],
     parameters: Set[str],
     expression_str: str,
-    expected: ExpressionNode,
+    expected: LinearExpressionEfficient,
 ):
     identifiers = ModelIdentifiers(variables, parameters)
     expr = parse_expression(expression_str, identifiers)

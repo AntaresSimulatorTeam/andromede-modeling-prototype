@@ -15,20 +15,14 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 from andromede.expression import CopyVisitor, visit
-
-# from andromede.expression.expression import (
-#     AdditionNode,
-#     ExpressionNode,
-#     LiteralNode,
-#     PortFieldAggregatorNode,
-#     PortFieldNode,
-# )
 from andromede.expression.expression_efficient import (
     PortFieldAggregatorNode,
     PortFieldNode,
+)
+from andromede.expression.linear_expression_efficient import (
+    LinearExpressionEfficient,
     sum_expressions,
 )
-from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
 from andromede.model.model import PortFieldId
 
 

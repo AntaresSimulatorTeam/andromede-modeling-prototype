@@ -9,13 +9,13 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-import io
 from pathlib import Path
 
 import pytest
 
-from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
+from andromede.expression.expression_efficient import literal, param
+from andromede.expression.linear_expression_efficient import var
 from andromede.expression.parsing.parse_expression import AntaresParseException
 from andromede.libs.standard import CONSTANT
 from andromede.model import (

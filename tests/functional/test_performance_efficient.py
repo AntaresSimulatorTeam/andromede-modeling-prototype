@@ -14,7 +14,8 @@
 import pytest
 
 from andromede.expression.evaluate import EvaluationContext
-from andromede.expression.linear_expression_efficient import literal, param, var
+from andromede.expression.expression_efficient import param
+from andromede.expression.linear_expression_efficient import literal, var
 
 
 def test_large_number_of_parameters_sum() -> None:

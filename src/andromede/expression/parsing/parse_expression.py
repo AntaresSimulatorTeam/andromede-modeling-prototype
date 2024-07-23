@@ -15,26 +15,18 @@ from typing import Set
 from antlr4 import CommonTokenStream, DiagnosticErrorListener, InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
 
-# from andromede.expression import ExpressionNode, literal, param, var
 from andromede.expression.equality import expressions_equal
-
-# from andromede.expression.expression import (
-#     Comparator,
-#     ComparisonNode,
-#     ExpressionRange,
-#     PortFieldNode,
-# )
 from andromede.expression.expression_efficient import (
     Comparator,
     ComparisonNode,
     ExpressionNodeEfficient,
     ExpressionRange,
     PortFieldNode,
+    param,
 )
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     literal,
-    param,
     var,
 )
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer

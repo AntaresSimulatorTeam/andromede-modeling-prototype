@@ -279,7 +279,7 @@ def model(
 class _PortFieldExpressionChecker(ExpressionVisitor[None]):
     """
     Visits the whole expression to check there is no:
-    comparison, other port field, component-associated parametrs or variables...
+    comparison, other port field, component-associated parameters or variables...
     """
 
     def literal(self, node: LiteralNode) -> None:
@@ -340,11 +340,34 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
 
 
 def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
+    """
+    Check there is no:
+    comparison, other port field, component-associated parameters or variables...
+    """
+    _check_port_field_expression_type(definition)
+    _check_no_reference_to_other_port_field(definition)
+    _check_no_component_associated_variable_or_parameter(definition)
+
+
+def _check_port_field_expression_type(definition: PortFieldDefinition) -> None:
     if not isinstance(definition.definition, LinearExpressionEfficient):
         raise TypeError(
             f"Port field definition should be a LinearExpression, not a {type(definition.definition)}"
         )
 
+
+def _check_no_reference_to_other_port_field(definition: PortFieldDefinition) -> None:
+    if definition.definition.port_field_terms:
+        raise ValueError("Port definition cannot reference another port field.")
+
+
+def _check_no_component_associated_variable_or_parameter(
+    definition: PortFieldDefinition,
+) -> None:
     for term in definition.definition.terms.values():
+        if term.component_id:
+            raise ValueError(
+                "Port definition must not contain a variable associated to a component."
+            )
         visit(term.coefficient, _PortFieldExpressionChecker())
     visit(definition.definition.constant, _PortFieldExpressionChecker())
