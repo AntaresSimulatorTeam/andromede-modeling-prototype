@@ -20,7 +20,6 @@ from andromede.libs.standard import (
     CONSTANT,
     DEMAND_MODEL,
     GENERATOR_MODEL,
-    NODE_BALANCE_MODEL,
     NODE_WITH_SPILL_AND_ENS_MODEL,
 )
 from andromede.model import (
@@ -49,14 +48,12 @@ from andromede.study import (
     ScenarioIndex,
     ScenarioSeriesData,
     TimeIndex,
-    TimeScenarioIndex,
     TimeScenarioSeriesData,
     TimeSeriesData,
     create_component,
 )
 
 CONSTANT = IndexingStructure(False, False)
-FREE = IndexingStructure(True, True)
 
 INVESTMENT = ProblemContext.INVESTMENT
 OPERATIONAL = ProblemContext.OPERATIONAL
@@ -422,7 +419,7 @@ def test_benders_decomposed_single_time_block_multi_scenario(
         "solution": {
             "overall_cost": 55_000,
             "values": {
-                "CAND_p_max_s0": 100,
+                "CAND_p_max": 100,
             },
         }
     }
@@ -517,7 +514,7 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
         "solution": {
             "overall_cost": 58_000,
             "values": {
-                "CAND_p_max_s0": 100,
+                "CAND_p_max": 100,
             },
         }
     }

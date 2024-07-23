@@ -722,11 +722,10 @@ class OptimizationProblem:
             model = component.model
 
             for model_var in self.strategy.get_variables(model):
-                var_indexing = IndexingStructure(
-                    model_var.structure.time, model_var.structure.scenario
-                )
+                var_indexing = model_var.structure
                 instantiated_lb_expr = None
                 instantiated_ub_expr = None
+
                 if model_var.lower_bound:
                     instantiated_lb_expr = _instantiate_model_expression(
                         model_var.lower_bound, component.id, self.context
@@ -745,7 +744,10 @@ class OptimizationProblem:
 
                 for block_timestep in self.context.get_time_indices(var_indexing):
                     block_suffix = (
-                        f"_t{block_timestep}" if self.context.block_length() > 1 else ""
+                        f"_t{block_timestep}"
+                        if var_indexing.is_time_varying()
+                        and (self.context.block_length() > 1)
+                        else ""
                     )
 
                     for scenario in self.context.get_scenario_indices(var_indexing):
@@ -761,7 +763,10 @@ class OptimizationProblem:
                             ).get_value(block_timestep, scenario)
 
                         scenario_suffix = (
-                            f"_s{scenario}" if self.context.scenarios > 1 else ""
+                            f"_s{scenario}"
+                            if var_indexing.is_scenario_varying()
+                            and (self.context.scenarios > 1)
+                            else ""
                         )
 
                         # Externally, for the Solver, this variable will have a full name

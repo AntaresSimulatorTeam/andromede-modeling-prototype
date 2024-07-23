@@ -225,7 +225,7 @@ def build_benders_decomposed_problem(
         null_time_block := TimeBlock(  # Not necessary for master, but list must be non-empty
             0, [0]
         ),
-        scenarios,  # Not necessary for master, but needed for structure file
+        null_scenario := 0,  # Not necessary for master
         problem_name="master",
         border_management=border_management,
         solver_id=solver_id,
