@@ -181,6 +181,14 @@ def test_variable_bound() -> None:
     ):
         problem = build_problem(network, database, TimeBlock(1, [0]), 1)
 
+    network = create_one_node_network(generator_model)
+    database = create_simple_database(max_generation=-10)
+    with pytest.raises(
+        ValueError,
+        match=r"Upper bound \(-10\) must be strictly greater than lower bound \(0\) for variable G_generation",
+    ):
+        problem = build_problem(network, database, TimeBlock(1, [0]), 1)
+
 
 def generate_data(
     efficiency: float, horizon: int, scenarios: int
