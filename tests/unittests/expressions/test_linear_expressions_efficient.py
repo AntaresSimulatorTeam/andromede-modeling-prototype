@@ -14,10 +14,20 @@ from typing import Dict
 
 import pytest
 
+from andromede.expression.expression_efficient import (
+    TimeAggregatorNode,
+    expression_range,
+    param,
+)
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
+    PortFieldId,
+    PortFieldTerm,
     TermEfficient,
+    _copy_expression,
     linear_expressions_equal,
+    var,
+    wrap_in_linear_expr,
 )
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeShift, TimeSum
@@ -38,6 +48,26 @@ def test_affine_expression_printing_should_reflect_required_formatting(
 ) -> None:
     expr = LinearExpressionEfficient([TermEfficient(coeff, "c", var_name)], constant)
     assert str(expr) == expec_str
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        var("x"),
+        wrap_in_linear_expr(param("p")),
+        var("x") + 1,
+        var("x") - 1,
+        var("x") / 2,
+        var("x") * 3,
+        var("x").sum(shift=expression_range(1, 10, 2)),
+        var("x").sum(shift=expression_range(1, param("p"))),
+        var("x").expec(),
+    ],
+)
+def test_linear_expressions_equal(expr: LinearExpressionEfficient) -> None:
+    copy = LinearExpressionEfficient()
+    _copy_expression(expr, copy)
+    assert linear_expressions_equal(expr, copy)
 
 
 @pytest.mark.parametrize(
@@ -83,6 +113,26 @@ def test_instantiate_linear_expression_from_dict(
     expr = LinearExpressionEfficient(terms_dict, constant)
     assert expr.terms == exp_terms
     assert expr.constant == exp_constant
+
+
+@pytest.mark.parametrize(
+    "expr, expected",
+    [
+        (LinearExpressionEfficient(), True),
+        (LinearExpressionEfficient([]), True),
+        (LinearExpressionEfficient([], 0, {}), True),
+        (LinearExpressionEfficient([TermEfficient(1, "c", "x")], 0, {}), False),
+        (LinearExpressionEfficient([], 1, {}), False),
+        (
+            LinearExpressionEfficient(
+                [], 1, {PortFieldId("p", "f"): PortFieldTerm(1, "p", "f")}
+            ),
+            False,
+        ),
+    ],
+)
+def test_is_zero(expr: LinearExpressionEfficient, expected: bool) -> None:
+    assert expr.is_zero() == expected
 
 
 @pytest.mark.parametrize(
@@ -167,12 +217,6 @@ def test_addition(
     expected: LinearExpressionEfficient,
 ) -> None:
     assert linear_expressions_equal(e1 + e2, expected)
-
-
-def test_addition_of_linear_expressions_with_different_number_of_instances_should_raise_value_error() -> (
-    None
-):
-    pass
 
 
 def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_from_terms() -> (

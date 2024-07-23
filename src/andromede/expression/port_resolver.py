@@ -10,19 +10,8 @@
 #
 # This file is part of the Antares project.
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, List
 
-from andromede.expression import CopyVisitor, visit
-from andromede.expression.expression_efficient import (
-    PortFieldAggregatorNode,
-    PortFieldNode,
-)
-from andromede.expression.linear_expression_efficient import (
-    LinearExpressionEfficient,
-    sum_expressions,
-)
 from andromede.model.model import PortFieldId
 
 
@@ -36,51 +25,51 @@ class PortFieldKey:
     port_variable_id: PortFieldId
 
 
-@dataclass(frozen=True)
-class PortResolver(CopyVisitor):
-    """
-    Duplicates the AST with replacement of port field nodes by
-    their corresponding expression.
-    """
+# @dataclass(frozen=True)
+# class PortResolver(CopyVisitor):
+#     """
+#     Duplicates the AST with replacement of port field nodes by
+#     their corresponding expression.
+#     """
 
-    component_id: str
-    ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]]
+#     component_id: str
+#     ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]]
 
-    def port_field(self, node: PortFieldNode) -> LinearExpressionEfficient:
-        expressions = self.ports_expressions[
-            PortFieldKey(
-                self.component_id, PortFieldId(node.port_name, node.field_name)
-            )
-        ]
-        if len(expressions) != 1:
-            raise ValueError(
-                f"Invalid number of expression for port : {node.port_name}"
-            )
-        else:
-            return expressions[0]
+#     def port_field(self, node: PortFieldNode) -> LinearExpressionEfficient:
+#         expressions = self.ports_expressions[
+#             PortFieldKey(
+#                 self.component_id, PortFieldId(node.port_name, node.field_name)
+#             )
+#         ]
+#         if len(expressions) != 1:
+#             raise ValueError(
+#                 f"Invalid number of expression for port : {node.port_name}"
+#             )
+#         else:
+#             return expressions[0]
 
-    def port_field_aggregator(
-        self, node: PortFieldAggregatorNode
-    ) -> LinearExpressionEfficient:
-        if node.aggregator != "PortSum":
-            raise NotImplementedError("Only PortSum is supported.")
-        port_field_node = node.operand
-        if not isinstance(port_field_node, PortFieldNode):
-            raise ValueError(f"Should be a portFieldNode : {port_field_node}")
+#     def port_field_aggregator(
+#         self, node: PortFieldAggregatorNode
+#     ) -> LinearExpressionEfficient:
+#         if node.aggregator != "PortSum":
+#             raise NotImplementedError("Only PortSum is supported.")
+#         port_field_node = node.operand
+#         if not isinstance(port_field_node, PortFieldNode):
+#             raise ValueError(f"Should be a portFieldNode : {port_field_node}")
 
-        expressions = self.ports_expressions.get(
-            PortFieldKey(
-                self.component_id,
-                PortFieldId(port_field_node.port_name, port_field_node.field_name),
-            ),
-            [],
-        )
-        return sum_expressions(expressions)
+#         expressions = self.ports_expressions.get(
+#             PortFieldKey(
+#                 self.component_id,
+#                 PortFieldId(port_field_node.port_name, port_field_node.field_name),
+#             ),
+#             [],
+#         )
+#         return sum_expressions(expressions)
 
 
-def resolve_port(
-    expression: LinearExpressionEfficient,
-    component_id: str,
-    ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]],
-) -> LinearExpressionEfficient:
-    return visit(expression, PortResolver(component_id, ports_expressions))
+# def resolve_port(
+#     expression: LinearExpressionEfficient,
+#     component_id: str,
+#     ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]],
+# ) -> LinearExpressionEfficient:
+#     return visit(expression, PortResolver(component_id, ports_expressions))

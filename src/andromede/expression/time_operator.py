@@ -40,7 +40,7 @@ class TimeOperator(ABC):
         return self.time_ids
 
     def size(self) -> int:
-        return len(self.time_ids)
+        return len(self.time_ids.expressions)
 
 
 @dataclass(frozen=True)

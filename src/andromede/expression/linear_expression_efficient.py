@@ -16,7 +16,17 @@ with only variables and literal coefficients.
 """
 import dataclasses
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import ValueProvider, evaluate
@@ -47,8 +57,6 @@ from andromede.expression.time_operator import (
     TimeShift,
     TimeSum,
 )
-
-T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -294,90 +302,20 @@ def generate_key(term: TermEfficient) -> TermKeyEfficient:
     )
 
 
-def _merge_dicts(
-    lhs: Dict[TermKeyEfficient, TermEfficient],
-    rhs: Dict[TermKeyEfficient, TermEfficient],
-    merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
-    neutral: float,
-) -> Dict[TermKeyEfficient, TermEfficient]:
-    res = {}
-    for k, v in lhs.items():
-        res[k] = merge_func(
-            v,
-            rhs.get(
-                k,
-                TermEfficient(
-                    neutral,
-                    v.component_id,
-                    v.variable_name,
-                    v.structure,
-                    v.time_operator,
-                    v.time_aggregator,
-                    v.scenario_operator,
-                ),
-            ),
-        )
-    for k, v in rhs.items():
-        if k not in lhs:
-            res[k] = merge_func(
-                TermEfficient(
-                    neutral,
-                    v.component_id,
-                    v.variable_name,
-                    v.structure,
-                    v.time_operator,
-                    v.time_aggregator,
-                    v.scenario_operator,
-                ),
-                v,
-            )
-    return res
-
-
-def _merge_is_possible(lhs: TermEfficient, rhs: TermEfficient) -> None:
-    if lhs.component_id != rhs.component_id or lhs.variable_name != rhs.variable_name:
-        raise ValueError("Cannot merge terms for different variables")
-    if (
-        lhs.time_operator != rhs.time_operator
-        or lhs.time_aggregator != rhs.time_aggregator
-        or lhs.scenario_operator != rhs.scenario_operator
-    ):
-        raise ValueError("Cannot merge terms with different operators")
-    if lhs.structure != rhs.structure:
-        raise ValueError("Cannot merge terms with different structures")
-
-
-def _add_terms(lhs: TermEfficient, rhs: TermEfficient) -> TermEfficient:
-    _merge_is_possible(lhs, rhs)
-    return TermEfficient(
-        lhs.coefficient + rhs.coefficient,
-        lhs.component_id,
-        lhs.variable_name,
-        lhs.structure,
-        lhs.time_operator,
-        lhs.time_aggregator,
-        lhs.scenario_operator,
-    )
-
-
-def _substract_terms(lhs: TermEfficient, rhs: TermEfficient) -> TermEfficient:
-    _merge_is_possible(lhs, rhs)
-    return TermEfficient(
-        lhs.coefficient - rhs.coefficient,
-        lhs.component_id,
-        lhs.variable_name,
-        lhs.structure,
-        lhs.time_operator,
-        lhs.time_aggregator,
-        lhs.scenario_operator,
-    )
-
-
-# TODO: Try to use PortField Id which is exactly the same ?
 @dataclass(frozen=True)
-class PortFieldKey:
+class PortFieldId:
     port_name: str
     field_name: str
+
+
+@dataclass(eq=True, frozen=True)
+class PortFieldKey:
+    """
+    Identifies the expression node for one component and one port variable.
+    """
+
+    component_id: str
+    port_variable_id: PortFieldId
 
 
 @dataclass(frozen=True)
@@ -399,6 +337,80 @@ class PortFieldTerm:
         return dataclasses.replace(self, aggregator=PortSum())
 
 
+T_val = TypeVar("T_val", bound=Union[TermEfficient, PortFieldTerm])
+
+
+@overload
+def _merge_dicts(
+    lhs: Dict[TermKeyEfficient, TermEfficient],
+    rhs: Dict[TermKeyEfficient, TermEfficient],
+    merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
+    neutral: float,
+) -> Dict[TermKeyEfficient, TermEfficient]: ...
+
+
+@overload
+def _merge_dicts(
+    lhs: Dict[PortFieldId, PortFieldTerm],
+    rhs: Dict[PortFieldId, PortFieldTerm],
+    merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
+    neutral: float,
+) -> Dict[PortFieldId, PortFieldTerm]: ...
+
+
+def _get_neutral_term(term: T_val, neutral: float) -> T_val:
+    return dataclasses.replace(term, coefficient=neutral)
+
+
+def _merge_dicts(lhs, rhs, merge_func, neutral):
+    res = {}
+    for k, v in lhs.items():
+        res[k] = merge_func(v, rhs.get(k, _get_neutral_term(v, neutral)))
+    for k, v in rhs.items():
+        if k not in lhs:
+            res[k] = merge_func(_get_neutral_term(v, neutral), v)
+    return res
+
+
+def _merge_is_possible(lhs: T_val, rhs: T_val) -> None:
+    if isinstance(lhs, TermEfficient) and isinstance(rhs, TermEfficient):
+        _merge_term_is_possible(lhs, rhs)
+    elif isinstance(lhs, PortFieldTerm) and isinstance(rhs, PortFieldTerm):
+        _merge_port_terms_is_possible(lhs, rhs)
+    else:
+        raise TypeError("Cannot merge terms of different types")
+
+
+def _merge_term_is_possible(lhs: TermEfficient, rhs: TermEfficient) -> None:
+    if lhs.component_id != rhs.component_id or lhs.variable_name != rhs.variable_name:
+        raise ValueError("Cannot merge terms for different variables")
+    if (
+        lhs.time_operator != rhs.time_operator
+        or lhs.time_aggregator != rhs.time_aggregator
+        or lhs.scenario_operator != rhs.scenario_operator
+    ):
+        raise ValueError("Cannot merge terms with different operators")
+    if lhs.structure != rhs.structure:
+        raise ValueError("Cannot merge terms with different structures")
+
+
+def _merge_port_terms_is_possible(lhs: PortFieldTerm, rhs: PortFieldTerm) -> None:
+    if lhs.port_name != rhs.port_name or lhs.field_name != rhs.field_name:
+        raise ValueError("Cannot merge terms for different ports")
+    if lhs.aggregator != rhs.aggregator:
+        raise ValueError("Cannot merge port terms with different aggregators")
+
+
+def _add_terms(lhs: T_val, rhs: T_val) -> T_val:
+    _merge_is_possible(lhs, rhs)
+    return dataclasses.replace(lhs, coefficient=lhs.coefficient + rhs.coefficient)
+
+
+def _substract_terms(lhs: T_val, rhs: T_val) -> T_val:
+    _merge_is_possible(lhs, rhs)
+    return dataclasses.replace(lhs, coefficient=lhs.coefficient - rhs.coefficient)
+
+
 class LinearExpressionEfficient:
     """
     Represents a linear expression with respect to variable names, for example 10x + 5y + 2.
@@ -418,7 +430,7 @@ class LinearExpressionEfficient:
 
     terms: Dict[TermKeyEfficient, TermEfficient]
     constant: ExpressionNodeEfficient
-    port_field_terms: Dict[PortFieldKey, PortFieldTerm]
+    port_field_terms: Dict[PortFieldId, PortFieldTerm]
 
     # TODO: We need to check that terms.key is indeed a TermKey and change the tests that this will break
     def __init__(
@@ -428,7 +440,7 @@ class LinearExpressionEfficient:
         ] = None,
         constant: Optional[Union[float, ExpressionNodeEfficient]] = None,
         port_field_terms: Optional[
-            Union[Dict[PortFieldKey, PortFieldTerm], List[PortFieldTerm]]
+            Union[Dict[PortFieldId, PortFieldTerm], List[PortFieldTerm]]
         ] = None,
     ) -> None:
         if constant is None:
@@ -462,7 +474,7 @@ class LinearExpressionEfficient:
             elif isinstance(port_field_terms, list):
                 for port_field_term in port_field_terms:
                     self.port_field_terms[
-                        PortFieldKey(
+                        PortFieldId(
                             port_field_term.port_name, port_field_term.field_name
                         )
                     ] = port_field_term
@@ -526,8 +538,15 @@ class LinearExpressionEfficient:
     ) -> "LinearExpressionEfficient":
         rhs = wrap_in_linear_expr(rhs)
         self.constant += rhs.constant
+
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms, 0)
         self.terms = aggregated_terms
+
+        aggregated_port_terms = _merge_dicts(
+            self.port_field_terms, rhs.port_field_terms, _add_terms, 0
+        )
+        self.port_field_terms = aggregated_port_terms
+
         self.remove_zeros_from_terms()
         return self
 
@@ -547,8 +566,15 @@ class LinearExpressionEfficient:
     ) -> "LinearExpressionEfficient":
         rhs = wrap_in_linear_expr(rhs)
         self.constant -= rhs.constant
+
         aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms, 0)
         self.terms = aggregated_terms
+
+        aggregated_port_terms = _merge_dicts(
+            self.port_field_terms, rhs.port_field_terms, _substract_terms, 0
+        )
+        self.port_field_terms = aggregated_port_terms
+
         self.remove_zeros_from_terms()
         return self
 
@@ -573,14 +599,13 @@ class LinearExpressionEfficient:
     ) -> "LinearExpressionEfficient":
         rhs = wrap_in_linear_expr(rhs)
 
-        if self.terms and rhs.terms:
+        if not (self.is_constant() or rhs.is_constant()):
             raise ValueError("Cannot multiply two non constant expression")
         else:
-            if self.terms:
+            if rhs.is_constant():
                 left_expr = self
                 const_expr = rhs
-            else:
-                # It is possible that both expr are constant
+            else:  # self is constant
                 left_expr = rhs
                 const_expr = self
             if is_zero(const_expr.constant):
@@ -590,14 +615,13 @@ class LinearExpressionEfficient:
             else:
                 left_expr.constant *= const_expr.constant
                 for term_key, term in left_expr.terms.items():
-                    left_expr.terms[term_key] = TermEfficient(
-                        term.coefficient * const_expr.constant,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                        term.time_operator,
-                        term.time_aggregator,
-                        term.scenario_operator,
+                    left_expr.terms[term_key] = dataclasses.replace(
+                        term, coefficient=term.coefficient * const_expr.constant
+                    )
+                for port_term_key, port_term in left_expr.port_field_terms.items():
+                    left_expr.port_field_terms[port_term_key] = dataclasses.replace(
+                        port_term,
+                        coefficient=port_term.coefficient * const_expr.constant,
                     )
                 _copy_expression(left_expr, self)
         return self
@@ -618,7 +642,7 @@ class LinearExpressionEfficient:
     ) -> "LinearExpressionEfficient":
         rhs = wrap_in_linear_expr(rhs)
 
-        if rhs.terms:
+        if not rhs.is_constant():
             raise ValueError("Cannot divide by a non constant expression")
         else:
             if is_zero(rhs.constant):
@@ -628,14 +652,12 @@ class LinearExpressionEfficient:
             else:
                 self.constant /= rhs.constant
                 for term_key, term in self.terms.items():
-                    self.terms[term_key] = TermEfficient(
-                        term.coefficient / rhs.constant,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                        term.time_operator,
-                        term.time_aggregator,
-                        term.scenario_operator,
+                    self.terms[term_key] = dataclasses.replace(
+                        term, coefficient=term.coefficient / rhs.constant
+                    )
+                for port_term_key, port_term in self.port_field_terms.items():
+                    self.port_field_terms[port_term_key] = dataclasses.replace(
+                        port_term, coefficient=port_term.coefficient / rhs.constant
                     )
         return self
 
@@ -656,6 +678,9 @@ class LinearExpressionEfficient:
         for term_key, term in self.terms.copy().items():
             if is_zero(term.coefficient):
                 del self.terms[term_key]
+        for port_term_key, port_term in self.port_field_terms.copy().items():
+            if is_zero(port_term.coefficient):
+                del self.port_field_terms[port_term_key]
 
     def evaluate(self, context: ValueProvider) -> float:
         return sum([term.evaluate(context) for term in self.terms.values()]) + evaluate(
@@ -664,7 +689,7 @@ class LinearExpressionEfficient:
 
     def is_constant(self) -> bool:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
-        return not self.terms
+        return not self.terms and not self.port_field_terms
 
     def is_unbound(self) -> bool:
         return is_unbound(self.constant)
@@ -857,6 +882,34 @@ class LinearExpressionEfficient:
         for port_field_key, port_field_value in self.port_field_terms.items():
             port_field_terms[port_field_key] = port_field_value.sum_connections()
         return LinearExpressionEfficient(port_field_terms=port_field_terms)
+
+    def resolve_port(
+        self,
+        component_id: str,
+        ports_expressions: Dict[PortFieldKey, List["LinearExpressionEfficient"]],
+    ) -> "LinearExpressionEfficient":
+        port_expr = LinearExpressionEfficient()
+        for port_term in self.port_field_terms.values():
+            expressions = ports_expressions.get(
+                PortFieldKey(
+                    component_id,
+                    PortFieldId(port_term.port_name, port_term.field_name),
+                ),
+                [],
+            )
+            if port_term.aggregator is None:
+                if len(expressions) != 1:
+                    raise ValueError(
+                        f"Invalid number of expression for port : {port_term.port_name}"
+                    )
+            else:
+                if port_term.aggregator != PortSum():
+                    raise NotImplementedError("Only PortSum is supported.")
+
+            port_expr += sum_expressions(
+                [port_term.coefficient * expression for expression in expressions]
+            )
+        return self + port_expr
 
 
 def linear_expressions_equal(

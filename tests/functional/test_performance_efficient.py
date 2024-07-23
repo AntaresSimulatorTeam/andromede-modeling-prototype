@@ -15,7 +15,11 @@ import pytest
 
 from andromede.expression.evaluate import EvaluationContext
 from andromede.expression.expression_efficient import param
-from andromede.expression.linear_expression_efficient import literal, var
+from andromede.expression.linear_expression_efficient import (
+    literal,
+    var,
+    wrap_in_linear_expr,
+)
 
 
 def test_large_number_of_parameters_sum() -> None:
@@ -32,7 +36,7 @@ def test_large_number_of_parameters_sum() -> None:
 
     # Still the recursion depth error with parameters
     with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        expr = sum(param(f"cost_{i}") for i in range(1, nb_terms))
+        expr = sum(wrap_in_linear_expr(param(f"cost_{i}")) for i in range(1, nb_terms))
         expr.evaluate(EvaluationContext(parameters=parameters_value))
 
 
@@ -46,7 +50,7 @@ def test_large_number_of_identical_parameters_sum() -> None:
 
     # Still the recursion depth error with parameters
     # with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-    expr = sum(param("cost") for _ in range(nb_terms))
+    expr = sum(wrap_in_linear_expr(param("cost")) for _ in range(nb_terms))
     assert expr.evaluate(EvaluationContext(parameters=parameters_value)) == nb_terms
 
 
@@ -58,7 +62,7 @@ def test_large_number_of_literal_sum() -> None:
 
     # # Still the recursion depth error with parameters
     # with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-    expr = sum(literal(1) for _ in range(nb_terms))
+    expr = sum(wrap_in_linear_expr(literal(1)) for _ in range(nb_terms))
     assert expr.evaluate(EvaluationContext()) == nb_terms
 
 
