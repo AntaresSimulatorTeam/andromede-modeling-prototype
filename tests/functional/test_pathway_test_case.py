@@ -12,7 +12,6 @@
 
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from andromede.libs.standard import (
@@ -35,8 +34,9 @@ from andromede.simulation.decision_tree import (
 )
 from andromede.study.data import ConstantData, DataBase, TimeScenarioSeriesData
 from andromede.study.network import Network, Node, PortRef, create_component
+from andromede.utils import load_ts_from_txt
 
-BLOCK_LENGTH = 1  # (24 * 7) # One week
+BLOCK_LENGTH = 2  # (24 * 7) # One week
 NB_BLOCKS = 2
 NB_SCENARIOS = 2
 
@@ -108,31 +108,11 @@ def network() -> Network:
 @pytest.fixture
 def database() -> DataBase:
     path = Path("tests/functional/data/pathway_test_case/")
-    ts_len = NB_BLOCKS * BLOCK_LENGTH - 1
 
-    wind = pd.merge(
-        left=pd.read_csv(
-            path / Path("wind_area1.txt"), sep=r"\s+", names=["TS1", "TS2"]
-        ),
-        right=pd.read_csv(
-            path / Path("wind_area2.txt"), sep=r"\s+", names=["TS1", "TS2"]
-        ),
-        left_index=True,
-        right_index=True,
-        suffixes=("_Area1", "_Area2"),
-    )
-
-    load = pd.merge(
-        left=pd.read_csv(
-            path / Path("load_area1.txt"), sep=r"\s+", names=["TS1", "TS2"]
-        ),
-        right=pd.read_csv(
-            path / Path("load_area2.txt"), sep=r"\s+", names=["TS1", "TS2"]
-        ),
-        left_index=True,
-        right_index=True,
-        suffixes=("_Area1", "_Area2"),
-    )
+    wind1 = load_ts_from_txt("wind_area1", path)
+    wind2 = load_ts_from_txt("wind_area2", path)
+    load1 = load_ts_from_txt("load_area1", path)
+    load2 = load_ts_from_txt("load_area2", path)
 
     database = DataBase()
 
@@ -143,16 +123,12 @@ def database() -> DataBase:
     database.add_data(
         "D1",
         "demand",
-        TimeScenarioSeriesData.from_dataframe(
-            load.loc[:ts_len, "TS1_Area1":"TS2_Area1"]
-        ),
+        TimeScenarioSeriesData.from_dataframe(load1),
     )
     database.add_data(
         "Wind1",
         "production",
-        TimeScenarioSeriesData.from_dataframe(
-            wind.loc[:ts_len, "TS1_Area1":"TS2_Area1"]
-        ),
+        TimeScenarioSeriesData.from_dataframe(wind1),
     )
 
     database.add_data("Base1", "cost", ConstantData(20))
@@ -171,16 +147,12 @@ def database() -> DataBase:
     database.add_data(
         "D2",
         "demand",
-        TimeScenarioSeriesData.from_dataframe(
-            load.loc[:ts_len, "TS1_Area2":"TS2_Area2"]
-        ),
+        TimeScenarioSeriesData.from_dataframe(load2),
     )
     database.add_data(
         "Wind2",
         "production",
-        TimeScenarioSeriesData.from_dataframe(
-            wind.loc[:ts_len, "TS1_Area2":"TS2_Area2"]
-        ),
+        TimeScenarioSeriesData.from_dataframe(wind2),
     )
 
     database.add_data("Base2", "cost", ConstantData(20))

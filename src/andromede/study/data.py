@@ -12,7 +12,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Mapping, Type, TypeVar, Optional
+from typing import Dict, Mapping, Optional, Type, TypeVar
 
 import pandas as pd
 
@@ -136,18 +136,6 @@ class ScenarioSeriesData(AbstractDataStructure):
                 for scenario, v in enumerate(df.iloc[0, :].items())
             }
         )
-
-
-def load_ts_from_txt(
-    timeseries_name: Optional[str], path_to_file: Optional[Path]
-) -> pd.DataFrame:
-    if path_to_file is not None and timeseries_name is not None:
-        timeseries_with_extension = timeseries_name + ".txt"
-        ts_path = path_to_file / timeseries_with_extension
-    try:
-        return pd.read_csv(ts_path, header=None, sep=r"\s+")
-    except Exception:
-        raise Exception(f"An error has arrived when processing '{ts_path}'")
 
 
 @dataclass(frozen=True)

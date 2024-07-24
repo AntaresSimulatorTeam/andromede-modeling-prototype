@@ -17,6 +17,8 @@ import json
 import pathlib
 from typing import Any, Callable, Dict, Optional, TypeVar
 
+import pandas as pd
+
 T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
@@ -56,6 +58,21 @@ def serialize(filename: str, message: str, path: pathlib.Path) -> None:
 
     with file:
         file.write(message)
+
+
+def load_ts_from_txt(
+    timeseries_name: Optional[str], path_to_file: Optional[pathlib.Path]
+) -> pd.DataFrame:
+    if path_to_file is not None and timeseries_name is not None:
+        timeseries_with_extension = timeseries_name + ".txt"
+        ts_path = path_to_file / timeseries_with_extension
+        try:
+            return pd.read_csv(ts_path, header=None, sep=r"\s+")
+
+        except Exception:
+            raise Exception(f"An error has arrived when processing '{ts_path}'")
+
+    raise RuntimeError(f"Either timeseries_name or path_to_file are None")
 
 
 def serialize_json(

@@ -47,7 +47,7 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from andromede.study.data import load_ts_from_txt
+from andromede.utils import load_ts_from_txt
 
 
 @pytest.fixture

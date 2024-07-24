@@ -30,13 +30,13 @@ from andromede.study.data import (
     AbstractDataStructure,
     TimeScenarioIndex,
     TimeScenarioSeriesData,
-    load_ts_from_txt,
 )
 from andromede.study.parsing import (
     InputComponent,
     InputComponents,
     InputPortConnections,
 )
+from andromede.utils import load_ts_from_txt
 
 
 @dataclass(frozen=True)
