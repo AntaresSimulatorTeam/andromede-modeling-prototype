@@ -39,7 +39,7 @@ from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
-from andromede.model.model import PortFieldId
+from andromede.model.port import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
 from andromede.simulation.strategy import (

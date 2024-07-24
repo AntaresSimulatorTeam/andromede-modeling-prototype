@@ -18,9 +18,9 @@ from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
-from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
+from andromede.model.model import ModelPort, model
 from andromede.model.parameter import float_parameter, int_parameter
-from andromede.model.port import PortField, PortType
+from andromede.model.port import PortField, PortFieldDefinition, PortFieldId, PortType
 from andromede.model.variable import float_variable, int_variable
 
 CONSTANT = IndexingStructure(False, False)

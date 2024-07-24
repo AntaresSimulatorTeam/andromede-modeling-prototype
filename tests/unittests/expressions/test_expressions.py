@@ -47,7 +47,6 @@ from andromede.expression.expression import (
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
 

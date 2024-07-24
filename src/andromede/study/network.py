@@ -19,7 +19,8 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Dict, Iterable, List, cast
 
 from andromede.model import PortField, PortType
-from andromede.model.model import Model, PortFieldId
+from andromede.model.model import Model
+from andromede.model.port import PortFieldId
 from andromede.utils import require_not_none
 
 
