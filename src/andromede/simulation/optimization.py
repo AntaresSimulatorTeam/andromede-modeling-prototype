@@ -743,6 +743,9 @@ class OptimizationProblem:
 
                 var_name: str = f"{model_var.name}"
                 component_prefix = f"{component.id}_" if component.id else ""
+                tree_prefix = (
+                    f"{self.context.tree_node}_" if self.context.tree_node else ""
+                )
 
                 for block_timestep in self.context.get_time_indices(var_indexing):
                     block_suffix = (
@@ -776,7 +779,7 @@ class OptimizationProblem:
                         # Internally, it will be indexed by a structure that into account
                         # the component id, variable name, timestep and scenario separately
                         solver_var = None
-                        solver_var_name = f"{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
+                        solver_var_name = f"{tree_prefix}{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
 
                         if math.isclose(lower_bound, upper_bound):
                             raise ValueError(
