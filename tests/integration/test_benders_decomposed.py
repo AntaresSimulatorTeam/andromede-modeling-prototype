@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import pandas as pd
 import pytest
 
 from andromede.expression.expression import literal, param, var
@@ -19,7 +20,6 @@ from andromede.libs.standard import (
     CONSTANT,
     DEMAND_MODEL,
     GENERATOR_MODEL,
-    NODE_BALANCE_MODEL,
     NODE_WITH_SPILL_AND_ENS_MODEL,
 )
 from andromede.model import (
@@ -45,13 +45,15 @@ from andromede.study import (
     Network,
     Node,
     PortRef,
+    ScenarioIndex,
+    ScenarioSeriesData,
     TimeIndex,
+    TimeScenarioSeriesData,
     TimeSeriesData,
     create_component,
 )
 
 CONSTANT = IndexingStructure(False, False)
-FREE = IndexingStructure(True, True)
 
 INVESTMENT = ProblemContext.INVESTMENT
 OPERATIONAL = ProblemContext.OPERATIONAL
@@ -113,7 +115,8 @@ def discrete_candidate() -> Model:
                 structure=CONSTANT,
                 context=COUPLING,
             ),
-            int_variable(
+            # TODO set it back to int_variable
+            float_variable(
                 "nb_units",
                 lower_bound=literal(0),
                 upper_bound=literal(10),
@@ -174,8 +177,8 @@ def test_benders_decomposed_integration(
 ) -> None:
     """
     Simple generation expansion problem on one node, one timestep and one scenario
-    but this time with two candidates: one thermal cluster and one wind cluster.
-    We separate master/subproblem and export the problems in MPS format to be solved by the Benders solver in Xpansion
+    but this time with two candidates: one continuous and one discrete.
+    We separate master/subproblem and export the problems in MPS format to be solved by the Benders and MergeMPS
 
     Demand = 400
     Generator : P_max : 200, Cost : 45
@@ -184,13 +187,13 @@ def test_benders_decomposed_integration(
     -> 200 of unsupplied energy
     -> Total cost without investment = 45 * 200 + 501 * 200 = 109_200
 
-    Single candidate  : Invest cost : 490 / MW; Prod cost : 10
-    Cluster candidate : Invest cost : 200 / MW; Prod cost : 10; Nb of discrete thresholds: 10; Prod per threshold: 10
+    Continuos candidate  : Invest cost : 490 / MW; Prod cost : 10
+    Discrete candidate : Invest cost : 200 / MW; Prod cost : 10; Nb of units: 10; Prod per unit: 10
 
-    Optimal investment : 100 MW (Cluster) + 100 MW (Single)
+    Optimal investment : 100 MW (Discrete) + 100 MW (Continuos)
 
-    -> Optimal cost = 490 * 100 + 10 * 100 (Single)
-                    + 200 * 100 + 10 * 100 (Cluster)
+    -> Optimal cost = 490 * 100 + 10 * 100 (Continuos)
+                    + 200 * 100 + 10 * 100 (Discrete)
                                 + 45 * 200 (Generator)
                     =    69_000 +   11_000
                     = 80_000
@@ -236,7 +239,7 @@ def test_benders_decomposed_integration(
     data = {
         "solution": {
             "overall_cost": 80_000,
-            "values": {"CAND_p_max_t0_s0": 100, "DISCRETE_p_max_t0_s0": 100},
+            "values": {"CAND_p_max": 100, "DISCRETE_p_max": 100},
         }
     }
     solution = BendersSolution(data)
@@ -328,7 +331,190 @@ def test_benders_decomposed_multi_time_block_single_scenario(
         "solution": {
             "overall_cost": 62_000,
             "values": {
-                "CAND_p_max_t0_s0": 100,
+                "CAND_p_max": 100,
+            },
+        }
+    }
+    solution = BendersSolution(data)
+
+    assert xpansion.run()
+    decomposed_solution = xpansion.solution
+    if decomposed_solution is not None:  # For mypy only
+        assert decomposed_solution.is_close(
+            solution
+        ), f"Solution differs from expected: {decomposed_solution}"
+
+
+def test_benders_decomposed_single_time_block_multi_scenario(
+    generator: Component,
+    candidate: Component,
+) -> None:
+    """
+    Simple generation xpansion problem on one node. One time block with one timestep each,
+    two scenarios, one thermal cluster candidate.
+
+    Demand = [200; 300]
+    Generator : P_max : 200, Cost : 40
+    Unsupplied energy : Cost : 1_000
+
+    -> [0; 100] of unsupplied energy
+    -> Total cost without investment = 0.5 * [(200 * 40)]
+                                     + 0.5 * [(200 * 40) + (100 * 1_000)]
+                                     = 58_000
+
+    Candidate : Invest cost : 480 / MW, Prod cost : 10
+
+    Optimal investment : 100 MW
+
+    -> Optimal cost = 480 * 100                   (investment)
+                    + 0.5 * (10 * 100 + 40 * 100) (operational - scenario 1)
+                    + 0.5 * (10 * 100 + 40 * 200) (operational - scenario 2)
+                    = 55_000
+
+    """
+
+    data = {}
+    data[ScenarioIndex(0)] = 200
+    data[ScenarioIndex(1)] = 300
+
+    demand_data = ScenarioSeriesData(scenario_series=data)
+
+    database = DataBase()
+    database.add_data("D", "demand", demand_data)
+
+    database.add_data("N", "spillage_cost", ConstantData(1))
+    database.add_data("N", "ens_cost", ConstantData(1_000))
+
+    database.add_data("G1", "p_max", ConstantData(200))
+    database.add_data("G1", "cost", ConstantData(40))
+
+    database.add_data("CAND", "op_cost", ConstantData(10))
+    database.add_data("CAND", "invest_cost", ConstantData(480))
+
+    demand = create_component(
+        model=DEMAND_MODEL,
+        id="D",
+    )
+
+    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(generator)
+    network.add_component(candidate)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
+
+    scenarios = 2
+
+    xpansion = build_benders_decomposed_problem(
+        network,
+        database,
+        [TimeBlock(1, [0])],
+        scenarios,
+    )
+
+    data = {
+        "solution": {
+            "overall_cost": 55_000,
+            "values": {
+                "CAND_p_max": 100,
+            },
+        }
+    }
+    solution = BendersSolution(data)
+
+    assert xpansion.run()
+    decomposed_solution = xpansion.solution
+    if decomposed_solution is not None:  # For mypy only
+        assert decomposed_solution.is_close(
+            solution
+        ), f"Solution differs from expected: {decomposed_solution}"
+
+
+def test_benders_decomposed_multi_time_block_multi_scenario(
+    generator: Component,
+    candidate: Component,
+) -> None:
+    """
+    Simple generation xpansion problem on one node. One time block with one timestep each,
+    two scenarios, one thermal cluster candidate.
+
+    Demand = [200 200; 100 300]
+    Generator : P_max : 200, Cost : 40
+    Unsupplied energy : Cost : 1_000
+
+    -> [0 0; 0 100] of unsupplied energy
+    -> Total cost without investment = 0.5 * [(200 * 40) + (200 * 40)]
+                                     + 0.5 * [(100 * 40) + (200 * 40 + 100 * 1_000)]
+                                     = 64_000
+
+    Candidate : Invest cost : 480 / MW, Prod cost : 10
+
+    Optimal investment : 100 MW
+
+    -> Optimal cost = 480 * 100                   (investment)
+                    + 0.5 * (10 * 100 + 40 * 100) (operational - time block 1 scenario 1)
+                    + 0.5 * (10 * 100 + 40 * 100) (operational - time block 2 scenario 1)
+                    + 0.5 * (10 * 100)            (operational - time block 1 scenario 2)
+                    + 0.5 * (10 * 100 + 40 * 200) (operational - time block 2 scenario 2)
+                    = 58_000
+
+    """
+
+    data = pd.DataFrame(
+        [
+            [200, 200],
+            [100, 300],
+        ],
+        index=[0, 1],
+        columns=[0, 1],
+    )
+
+    demand_data = TimeScenarioSeriesData(time_scenario_series=data)
+
+    database = DataBase()
+    database.add_data("D", "demand", demand_data)
+
+    database.add_data("N", "spillage_cost", ConstantData(1))
+    database.add_data("N", "ens_cost", ConstantData(1_000))
+
+    database.add_data("G1", "p_max", ConstantData(200))
+    database.add_data("G1", "cost", ConstantData(40))
+
+    database.add_data("CAND", "op_cost", ConstantData(10))
+    database.add_data("CAND", "invest_cost", ConstantData(480))
+
+    demand = create_component(
+        model=DEMAND_MODEL,
+        id="D",
+    )
+
+    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(generator)
+    network.add_component(candidate)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
+
+    scenarios = 2
+
+    xpansion = build_benders_decomposed_problem(
+        network,
+        database,
+        [TimeBlock(1, [0]), TimeBlock(2, [1])],
+        scenarios,
+    )
+
+    data = {
+        "solution": {
+            "overall_cost": 58_000,
+            "values": {
+                "CAND_p_max": 100,
             },
         }
     }
