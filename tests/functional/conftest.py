@@ -29,5 +29,5 @@ def lib(libs_dir: Path):
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
 
-    lib = resolve_library(input_lib)
+    lib = resolve_library([input_lib])
     return lib
