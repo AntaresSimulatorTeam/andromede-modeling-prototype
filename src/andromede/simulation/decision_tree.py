@@ -16,8 +16,14 @@ from typing import Generator, Iterable, List, Optional
 
 from anytree import LevelOrderIter, NodeMixin
 
+from andromede.expression import literal, var
+from andromede.expression.indexing_structure import IndexingStructure
+from andromede.model.common import ProblemContext
+from andromede.model.constraint import Constraint
+from andromede.model.model import model
+from andromede.model.variable import Variable, float_variable
 from andromede.simulation.time_block import TimeBlock
-from andromede.study.network import Network
+from andromede.study.network import Component, Network, create_component
 
 
 @dataclass(frozen=True)
@@ -30,20 +36,23 @@ class DecisionTreeNode(NodeMixin):
     id: str
     config: InterDecisionTimeScenarioConfig
     network: Network
+    coupling_network: Network
     prob: float
 
     def __init__(
         self,
         id: str,
         config: InterDecisionTimeScenarioConfig,
-        network: Network = Network(""),
+        network: Network,
         parent: Optional["DecisionTreeNode"] = None,
         children: Optional[Iterable["DecisionTreeNode"]] = None,
         prob: float = 1.0,
+        coupling_network: Network = Network("_Coupler"),
     ) -> None:
         self.id = id
         self.config = config
         self.network = network
+        self.coupling_network = coupling_network
         self.parent = parent
 
         if prob < 0 or 1 < prob:
@@ -71,3 +80,80 @@ class DecisionTreeNode(NodeMixin):
         # Recursively check if child nodes have their children's
         # probability sum equal to one
         return all(child.is_leaves_prob_sum_one() for child in self.children)
+
+    def add_coupling_component(
+        self,
+        component: Component,
+        cumulative_var_id: str,
+        delta_var_id: str,
+    ) -> None:
+        if not component.is_variable_in_model(cumulative_var_id):
+            raise ValueError(
+                f"Cumulative variable {cumulative_var_id} not present in {component.id}"
+            )
+
+        if not component.is_variable_in_model(delta_var_id):
+            raise ValueError(
+                f"Incremental variable {delta_var_id} not present in {component.id}"
+            )
+
+        variables: List[Variable] = []
+        constraints: List[Constraint] = []
+
+        for tree_node in self.traverse():
+            parent_cumulative_var_id = (
+                f"{tree_node.parent.id}_{component.id}_{cumulative_var_id}"
+                if tree_node.parent is not None
+                else ""
+            )
+            node_cumulative_var_id = (
+                f"{tree_node.id}_{component.id}_{cumulative_var_id}"
+            )
+            node_delta_var_id = f"{tree_node.id}_{component.id}_{delta_var_id}"
+
+            variables.extend(
+                (
+                    # TODO For now, unbounded positive float variable for both
+                    # Eventually should allow more flexibility
+                    float_variable(
+                        node_cumulative_var_id,
+                        lower_bound=literal(0),
+                        structure=IndexingStructure(False, False),
+                        context=ProblemContext.INVESTMENT,
+                    ),
+                    float_variable(
+                        node_delta_var_id,
+                        lower_bound=literal(0),
+                        structure=IndexingStructure(False, False),
+                        context=ProblemContext.INVESTMENT,
+                    ),
+                )
+            )
+
+            # TODO For now, only kind of relationship allowed between nodes
+            # Eventually should give the user the possibility to define the expression
+            constraints.append(
+                Constraint(
+                    name=f"Cumulative max investment on {tree_node.id}",
+                    expression=var(node_cumulative_var_id) - var(node_delta_var_id)
+                    == (
+                        var(parent_cumulative_var_id)
+                        if parent_cumulative_var_id
+                        else literal(0)
+                    ),
+                    context=ProblemContext.INVESTMENT,
+                ),
+            )
+
+        self.coupling_network.add_component(
+            create_component(
+                model(
+                    id="coupling_decision_tree_model",
+                    variables=variables,
+                    constraints=constraints,
+                ),
+                id="",
+            )
+        )
+
+        return

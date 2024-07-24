@@ -33,13 +33,13 @@ def test_decision_tree_generation() -> None:
     assert root.prob == 1.0
     assert not root.children  # No children
 
-    child = DecisionTreeNode("child", config, parent=root, prob=0.8)
+    child = DecisionTreeNode("child", config, network, parent=root, prob=0.8)
 
     assert child.parent == root
     assert child.prob == 0.8
     assert child in root.children
 
-    grandchild = DecisionTreeNode("grandchild", config, parent=child, prob=0.6)
+    grandchild = DecisionTreeNode("grandchild", config, network, parent=child, prob=0.6)
 
     assert grandchild.parent == child
     assert grandchild.prob == (0.8 * 0.6)
@@ -47,12 +47,12 @@ def test_decision_tree_generation() -> None:
 
     with pytest.raises(ValueError, match="Probability must be a value in the range"):
         great_grandchild = DecisionTreeNode(
-            "greatgrandchild", config, parent=grandchild, prob=2.0
+            "greatgrandchild", config, network, parent=grandchild, prob=2.0
         )
 
     with pytest.raises(ValueError, match="Probability must be a value in the range"):
         great_grandchild = DecisionTreeNode(
-            "greatgrandchild", config, parent=grandchild, prob=-0.3
+            "greatgrandchild", config, network, parent=grandchild, prob=-0.3
         )
 
 
@@ -79,18 +79,18 @@ def test_decision_tree_probabilities() -> None:
     root = DecisionTreeNode("root", config, network)
 
     # 1st level
-    l_child = DecisionTreeNode("l_child", config, parent=root, prob=0.7)
-    r_child = DecisionTreeNode("r_child", config, parent=root, prob=0.3)
+    l_child = DecisionTreeNode("l_child", config, network, parent=root, prob=0.7)
+    r_child = DecisionTreeNode("r_child", config, network, parent=root, prob=0.3)
 
     # 2nd level
-    ll_child = DecisionTreeNode("ll_child", config, parent=l_child, prob=0.5)
-    lr_child = DecisionTreeNode("lr_child", config, parent=l_child, prob=0.5)
+    ll_child = DecisionTreeNode("ll_child", config, network, parent=l_child, prob=0.5)
+    lr_child = DecisionTreeNode("lr_child", config, network, parent=l_child, prob=0.5)
 
-    rl_child = DecisionTreeNode("rl_child", config, parent=r_child, prob=0.4)
-    rr_child = DecisionTreeNode("rr_child", config, parent=r_child, prob=0.5)
+    rl_child = DecisionTreeNode("rl_child", config, network, parent=r_child, prob=0.4)
+    rr_child = DecisionTreeNode("rr_child", config, network, parent=r_child, prob=0.5)
 
     # 3rd level
-    lll_child = DecisionTreeNode("lll_child", config, parent=ll_child, prob=1)
+    lll_child = DecisionTreeNode("lll_child", config, network, parent=ll_child, prob=1)
 
     assert ll_child.is_leaves_prob_sum_one()  # One child with p = 1
 

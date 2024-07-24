@@ -145,56 +145,7 @@ def test_investment_pathway_on_sequential_nodes(
         ),
     )
 
-    # === Coupling model ===
-    # Used between nodes in the decision tree
-    COUPLING_MODEL = model(
-        id="COUPLING",
-        variables=[
-            float_variable(
-                "parent_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "parent_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "child_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "child_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-        constraints=[
-            Constraint(
-                name="Max investment on parent",
-                expression=var("parent_CAND_invested_capa")
-                == var("parent_CAND_delta_invest"),
-                context=ProblemContext.INVESTMENT,
-            ),
-            Constraint(
-                name="Max investment on child",
-                expression=var("child_CAND_invested_capa")
-                == var("child_CAND_delta_invest") + var("parent_CAND_invested_capa"),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-    )
-
     # === Network ===
-    network_coupling = Network("coupling_test")
-    network_coupling.add_component(create_component(model=COUPLING_MODEL, id=""))
-
     demand_par = demand.replicate()
     candidate_par = candidate.replicate()
 
@@ -231,10 +182,11 @@ def test_investment_pathway_on_sequential_nodes(
         "child", config, network_chd, parent=decision_tree_par
     )
 
+    # === Coupling model ===
+    decision_tree_par.add_coupling_component(candidate, "invested_capa", "delta_invest")
+
     # === Build problem ===
-    xpansion = build_benders_decomposed_problem(
-        decision_tree_par, database, coupling_network=network_coupling
-    )
+    xpansion = build_benders_decomposed_problem(decision_tree_par, database)
 
     data = {
         "solution": {
@@ -348,6 +300,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         - 100 in child B
     """
 
+    # === Populating Database ===
     database = DataBase()
     database.add_data("N", "spillage_cost", ConstantData(10))
     database.add_data("N", "ens_cost", ConstantData(10_000))
@@ -392,71 +345,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     database.add_data("BASE", "p_max", ConstantData(200))
     database.add_data("BASE", "cost", ConstantData(5))
 
-    COUPLING_MODEL = model(
-        id="COUPLING",
-        variables=[
-            float_variable(
-                "root_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "root_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childA_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childA_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childB_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childB_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-        constraints=[
-            Constraint(
-                name="Max investment on root",
-                expression=var("root_CAND_invested_capa")
-                == var("root_CAND_delta_invest"),
-                context=ProblemContext.INVESTMENT,
-            ),
-            Constraint(
-                name="Max investment on child A",
-                expression=var("childA_CAND_invested_capa")
-                == var("childA_CAND_delta_invest") + var("root_CAND_invested_capa"),
-                context=ProblemContext.INVESTMENT,
-            ),
-            Constraint(
-                name="Max investment on child B",
-                expression=var("childB_CAND_invested_capa")
-                == var("childB_CAND_delta_invest") + var("root_CAND_invested_capa"),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-    )
-
-    network_coupler = Network("coupling_test")
-    network_coupler.add_component(create_component(model=COUPLING_MODEL, id=""))
-
+    # === Network ===
     network_root = Network("root_network")
     network_root.add_node(node)
     network_root.add_component(demand)
@@ -474,10 +363,8 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
 
     network_childB = network_root.replicate(id="childB_network")
 
-    scenarios = 1
-    time_scenario_config = InterDecisionTimeScenarioConfig(
-        [TimeBlock(0, [0])], scenarios
-    )
+    # === Decision tree creation ===
+    time_scenario_config = InterDecisionTimeScenarioConfig([TimeBlock(0, [0])], 1)
 
     dt_root = DecisionTreeNode("root", time_scenario_config, network_root)
     dt_child_A = DecisionTreeNode(
@@ -487,9 +374,11 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         "childB", time_scenario_config, network_childB, parent=dt_root, prob=0.2
     )
 
-    xpansion = build_benders_decomposed_problem(
-        dt_root, database, coupling_network=network_coupler
-    )
+    # === Coupling model ===
+    dt_root.add_coupling_component(candidate, "invested_capa", "delta_invest")
+
+    # === Build problem ===
+    xpansion = build_benders_decomposed_problem(dt_root, database)
 
     data = {
         "solution": {
@@ -506,6 +395,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     }
     solution = BendersSolution(data)
 
+    # === Run ===
     assert xpansion.run()
     decomposed_solution = xpansion.solution
     if decomposed_solution is not None:  # For mypy only
