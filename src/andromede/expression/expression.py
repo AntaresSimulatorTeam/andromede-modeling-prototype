@@ -344,6 +344,7 @@ def expression_range(
     )
 
 
+@dataclass
 class InstancesTimeIndex:
     """
     Defines a set of time indices on which a time operator operates.

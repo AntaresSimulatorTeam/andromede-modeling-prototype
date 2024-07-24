@@ -9,10 +9,12 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, Mapping, Optional
+
+import pandas as pd
 
 from andromede.study.network import Network
 
@@ -106,6 +108,18 @@ class ScenarioSeriesData(AbstractDataStructure):
         return scenario
 
 
+def load_ts_from_txt(
+    timeseries_name: Optional[str], path_to_file: Optional[Path]
+) -> pd.DataFrame:
+    if path_to_file is not None and timeseries_name is not None:
+        timeseries_with_extension = timeseries_name + ".txt"
+        ts_path = path_to_file / timeseries_with_extension
+    try:
+        return pd.read_csv(ts_path, header=None, sep=r"\s+")
+    except Exception:
+        raise Exception(f"An error has arrived when processing '{ts_path}'")
+
+
 @dataclass(frozen=True)
 class TimeScenarioSeriesData(AbstractDataStructure):
     """
@@ -114,10 +128,11 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     can be defined by referencing one of those timeseries by its ID.
     """
 
-    time_scenario_series: Mapping[TimeScenarioIndex, float]
+    time_scenario_series: pd.DataFrame
 
     def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
-        return self.time_scenario_series[TimeScenarioIndex(timestep, scenario)]
+        value = str(self.time_scenario_series.iloc[timestep, scenario])
+        return float(value)
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
         if not isinstance(self, TimeScenarioSeriesData):

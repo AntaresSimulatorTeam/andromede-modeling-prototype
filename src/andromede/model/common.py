@@ -19,7 +19,7 @@ from enum import Enum
 class ValueType(Enum):
     FLOAT = "FLOAT"
     INTEGER = "INTEGER"
-    # Needs more ?
+    BOOL = "BOOL"
 
 
 class ProblemContext(Enum):

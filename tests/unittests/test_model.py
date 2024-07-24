@@ -22,7 +22,7 @@ from andromede.expression.expression import (
     port_field,
     var,
 )
-from andromede.model import Constraint, float_variable, model
+from andromede.model import Constraint, float_parameter, float_variable, model
 from andromede.model.model import PortFieldDefinition, port_field_def
 
 
@@ -206,3 +206,13 @@ def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objectiv
 def test_invalid_port_field_definition_should_raise(expression: ExpressionNode) -> None:
     with pytest.raises(ValueError) as exc:
         port_field_def(port_name="p", field_name="f", definition=expression)
+
+
+def test_constraint_equals():
+    # checks in particular that expressions are correctly compared
+    assert Constraint(name="c", expression=var("x") <= param("p")) == Constraint(
+        name="c", expression=var("x") <= param("p")
+    )
+    assert Constraint(name="c", expression=var("x") <= param("p")) != Constraint(
+        name="c", expression=var("y") <= param("p")
+    )

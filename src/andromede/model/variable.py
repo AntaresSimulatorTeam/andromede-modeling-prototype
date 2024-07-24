@@ -13,8 +13,9 @@
 from dataclasses import dataclass, replace
 from typing import Any, Optional
 
-from andromede.expression import ExpressionNode
+from andromede.expression import ExpressionNode, literal
 from andromede.expression.degree import is_constant
+from andromede.expression.equality import expressions_equal_if_present
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ProblemContext, ValueType
 
@@ -41,6 +42,17 @@ class Variable:
     def replicate(self, /, **changes: Any) -> "Variable":
         return replace(self, **changes)
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Variable):
+            return False
+        return (
+            self.name == other.name
+            and self.data_type == other.data_type
+            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and self.structure == other.structure
+        )
+
 
 def int_variable(
     name: str,
@@ -52,6 +64,14 @@ def int_variable(
     return Variable(
         name, ValueType.INTEGER, lower_bound, upper_bound, structure, context
     )
+
+
+def bool_var(
+    name: str,
+    structure: IndexingStructure = IndexingStructure(True, True),
+    context: ProblemContext = ProblemContext.OPERATIONAL,
+) -> Variable:
+    return Variable(name, ValueType.BOOL, literal(0), literal(1), structure, context)
 
 
 def float_variable(

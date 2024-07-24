@@ -26,3 +26,15 @@ class IndexingStructure:
         time = self.time or other.time
         scenario = self.scenario or other.scenario
         return IndexingStructure(time, scenario)
+
+    def is_time_varying(self) -> bool:
+        return self.time
+
+    def is_scenario_varying(self) -> bool:
+        return self.scenario
+
+    def is_time_scenario_varying(self) -> bool:
+        return self.is_time_varying() and self.is_scenario_varying()
+
+    def is_constant(self) -> bool:
+        return (not self.is_time_varying()) and (not self.is_scenario_varying())
