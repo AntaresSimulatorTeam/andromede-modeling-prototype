@@ -14,14 +14,9 @@
 Defines the model for generic expressions.
 """
 import enum
-import inspect
 import math
 from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Union
-
-import andromede.expression.port_operator
-import andromede.expression.scenario_operator
-import andromede.expression.time_operator
 
 EPS = 10 ** (-16)
 
@@ -80,15 +75,20 @@ class ExpressionNodeEfficient:
 
     def sum(self) -> "ExpressionNodeEfficient":
         if isinstance(self, TimeOperatorNode):
-            return TimeAggregatorNode(self, "TimeSum", stay_roll=True)
+            return TimeAggregatorNode(self, TimeAggregatorName.TIME_SUM, stay_roll=True)
         else:
             return _apply_if_node(
-                self, lambda x: TimeAggregatorNode(x, "TimeSum", stay_roll=False)
+                self,
+                lambda x: TimeAggregatorNode(
+                    x, TimeAggregatorName.TIME_SUM, stay_roll=False
+                ),
             )
 
     def sum_connections(self) -> "ExpressionNodeEfficient":
         if isinstance(self, PortFieldNode):
-            return PortFieldAggregatorNode(self, aggregator="PortSum")
+            return PortFieldAggregatorNode(
+                self, aggregator=PortFieldAggregatorName.PORT_SUM
+            )
         raise ValueError(
             f"sum_connections() applies only for PortFieldNode, whereas the current node is of type {type(self)}."
         )
@@ -104,7 +104,9 @@ class ExpressionNodeEfficient:
     ) -> "ExpressionNodeEfficient":
         return _apply_if_node(
             self,
-            lambda x: TimeOperatorNode(x, "TimeShift", InstancesTimeIndex(expressions)),
+            lambda x: TimeOperatorNode(
+                x, TimeOperatorName.SHIFT, InstancesTimeIndex(expressions)
+            ),
         )
 
     def eval(
@@ -119,15 +121,19 @@ class ExpressionNodeEfficient:
         return _apply_if_node(
             self,
             lambda x: TimeOperatorNode(
-                x, "TimeEvaluation", InstancesTimeIndex(expressions)
+                x, TimeOperatorName.EVALUATION, InstancesTimeIndex(expressions)
             ),
         )
 
     def expec(self) -> "ExpressionNodeEfficient":
-        return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Expectation"))
+        return _apply_if_node(
+            self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.EXPECTATION)
+        )
 
     def variance(self) -> "ExpressionNodeEfficient":
-        return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Variance"))
+        return _apply_if_node(
+            self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.Variance)
+        )
 
 
 def wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
@@ -163,7 +169,7 @@ def is_minus_one(node: ExpressionNodeEfficient) -> bool:
     return isinstance(node, LiteralNode) and math.isclose(node.value, -1)
 
 
-def _negate_node(node: ExpressionNodeEfficient):
+def _negate_node(node: ExpressionNodeEfficient) -> ExpressionNodeEfficient:
     if isinstance(node, LiteralNode):
         return LiteralNode(-node.value)
     elif isinstance(node, NegationNode):
@@ -380,21 +386,19 @@ class UnaryOperatorNode(ExpressionNodeEfficient):
     operand: ExpressionNodeEfficient
 
 
+class PortFieldAggregatorName(enum.Enum):
+    # String value of enum must match the name of the PortAggregator class in port_operator.py
+    PORT_SUM = "PortSum"
+
+
 @dataclass(frozen=True, eq=False)
 class PortFieldAggregatorNode(UnaryOperatorNode):
-    aggregator: str
+    aggregator: PortFieldAggregatorName
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.port_operator, inspect.isclass
-            )
-            if issubclass(cls, andromede.expression.port_operator.PortAggregator)
-        ]
-        if self.aggregator not in valid_names:
-            raise NotImplementedError(
-                f"{self.aggregator} is not a valid port aggregator, valid port aggregators are {valid_names}"
+        if not isinstance(self.aggregator, PortFieldAggregatorName):
+            raise TypeError(
+                f"PortFieldAggregatorNode.name should of class PortFieldAggregatorName, but {self.aggregator} of type {type(self.aggregator)} was given"
             )
 
 
@@ -442,7 +446,6 @@ class DivisionNode(BinaryOperatorNode):
 
 @dataclass(frozen=True, eq=False)
 class ExpressionRange:
-
     start: ExpressionNodeEfficient
     stop: ExpressionNodeEfficient
     step: Optional[ExpressionNodeEfficient] = None
@@ -520,59 +523,55 @@ class InstancesTimeIndex:
             return False
 
 
+class TimeOperatorName(enum.Enum):
+    # String value of enum must match the name of the TimeOperator class in time_operator.py
+    SHIFT = "TimeShift"
+    EVALUATION = "TimeEvaluation"
+
+
+class TimeAggregatorName(enum.Enum):
+    # String value of enum must match the name of the TimeAggregator class in time_operator.py
+    TIME_SUM = "TimeSum"
+
+
 @dataclass(frozen=True, eq=False)
 class TimeOperatorNode(UnaryOperatorNode):
-    name: str
+    name: TimeOperatorName
     instances_index: InstancesTimeIndex
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.time_operator, inspect.isclass
-            )
-            if issubclass(cls, andromede.expression.time_operator.TimeOperator)
-        ]
-        if self.name not in valid_names:
-            raise ValueError(
-                f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
+        if not isinstance(self.name, TimeOperatorName):
+            raise TypeError(
+                f"TimeOperatorNode.name should of class TimeOperatorName, but {self.name} of type {type(self.name)} was given"
             )
 
 
 @dataclass(frozen=True, eq=False)
 class TimeAggregatorNode(UnaryOperatorNode):
-    name: str
+    name: TimeAggregatorName
     stay_roll: bool
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.time_operator, inspect.isclass
+        if not isinstance(self.name, TimeAggregatorName):
+            raise TypeError(
+                f"TimeAggregatorNode.name should of class TimeAggregatorName, but {self.name} of type {type(self.name)} was given"
             )
-            if issubclass(cls, andromede.expression.time_operator.TimeAggregator)
-        ]
-        if self.name not in valid_names:
-            raise ValueError(
-                f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
-            )
+
+
+class ScenarioOperatorName(enum.Enum):
+    # String value of enum must match the name of the ScenarioOperator class in scenario_operator.py
+    EXPECTATION = "Expectation"
+    VARIANCE = "Variance"
 
 
 @dataclass(frozen=True, eq=False)
 class ScenarioOperatorNode(UnaryOperatorNode):
-    name: str
+    name: ScenarioOperatorName
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.scenario_operator, inspect.isclass
-            )
-            if issubclass(cls, andromede.expression.scenario_operator.ScenarioOperator)
-        ]
-        if self.name not in valid_names:
-            raise ValueError(
-                f"{self.name} is not a valid scenario operator, valid scenario operators are {valid_names}"
+        if not isinstance(self.name, ScenarioOperatorName):
+            raise TypeError(
+                f"ScenarioOperatorNode.name should of class ScenarioOperatorName, but {self.name} of type {type(self.name)} was given"
             )
 
 

@@ -213,9 +213,9 @@ class ExpressionVisitorOperations(ExpressionVisitor[T_op], ABC):
         return left_value + right_value
 
     def substraction(self, node: SubstractionNode) -> T_op:
-            left_value = visit(node.left, self)
-            right_value = visit(node.right, self)
-            return left_value - right_value
+        left_value = visit(node.left, self)
+        right_value = visit(node.right, self)
+        return left_value - right_value
 
     def multiplication(self, node: MultiplicationNode) -> T_op:
         left_value = visit(node.left, self)

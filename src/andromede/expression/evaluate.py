@@ -14,28 +14,20 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict
 
-from andromede.expression.expression import (
+from andromede.expression.expression import VariableNode
+from andromede.expression.expression_efficient import (
+    ComparisonNode,
     ComponentParameterNode,
-    ComponentVariableNode,
+    ExpressionNodeEfficient,
+    LiteralNode,
+    ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ScenarioOperatorNode,
+    TimeAggregatorNode,
     TimeOperatorNode,
 )
 
-from .expression import (
-    AdditionNode,
-    ComparisonNode,
-    DivisionNode,
-    ExpressionNode,
-    LiteralNode,
-    MultiplicationNode,
-    NegationNode,
-    ParameterNode,
-    ScenarioOperatorNode,
-    SubstractionNode,
-    TimeAggregatorNode,
-    VariableNode,
-)
 from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
 
 
@@ -117,8 +109,8 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
     def comp_parameter(self, node: ComponentParameterNode) -> float:
         return self.context.get_component_parameter_value(node.component_id, node.name)
 
-    def comp_variable(self, node: ComponentVariableNode) -> float:
-        return self.context.get_component_variable_value(node.component_id, node.name)
+    # def comp_variable(self, node: ComponentVariableNode) -> float:
+    #     return self.context.get_component_variable_value(node.component_id, node.name)
 
     def time_operator(self, node: TimeOperatorNode) -> float:
         raise NotImplementedError()
@@ -136,7 +128,9 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
         raise NotImplementedError()
 
 
-def evaluate(expression: ExpressionNode, value_provider: ValueProvider) -> float:
+def evaluate(
+    expression: ExpressionNodeEfficient, value_provider: ValueProvider
+) -> float:
     return visit(expression, EvaluationVisitor(value_provider))
 
 

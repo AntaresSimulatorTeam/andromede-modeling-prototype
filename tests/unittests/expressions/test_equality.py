@@ -18,7 +18,9 @@ from andromede.expression.equality import expressions_equal
 from andromede.expression.expression_efficient import (
     ExpressionNodeEfficient,
     InstancesTimeIndex,
+    TimeAggregatorName,
     TimeAggregatorNode,
+    TimeOperatorName,
     TimeOperatorNode,
     expression_range,
     literal,
@@ -28,7 +30,7 @@ from andromede.expression.expression_efficient import (
 
 def shifted_param() -> ExpressionNodeEfficient:
     return TimeOperatorNode(
-        param("q"), "TimeShift", InstancesTimeIndex(expression_range(0, 2))
+        param("q"), TimeOperatorName.SHIFT, InstancesTimeIndex(expression_range(0, 2))
     )
 
 
@@ -43,22 +45,28 @@ def shifted_param() -> ExpressionNodeEfficient:
         param("q") * 3,
         TimeAggregatorNode(
             TimeOperatorNode(
-                param("q"), "TimeShift", InstancesTimeIndex(expression_range(1, 10, 2))
+                param("q"),
+                TimeOperatorName.SHIFT,
+                InstancesTimeIndex(expression_range(1, 10, 2)),
             ),
-            "TimeSum",
+            TimeAggregatorName.TIME_SUM,
             stay_roll=True,
         ),
         TimeAggregatorNode(
             TimeOperatorNode(
                 param("q"),
-                "TimeShift",
+                TimeOperatorName.SHIFT,
                 InstancesTimeIndex(expression_range(1, param("p"))),
             ),
-            "TimeSum",
+            TimeAggregatorName.TIME_SUM,
             stay_roll=True,
         ),
-        TimeAggregatorNode(shifted_param(), name="TimeSum", stay_roll=True),
-        TimeAggregatorNode(shifted_param(), name="TimeAggregator", stay_roll=True),
+        TimeAggregatorNode(
+            shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=True
+        ),
+        TimeAggregatorNode(
+            shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=True
+        ),
         param("q") + 5 <= 2,
         param("q").expec(),
     ],
@@ -78,19 +86,19 @@ def test_equals(expr: ExpressionNodeEfficient) -> None:
             TimeAggregatorNode(
                 TimeOperatorNode(
                     param("q"),
-                    "TimeShift",
+                    TimeOperatorName.SHIFT,
                     InstancesTimeIndex(expression_range(1, param("p"))),
                 ),
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             ),
             TimeAggregatorNode(
                 TimeOperatorNode(
                     param("q"),
-                    "TimeShift",
+                    TimeOperatorName.SHIFT,
                     InstancesTimeIndex(expression_range(1, param("q"))),
                 ),
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             ),
         ),
@@ -98,36 +106,34 @@ def test_equals(expr: ExpressionNodeEfficient) -> None:
             TimeAggregatorNode(
                 TimeOperatorNode(
                     param("q"),
-                    "TimeShift",
+                    TimeOperatorName.SHIFT,
                     InstancesTimeIndex(expression_range(1, 10, 2)),
                 ),
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             ),
             TimeAggregatorNode(
                 TimeOperatorNode(
                     param("q"),
-                    "TimeShift",
+                    TimeOperatorName.SHIFT,
                     InstancesTimeIndex(expression_range(1, 10, 3)),
                 ),
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             ),
         ),
         (
-            TimeAggregatorNode(shifted_param(), name="TimeSum", stay_roll=True),
-            TimeAggregatorNode(shifted_param(), name="TimeSum", stay_roll=False),
-        ),
-        (
-            TimeAggregatorNode(shifted_param(), name="TimeSum", stay_roll=True),
-            TimeAggregatorNode(shifted_param(), name="TimeAggregator", stay_roll=True),
+            TimeAggregatorNode(
+                shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=True
+            ),
+            TimeAggregatorNode(
+                shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=False
+            ),
         ),
         (param("q").expec(), param("y").expec()),
     ],
 )
-def test_not_equals(
-    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
-) -> None:
+def test_not_equals(lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient) -> None:
     assert not expressions_equal(lhs, rhs)
 
 

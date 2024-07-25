@@ -24,19 +24,22 @@ from andromede.expression.linear_expression_efficient import (
     var,
 )
 
+
 @pytest.mark.parametrize(
-        "port_expr, expected",
-        [
-            (port_field("port", "field") + 2, var("flow") + 2),
-            (port_field("port", "field") - 2, var("flow") - 2),
-            (port_field("port", "field") * 2, 2 * var("flow")),
-            (port_field("port", "field") / 2, var("flow") / 2),
-            (port_field("port", "field") * 0, LinearExpressionEfficient()),
-        ]
+    "port_expr, expected",
+    [
+        (port_field("port", "field") + 2, var("flow") + 2),
+        (port_field("port", "field") - 2, var("flow") - 2),
+        (port_field("port", "field") * 2, 2 * var("flow")),
+        (port_field("port", "field") / 2, var("flow") / 2),
+        (port_field("port", "field") * 0, LinearExpressionEfficient()),
+    ],
 )
-def test_port_field_resolution(port_expr: LinearExpressionEfficient, expected: LinearExpressionEfficient) -> None:
+def test_port_field_resolution(
+    port_expr: LinearExpressionEfficient, expected: LinearExpressionEfficient
+) -> None:
     ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]] = {}
-    
+
     key = PortFieldKey("com_id", PortFieldId(field_name="field", port_name="port"))
     expression = var("flow")
 

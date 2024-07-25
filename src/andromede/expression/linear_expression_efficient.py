@@ -35,8 +35,11 @@ from andromede.expression.expression_efficient import (
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
+    ScenarioOperatorName,
     ScenarioOperatorNode,
+    TimeAggregatorName,
     TimeAggregatorNode,
+    TimeOperatorName,
     TimeOperatorNode,
     is_minus_one,
     is_one,
@@ -145,7 +148,6 @@ class TermEfficient:
     def compute_indexation(
         self, provider: IndexingStructureProvider
     ) -> IndexingStructure:
-
         return IndexingStructure(
             self._compute_time_indexing(provider),
             self._compute_scenario_indexing(provider),
@@ -206,7 +208,7 @@ class TermEfficient:
             return dataclasses.replace(
                 self,
                 coefficient=TimeOperatorNode(
-                    self.coefficient, "TimeShift", InstancesTimeIndex(shift)
+                    self.coefficient, TimeOperatorName.SHIFT, InstancesTimeIndex(shift)
                 ),
                 time_operator=TimeShift(InstancesTimeIndex(shift)),
                 time_aggregator=TimeSum(stay_roll=True),
@@ -215,7 +217,9 @@ class TermEfficient:
             return dataclasses.replace(
                 self,
                 coefficient=TimeOperatorNode(
-                    self.coefficient, "TimeEvaluation", InstancesTimeIndex(eval)
+                    self.coefficient,
+                    TimeOperatorName.EVALUATION,
+                    InstancesTimeIndex(eval),
                 ),
                 time_operator=TimeEvaluation(InstancesTimeIndex(eval)),
                 time_aggregator=TimeSum(stay_roll=True),
@@ -346,7 +350,8 @@ def _merge_dicts(
     rhs: Dict[TermKeyEfficient, TermEfficient],
     merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
     neutral: float,
-) -> Dict[TermKeyEfficient, TermEfficient]: ...
+) -> Dict[TermKeyEfficient, TermEfficient]:
+    ...
 
 
 @overload
@@ -355,7 +360,8 @@ def _merge_dicts(
     rhs: Dict[PortFieldId, PortFieldTerm],
     merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
     neutral: float,
-) -> Dict[PortFieldId, PortFieldTerm]: ...
+) -> Dict[PortFieldId, PortFieldTerm]:
+    ...
 
 
 def _get_neutral_term(term: T_val, neutral: float) -> T_val:
@@ -746,10 +752,10 @@ class LinearExpressionEfficient:
             result_constant = TimeAggregatorNode(
                 TimeOperatorNode(
                     self.constant,
-                    "TimeShift",
+                    TimeOperatorName.SHIFT,
                     InstancesTimeIndex(shift),
                 ),
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             )
         elif eval is not None:
@@ -758,10 +764,10 @@ class LinearExpressionEfficient:
             result_constant = TimeAggregatorNode(
                 TimeOperatorNode(
                     self.constant,
-                    "TimeEvaluation",
+                    TimeOperatorName.EVALUATION,
                     InstancesTimeIndex(eval),
                 ),
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             )
         else:  # x.sum() -> Sum over all time block
@@ -769,7 +775,7 @@ class LinearExpressionEfficient:
 
             result_constant = TimeAggregatorNode(
                 self.constant,
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=False,
             )
 
@@ -799,7 +805,7 @@ class LinearExpressionEfficient:
 
     # def sum_connections(self) -> "ExpressionNode":
     #     if isinstance(self, PortFieldNode):
-    #         return PortFieldAggregatorNode(self, aggregator="PortSum")
+    #         return PortFieldAggregatorNode(self, aggregator=PortFieldAggregatorName.PORT_SUM)
     #     raise ValueError(
     #         f"sum_connections() applies only for PortFieldNode, whereas the current node is of type {type(self)}."
     #     )
@@ -866,12 +872,14 @@ class LinearExpressionEfficient:
             term_with_operator = term.expec()
             result_terms[generate_key(term_with_operator)] = term_with_operator
 
-        result_constant = ScenarioOperatorNode(self.constant, "Expectation")
+        result_constant = ScenarioOperatorNode(
+            self.constant, ScenarioOperatorName.EXPECTATION
+        )
         result_expr = LinearExpressionEfficient(result_terms, result_constant)
         return result_expr
 
     # def variance(self) -> "ExpressionNode":
-    #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Variance"))
+    #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.Variance))
 
     def sum_connections(self) -> "LinearExpressionEfficient":
         if not self.is_zero():

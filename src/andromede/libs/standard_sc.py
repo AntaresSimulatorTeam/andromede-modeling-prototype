@@ -11,9 +11,8 @@
 # This file is part of the Antares project.
 
 
-from andromede.expression.expression import port_field
 from andromede.expression.expression_efficient import literal, param
-from andromede.expression.linear_expression_efficient import var
+from andromede.expression.linear_expression_efficient import port_field, var
 from andromede.libs.standard import BALANCE_PORT_TYPE, CONSTANT
 from andromede.model import (
     Constraint,

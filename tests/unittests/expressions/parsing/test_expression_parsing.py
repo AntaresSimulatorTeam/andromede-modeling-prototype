@@ -14,9 +14,12 @@ from typing import Set
 import pytest
 
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression import ExpressionRange, port_field
-from andromede.expression.expression_efficient import literal, param
-from andromede.expression.linear_expression_efficient import LinearExpressionEfficient, var
+from andromede.expression.expression_efficient import ExpressionRange, literal, param
+from andromede.expression.linear_expression_efficient import (
+    LinearExpressionEfficient,
+    port_field,
+    var,
+)
 from andromede.expression.parsing.parse_expression import (
     AntaresParseException,
     ModelIdentifiers,
@@ -49,7 +52,7 @@ from andromede.expression.print import print_expr
             {"x"},
             {},
             "x[-1..5]",
-            var("x").eval(ExpressionRange(-literal(1), literal(5))),
+            var("x").sum(eval=ExpressionRange(-literal(1), literal(5))),
         ),
         ({"x"}, {}, "x[1]", var("x").eval(1)),
         ({"x"}, {}, "x[t-1]", var("x").shift(-literal(1))),
@@ -57,13 +60,13 @@ from andromede.expression.print import print_expr
             {"x"},
             {},
             "x[t-1, t+4]",
-            var("x").shift([-literal(1), literal(4)]),
+            var("x").sum(shift=[-literal(1), literal(4)]),
         ),
         (
             {"x"},
             {},
             "x[t-1+1]",
-            var("x").shift(-literal(1) + literal(1)),
+            var("x").sum(shift=-literal(1) + literal(1)),
         ),
         (
             {"x"},
@@ -93,25 +96,25 @@ from andromede.expression.print import print_expr
             {"x"},
             {},
             "x[t-1, t, t+4]",
-            var("x").shift([-literal(1), literal(0), literal(4)]),
+            var("x").sum(shift=[-literal(1), literal(0), literal(4)]),
         ),
         (
             {"x"},
             {},
             "x[t-1..t+5]",
-            var("x").shift(ExpressionRange(-literal(1), literal(5))),
+            var("x").sum(shift=ExpressionRange(-literal(1), literal(5))),
         ),
         (
             {"x"},
             {},
             "x[t-1..t]",
-            var("x").shift(ExpressionRange(-literal(1), literal(0))),
+            var("x").sum(shift=ExpressionRange(-literal(1), literal(0))),
         ),
         (
             {"x"},
             {},
             "x[t..t+5]",
-            var("x").shift(ExpressionRange(literal(0), literal(5))),
+            var("x").sum(shift=ExpressionRange(literal(0), literal(5))),
         ),
         ({"x"}, {}, "x[t]", var("x")),
         ({"x"}, {"p"}, "x[t+p]", var("x").shift(param("p"))),
@@ -119,7 +122,7 @@ from andromede.expression.print import print_expr
             {"x"},
             {},
             "sum(x[-1..5])",
-            var("x").eval(ExpressionRange(-literal(1), literal(5))).sum(),
+            var("x").sum(eval=ExpressionRange(-literal(1), literal(5))).sum(),
         ),
         ({}, {}, "sum_connections(port.f)", port_field("port", "f").sum_connections()),
         (
@@ -136,9 +139,9 @@ from andromede.expression.print import print_expr
             {"nb_start", "nb_on"},
             {"d_min_up"},
             "sum(nb_start[-d_min_up + 1 .. 0]) <= nb_on",
-            var("nb_start")
-            .eval(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            var("nb_start").sum(
+                eval=(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            )
             <= var("nb_on"),
         ),
         (

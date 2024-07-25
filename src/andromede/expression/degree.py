@@ -11,28 +11,26 @@
 # This file is part of the Antares project.
 
 import andromede.expression.scenario_operator
-from andromede.expression.expression import (
-    ComponentParameterNode,
-    ComponentVariableNode,
-    PortFieldAggregatorNode,
-    PortFieldNode,
-    TimeOperatorNode,
-)
-
-from .expression import (
+from andromede.expression.expression_efficient import (
     AdditionNode,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
-    ExpressionNode,
+    ExpressionNodeEfficient,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
     ScenarioOperatorNode,
     SubstractionNode,
+    TimeAggregatorName,
     TimeAggregatorNode,
-    VariableNode,
+    TimeOperatorName,
+    TimeOperatorNode,
 )
+
 from .visitor import ExpressionVisitor, T, visit
 
 
@@ -66,26 +64,26 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
     def comparison(self, node: ComparisonNode) -> int:
         return max(visit(node.left, self), visit(node.right, self))
 
-    def variable(self, node: VariableNode) -> int:
-        return 1
+    # def variable(self, node: VariableNode) -> int:
+    #     return 1
 
     def parameter(self, node: ParameterNode) -> int:
         return 0
 
-    def comp_variable(self, node: ComponentVariableNode) -> int:
-        return 1
+    # def comp_variable(self, node: ComponentVariableNode) -> int:
+    #     return 1
 
     def comp_parameter(self, node: ComponentParameterNode) -> int:
         return 0
 
     def time_operator(self, node: TimeOperatorNode) -> int:
-        if node.name in ["TimeShift", "TimeEvaluation"]:
+        if node.name in [TimeOperatorName.SHIFT, TimeOperatorName.EVALUATION]:
             return visit(node.operand, self)
         else:
             return NotImplemented
 
     def time_aggregator(self, node: TimeAggregatorNode) -> int:
-        if node.name in ["TimeSum"]:
+        if node.name in [TimeAggregatorName.TIME_SUM]:
             return visit(node.operand, self)
         else:
             return NotImplemented
@@ -104,18 +102,18 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
         return visit(node.operand, self)
 
 
-def compute_degree(expression: ExpressionNode) -> int:
+def compute_degree(expression: ExpressionNodeEfficient) -> int:
     return visit(expression, ExpressionDegreeVisitor())
 
 
-def is_constant(expr: ExpressionNode) -> bool:
+def is_constant(expr: ExpressionNodeEfficient) -> bool:
     """
     True if the expression has no variable.
     """
     return compute_degree(expr) == 0
 
 
-def is_linear(expr: ExpressionNode) -> bool:
+def is_linear(expr: ExpressionNodeEfficient) -> bool:
     """
     True if the expression is linear with respect to variables.
     """

@@ -51,7 +51,7 @@ class PortFieldKey:
 #     def port_field_aggregator(
 #         self, node: PortFieldAggregatorNode
 #     ) -> LinearExpressionEfficient:
-#         if node.aggregator != "PortSum":
+#         if node.aggregator != PortFieldAggregatorName.PORT_SUM:
 #             raise NotImplementedError("Only PortSum is supported.")
 #         port_field_node = node.operand
 #         if not isinstance(port_field_node, PortFieldNode):

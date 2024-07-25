@@ -25,7 +25,9 @@ from andromede.expression.expression_efficient import (
     InstancesTimeIndex,
     LiteralNode,
     ParameterNode,
+    TimeAggregatorName,
     TimeAggregatorNode,
+    TimeOperatorName,
     TimeOperatorNode,
     comp_param,
     literal,
@@ -394,7 +396,7 @@ def test_comparison() -> None:
                     scenario_operator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
-                        LiteralNode(1), "TimeShift", InstancesTimeIndex(1)
+                        LiteralNode(1), TimeOperatorName.SHIFT, InstancesTimeIndex(1)
                     ),
                     "",
                     "x",
@@ -413,7 +415,7 @@ def test_comparison() -> None:
                     scenario_operator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
-                        LiteralNode(1), "TimeShift", InstancesTimeIndex(1)
+                        LiteralNode(1), TimeOperatorName.SHIFT, InstancesTimeIndex(1)
                     ),
                     "",
                     "y",
@@ -422,8 +424,10 @@ def test_comparison() -> None:
                 ),
             },
             TimeAggregatorNode(
-                TimeOperatorNode(LiteralNode(1), "TimeShift", InstancesTimeIndex(1)),
-                "TimeSum",
+                TimeOperatorNode(
+                    LiteralNode(1), TimeOperatorName.SHIFT, InstancesTimeIndex(1)
+                ),
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             ),  # TODO: Could it be simplified online ?
         ),
@@ -440,7 +444,9 @@ def test_comparison() -> None:
                     scenario_operator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
-                        LiteralNode(1), "TimeEvaluation", InstancesTimeIndex(1)
+                        LiteralNode(1),
+                        TimeOperatorName.EVALUATION,
+                        InstancesTimeIndex(1),
                     ),
                     "",
                     "x",
@@ -459,7 +465,9 @@ def test_comparison() -> None:
                     scenario_operator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
-                        LiteralNode(1), "TimeEvaluation", InstancesTimeIndex(1)
+                        LiteralNode(1),
+                        TimeOperatorName.EVALUATION,
+                        InstancesTimeIndex(1),
                     ),
                     "",
                     "y",
@@ -469,9 +477,9 @@ def test_comparison() -> None:
             },
             TimeAggregatorNode(
                 TimeOperatorNode(
-                    LiteralNode(1), "TimeEvaluation", InstancesTimeIndex(1)
+                    LiteralNode(1), TimeOperatorName.EVALUATION, InstancesTimeIndex(1)
                 ),
-                "TimeSum",
+                TimeAggregatorName.TIME_SUM,
                 stay_roll=True,
             ),  # TODO: Could it be simplified online ?
         ),
@@ -506,7 +514,7 @@ def test_comparison() -> None:
                 ),
             },
             TimeAggregatorNode(
-                LiteralNode(1), "TimeSum", stay_roll=False
+                LiteralNode(1), TimeAggregatorName.TIME_SUM, stay_roll=False
             ),  # TODO: Could it be simplified online ?
         ),
     ],
@@ -668,7 +676,6 @@ def test_multiplication_of_differently_indexed_terms() -> None:
 def test_sum_expressions(
     sum_expr: LinearExpressionEfficient, expected: LinearExpressionEfficient
 ) -> None:
-
     assert linear_expressions_equal(sum_expr, wrap_in_linear_expr(expected))
 
 
