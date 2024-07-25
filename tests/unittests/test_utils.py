@@ -10,17 +10,13 @@
 #
 # This file is part of the Antares project.
 
-from typing import List
+from typing import Optional
 
 import pandas as pd
 import pytest
+from scipy.stats import truncnorm
 
-from andromede.study import (
-    TimeIndex,
-    TimeScenarioIndex,
-    TimeScenarioSeriesData,
-    TimeSeriesData,
-)
+from andromede.study import TimeScenarioSeriesData
 from andromede.utils import get_or_add
 
 
@@ -48,3 +44,18 @@ def generate_scalar_matrix_data(
     data.fillna(value, inplace=True)
 
     return TimeScenarioSeriesData(time_scenario_series=data)
+
+
+def generate_random_data(
+    mean: float,
+    std: float,
+    horizon: int,
+    scenarios: int,
+    *,
+    seed: Optional[int] = 2024,
+    upper: float = float("inf"),
+    lower: float = float("-inf")
+) -> TimeScenarioSeriesData:
+    X = truncnorm((lower - mean) / std, (upper - mean) / std, loc=mean, scale=std)
+    sample = X.rvs(size=(horizon, scenarios), random_state=seed)
+    return TimeScenarioSeriesData(time_scenario_series=pd.DataFrame(sample))

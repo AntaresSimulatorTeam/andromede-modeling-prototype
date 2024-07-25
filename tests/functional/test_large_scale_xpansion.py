@@ -22,21 +22,16 @@ from andromede.libs.standard import (
     RES_MODEL,
     THERMAL_CANDIDATE,
 )
-from andromede.simulation import (
-    BendersSolution,
-    TimeBlock,
-    build_benders_decomposed_problem,
-    build_problem,
-)
+from andromede.simulation import TimeBlock, build_benders_decomposed_problem
 from andromede.simulation.decision_tree import (
     DecisionTreeNode,
     InterDecisionTimeScenarioConfig,
 )
-from andromede.study.data import ConstantData, DataBase, TimeScenarioSeriesData
+from andromede.study.data import ConstantData, DataBase
 from andromede.study.network import Network, Node, PortRef, create_component
-from andromede.utils import load_ts_from_txt
+from tests.unittests.test_utils import generate_random_data
 
-BLOCK_LENGTH = 2  # (24 * 7) # One week
+BLOCK_LENGTH = 24 * 7  # One week
 NB_BLOCKS = 2
 NB_SCENARIOS = 2
 
@@ -109,10 +104,23 @@ def network() -> Network:
 def database() -> DataBase:
     path = Path("tests/functional/data/pathway_test_case/")
 
-    wind1 = load_ts_from_txt("wind_area1", path)
-    wind2 = load_ts_from_txt("wind_area2", path)
-    load1 = load_ts_from_txt("load_area1", path)
-    load2 = load_ts_from_txt("load_area2", path)
+    # Magic numbers based on real data
+    # The main expected behaviors are:
+    # - Loads are much bigger than RES;
+    # - RES vary from 0 to a limit, loads never go to 0
+    # - RES varies a lot, i.e., big std deviations proportionally to their mean
+    wind1 = generate_random_data(
+        400, 380, NB_BLOCKS * BLOCK_LENGTH, NB_SCENARIOS, upper=800, lower=0
+    )
+    wind2 = generate_random_data(
+        500, 420, NB_BLOCKS * BLOCK_LENGTH, NB_SCENARIOS, upper=900, lower=0
+    )
+    load1 = generate_random_data(
+        3200, 750, NB_BLOCKS * BLOCK_LENGTH, NB_SCENARIOS, upper=5300, lower=1700
+    )
+    load2 = generate_random_data(
+        3000, 800, NB_BLOCKS * BLOCK_LENGTH, NB_SCENARIOS, upper=5600, lower=1600
+    )
 
     database = DataBase()
 
@@ -120,16 +128,8 @@ def database() -> DataBase:
     database.add_data("Area1", "spillage_cost", ConstantData(0))
     database.add_data("Area1", "ens_cost", ConstantData(20_000))
 
-    database.add_data(
-        "D1",
-        "demand",
-        TimeScenarioSeriesData.from_dataframe(load1),
-    )
-    database.add_data(
-        "Wind1",
-        "production",
-        TimeScenarioSeriesData.from_dataframe(wind1),
-    )
+    database.add_data("D1", "demand", load1)
+    database.add_data("Wind1", "production", wind1)
 
     database.add_data("Base1", "cost", ConstantData(20))
     database.add_data("Base1", "p_max", ConstantData(3 * 900))
@@ -144,16 +144,8 @@ def database() -> DataBase:
     database.add_data("Area2", "spillage_cost", ConstantData(0))
     database.add_data("Area2", "ens_cost", ConstantData(20_000))
 
-    database.add_data(
-        "D2",
-        "demand",
-        TimeScenarioSeriesData.from_dataframe(load2),
-    )
-    database.add_data(
-        "Wind2",
-        "production",
-        TimeScenarioSeriesData.from_dataframe(wind2),
-    )
+    database.add_data("D2", "demand", load2)
+    database.add_data("Wind2", "production", wind2)
 
     database.add_data("Base2", "cost", ConstantData(20))
     database.add_data("Base2", "p_max", ConstantData(3 * 900))
@@ -168,18 +160,18 @@ def database() -> DataBase:
     database.add_data("Area1/Area2", "f_max", ConstantData(1_000))
 
     # Candidates
-    database.add_data("Cand_Semi", "op_cost", ConstantData(50))
-    database.add_data("Cand_Semi", "max_invest", ConstantData(20 * 200))
-    database.add_data("Cand_Semi", "invest_cost", ConstantData(126_000))
+    database.add_data("Cand_Semi", "op_cost", ConstantData(40))
+    database.add_data("Cand_Semi", "max_invest", ConstantData(2 * 200))
+    database.add_data("Cand_Semi", "invest_cost", ConstantData(21_000))
 
-    database.add_data("Cand_Peak", "op_cost", ConstantData(180))
-    database.add_data("Cand_Peak", "max_invest", ConstantData(30 * 100))
-    database.add_data("Cand_Peak", "invest_cost", ConstantData(60_000))
+    database.add_data("Cand_Peak", "op_cost", ConstantData(95))
+    database.add_data("Cand_Peak", "max_invest", ConstantData(3 * 100))
+    database.add_data("Cand_Peak", "invest_cost", ConstantData(15_000))
 
     return database
 
 
-def test_single_investment_node(network: Network, database: DataBase) -> None:
+def test_large_scale_investment(network: Network, database: DataBase) -> None:
     """
     Single node investment tree with 2 weeks and 2 time-series
     """
@@ -190,15 +182,10 @@ def test_single_investment_node(network: Network, database: DataBase) -> None:
     config = InterDecisionTimeScenarioConfig(time_blocks, NB_SCENARIOS)
     decision_tree_root = DecisionTreeNode("", config, network)
 
-    # No investment
-    # for block in time_blocks:
-    #     prob = build_problem(network, database, block, NB_SCENARIOS)
-    #     status = prob.solver.Solve()
-    #     assert status == prob.solver.OPTIMAL
-    #     print(prob.solver.Objective().Value())
-
     xpansion = build_benders_decomposed_problem(decision_tree_root, database)
     assert xpansion.run()
     if (decomposed_solution := xpansion.solution) is not None:  # For mypy only
-        # print(decomposed_solution)
-        return
+        assert decomposed_solution.overall_cost < 50.49e6
+        assert decomposed_solution.investment_cost > 8.64e6
+        assert decomposed_solution.candidates["Cand_Semi_p_max"] >= 197
+        assert decomposed_solution.candidates["Cand_Peak_p_max"] >= 300

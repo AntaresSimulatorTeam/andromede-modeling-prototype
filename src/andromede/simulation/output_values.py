@@ -286,15 +286,17 @@ class BendersSolution:
 
     def __str__(self) -> str:
         lpad = 30
-        rpad = 12
+        rpad = 15
 
         string = "Benders' solution:\n"
-        string += f"{'Overall cost':<{lpad}} : {self.overall_cost:>{rpad}}\n"
-        string += f"{'Investment cost':<{lpad}} : {self.investment_cost:>{rpad}}\n"
-        string += f"{'Operational cost':<{lpad}} : {self.operational_cost:>{rpad}}\n"
+        string += f"{'Overall cost':<{lpad}} : {self.overall_cost:>{rpad},.2f}\n"
+        string += f"{'Investment cost':<{lpad}} : {self.investment_cost:>{rpad},.2f}\n"
+        string += (
+            f"{'Operational cost':<{lpad}} : {self.operational_cost:>{rpad},.2f}\n"
+        )
         string += "-" * (lpad + rpad + 3) + "\n"
         for candidate, investment in self.candidates.items():
-            string += f"{candidate:<{lpad}} : {investment:>{rpad}}\n"
+            string += f"{candidate:<{lpad}} : {investment:>{rpad},.2f}\n"
 
         return string
 
