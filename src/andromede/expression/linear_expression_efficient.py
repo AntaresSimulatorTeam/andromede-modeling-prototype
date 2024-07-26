@@ -31,6 +31,7 @@ from typing import (
 from andromede.expression.context_adder import add_component_context
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import ValueProvider, evaluate
+from andromede.expression.evaluate_parameters_efficient import resolve_coefficient
 from andromede.expression.expression_efficient import (
     ExpressionNodeEfficient,
     ExpressionRange,
@@ -60,6 +61,10 @@ from andromede.expression.time_operator import (
     TimeOperator,
     TimeShift,
     TimeSum,
+)
+from andromede.simulation.resolved_linear_expression import (
+    ResolvedLinearExpression,
+    ResolvedTerm,
 )
 
 
@@ -414,6 +419,12 @@ def _add_terms(lhs: T_val, rhs: T_val) -> T_val:
 def _substract_terms(lhs: T_val, rhs: T_val) -> T_val:
     _merge_is_possible(lhs, rhs)
     return dataclasses.replace(lhs, coefficient=lhs.coefficient - rhs.coefficient)
+
+
+@dataclass(frozen=True)
+class RowIndex:
+    time: int
+    scenario: int
 
 
 class LinearExpressionEfficient:
@@ -935,6 +946,21 @@ class LinearExpressionEfficient:
         return LinearExpressionEfficient(
             result_terms, result_constant, self.port_field_terms
         )
+
+    def resolve_coefficient(
+        self, value_provider: ValueProvider, row_id: RowIndex
+    ) -> ResolvedLinearExpression:
+
+        resolved_terms = []
+        for term in self.terms.values():
+            resolved_coeff = resolve_coefficient(
+                term.coefficient, value_provider, row_id
+            )
+            resolved_variable = ...
+            resolved_terms.append(ResolvedTerm(resolved_coeff, resolved_variable))
+
+        resolved_constant = resolve_coefficient(self.constant, value_provider, row_id)
+        return ResolvedLinearExpression(resolved_terms, resolved_constant)
 
 
 def linear_expressions_equal(

@@ -37,17 +37,17 @@ class ValueProvider(ABC):
     Depending on the implementation, evaluation may require a component id or not.
     """
 
-    @abstractmethod
-    def get_variable_value(self, name: str) -> float:
-        ...
+    # @abstractmethod
+    # def get_variable_value(self, name: str) -> float:
+    #     ...
 
     @abstractmethod
     def get_parameter_value(self, name: str) -> float:
         ...
 
-    @abstractmethod
-    def get_component_variable_value(self, component_id: str, name: str) -> float:
-        ...
+    # @abstractmethod
+    # def get_component_variable_value(self, component_id: str, name: str) -> float:
+        # ...
 
     @abstractmethod
     def get_component_parameter_value(self, component_id: str, name: str) -> float:
