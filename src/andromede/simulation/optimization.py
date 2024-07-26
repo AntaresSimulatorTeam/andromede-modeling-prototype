@@ -18,22 +18,21 @@ into a mathematical optimization problem.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Type
+from typing import Dict, Iterable, List, Optional
 
 import ortools.linear_solver.pywraplp as lp
 
 from andromede.expression import (  # ExpressionNode,
-    EvaluationVisitor,
     ParameterValueProvider,
     ValueProvider,
     resolve_parameters,
-    visit,
 )
-from andromede.expression.context_adder import add_component_context
-from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
+from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
-from andromede.expression.port_resolver import PortFieldKey, resolve_port
+from andromede.expression.linear_expression_efficient import (
+    LinearExpressionEfficient,
+    PortFieldKey,
+)
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.common import ValueType
@@ -149,8 +148,7 @@ class ExpressionTimestepValueProvider(TimestepValueProvider):
         param_value_provider = _make_value_provider(
             self.context, block_timestep, scenario, self.component
         )
-        visitor = EvaluationVisitor(param_value_provider)
-        return visit(self.expression, visitor)
+        return self.expression.evaluate(param_value_provider)
 
 
 def _make_parameter_value_provider(
@@ -421,9 +419,9 @@ def _get_indexing(
     constraint: Constraint, provider: IndexingStructureProvider
 ) -> IndexingStructure:
     return (
-        compute_indexation(constraint.expression, provider)
-        or compute_indexation(constraint.lower_bound, provider)
-        or compute_indexation(constraint.upper_bound, provider)
+        constraint.expression.compute_indexation(provider)
+        or constraint.lower_bound.compute_indexation(provider)
+        or constraint.upper_bound.compute_indexation(provider)
     )
 
 
@@ -447,9 +445,9 @@ def _instantiate_model_expression(
      1. add component ID for variables and parameters of THIS component
      2. replace port fields by their definition
     """
-    with_component = add_component_context(component_id, model_expression)
-    with_component_and_ports = resolve_port(
-        with_component, component_id, optimization_context.connection_fields_expressions
+    with_component = model_expression.add_component_context(component_id)
+    with_component_and_ports = with_component.resolve_port(
+        component_id, optimization_context.connection_fields_expressions
     )
     return with_component_and_ports
 
@@ -465,9 +463,10 @@ def _create_constraint(
     constraint_indexing = _compute_indexing_structure(context, constraint)
 
     # Perf: Perform linearization (tree traversing) without timesteps so that we can get the number of instances for the expression (from the time_ids of operators)
-    linear_expr = context.linearize_expression(0, 0, constraint.expression)
-    # Will there be cases where instances > 1 ? If not, maybe just a check that get_number_of_instances == 1 is sufficient ? Anyway, the function should be implemented
-    instances_per_time_step = linear_expr.number_of_instances()
+    # linear_expr = context.linearize_expression(0, 0, constraint.expression)
+    # # Will there be cases where instances > 1 ? If not, maybe just a check that get_number_of_instances == 1 is sufficient ? Anyway, the function should be implemented
+    # instances_per_time_step = linear_expr.number_of_instances()
+    instances_per_time_step = 1
 
     for block_timestep in context.opt_context.get_time_indices(constraint_indexing):
         for scenario in context.opt_context.get_scenario_indices(constraint_indexing):
@@ -703,8 +702,8 @@ class OptimizationProblem:
                     )
                 )
                 expression_node = port_definition.definition  # type: ignore
-                instantiated_expression = add_component_context(
-                    master_port.component.id, expression_node
+                instantiated_expression = expression_node.add_component_context(
+                    master_port.component.id
                 )
                 self.context.register_connection_fields_expressions(
                     component_id=cnx.port1.component.id,

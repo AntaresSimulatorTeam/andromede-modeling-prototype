@@ -13,12 +13,10 @@
 from dataclasses import dataclass
 
 from . import CopyVisitor
-from .expression import (
+from .expression_efficient import (
     ComponentParameterNode,
-    ComponentVariableNode,
-    ExpressionNode,
+    ExpressionNodeEfficient,
     ParameterNode,
-    VariableNode,
 )
 from .visitor import visit
 
@@ -32,22 +30,24 @@ class ContextAdder(CopyVisitor):
 
     component_id: str
 
-    def variable(self, node: VariableNode) -> ExpressionNode:
-        return ComponentVariableNode(self.component_id, node.name)
+    # def variable(self, node: VariableNode) -> ExpressionNodeEfficient:
+    #     return ComponentVariableNode(self.component_id, node.name)
 
-    def parameter(self, node: ParameterNode) -> ExpressionNode:
+    def parameter(self, node: ParameterNode) -> ExpressionNodeEfficient:
         return ComponentParameterNode(self.component_id, node.name)
 
-    def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
+    # def comp_variable(self, node: ComponentVariableNode) -> ExpressionNodeEfficient:
+    #     raise ValueError(
+    #         "This expression has already been associated to another component."
+    #     )
+
+    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNodeEfficient:
         raise ValueError(
             "This expression has already been associated to another component."
         )
 
-    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
-        raise ValueError(
-            "This expression has already been associated to another component."
-        )
 
-
-def add_component_context(id: str, expression: ExpressionNode) -> ExpressionNode:
+def add_component_context(
+    id: str, expression: ExpressionNodeEfficient
+) -> ExpressionNodeEfficient:
     return visit(expression, ContextAdder(id))

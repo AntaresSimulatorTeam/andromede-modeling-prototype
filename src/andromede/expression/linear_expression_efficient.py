@@ -28,6 +28,7 @@ from typing import (
     overload,
 )
 
+from andromede.expression.context_adder import add_component_context
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import ValueProvider, evaluate
 from andromede.expression.expression_efficient import (
@@ -350,8 +351,7 @@ def _merge_dicts(
     rhs: Dict[TermKeyEfficient, TermEfficient],
     merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
     neutral: float,
-) -> Dict[TermKeyEfficient, TermEfficient]:
-    ...
+) -> Dict[TermKeyEfficient, TermEfficient]: ...
 
 
 @overload
@@ -360,8 +360,7 @@ def _merge_dicts(
     rhs: Dict[PortFieldId, PortFieldTerm],
     merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
     neutral: float,
-) -> Dict[PortFieldId, PortFieldTerm]:
-    ...
+) -> Dict[PortFieldId, PortFieldTerm]: ...
 
 
 def _get_neutral_term(term: T_val, neutral: float) -> T_val:
@@ -918,6 +917,24 @@ class LinearExpressionEfficient:
                 [port_term.coefficient * expression for expression in expressions]
             )
         return self + port_expr
+
+    def add_component_context(self, component_id: str) -> "LinearExpressionEfficient":
+        result_terms = {}
+        for term in self.terms.values():
+            if term.component_id:
+                raise ValueError(
+                    "This expression has already been associated to another component."
+                )
+            result_term = dataclasses.replace(
+                term,
+                component_id=component_id,
+                coefficient=add_component_context(component_id, term.coefficient),
+            )
+            result_terms[generate_key(result_term)] = result_term
+        result_constant = add_component_context(component_id, self.constant)
+        return LinearExpressionEfficient(
+            result_terms, result_constant, self.port_field_terms
+        )
 
 
 def linear_expressions_equal(
