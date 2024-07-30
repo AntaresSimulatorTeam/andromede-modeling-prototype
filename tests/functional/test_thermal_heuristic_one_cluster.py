@@ -68,8 +68,10 @@ def test_milp_version() -> None:
             UNSUPPLIED_ENERGY_MODEL,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
+
+    cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
 
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
         week=0,
@@ -85,7 +87,7 @@ def test_milp_version() -> None:
         week=0,
         scenario=0,
         dir_path="data/thermal_heuristic_one_cluster",
-        list_cluster=["G"],
+        list_cluster=[cluster],
         output_idx=ExpectedOutputIndexes(
             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
@@ -133,8 +135,10 @@ def test_lp_version() -> None:
             UNSUPPLIED_ENERGY_MODEL,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
+
+    cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
 
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
         week=0,
@@ -150,7 +154,7 @@ def test_lp_version() -> None:
         week=0,
         scenario=0,
         dir_path="data/thermal_heuristic_one_cluster",
-        list_cluster=["G"],
+        list_cluster=[cluster],
         output_idx=ExpectedOutputIndexes(
             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
@@ -177,8 +181,10 @@ def test_accurate_heuristic() -> None:
             UNSUPPLIED_ENERGY_MODEL,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
+
+    cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
 
     # First optimization
     resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
@@ -195,7 +201,7 @@ def test_accurate_heuristic() -> None:
     for time_step in range(thermal_problem_builder.number_hours):
         assert (
             thermal_problem_builder.database.get_value(
-                ComponentParameterIndex("G", "nb_units_min"), time_step, 0
+                ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
             )
             == 2
             if time_step != 12
@@ -205,7 +211,7 @@ def test_accurate_heuristic() -> None:
     # Solve heuristic problem
     resolution_step_accurate_heuristic = (
         thermal_problem_builder.get_resolution_step_accurate_heuristic(
-            week=0, scenario=0, cluster_id="G"
+            week=0, scenario=0, cluster_id=cluster
         )
     )
     status = resolution_step_accurate_heuristic.solve()
@@ -218,7 +224,7 @@ def test_accurate_heuristic() -> None:
     for time_step in range(thermal_problem_builder.number_hours):
         assert (
             thermal_problem_builder.database.get_value(
-                ComponentParameterIndex("G", "nb_units_min"), time_step, 0
+                ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
             )
             == 2
             if time_step != 12
@@ -239,7 +245,7 @@ def test_accurate_heuristic() -> None:
         week=0,
         scenario=0,
         dir_path="data/thermal_heuristic_one_cluster",
-        list_cluster=["G"],
+        list_cluster=[cluster],
         output_idx=ExpectedOutputIndexes(
             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
         ),
@@ -288,8 +294,10 @@ def test_fast_heuristic() -> None:
             UNSUPPLIED_ENERGY_MODEL,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
+
+    cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
 
     # First optimization
     resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
@@ -305,7 +313,7 @@ def test_fast_heuristic() -> None:
     # Solve heuristic problem
     resolution_step_heuristic = (
         thermal_problem_builder.get_resolution_step_fast_heuristic(
-            thermal_cluster="G",
+            thermal_cluster=cluster,
             week=0,
             scenario=0,
         )
@@ -318,7 +326,7 @@ def test_fast_heuristic() -> None:
     for time_step in range(number_hours):
         assert (
             thermal_problem_builder.database.get_value(
-                ComponentParameterIndex("G", "min_generating"), time_step, 0
+                ComponentParameterIndex(cluster, "min_generating"), time_step, 0
             )
             == 3 * 700
             if time_step in [t for t in range(10, 20)]
@@ -339,7 +347,7 @@ def test_fast_heuristic() -> None:
         week=0,
         scenario=0,
         dir_path="data/thermal_heuristic_one_cluster",
-        list_cluster=["G"],
+        list_cluster=[cluster],
         output_idx=ExpectedOutputIndexes(
             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
         ),

@@ -45,24 +45,6 @@ class ModelEditor:
     def __init__(self, initial_model: Model) -> None:
         self.initial_model = initial_model
 
-    def keep_id(self) -> str:
-        return self.initial_model.id
-
-    def keep_parameters(self) -> List[Parameter]:
-        return [p for p in self.initial_model.parameters.values()]
-
-    def keep_ports(self) -> List[ModelPort]:
-        return [p for p in self.initial_model.ports.values()]
-
-    def keep_port_fields_definitions(self) -> List[PortFieldDefinition]:
-        return [p for p in self.initial_model.port_fields_definitions.values()]
-
-    def keep_constraints(self) -> List[Constraint]:
-        return [c for c in self.initial_model.constraints.values()]
-
-    def keep_objective_operational_contribution(self) -> Optional[ExpressionNode]:
-        return self.initial_model.objective_operational_contribution
-
     def linearize_variables(self) -> List[Variable]:
         return [
             float_variable(
@@ -140,13 +122,13 @@ class AccurateModelBuilder(ModelEditor):
     def __init__(self, initial_model: Model) -> None:
         super().__init__(initial_model)
         THERMAL_CLUSTER_MODEL_LP = model(
-            id=self.keep_id(),
-            parameters=self.keep_parameters(),
+            id=self.initial_model.id,
+            parameters=self.initial_model.parameters.values(),
             variables=self.linearize_variables(),
-            ports=self.keep_ports(),
-            port_fields_definitions=self.keep_port_fields_definitions(),
-            constraints=self.keep_constraints(),
-            objective_operational_contribution=self.keep_objective_operational_contribution(),
+            ports=self.initial_model.ports.values(),
+            port_fields_definitions=self.initial_model.port_fields_definitions.values(),
+            constraints=self.initial_model.constraints.values(),
+            objective_operational_contribution=self.initial_model.objective_operational_contribution,
         )
         self.model = THERMAL_CLUSTER_MODEL_LP
 
@@ -157,13 +139,13 @@ class FastModelBuilder(ModelEditor):
         integer_variables = self.get_name_integer_variables()
 
         THERMAL_CLUSTER_MODEL_FAST = model(
-            id=self.keep_id(),
-            parameters=self.keep_parameters(),
+            id=self.initial_model.id,
+            parameters=self.initial_model.parameters.values(),
             variables=self.fix_integer_variables_to_zero_and_keep_others(),
-            ports=self.keep_ports(),
-            port_fields_definitions=self.keep_port_fields_definitions(),
+            ports=self.initial_model.ports.values(),
+            port_fields_definitions=self.initial_model.port_fields_definitions.values(),
             constraints=self.filter_constraints_on_variable(integer_variables),
-            objective_operational_contribution=self.keep_objective_operational_contribution(),
+            objective_operational_contribution=self.initial_model.objective_operational_contribution,
         )
 
         self.model = THERMAL_CLUSTER_MODEL_FAST
@@ -175,8 +157,8 @@ class HeuristicAccurateModelBuilder(ModelEditor):
         generation_variable = ["generation"]
 
         THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
-            id=self.keep_id(),
-            parameters=self.keep_parameters(),
+            id=self.initial_model.id,
+            parameters=self.initial_model.parameters.values(),
             variables=self.filter_and_linearize_variables(generation_variable),
             constraints=self.filter_constraints_on_variable(generation_variable),
             objective_operational_contribution=(var("nb_on")).sum().expec(),

@@ -49,7 +49,7 @@ def test_milp_version() -> None:
             UNSUPPLIED_ENERGY_MODEL,
         ],
         number_week=2,
-        list_scenario=list(range(scenarios)),
+        number_scenario=scenarios,
     )
 
     parameters = pywraplp.MPSolverParameters()
@@ -73,7 +73,7 @@ def test_milp_version() -> None:
                 week=week,
                 scenario=scenario,
                 dir_path="data/thermal_heuristic_three_clusters",
-                list_cluster=["G1", "G2", "G3"],
+                list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(resolution_step.output)
@@ -114,7 +114,7 @@ def test_accurate_heuristic() -> None:
             UNSUPPLIED_ENERGY_MODEL,
         ],
         number_week=2,
-        list_scenario=list(range(scenarios)),
+        number_scenario=scenarios,
     )
 
     for scenario in range(scenarios):
@@ -131,7 +131,7 @@ def test_accurate_heuristic() -> None:
                 resolution_step_1.output, week, scenario, None
             )
 
-            for g in ["G1", "G2", "G3"]:
+            for g in thermal_problem_builder.get_milp_heuristic_components():
                 # Solve heuristic problem
                 resolution_step_accurate_heuristic = (
                     thermal_problem_builder.get_resolution_step_accurate_heuristic(
@@ -160,7 +160,7 @@ def test_accurate_heuristic() -> None:
                 week=week,
                 scenario=scenario,
                 dir_path="data/thermal_heuristic_three_clusters",
-                list_cluster=["G1", "G2", "G3"],
+                list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(resolution_step_2.output)
@@ -204,7 +204,7 @@ def test_fast_heuristic() -> None:
             UNSUPPLIED_ENERGY_MODEL,
         ],
         number_week=2,
-        list_scenario=list(range(scenarios)),
+        number_scenario=scenarios,
     )
 
     for scenario in range(scenarios):
@@ -221,7 +221,7 @@ def test_fast_heuristic() -> None:
                 resolution_step_1.output, week, scenario
             )
 
-            for g in ["G1", "G2", "G3"]:  #
+            for g in thermal_problem_builder.get_milp_heuristic_components():  #
                 resolution_step_heuristic = (
                     thermal_problem_builder.get_resolution_step_fast_heuristic(
                         thermal_cluster=g,
@@ -249,7 +249,7 @@ def test_fast_heuristic() -> None:
                 week=week,
                 scenario=scenario,
                 dir_path="data/thermal_heuristic_three_clusters",
-                list_cluster=["G1", "G2", "G3"],
+                list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(

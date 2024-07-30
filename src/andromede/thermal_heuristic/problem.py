@@ -76,23 +76,24 @@ class ThermalProblemBuilder:
         port_types: List[PortType],
         models: List[Model],
         number_week: int,
-        list_scenario: List[int],
+        number_scenario: int,
     ) -> None:
         lib = library_thermal_problem(
             port_types, models, lp_relaxation, fast, initial_thermal_model
         )
         self.number_week = number_week
-        self.list_scenario = list_scenario
+        self.number_scenario = number_scenario
         self.network = get_network(data_dir / "components.yml", lib)
         self.number_hours = number_hours
+        self.initial_thermal_model = initial_thermal_model
         self.database = self.get_database(
             data_dir,
             "components.yml",
-            get_cluster_id(self.network, initial_thermal_model.id),
             number_hours,
             fast,
+            timesteps=number_hours * number_week,
+            scenarios=number_scenario,
         )
-        self.initial_thermal_model = initial_thermal_model
 
     def get_main_resolution_step(self, week: int, scenario: int) -> ResolutionStep:
         main_resolution_step = ResolutionStep(
@@ -114,14 +115,12 @@ class ThermalProblemBuilder:
         list_cluster_id: Optional[list[str]],
     ) -> None:
         if list_cluster_id is None:
-            list_cluster_id = get_cluster_id(
-                self.network, self.initial_thermal_model.id
-            )
+            list_cluster_id = self.get_milp_heuristic_components()
         for cluster in list_cluster_id:
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "nb_units_min"),
                 self.number_hours * self.number_week,
-                len(self.list_scenario),
+                self.number_scenario,
             )
             nb_on = output.component(cluster).var("nb_on").value[0]  # type:ignore
 
@@ -138,7 +137,7 @@ class ThermalProblemBuilder:
     def update_database_fast_before_heuristic(
         self, output: OutputValues, week: int, scenario: int
     ) -> None:
-        for cluster in get_cluster_id(self.network, self.initial_thermal_model.id):
+        for cluster in self.get_milp_heuristic_components():
             pmax = self.database.get_value(
                 ComponentParameterIndex(cluster, "p_max"), 0, 0
             )
@@ -148,7 +147,7 @@ class ThermalProblemBuilder:
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "n_guide"),
                 self.number_hours * self.number_week,
-                len(self.list_scenario),
+                self.number_scenario,
             )
 
             for i, t in enumerate(
@@ -174,9 +173,7 @@ class ThermalProblemBuilder:
         list_cluster_id: Optional[list[str]],
     ) -> None:
         if list_cluster_id is None:
-            list_cluster_id = get_cluster_id(
-                self.network, self.initial_thermal_model.id
-            )
+            list_cluster_id = self.get_milp_heuristic_components()
         for cluster in list_cluster_id:
             pmin = self.database.get_value(
                 ComponentParameterIndex(cluster, "p_min"), 0, 0
@@ -191,7 +188,7 @@ class ThermalProblemBuilder:
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "min_generating"),
                 self.number_hours * self.number_week,
-                len(self.list_scenario),
+                self.number_scenario,
             )
 
             min_gen = np.minimum(
@@ -340,39 +337,46 @@ class ThermalProblemBuilder:
         self,
         data_dir: Path,
         yml_file: str,
-        cluster_id: List[str],
         hours_in_week: int,
         fast: bool,
+        timesteps: int,
+        scenarios: int,
     ) -> DataBase:
         components_file = get_input_components(data_dir / yml_file)
         database = build_data_base(components_file, data_dir)
 
         complete_database_with_cluster_parameters(
             database,
-            list_cluster_id=cluster_id,
-            dir_path=data_dir,
+            list_cluster_id=self.get_milp_heuristic_components(),
             hours_in_week=hours_in_week,
+            timesteps=timesteps,
+            scenarios=scenarios,
         )
 
         if fast:
             self.complete_database_for_fast_heuristic(
-                database, cluster_id, hours_in_week
+                database, self.get_milp_heuristic_components(), hours_in_week
             )
 
         return database
 
+    def get_milp_heuristic_components(self) -> list[str]:
+        return [
+            c.id
+            for c in self.network.components
+            if c.model.id == self.initial_thermal_model.id
+        ]
+
 
 def complete_database_with_cluster_parameters(
-    database: DataBase, list_cluster_id: List[str], dir_path: Path, hours_in_week: int
+    database: DataBase,
+    list_cluster_id: List[str],
+    hours_in_week: int,
+    timesteps: int,
+    scenarios: int,
 ) -> None:
     for cluster_id in list_cluster_id:
-        data = get_data(
-            dir_path,
-            "components.yml",
-            cluster_id,
-        )
-
-        if type(data["max_generating"]) is float:
+        if type(database.get_data(cluster_id, "max_generating")) is ConstantData:
             database.add_data(
                 cluster_id,
                 "max_failure",
@@ -381,7 +385,7 @@ def complete_database_with_cluster_parameters(
             database.add_data(
                 cluster_id,
                 "nb_units_max_min_down_time",
-                ConstantData(data["nb_units_max"]),
+                database.get_data(cluster_id, "nb_units_max"),
             )
 
         else:
@@ -389,7 +393,9 @@ def complete_database_with_cluster_parameters(
                 max_units,
                 max_failures,
                 nb_units_max_min_down_time,
-            ) = compute_cluster_parameters(hours_in_week, data)
+            ) = compute_cluster_parameters(
+                hours_in_week, database, cluster_id, timesteps, scenarios
+            )
             database.add_data(
                 cluster_id,
                 "nb_units_max",
@@ -408,26 +414,41 @@ def complete_database_with_cluster_parameters(
 
 
 def compute_cluster_parameters(
-    hours_in_week: int, data: Dict
+    hours_in_week: int,
+    database: DataBase,
+    cluster_id: str,
+    timesteps: int,
+    scenarios: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    max_generating_shape = data["max_generating"].shape
-    if len(max_generating_shape) == 1:
-        max_generating = pd.DataFrame(
-            data["max_generating"].reshape((max_generating_shape[0], 1))
-        )
-    else:
-        max_generating = pd.DataFrame(data["max_generating"])
-    max_units = get_max_unit(data["p_max"], data["nb_units_max"], max_generating)
+    database.convert_to_time_scenario_series_data(
+        ComponentParameterIndex(cluster_id, "max_generating"),
+        timesteps=timesteps,
+        scenarios=scenarios,
+    )
+    max_units = get_max_unit(
+        database.get_value(ComponentParameterIndex(cluster_id, "p_max"), 0, 0),
+        database.get_value(ComponentParameterIndex(cluster_id, "nb_units_max"), 0, 0),
+        database.get_data(
+            cluster_id, "max_generating"
+        ).time_scenario_series,  # type:ignore
+    )
     max_failures = get_max_failures(max_units, hours_in_week)
     nb_units_max_min_down_time = get_max_unit_for_min_down_time(
-        int(max(data["d_min_up"], data["d_min_down"])), max_units, hours_in_week
+        int(
+            max(
+                database.get_value(
+                    ComponentParameterIndex(cluster_id, "d_min_up"), 0, 0
+                ),
+                database.get_value(
+                    ComponentParameterIndex(cluster_id, "d_min_down"), 0, 0
+                ),
+            )
+        ),
+        max_units,
+        hours_in_week,
     )
 
     return max_units, max_failures, nb_units_max_min_down_time
-
-
-def get_cluster_id(network: Network, cluster_model_id: str) -> list[str]:
-    return [c.id for c in network.components if c.model.id == cluster_model_id]
 
 
 def get_network(compo_file: Path, lib: Library) -> Network:
@@ -453,24 +474,3 @@ def edit_thermal_model(
     else:
         thermal_model = initial_thermal_model
     return thermal_model
-
-
-def get_data(
-    data_dir: Path,
-    yml_file: str,
-    id_cluster: str,
-) -> Dict:
-    compo_file = data_dir / yml_file
-
-    with compo_file.open() as c:
-        components_file = parse_yaml_components(c)
-    cluster = [c for c in components_file.components if c.id == id_cluster][0]
-    parameters = {
-        p.name: (
-            p.value
-            if p.value is not None
-            else np.loadtxt(data_dir / (p.timeseries + ".txt"))  # type:ignore
-        )
-        for p in cluster.parameters  # type:ignore
-    }
-    return parameters  # type:ignore

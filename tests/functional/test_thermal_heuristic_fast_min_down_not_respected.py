@@ -41,10 +41,10 @@ def test_fast_heuristic() -> None:
         port_types=[],
         models=[],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
 
-    cluster = "G1"
+    cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
 
     pmax = thermal_problem_builder.database.get_value(
         ComponentParameterIndex(cluster, "p_max"), 0, 0

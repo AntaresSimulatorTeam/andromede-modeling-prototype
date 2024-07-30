@@ -48,7 +48,7 @@ def test_milp_version() -> None:
             BINDING_CONSTRAINT,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
 
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
@@ -65,7 +65,7 @@ def test_milp_version() -> None:
         week=0,
         scenario=0,
         dir_path="data/thermal_heuristic_two_clusters_with_bc",
-        list_cluster=["G1", "G2"],
+        list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
         output_idx=ExpectedOutputIndexes(
             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
@@ -90,7 +90,7 @@ def test_lp_version() -> None:
             BINDING_CONSTRAINT,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
 
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
@@ -107,7 +107,7 @@ def test_lp_version() -> None:
         week=0,
         scenario=0,
         dir_path="data/thermal_heuristic_two_clusters_with_bc",
-        list_cluster=["G1", "G2"],
+        list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
         output_idx=ExpectedOutputIndexes(
             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
@@ -135,7 +135,7 @@ def test_accurate_heuristic() -> None:
             BINDING_CONSTRAINT,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
 
     # First optimization
@@ -151,7 +151,7 @@ def test_accurate_heuristic() -> None:
         resolution_step_1.output, 0, 0, None
     )
 
-    for g in ["G1", "G2"]:
+    for g in thermal_problem_builder.get_milp_heuristic_components():
 
         for time_step in range(thermal_problem_builder.number_hours):
             assert thermal_problem_builder.database.get_value(
@@ -205,7 +205,7 @@ def test_fast_heuristic() -> None:
             BINDING_CONSTRAINT,
         ],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
 
     # First optimization
@@ -220,7 +220,7 @@ def test_fast_heuristic() -> None:
         resolution_step_1.output, 0, 0
     )
 
-    for g in ["G1", "G2"]:
+    for g in thermal_problem_builder.get_milp_heuristic_components():
         # Solve heuristic problem
         resolution_step_heuristic = (
             thermal_problem_builder.get_resolution_step_fast_heuristic(

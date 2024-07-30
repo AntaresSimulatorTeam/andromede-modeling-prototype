@@ -41,14 +41,16 @@ def test_accurate_heuristic() -> None:
         port_types=[],
         models=[],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
 
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
-    for j, cluster in enumerate(["G" + str(i) for i in range(1, 7)]):
+    for j, cluster in enumerate(
+        thermal_problem_builder.get_milp_heuristic_components()
+    ):
         nb_on_1 = pd.DataFrame(
             np.transpose(
                 np.ceil(
@@ -114,10 +116,12 @@ def test_fast_heuristic() -> None:
         port_types=[],
         models=[],
         number_week=1,
-        list_scenario=list(range(1)),
+        number_scenario=1,
     )
 
-    for j, cluster in enumerate(["G" + str(i) for i in range(1, 7)]):
+    for j, cluster in enumerate(
+        thermal_problem_builder.get_milp_heuristic_components()
+    ):
         pmax = thermal_problem_builder.database.get_value(
             ComponentParameterIndex(cluster, "p_max"), 0, 0
         )
