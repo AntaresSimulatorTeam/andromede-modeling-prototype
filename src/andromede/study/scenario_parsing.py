@@ -10,22 +10,12 @@
 #
 # This file is part of the Antares project.
 
-from .data import (
-    ConstantData,
-    DataBase,
-    ScenarioIndex,
-    ScenarioSeriesData,
-    Scenarization,
-    TimeIndex,
-    TimeScenarioIndex,
-    TimeScenarioSeriesData,
-    TimeSeriesData,
-)
-from .network import (
-    Component,
-    Network,
-    Node,
-    PortRef,
-    PortsConnection,
-    create_component,
-)
+from pathlib import Path
+
+import pandas as pd
+
+
+def parse_scenario_builder(file: Path) -> pd.core.frame.DataFrame:
+    sb = pd.read_csv(file, names=("name", "year", "scenario"))
+    sb.rename(columns={0: "name", 1: "year", 2: "scenario"})
+    return sb
