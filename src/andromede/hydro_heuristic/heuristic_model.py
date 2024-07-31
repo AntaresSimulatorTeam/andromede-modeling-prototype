@@ -35,14 +35,21 @@ class HeuristicHydroModelBuilder:
         self.hydro_model = hydro_model
         self.horizon = horizon
 
-    def get_model(self) -> Model:
+    def get_model(
+        self,
+    ) -> Model:
+        assert "level" in self.hydro_model.variables.keys()
+        assert "generating" in self.hydro_model.variables.keys()
+        assert "overflow" in self.hydro_model.variables.keys()
+        assert "lower_rule_curve" in self.hydro_model.parameters.keys()
+        assert "upper_rule_curve" in self.hydro_model.parameters.keys()
         HYDRO_HEURISTIC = model(
             id="H",
-            parameters=[p for p in self.hydro_model.parameters.values()]
+            parameters=list(self.hydro_model.parameters.values())
             + self.get_heuristic_parameters(),
-            variables=[v for v in self.hydro_model.variables.values()]
+            variables=list(self.hydro_model.variables.values())
             + self.get_heuristic_variables(),
-            constraints=[c for c in self.hydro_model.constraints.values()]
+            constraints=list(self.hydro_model.constraints.values())
             + self.get_heuristic_constraints(),
             objective_operational_contribution=self.get_heuristic_objective(),
         )

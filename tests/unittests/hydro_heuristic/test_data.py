@@ -11,8 +11,14 @@
 # This file is part of the Antares project.
 
 import pytest
+from unittest.mock import Mock
 
-from andromede.hydro_heuristic.data import HydroHeuristicData, calculate_weekly_target
+from andromede.hydro_heuristic.data import (
+    HydroHeuristicData,
+    calculate_weekly_target,
+    DataAggregator,
+    RawHydroData,
+)
 
 
 def test_calculate_weekly_target() -> None:
@@ -66,3 +72,19 @@ def test_compute_target() -> None:
     data.compute_target(None, 1)
 
     assert data.target[0] == pytest.approx(0.0495627 * capacity)
+
+
+def test_data_aggregator() -> None:
+
+    mock_raw_data = Mock(spec=RawHydroData)
+    mock_raw_data.time_series = list(range(10))
+
+    data_aggregator = DataAggregator([2, 3, 4, 0, 1], [1, 3, 4])
+    aggregated_data = data_aggregator.aggregate_data("sum", mock_raw_data)
+
+    assert aggregated_data == [9, 0, 9]
+
+    data_aggregator = DataAggregator([2, 3, 4, 0, 1], list(range(5)))
+    aggregated_data = data_aggregator.aggregate_data("lag_first_element", mock_raw_data)
+
+    assert aggregated_data == [2, 5, 9, 9, 0]

@@ -42,6 +42,7 @@ class HydroHeuristicProblem:
         hydro_data: HydroHeuristicData,
     ) -> None:
         self.hydro_data = hydro_data
+        self.id = "H"
         database = self.generate_database()
 
         database = self.add_objective_coefficients_to_database(database, horizon)
@@ -50,7 +51,8 @@ class HydroHeuristicProblem:
         scenarios = 1
 
         hydro = create_component(
-            model=HeuristicHydroModelBuilder(HYDRO_MODEL, horizon).get_model(), id="H"
+            model=HeuristicHydroModelBuilder(HYDRO_MODEL, horizon).get_model(),
+            id=self.id,
         )
 
         network = Network("test")
@@ -78,8 +80,8 @@ class HydroHeuristicProblem:
         return (
             status,
             self.problem.solver.Objective().Value(),
-            output.component("H").var("generating").value[0],  # type:ignore
-            output.component("H").var("level").value[0][-1],  # type:ignore
+            output.component(self.id).var("generating").value[0],  # type:ignore
+            output.component(self.id).var("level").value[0][-1],  # type:ignore
         )
 
     def generate_database(
@@ -87,9 +89,9 @@ class HydroHeuristicProblem:
     ) -> DataBase:
         database = DataBase()
 
-        database.add_data("H", "capacity", ConstantData(self.hydro_data.capacity))
+        database.add_data(self.id, "capacity", ConstantData(self.hydro_data.capacity))
         database.add_data(
-            "H", "initial_level", ConstantData(self.hydro_data.initial_level)
+            self.id, "initial_level", ConstantData(self.hydro_data.initial_level)
         )
 
         inflow_data = pd.DataFrame(
@@ -97,20 +99,22 @@ class HydroHeuristicProblem:
             index=[i for i in range(len(self.hydro_data.inflow))],
             columns=[0],
         )
-        database.add_data("H", "inflow", TimeScenarioSeriesData(inflow_data))
+        database.add_data(self.id, "inflow", TimeScenarioSeriesData(inflow_data))
 
         target_data = pd.DataFrame(
             self.hydro_data.target,
             index=[i for i in range(len(self.hydro_data.target))],
             columns=[0],
         )
-        database.add_data("H", "generating_target", TimeScenarioSeriesData(target_data))
         database.add_data(
-            "H", "overall_target", ConstantData(sum(self.hydro_data.target))
+            self.id, "generating_target", TimeScenarioSeriesData(target_data)
+        )
+        database.add_data(
+            self.id, "overall_target", ConstantData(sum(self.hydro_data.target))
         )
 
         database.add_data(
-            "H",
+            self.id,
             "lower_rule_curve",
             TimeSeriesData(
                 {
@@ -121,7 +125,7 @@ class HydroHeuristicProblem:
             ),
         )
         database.add_data(
-            "H",
+            self.id,
             "upper_rule_curve",
             TimeSeriesData(
                 {
@@ -131,10 +135,10 @@ class HydroHeuristicProblem:
                 }
             ),
         )
-        database.add_data("H", "min_generating", ConstantData(0))
+        database.add_data(self.id, "min_generating", ConstantData(0))
 
         database.add_data(
-            "H",
+            self.id,
             "max_generating",
             TimeSeriesData(
                 {
@@ -145,7 +149,7 @@ class HydroHeuristicProblem:
         )
 
         database.add_data(
-            "H",
+            self.id,
             "max_epsilon",
             TimeSeriesData(
                 {
@@ -172,7 +176,7 @@ class HydroHeuristicProblem:
         }
 
         for name, coeff in objective_function_cost.items():
-            database.add_data("H", name, ConstantData(coeff))
+            database.add_data(self.id, name, ConstantData(coeff))
 
         return database
 
