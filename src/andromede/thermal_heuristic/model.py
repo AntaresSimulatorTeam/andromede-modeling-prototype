@@ -23,7 +23,6 @@ from andromede.expression import (
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import (
     Model,
-    ModelPort,
     Variable,
     float_parameter,
     float_variable,
@@ -167,12 +166,12 @@ class HeuristicAccurateModelBuilder(ModelEditor):
 
 
 class HeuristicFastModelBuilder:
-    def __init__(self, Q: int, delta: int):
+    def __init__(self, number_hours: int, delta: int):
         BLOCK_MODEL_FAST_HEURISTIC = model(
             id="BLOCK_FAST",
-            parameters=self.get_parameters(Q, delta),
-            variables=self.get_variables(Q, delta),
-            constraints=self.get_constraints(Q, delta),
+            parameters=self.get_parameters(number_hours // delta, delta),
+            variables=self.get_variables(number_hours // delta, delta),
+            constraints=self.get_constraints(number_hours // delta, delta),
             objective_operational_contribution=self.get_objective_operational_contribution(
                 delta
             ),

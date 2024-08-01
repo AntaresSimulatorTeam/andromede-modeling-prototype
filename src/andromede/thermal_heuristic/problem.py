@@ -50,26 +50,10 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.workflow import ResolutionStep
 
 
-def library_thermal_problem(
-    port_types: Iterable[PortType],
-    models: List[Model],
-    lp_relaxation: bool,
-    fast: bool,
-    initial_thermal_model: Model,
-) -> Library:
-    thermal_model = edit_thermal_model(lp_relaxation, fast, initial_thermal_model)
-    lib = library(
-        port_types=port_types,
-        models=models + [thermal_model],
-    )
-    return lib
-
-
 class ThermalProblemBuilder:
     def __init__(
         self,
         number_hours: int,
-        lp_relaxation: bool,
         fast: bool,
         data_dir: Path,
         initial_thermal_model: Model,
@@ -78,8 +62,9 @@ class ThermalProblemBuilder:
         number_week: int,
         number_scenario: int,
     ) -> None:
-        lib = library_thermal_problem(
-            port_types, models, lp_relaxation, fast, initial_thermal_model
+        lib = library(
+            port_types=port_types,
+            models=models,
         )
         self.number_week = number_week
         self.number_scenario = number_scenario
@@ -209,17 +194,11 @@ class ThermalProblemBuilder:
                     scenario,
                 )
 
-    def get_resolution_step_accurate_heuristic(
-        self,
-        week: int,
-        scenario: int,
-        cluster_id: str,
+    def get_resolution_step_heuristic(
+        self, week: int, scenario: int, cluster_id: str, model: Model
     ) -> ResolutionStep:
-        thermal_model_builder = HeuristicAccurateModelBuilder(
-            self.initial_thermal_model
-        )
 
-        cluster = create_component(model=thermal_model_builder.model, id=cluster_id)
+        cluster = create_component(model=model, id=cluster_id)
 
         network = Network("test")
         network.add_component(cluster)
@@ -235,12 +214,7 @@ class ThermalProblemBuilder:
 
         return resolution_step
 
-    def get_resolution_step_fast_heuristic(
-        self,
-        thermal_cluster: str,
-        week: int,
-        scenario: int,
-    ) -> ResolutionStep:
+    def compute_delta(self, thermal_cluster: str) -> int:
         delta = int(
             max(
                 self.database.get_value(
@@ -251,21 +225,7 @@ class ThermalProblemBuilder:
                 ),
             )
         )
-
-        network = self.get_network_fast_heuristic(
-            delta, self.number_hours // delta, thermal_cluster
-        )
-
-        resolution_step = ResolutionStep(
-            network=network,
-            database=self.database,
-            timesteps=list(
-                range(week * self.number_hours, (week + 1) * self.number_hours)
-            ),
-            scenarios=[scenario],
-        )
-
-        return resolution_step
+        return delta
 
     def complete_database_for_fast_heuristic(
         self, database: DataBase, list_cluster_id: list[str], number_hours: int
@@ -320,18 +280,6 @@ class ThermalProblemBuilder:
                             }
                         ),
                     )
-
-    def get_network_fast_heuristic(
-        self, delta: int, number_blocks: int, cluster_id: str
-    ) -> Network:
-        block = create_component(
-            model=HeuristicFastModelBuilder(number_blocks, delta=delta).model,
-            id=cluster_id,
-        )
-
-        network = Network("test")
-        network.add_component(block)
-        return network
 
     def get_database(
         self,
@@ -462,15 +410,3 @@ def get_input_components(compo_file: Path) -> InputComponents:
     with compo_file.open() as c:
         components_file = parse_yaml_components(c)
     return components_file
-
-
-def edit_thermal_model(
-    lp_relaxation: bool, fast: bool, initial_thermal_model: Model
-) -> Model:
-    if fast:
-        thermal_model = FastModelBuilder(initial_thermal_model).model
-    elif lp_relaxation:
-        thermal_model = AccurateModelBuilder(initial_thermal_model).model
-    else:
-        thermal_model = initial_thermal_model
-    return thermal_model

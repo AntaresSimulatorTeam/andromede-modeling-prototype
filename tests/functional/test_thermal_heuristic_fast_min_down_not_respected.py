@@ -22,6 +22,11 @@ from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.problem import ThermalProblemBuilder
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
+from andromede.thermal_heuristic.model import (
+    FastModelBuilder,
+    HeuristicFastModelBuilder,
+)
+
 
 def test_fast_heuristic() -> None:
     """
@@ -33,13 +38,12 @@ def test_fast_heuristic() -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         number_hours=number_hours,
-        lp_relaxation=True,
         fast=True,
         data_dir=Path(__file__).parent
         / "data/thermal_heuristic_fast_min_down_not_respected",
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[],
-        models=[],
+        models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],
         number_week=1,
         number_scenario=1,
     )
@@ -68,12 +72,13 @@ def test_fast_heuristic() -> None:
     )
 
     # Solve heuristic problem
-    resolution_step_heuristic = (
-        thermal_problem_builder.get_resolution_step_fast_heuristic(
-            thermal_cluster=cluster,
-            week=week,
-            scenario=scenario,
-        )
+    resolution_step_heuristic = thermal_problem_builder.get_resolution_step_heuristic(
+        cluster_id=cluster,
+        week=week,
+        scenario=scenario,
+        model=HeuristicFastModelBuilder(
+            number_hours, delta=thermal_problem_builder.compute_delta(cluster)
+        ).model,
     )
 
     status = resolution_step_heuristic.solve()

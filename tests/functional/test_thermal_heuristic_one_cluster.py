@@ -27,6 +27,13 @@ from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndex
 from andromede.thermal_heuristic.problem import ThermalProblemBuilder
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
+from andromede.thermal_heuristic.model import (
+    AccurateModelBuilder,
+    FastModelBuilder,
+    HeuristicAccurateModelBuilder,
+    HeuristicFastModelBuilder,
+)
+
 
 def test_milp_version() -> None:
     """
@@ -56,12 +63,12 @@ def test_milp_version() -> None:
     """
     thermal_problem_builder = ThermalProblemBuilder(
         number_hours=168,
-        lp_relaxation=False,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[BALANCE_PORT_TYPE],
         models=[
+            THERMAL_CLUSTER_MODEL_MILP,
             DEMAND_MODEL,
             NODE_BALANCE_MODEL,
             SPILLAGE_MODEL,
@@ -123,12 +130,12 @@ def test_lp_version() -> None:
     """
     thermal_problem_builder = ThermalProblemBuilder(
         number_hours=168,
-        lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[BALANCE_PORT_TYPE],
         models=[
+            AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             DEMAND_MODEL,
             NODE_BALANCE_MODEL,
             SPILLAGE_MODEL,
@@ -169,12 +176,12 @@ def test_accurate_heuristic() -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         number_hours=168,
-        lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[BALANCE_PORT_TYPE],
         models=[
+            AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             DEMAND_MODEL,
             NODE_BALANCE_MODEL,
             SPILLAGE_MODEL,
@@ -210,8 +217,11 @@ def test_accurate_heuristic() -> None:
 
     # Solve heuristic problem
     resolution_step_accurate_heuristic = (
-        thermal_problem_builder.get_resolution_step_accurate_heuristic(
-            week=0, scenario=0, cluster_id=cluster
+        thermal_problem_builder.get_resolution_step_heuristic(
+            week=0,
+            scenario=0,
+            cluster_id=cluster,
+            model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
         )
     )
     status = resolution_step_accurate_heuristic.solve()
@@ -282,12 +292,12 @@ def test_fast_heuristic() -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         number_hours=number_hours,
-        lp_relaxation=True,
         fast=True,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[BALANCE_PORT_TYPE],
         models=[
+            FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             DEMAND_MODEL,
             NODE_BALANCE_MODEL,
             SPILLAGE_MODEL,
@@ -311,12 +321,13 @@ def test_fast_heuristic() -> None:
         resolution_step_1.output, 0, 0
     )
     # Solve heuristic problem
-    resolution_step_heuristic = (
-        thermal_problem_builder.get_resolution_step_fast_heuristic(
-            thermal_cluster=cluster,
-            week=0,
-            scenario=0,
-        )
+    resolution_step_heuristic = thermal_problem_builder.get_resolution_step_heuristic(
+        cluster_id=cluster,
+        week=0,
+        scenario=0,
+        model=HeuristicFastModelBuilder(
+            number_hours, delta=thermal_problem_builder.compute_delta(cluster)
+        ).model,
     )
     resolution_step_heuristic.solve()
     thermal_problem_builder.update_database_fast_after_heuristic(

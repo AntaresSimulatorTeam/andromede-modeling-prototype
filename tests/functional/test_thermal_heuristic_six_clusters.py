@@ -22,6 +22,13 @@ from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.problem import ThermalProblemBuilder
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
+from andromede.thermal_heuristic.model import (
+    AccurateModelBuilder,
+    FastModelBuilder,
+    HeuristicAccurateModelBuilder,
+    HeuristicFastModelBuilder,
+)
+
 
 def test_accurate_heuristic() -> None:
     """
@@ -34,12 +41,11 @@ def test_accurate_heuristic() -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         number_hours=number_hours,
-        lp_relaxation=True,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_six_clusters",
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[],
-        models=[],
+        models=[AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],
         number_week=1,
         number_scenario=1,
     )
@@ -71,10 +77,11 @@ def test_accurate_heuristic() -> None:
 
         # Solve heuristic problem
         resolution_step_accurate_heuristic = (
-            thermal_problem_builder.get_resolution_step_accurate_heuristic(
+            thermal_problem_builder.get_resolution_step_heuristic(
                 week=week,
                 scenario=scenario,
                 cluster_id=cluster,
+                model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             )
         )
         status = resolution_step_accurate_heuristic.solve(parameters)
@@ -109,12 +116,11 @@ def test_fast_heuristic() -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         number_hours=number_hours,
-        lp_relaxation=True,
         fast=True,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_six_clusters",
         initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
         port_types=[],
-        models=[],
+        models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],
         number_week=1,
         number_scenario=1,
     )
@@ -145,10 +151,13 @@ def test_fast_heuristic() -> None:
 
         # Solve heuristic problem
         resolution_step_heuristic = (
-            thermal_problem_builder.get_resolution_step_fast_heuristic(
-                thermal_cluster=cluster,
+            thermal_problem_builder.get_resolution_step_heuristic(
+                cluster_id=cluster,
                 week=week,
                 scenario=scenario,
+                model=HeuristicFastModelBuilder(
+                    number_hours, delta=thermal_problem_builder.compute_delta(cluster)
+                ).model,
             )
         )
 
