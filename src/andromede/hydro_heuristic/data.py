@@ -65,19 +65,13 @@ class HydroHeuristicData:
     def __init__(
         self,
         scenario: int,
-        horizon: str,
+        hours_aggregated_time_steps: List[int],
         folder_name: str,
         timesteps: List[int],
         capacity: float,
         initial_level: float,
     ):
         self.folder_name = folder_name
-        if horizon == "monthly":
-            hours_aggregated_time_steps = [
-                24 * get_number_of_days_in_month(m) for m in range(12)
-            ]
-        elif horizon == "daily":
-            hours_aggregated_time_steps = [24 for d in range(365)]
 
         self.capacity = capacity
         self.initial_level = initial_level

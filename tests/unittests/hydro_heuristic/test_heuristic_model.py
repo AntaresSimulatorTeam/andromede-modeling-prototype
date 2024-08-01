@@ -99,4 +99,4 @@ def test_minimal_model() -> None:
 
     assert len(heuristic_model.constraints) == 11
     assert len(heuristic_model.variables) == 10
-    assert len(heuristic_model.parameters) == 16
+    assert len(heuristic_model.parameters) == 8

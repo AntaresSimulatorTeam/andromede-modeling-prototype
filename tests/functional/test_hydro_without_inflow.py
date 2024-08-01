@@ -44,6 +44,7 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL,
     HYDRO_MODEL_WITH_TARGET,
 )
+from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
 
 weekly_generation = np.array(
     [
@@ -150,9 +151,14 @@ def test_hydro_heuristic() -> None:
             capacity,
             scenario,
             initial_level,
-            horizon="monthly",
+            hours_aggregated_time_steps=[
+                24 * get_number_of_days_in_month(m) for m in range(12)
+            ],
             timesteps=list(range(12)),
             total_target=None,
+            heuristic_model=HeuristicHydroModelBuilder(
+                HYDRO_MODEL, "monthly"
+            ).get_model(),
         )
 
         assert status == pywraplp.Solver.OPTIMAL
@@ -175,9 +181,12 @@ def test_hydro_heuristic() -> None:
                 capacity,
                 scenario,
                 initial_level,
-                horizon="daily",
+                hours_aggregated_time_steps=[24 for d in range(365)],
                 timesteps=list(range(day_in_year, day_in_year + number_day_month)),
                 total_target=monthly_generation[month],
+                heuristic_model=HeuristicHydroModelBuilder(
+                    HYDRO_MODEL, "daily"
+                ).get_model(),
             )
 
             assert status == pywraplp.Solver.OPTIMAL

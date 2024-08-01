@@ -27,6 +27,7 @@ CONSTANT_PER_SCENARIO = IndexingStructure(False, True)
 
 
 class HeuristicHydroModelBuilder:
+
     def __init__(
         self,
         hydro_model: Model,
@@ -34,6 +35,17 @@ class HeuristicHydroModelBuilder:
     ) -> None:
         self.hydro_model = hydro_model
         self.horizon = horizon
+
+        self.objective_function_cost = {
+            "gamma_d": 1,
+            "gamma_delta": 1 if horizon == "monthly" else 2,
+            "gamma_y": 100000 if horizon == "monthly" else 68,
+            "gamma_w": 0 if horizon == "monthly" else 34,
+            "gamma_v+": 100 if horizon == "monthly" else 0,
+            "gamma_v-": 100 if horizon == "monthly" else 68,
+            "gamma_o": 0 if horizon == "monthly" else 23 * 68 + 1,
+            "gamma_s": 0 if horizon == "monthly" else -1 / 32,
+        }
 
     def get_model(
         self,
@@ -57,15 +69,20 @@ class HeuristicHydroModelBuilder:
 
     def get_heuristic_objective(self) -> ExpressionNode:
         return (
-            param("gamma_d") * var("distance_between_target_and_generating")
-            + param("gamma_v+") * var("violation_upper_rule_curve")
-            + param("gamma_v-") * var("violation_lower_rule_curve")
-            + param("gamma_o") * var("overflow")
-            + param("gamma_s") * var("level")
+            self.objective_function_cost["gamma_d"]
+            * var("distance_between_target_and_generating")
+            + self.objective_function_cost["gamma_v+"]
+            * var("violation_upper_rule_curve")
+            + self.objective_function_cost["gamma_v-"]
+            * var("violation_lower_rule_curve")
+            + self.objective_function_cost["gamma_o"] * var("overflow")
+            + self.objective_function_cost["gamma_s"] * var("level")
         ).sum().expec() + (
-            param("gamma_delta") * var("max_distance_between_target_and_generating")
-            + param("gamma_y") * var("max_violation_lower_rule_curve")
-            + param("gamma_w") * var("gap_to_target")
+            self.objective_function_cost["gamma_delta"]
+            * var("max_distance_between_target_and_generating")
+            + self.objective_function_cost["gamma_y"]
+            * var("max_violation_lower_rule_curve")
+            + self.objective_function_cost["gamma_w"] * var("gap_to_target")
         ).expec()
 
     def get_heuristic_variables(self) -> List[Variable]:
@@ -106,14 +123,6 @@ class HeuristicHydroModelBuilder:
         return [
             float_parameter("generating_target", TIME_AND_SCENARIO_FREE),
             float_parameter("overall_target", CONSTANT_PER_SCENARIO),
-            float_parameter("gamma_d", CONSTANT),
-            float_parameter("gamma_delta", CONSTANT),
-            float_parameter("gamma_y", CONSTANT),
-            float_parameter("gamma_w", CONSTANT),
-            float_parameter("gamma_v+", CONSTANT),
-            float_parameter("gamma_v-", CONSTANT),
-            float_parameter("gamma_o", CONSTANT),
-            float_parameter("gamma_s", CONSTANT),
         ]
 
     def get_heuristic_constraints(self) -> List[Constraint]:

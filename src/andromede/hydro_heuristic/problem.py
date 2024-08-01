@@ -10,13 +10,12 @@
 #
 # This file is part of the Antares project.
 
-from typing import Optional
+from typing import Optional, List
 
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
 from andromede.hydro_heuristic.data import HydroHeuristicData
-from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
@@ -32,26 +31,20 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL
+from andromede.model import Model
 
 
 class HydroHeuristicProblem:
-    def __init__(
-        self,
-        horizon: str,
-        hydro_data: HydroHeuristicData,
-    ) -> None:
+    def __init__(self, hydro_data: HydroHeuristicData, heuristic_model: Model) -> None:
         self.hydro_data = hydro_data
         self.id = "H"
         database = self.generate_database()
-
-        database = self.add_objective_coefficients_to_database(database, horizon)
 
         time_block = TimeBlock(1, [i for i in range(len(hydro_data.target))])
         scenarios = 1
 
         hydro = create_component(
-            model=HeuristicHydroModelBuilder(HYDRO_MODEL, horizon).get_model(),
+            model=heuristic_model,
             id=self.id,
         )
 
@@ -161,25 +154,6 @@ class HydroHeuristicProblem:
 
         return database
 
-    def add_objective_coefficients_to_database(
-        self, database: DataBase, horizon: str
-    ) -> DataBase:
-        objective_function_cost = {
-            "gamma_d": 1,
-            "gamma_delta": 1 if horizon == "monthly" else 2,
-            "gamma_y": 100000 if horizon == "monthly" else 68,
-            "gamma_w": 0 if horizon == "monthly" else 34,
-            "gamma_v+": 100 if horizon == "monthly" else 0,
-            "gamma_v-": 100 if horizon == "monthly" else 68,
-            "gamma_o": 0 if horizon == "monthly" else 23 * 68 + 1,
-            "gamma_s": 0 if horizon == "monthly" else -1 / 32,
-        }
-
-        for name, coeff in objective_function_cost.items():
-            database.add_data(self.id, name, ConstantData(coeff))
-
-        return database
-
 
 def optimize_target(
     inter_breakdown: int,
@@ -187,14 +161,15 @@ def optimize_target(
     capacity: float,
     scenario: int,
     initial_level: float,
-    horizon: str,
+    hours_aggregated_time_steps: List[int],
     timesteps: list[int],
     total_target: Optional[float],
+    heuristic_model: Model,
 ) -> tuple[float, int, float, list[float]]:
     # Récupération des données
     data = HydroHeuristicData(
         scenario,
-        horizon,
+        hours_aggregated_time_steps=hours_aggregated_time_steps,
         folder_name=folder_name,
         timesteps=timesteps,
         capacity=capacity,
@@ -205,8 +180,7 @@ def optimize_target(
 
     # Ajustement de la réapartition
     heuristic_problem = HydroHeuristicProblem(
-        horizon=horizon,
-        hydro_data=data,
+        hydro_data=data, heuristic_model=heuristic_model
     )
 
     status, obj, generation, initial_level = heuristic_problem.solve_hydro_problem()

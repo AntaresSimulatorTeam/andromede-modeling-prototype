@@ -16,6 +16,7 @@ from unittest.mock import Mock
 from andromede.hydro_heuristic.data import (
     HydroHeuristicData,
     calculate_weekly_target,
+    get_number_of_days_in_month,
     DataAggregator,
     RawHydroData,
 )
@@ -36,7 +37,9 @@ def test_hydro_heuristic_data_building() -> None:
 
     data = HydroHeuristicData(
         scenario=0,
-        horizon="monthly",
+        hours_aggregated_time_steps=[
+            24 * get_number_of_days_in_month(m) for m in range(12)
+        ],
         folder_name=folder_name,
         timesteps=list(range(12)),
         capacity=capacity,
@@ -62,7 +65,9 @@ def test_compute_target() -> None:
 
     data = HydroHeuristicData(
         scenario=0,
-        horizon="monthly",
+        hours_aggregated_time_steps=[
+            24 * get_number_of_days_in_month(m) for m in range(12)
+        ],
         folder_name=folder_name,
         timesteps=list(range(12)),
         capacity=capacity,
