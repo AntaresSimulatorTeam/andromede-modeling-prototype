@@ -221,13 +221,17 @@ class ThermalProblemBuilder:
 
         return resolution_step
 
-    def compute_delta(self, thermal_cluster: str) -> int:
+    def compute_delta(
+        self, thermal_cluster: str, database: Optional[DataBase] = None
+    ) -> int:
+        if database is None:
+            database = self.database
         delta = int(
             max(
-                self.database.get_value(
+                database.get_value(
                     ComponentParameterIndex(thermal_cluster, "d_min_up"), 0, 0
                 ),
-                self.database.get_value(
+                database.get_value(
                     ComponentParameterIndex(thermal_cluster, "d_min_down"), 0, 0
                 ),
             )
@@ -238,7 +242,7 @@ class ThermalProblemBuilder:
         self, database: DataBase, list_cluster_id: list[str]
     ) -> None:
         for cluster_id in list_cluster_id:
-            delta = self.compute_delta(cluster_id)
+            delta = self.compute_delta(cluster_id, database)
             n_max = database.get_data(cluster_id, "nb_units_max").get_max_value()
             database.add_data(cluster_id, "n_max", ConstantData(int(n_max)))
             database.add_data(cluster_id, "delta", ConstantData(delta))
