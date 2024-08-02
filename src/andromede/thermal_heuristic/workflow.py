@@ -45,13 +45,14 @@ class ResolutionStep:
     def solve(
         self,
         solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters(),
+        expected_status: str = pywraplp.Solver.OPTIMAL,
     ) -> None:
         status = self.problem.solver.Solve(solver_parameters)
 
         self.output = OutputValues(self.problem)
         self.objective = self.problem.solver.Objective().Value()
 
-        assert status == pywraplp.Solver.OPTIMAL
+        assert status == expected_status
 
 
 class ConnectionBetweenResolutionSteps:

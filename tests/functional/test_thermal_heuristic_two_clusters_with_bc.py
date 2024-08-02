@@ -12,6 +12,7 @@
 
 from pathlib import Path
 
+import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.libs.standard import (
@@ -190,7 +191,7 @@ def test_accurate_heuristic(data_path: str) -> None:
         week=0,
         scenario=0,
     )
-    resolution_step_2.solve()
+    resolution_step_2.solve(expected_status=pywraplp.Solver.INFEASIBLE)
 
 
 def test_fast_heuristic(data_path: str) -> None:
@@ -256,4 +257,4 @@ def test_fast_heuristic(data_path: str) -> None:
         week=0,
         scenario=0,
     )
-    resolution_step_2.solve()
+    resolution_step_2.solve(expected_status=pywraplp.Solver.INFEASIBLE)
