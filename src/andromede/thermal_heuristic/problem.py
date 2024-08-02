@@ -41,10 +41,10 @@ from andromede.thermal_heuristic.data import (
     get_max_unit,
     get_max_unit_for_min_down_time,
 )
-from andromede.thermal_heuristic.workflow import ResolutionStep
 from andromede.thermal_heuristic.time_scenario_parameter import (
     TimeScenarioHourParameter,
 )
+from andromede.thermal_heuristic.workflow import ResolutionStep
 
 
 class ThermalProblemBuilder:

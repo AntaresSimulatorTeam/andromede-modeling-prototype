@@ -23,17 +23,17 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
-from andromede.thermal_heuristic.problem import (
-    ThermalProblemBuilder,
-    TimeScenarioHourParameter,
-)
-from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
     FastModelBuilder,
     HeuristicAccurateModelBuilder,
     HeuristicFastModelBuilder,
 )
+from andromede.thermal_heuristic.problem import (
+    ThermalProblemBuilder,
+    TimeScenarioHourParameter,
+)
+from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 @pytest.fixture

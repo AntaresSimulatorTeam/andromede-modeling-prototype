@@ -19,18 +19,17 @@ import pytest
 
 from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
-from andromede.thermal_heuristic.problem import (
-    ThermalProblemBuilder,
-    TimeScenarioHourParameter,
-)
-from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
-
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
     FastModelBuilder,
     HeuristicAccurateModelBuilder,
     HeuristicFastModelBuilder,
 )
+from andromede.thermal_heuristic.problem import (
+    ThermalProblemBuilder,
+    TimeScenarioHourParameter,
+)
+from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 @pytest.fixture

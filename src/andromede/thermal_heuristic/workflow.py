@@ -18,10 +18,7 @@ from andromede.simulation import (
     TimeBlock,
     build_problem,
 )
-from andromede.study import (
-    DataBase,
-    Network,
-)
+from andromede.study import DataBase, Network
 
 
 class ResolutionStep:

@@ -21,13 +21,7 @@ from andromede.expression import (
     visit,
 )
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.model import (
-    Model,
-    Variable,
-    float_parameter,
-    float_variable,
-    model,
-)
+from andromede.model import Model, Variable, float_parameter, float_variable, model
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter, float_parameter, int_parameter
 from andromede.model.variable import ValueType, float_variable, int_variable
