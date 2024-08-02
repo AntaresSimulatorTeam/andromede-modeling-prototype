@@ -12,7 +12,7 @@
 
 from math import ceil
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -40,12 +40,6 @@ from andromede.thermal_heuristic.data import (
     get_max_failures,
     get_max_unit,
     get_max_unit_for_min_down_time,
-)
-from andromede.thermal_heuristic.model import (
-    AccurateModelBuilder,
-    FastModelBuilder,
-    HeuristicAccurateModelBuilder,
-    HeuristicFastModelBuilder,
 )
 from andromede.thermal_heuristic.workflow import ResolutionStep
 

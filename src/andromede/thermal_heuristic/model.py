@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 
-from typing import List, Optional
+from typing import List
 
 from andromede.expression import (
     ExpressionNode,
@@ -29,7 +29,6 @@ from andromede.model import (
     model,
 )
 from andromede.model.constraint import Constraint
-from andromede.model.model import PortFieldDefinition
 from andromede.model.parameter import Parameter, float_parameter, int_parameter
 from andromede.model.variable import ValueType, float_variable, int_variable
 

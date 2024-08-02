@@ -18,7 +18,6 @@ import pandas as pd
 import pytest
 
 from andromede.simulation import OutputValues
-from andromede.simulation.optimization import OptimizationProblem
 
 
 def get_max_unit_for_min_down_time(
