@@ -202,7 +202,6 @@ class ThermalProblemBuilder:
     def get_resolution_step_heuristic(
         self, week: int, scenario: int, id: str, model: Model
     ) -> ResolutionStep:
-
         cluster = create_component(model=model, id=id)
 
         network = Network("test")

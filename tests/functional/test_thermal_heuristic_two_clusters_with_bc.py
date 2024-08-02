@@ -151,7 +151,6 @@ def test_accurate_heuristic() -> None:
     )
 
     for g in thermal_problem_builder.get_milp_heuristic_components():
-
         for time_step in range(
             thermal_problem_builder.time_scenario_hour_parameter.hour
         ):
