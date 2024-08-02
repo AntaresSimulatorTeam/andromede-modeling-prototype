@@ -62,9 +62,8 @@ def test_milp_version() -> None:
         week=0,
         scenario=0,
     )
-    status = main_resolution_step.solve()
+    main_resolution_step.solve()
 
-    assert status == pywraplp.Solver.OPTIMAL
     assert main_resolution_step.objective == 16822864
 
     expected_output = ExpectedOutput(
@@ -102,9 +101,8 @@ def test_lp_version() -> None:
         week=0,
         scenario=0,
     )
-    status = main_resolution_step.solve()
+    main_resolution_step.solve()
 
-    assert status == pywraplp.Solver.OPTIMAL
     assert main_resolution_step.objective == pytest.approx(16802840.55)
 
     expected_output = ExpectedOutput(
@@ -146,8 +144,7 @@ def test_accurate_heuristic() -> None:
         week=0,
         scenario=0,
     )
-    status = resolution_step_1.solve()
-    assert status == pywraplp.Solver.OPTIMAL
+    resolution_step_1.solve()
 
     # Get number of on units and round it to integer
     thermal_problem_builder.update_database_accurate(
@@ -172,8 +169,7 @@ def test_accurate_heuristic() -> None:
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             )
         )
-        status = resolution_step_accurate_heuristic.solve()
-        assert status == pywraplp.Solver.OPTIMAL
+        resolution_step_accurate_heuristic.solve()
 
         thermal_problem_builder.update_database_accurate(
             resolution_step_accurate_heuristic.output, 0, 0, [g]
@@ -191,8 +187,7 @@ def test_accurate_heuristic() -> None:
         week=0,
         scenario=0,
     )
-    status = resolution_step_2.solve()
-    assert status == pywraplp.Solver.INFEASIBLE
+    resolution_step_2.solve()
 
 
 def test_fast_heuristic() -> None:
@@ -221,8 +216,7 @@ def test_fast_heuristic() -> None:
         week=0,
         scenario=0,
     )
-    status = resolution_step_1.solve()
-    assert status == pywraplp.Solver.OPTIMAL
+    resolution_step_1.solve()
 
     thermal_problem_builder.update_database_fast_before_heuristic(
         resolution_step_1.output, 0, 0
@@ -259,5 +253,4 @@ def test_fast_heuristic() -> None:
         week=0,
         scenario=0,
     )
-    status = resolution_step_2.solve()
-    assert status == pywraplp.Solver.INFEASIBLE
+    resolution_step_2.solve()

@@ -33,7 +33,15 @@ from andromede.thermal_heuristic.model import (
 )
 
 
-def test_accurate_heuristic() -> None:
+@pytest.fixture
+def solver_parameters() -> pywraplp.MPSolverParameters:
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    return parameters
+
+
+def test_accurate_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares
     """
@@ -50,10 +58,6 @@ def test_accurate_heuristic() -> None:
         models=[AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
-
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
 
     for j, cluster in enumerate(
         thermal_problem_builder.get_milp_heuristic_components()
@@ -85,9 +89,7 @@ def test_accurate_heuristic() -> None:
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             )
         )
-        status = resolution_step_accurate_heuristic.solve(parameters)
-
-        assert status == pywraplp.Solver.OPTIMAL
+        resolution_step_accurate_heuristic.solve(solver_parameters)
 
         nb_on_heuristic = np.transpose(
             np.ceil(
@@ -160,8 +162,8 @@ def test_fast_heuristic() -> None:
             )
         )
 
-        status = resolution_step_heuristic.solve()
-        assert status == pywraplp.Solver.OPTIMAL
+        resolution_step_heuristic.solve()
+
         thermal_problem_builder.update_database_fast_after_heuristic(
             resolution_step_heuristic.output, week, scenario, [cluster]
         )

@@ -36,7 +36,16 @@ from andromede.thermal_heuristic.model import (
 )
 
 
-def test_milp_version() -> None:
+@pytest.fixture
+def solver_parameters() -> pywraplp.MPSolverParameters:
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-5)
+    return parameters
+
+
+def test_milp_version(solver_parameters: pywraplp.MPSolverParameters) -> None:
     """ """
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=20, idx_unsupplied=19
@@ -57,11 +66,6 @@ def test_milp_version() -> None:
         time_scenario_hour_parameter=TimeScenarioHourParameter(2, 2, 168),
     )
 
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
-    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-5)
-
     for scenario in range(
         thermal_problem_builder.time_scenario_hour_parameter.scenario
     ):
@@ -71,9 +75,7 @@ def test_milp_version() -> None:
                 scenario=scenario,
             )
 
-            status = resolution_step.solve(parameters)
-
-            assert status == pywraplp.Solver.OPTIMAL
+            resolution_step.solve(solver_parameters)
 
             expected_output = ExpectedOutput(
                 mode="milp",
@@ -91,7 +93,7 @@ def test_milp_version() -> None:
             )
 
 
-def test_accurate_heuristic() -> None:
+def test_accurate_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares
     """
@@ -99,10 +101,6 @@ def test_accurate_heuristic() -> None:
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
     )
-
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
@@ -128,8 +126,7 @@ def test_accurate_heuristic() -> None:
                 week=week,
                 scenario=scenario,
             )
-            status = resolution_step_1.solve(parameters)
-            assert status == pywraplp.Solver.OPTIMAL
+            resolution_step_1.solve(solver_parameters)
 
             thermal_problem_builder.update_database_accurate(
                 resolution_step_1.output, week, scenario, None
@@ -147,8 +144,7 @@ def test_accurate_heuristic() -> None:
                         ).model,
                     )
                 )
-                status = resolution_step_accurate_heuristic.solve(parameters)
-                assert status == pywraplp.Solver.OPTIMAL
+                resolution_step_accurate_heuristic.solve(solver_parameters)
 
                 thermal_problem_builder.update_database_accurate(
                     resolution_step_accurate_heuristic.output, week, scenario, [g]
@@ -159,8 +155,7 @@ def test_accurate_heuristic() -> None:
                 week=week,
                 scenario=scenario,
             )
-            status = resolution_step_2.solve(parameters)
-            assert status == pywraplp.Solver.OPTIMAL
+            resolution_step_2.solve(solver_parameters)
 
             expected_output = ExpectedOutput(
                 mode="accurate",
@@ -181,17 +176,13 @@ def test_accurate_heuristic() -> None:
             )
 
 
-def test_fast_heuristic() -> None:
+def test_fast_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
     """
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
     )
-
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=True,
@@ -217,8 +208,7 @@ def test_fast_heuristic() -> None:
                 week=week,
                 scenario=scenario,
             )
-            status = resolution_step_1.solve(parameters)
-            assert status == pywraplp.Solver.OPTIMAL
+            resolution_step_1.solve(solver_parameters)
 
             thermal_problem_builder.update_database_fast_before_heuristic(
                 resolution_step_1.output, week, scenario
@@ -236,8 +226,7 @@ def test_fast_heuristic() -> None:
                         ).model,
                     )
                 )
-                status = resolution_step_heuristic.solve()
-                assert status == pywraplp.Solver.OPTIMAL
+                resolution_step_heuristic.solve()
 
                 thermal_problem_builder.update_database_fast_after_heuristic(
                     resolution_step_heuristic.output, week, scenario, [g]
@@ -248,8 +237,7 @@ def test_fast_heuristic() -> None:
                 week=week,
                 scenario=scenario,
             )
-            status = resolution_step_2.solve(parameters)
-            assert status == pywraplp.Solver.OPTIMAL
+            resolution_step_2.solve(solver_parameters)
 
             expected_output = ExpectedOutput(
                 mode="fast",
