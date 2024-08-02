@@ -34,6 +34,7 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
+    WeekScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import (
     BINDING_CONSTRAINT,
@@ -57,7 +58,16 @@ def models() -> list[Model]:
     ]
 
 
-def test_milp_version(data_path: str, models: list[Model]) -> None:
+@pytest.fixture
+def week_scenario_index() -> WeekScenarioIndex:
+    return WeekScenarioIndex(0, 0)
+
+
+def test_milp_version(
+    data_path: str,
+    models: list[Model],
+    week_scenario_index: WeekScenarioIndex,
+) -> None:
     """ """
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
@@ -69,8 +79,7 @@ def test_milp_version(data_path: str, models: list[Model]) -> None:
     )
 
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
-        week=0,
-        scenario=0,
+        week_scenario_index
     )
     main_resolution_step.solve()
 
@@ -78,8 +87,7 @@ def test_milp_version(data_path: str, models: list[Model]) -> None:
 
     expected_output = ExpectedOutput(
         mode="milp",
-        week=0,
-        scenario=0,
+        index=week_scenario_index,
         dir_path=data_path,
         list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
         output_idx=ExpectedOutputIndexes(
@@ -89,7 +97,11 @@ def test_milp_version(data_path: str, models: list[Model]) -> None:
     expected_output.check_output_values(main_resolution_step.output)
 
 
-def test_lp_version(data_path: str, models: list[Model]) -> None:
+def test_lp_version(
+    data_path: str,
+    models: list[Model],
+    week_scenario_index: WeekScenarioIndex,
+) -> None:
     """ """
 
     thermal_problem_builder = ThermalProblemBuilder(
@@ -102,8 +114,7 @@ def test_lp_version(data_path: str, models: list[Model]) -> None:
     )
 
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
-        week=0,
-        scenario=0,
+        week_scenario_index
     )
     main_resolution_step.solve()
 
@@ -111,8 +122,7 @@ def test_lp_version(data_path: str, models: list[Model]) -> None:
 
     expected_output = ExpectedOutput(
         mode="lp",
-        week=0,
-        scenario=0,
+        index=week_scenario_index,
         dir_path=data_path,
         list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
         output_idx=ExpectedOutputIndexes(
@@ -122,36 +132,38 @@ def test_lp_version(data_path: str, models: list[Model]) -> None:
     expected_output.check_output_values(main_resolution_step.output)
 
 
-def test_accurate_heuristic(data_path: str, models: list[Model]) -> None:
+def test_accurate_heuristic(
+    data_path: str,
+    models: list[Model],
+    week_scenario_index: WeekScenarioIndex,
+) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares
     """
 
+    number_hours = 168
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
         data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model] + models,
-        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
 
     # First optimization
     resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
-        week=0,
-        scenario=0,
+        week_scenario_index
     )
     resolution_step_1.solve()
 
     # Get number of on units and round it to integer
     thermal_problem_builder.update_database_accurate(
-        resolution_step_1.output, 0, 0, None
+        resolution_step_1.output, week_scenario_index, None
     )
 
     for g in thermal_problem_builder.get_milp_heuristic_components():
-        for time_step in range(
-            thermal_problem_builder.time_scenario_hour_parameter.hour
-        ):
+        for time_step in range(number_hours):
             assert thermal_problem_builder.database.get_value(
                 ComponentParameterIndex(g, "nb_units_min"), time_step, 0
             ) == (2 if time_step != 12 and g == "G1" else (3 if g == "G1" else 0))
@@ -159,8 +171,7 @@ def test_accurate_heuristic(data_path: str, models: list[Model]) -> None:
         # Solve heuristic problem
         resolution_step_accurate_heuristic = (
             thermal_problem_builder.get_resolution_step_heuristic(
-                week=0,
-                scenario=0,
+                week_scenario_index,
                 id=g,
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             )
@@ -168,25 +179,26 @@ def test_accurate_heuristic(data_path: str, models: list[Model]) -> None:
         resolution_step_accurate_heuristic.solve()
 
         thermal_problem_builder.update_database_accurate(
-            resolution_step_accurate_heuristic.output, 0, 0, [g]
+            resolution_step_accurate_heuristic.output, week_scenario_index, [g]
         )
 
-        for time_step in range(
-            thermal_problem_builder.time_scenario_hour_parameter.hour
-        ):
+        for time_step in range(number_hours):
             assert thermal_problem_builder.database.get_value(
                 ComponentParameterIndex(g, "nb_units_min"), time_step, 0
             ) == (2 if time_step != 12 and g == "G1" else (3 if g == "G1" else 0))
 
     # Second optimization with lower bound modified
     resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-        week=0,
-        scenario=0,
+        week_scenario_index
     )
     resolution_step_2.solve(expected_status=pywraplp.Solver.INFEASIBLE)
 
 
-def test_fast_heuristic(data_path: str, models: list[Model]) -> None:
+def test_fast_heuristic(
+    data_path: str,
+    models: list[Model],
+    week_scenario_index: WeekScenarioIndex,
+) -> None:
     """ """
 
     number_hours = 168
@@ -197,18 +209,17 @@ def test_fast_heuristic(data_path: str, models: list[Model]) -> None:
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model] + models,
-        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
 
     # First optimization
     resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
-        week=0,
-        scenario=0,
+        week_scenario_index
     )
     resolution_step_1.solve()
 
     thermal_problem_builder.update_database_fast_before_heuristic(
-        resolution_step_1.output, 0, 0
+        resolution_step_1.output, week_scenario_index
     )
 
     for g in thermal_problem_builder.get_milp_heuristic_components():
@@ -216,8 +227,7 @@ def test_fast_heuristic(data_path: str, models: list[Model]) -> None:
         resolution_step_heuristic = (
             thermal_problem_builder.get_resolution_step_heuristic(
                 id=g,
-                week=0,
-                scenario=0,
+                index=week_scenario_index,
                 model=HeuristicFastModelBuilder(
                     number_hours, delta=thermal_problem_builder.compute_delta(g)
                 ).model,
@@ -225,7 +235,7 @@ def test_fast_heuristic(data_path: str, models: list[Model]) -> None:
         )
         resolution_step_heuristic.solve()
         thermal_problem_builder.update_database_fast_after_heuristic(
-            resolution_step_heuristic.output, 0, 0, [g]
+            resolution_step_heuristic.output, week_scenario_index, [g]
         )
 
         for time_step in range(number_hours):
@@ -239,7 +249,6 @@ def test_fast_heuristic(data_path: str, models: list[Model]) -> None:
 
     # Second optimization with lower bound modified
     resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-        week=0,
-        scenario=0,
+        week_scenario_index
     )
     resolution_step_2.solve(expected_status=pywraplp.Solver.INFEASIBLE)

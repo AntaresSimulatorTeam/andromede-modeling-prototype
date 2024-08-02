@@ -18,3 +18,21 @@ class TimeScenarioHourParameter:
     week: int
     scenario: int
     hour: int
+
+
+@dataclass
+class WeekScenarioIndex:
+    week: int
+    scenario: int
+
+
+def timesteps(
+    index: WeekScenarioIndex,
+    parameter: TimeScenarioHourParameter,
+) -> list[int]:
+    return list(
+        range(
+            index.week * parameter.hour,
+            (index.week + 1) * parameter.hour,
+        )
+    )

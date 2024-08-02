@@ -18,6 +18,7 @@ import pandas as pd
 import pytest
 
 from andromede.simulation import OutputValues
+from andromede.thermal_heuristic.time_scenario_parameter import WeekScenarioIndex
 
 
 def get_max_unit_for_min_down_time(
@@ -78,8 +79,7 @@ class ExpectedOutput:
     def __init__(
         self,
         mode: str,
-        week: int,
-        scenario: int,
+        index: WeekScenarioIndex,
         dir_path: str,
         list_cluster: list[str],
         output_idx: ExpectedOutputIndexes,
@@ -88,7 +88,7 @@ class ExpectedOutput:
         self.list_cluster = list_cluster
         self.output_idx = output_idx
         self.output_cluster, self.output_general = self.read_expected_output(
-            scenario, dir_path, week
+            dir_path, index
         )
 
     def check_output_values(self, output: OutputValues) -> None:
@@ -130,10 +130,10 @@ class ExpectedOutput:
             ]
 
     def read_expected_output(
-        self, scenario: int, dir_path: str, week: int
+        self, dir_path: str, index: WeekScenarioIndex
     ) -> tuple[list[list[str]], list[list[str]]]:
         folder_name = (
-            "tests/functional/" + dir_path + "/" + self.mode + "/" + str(scenario)
+            "tests/functional/" + dir_path + "/" + self.mode + "/" + str(index.scenario)
         )
 
         expected_output_clusters_file = open(
@@ -151,13 +151,13 @@ class ExpectedOutput:
             [
                 line.strip().split("\t")
                 for line in expected_output_clusters[
-                    168 * week + 7 : 168 * week + 7 + 168
+                    168 * index.week + 7 : 168 * index.week + 7 + 168
                 ]
             ],
             [
                 line.strip().split("\t")
                 for line in expected_output_general[
-                    168 * week + 7 : 168 * week + 7 + 168
+                    168 * index.week + 7 : 168 * index.week + 7 + 168
                 ]
             ],
         )

@@ -33,6 +33,7 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
+    WeekScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -77,17 +78,16 @@ def test_milp_version(
         thermal_problem_builder.time_scenario_hour_parameter.scenario
     ):
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
+            week_scenario_index = WeekScenarioIndex(week, scenario)
             resolution_step = thermal_problem_builder.get_main_resolution_step(
-                week=week,
-                scenario=scenario,
+                week_scenario_index
             )
 
             resolution_step.solve(solver_parameters)
 
             expected_output = ExpectedOutput(
                 mode="milp",
-                week=week,
-                scenario=scenario,
+                index=week_scenario_index,
                 dir_path=data_path,
                 list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
@@ -124,23 +124,22 @@ def test_accurate_heuristic(
         thermal_problem_builder.time_scenario_hour_parameter.scenario
     ):
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
+            week_scenario_index = WeekScenarioIndex(week, scenario)
             # First optimization
             resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
-                week=week,
-                scenario=scenario,
+                week_scenario_index
             )
             resolution_step_1.solve(solver_parameters)
 
             thermal_problem_builder.update_database_accurate(
-                resolution_step_1.output, week, scenario, None
+                resolution_step_1.output, week_scenario_index, None
             )
 
             for g in thermal_problem_builder.get_milp_heuristic_components():
                 # Solve heuristic problem
                 resolution_step_accurate_heuristic = (
                     thermal_problem_builder.get_resolution_step_heuristic(
-                        week=week,
-                        scenario=scenario,
+                        week_scenario_index,
                         id=g,
                         model=HeuristicAccurateModelBuilder(
                             THERMAL_CLUSTER_MODEL_MILP
@@ -150,20 +149,18 @@ def test_accurate_heuristic(
                 resolution_step_accurate_heuristic.solve(solver_parameters)
 
                 thermal_problem_builder.update_database_accurate(
-                    resolution_step_accurate_heuristic.output, week, scenario, [g]
+                    resolution_step_accurate_heuristic.output, week_scenario_index, [g]
                 )
 
             # Second optimization with lower bound modified
             resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-                week=week,
-                scenario=scenario,
+                week_scenario_index
             )
             resolution_step_2.solve(solver_parameters)
 
             expected_output = ExpectedOutput(
                 mode="accurate",
-                week=week,
-                scenario=scenario,
+                index=week_scenario_index,
                 dir_path=data_path,
                 list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
@@ -202,23 +199,22 @@ def test_fast_heuristic(
         thermal_problem_builder.time_scenario_hour_parameter.scenario
     ):
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
+            week_scenario_index = WeekScenarioIndex(week, scenario)
             # First optimization
             resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
-                week=week,
-                scenario=scenario,
+                week_scenario_index
             )
             resolution_step_1.solve(solver_parameters)
 
             thermal_problem_builder.update_database_fast_before_heuristic(
-                resolution_step_1.output, week, scenario
+                resolution_step_1.output, week_scenario_index
             )
 
             for g in thermal_problem_builder.get_milp_heuristic_components():  #
                 resolution_step_heuristic = (
                     thermal_problem_builder.get_resolution_step_heuristic(
                         id=g,
-                        week=week,
-                        scenario=scenario,
+                        index=week_scenario_index,
                         model=HeuristicFastModelBuilder(
                             thermal_problem_builder.time_scenario_hour_parameter.hour,
                             delta=thermal_problem_builder.compute_delta(g),
@@ -228,20 +224,18 @@ def test_fast_heuristic(
                 resolution_step_heuristic.solve()
 
                 thermal_problem_builder.update_database_fast_after_heuristic(
-                    resolution_step_heuristic.output, week, scenario, [g]
+                    resolution_step_heuristic.output, week_scenario_index, [g]
                 )
 
             # Second optimization with lower bound modified
             resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-                week=week,
-                scenario=scenario,
+                week_scenario_index
             )
             resolution_step_2.solve(solver_parameters)
 
             expected_output = ExpectedOutput(
                 mode="fast",
-                week=week,
-                scenario=scenario,
+                index=week_scenario_index,
                 dir_path=data_path,
                 list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,

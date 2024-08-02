@@ -43,6 +43,8 @@ from andromede.thermal_heuristic.data import (
 )
 from andromede.thermal_heuristic.time_scenario_parameter import (
     TimeScenarioHourParameter,
+    timesteps,
+    WeekScenarioIndex,
 )
 from andromede.thermal_heuristic.workflow import ResolutionStep
 
@@ -66,15 +68,10 @@ class ThermalProblemBuilder:
         self.id_thermal_cluster_model = id_thermal_cluster_model
         self.database = self.get_database(data_dir, "components.yml", fast)
 
-    def get_main_resolution_step(self, week: int, scenario: int) -> ResolutionStep:
+    def get_main_resolution_step(self, index: WeekScenarioIndex) -> ResolutionStep:
         main_resolution_step = ResolutionStep(
-            timesteps=list(
-                range(
-                    week * self.time_scenario_hour_parameter.hour,
-                    (week + 1) * self.time_scenario_hour_parameter.hour,
-                )
-            ),
-            scenarios=[scenario],
+            timesteps=timesteps(index, self.time_scenario_hour_parameter),
+            scenarios=[index.scenario],
             database=self.database,
             network=self.network,
         )
@@ -84,8 +81,7 @@ class ThermalProblemBuilder:
     def update_database_accurate(
         self,
         output: OutputValues,
-        week: int,
-        scenario: int,
+        index: WeekScenarioIndex,
         list_cluster_id: Optional[list[str]],
     ) -> None:
         if list_cluster_id is None:
@@ -99,23 +95,16 @@ class ThermalProblemBuilder:
             )
             nb_on = output.component(cluster).var("nb_on").value[0]  # type:ignore
 
-            for i, t in enumerate(
-                list(
-                    range(
-                        week * self.time_scenario_hour_parameter.hour,
-                        (week + 1) * self.time_scenario_hour_parameter.hour,
-                    )
-                )
-            ):
+            for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 self.database.edit_value(
                     ComponentParameterIndex(cluster, "nb_units_min"),
                     ceil(round(nb_on[i], 12)),  # type:ignore
                     t,
-                    scenario,
+                    index.scenario,
                 )
 
     def update_database_fast_before_heuristic(
-        self, output: OutputValues, week: int, scenario: int
+        self, output: OutputValues, index: WeekScenarioIndex
     ) -> None:
         for cluster in self.get_milp_heuristic_components():
             pmax = self.database.get_value(
@@ -131,26 +120,18 @@ class ThermalProblemBuilder:
                 self.time_scenario_hour_parameter.scenario,
             )
 
-            for i, t in enumerate(
-                list(
-                    range(
-                        week * self.time_scenario_hour_parameter.hour,
-                        (week + 1) * self.time_scenario_hour_parameter.hour,
-                    )
-                )
-            ):
+            for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 self.database.edit_value(
                     ComponentParameterIndex(cluster, "n_guide"),
                     ceil(round(nb_on_1[i] / pmax, 12)),  # type: ignore
                     t,
-                    scenario,
+                    index.scenario,
                 )
 
     def update_database_fast_after_heuristic(
         self,
         output: OutputValues,
-        week: int,
-        scenario: int,
+        index: WeekScenarioIndex,
         list_cluster_id: Optional[list[str]],
     ) -> None:
         if list_cluster_id is None:
@@ -161,12 +142,11 @@ class ThermalProblemBuilder:
             )
             pdispo = [
                 self.database.get_value(
-                    ComponentParameterIndex(cluster, "max_generating"), t, scenario
+                    ComponentParameterIndex(cluster, "max_generating"),
+                    t,
+                    index.scenario,
                 )
-                for t in range(
-                    week * self.time_scenario_hour_parameter.hour,
-                    (week + 1) * self.time_scenario_hour_parameter.hour,
-                )
+                for t in timesteps(index, self.time_scenario_hour_parameter)
             ]
 
             self.database.convert_to_time_scenario_series_data(
@@ -184,23 +164,16 @@ class ThermalProblemBuilder:
                 np.array(pdispo).reshape((self.time_scenario_hour_parameter.hour, 1)),
             ).reshape(self.time_scenario_hour_parameter.hour)
 
-            for i, t in enumerate(
-                list(
-                    range(
-                        week * self.time_scenario_hour_parameter.hour,
-                        (week + 1) * self.time_scenario_hour_parameter.hour,
-                    )
-                )
-            ):
+            for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 self.database.edit_value(
                     ComponentParameterIndex(cluster, "min_generating"),
                     min_gen[i],
                     t,
-                    scenario,
+                    index.scenario,
                 )
 
     def get_resolution_step_heuristic(
-        self, week: int, scenario: int, id: str, model: Model
+        self, index: WeekScenarioIndex, id: str, model: Model
     ) -> ResolutionStep:
         cluster = create_component(model=model, id=id)
 
@@ -208,13 +181,8 @@ class ThermalProblemBuilder:
         network.add_component(cluster)
 
         resolution_step = ResolutionStep(
-            timesteps=list(
-                range(
-                    week * self.time_scenario_hour_parameter.hour,
-                    (week + 1) * self.time_scenario_hour_parameter.hour,
-                )
-            ),
-            scenarios=[scenario],
+            timesteps=timesteps(index, self.time_scenario_hour_parameter),
+            scenarios=[index.scenario],
             database=self.database,
             network=network,
         )

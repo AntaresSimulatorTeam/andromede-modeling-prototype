@@ -25,6 +25,7 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
+    WeekScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -39,8 +40,7 @@ def test_fast_heuristic(data_path: str) -> None:
     Solve the same problem as before with the heuristic fast of Antares
     """
     number_hours = 168
-    scenario = 0
-    week = 0
+    week_scenario_index = WeekScenarioIndex(0, 0)
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=True,
@@ -66,8 +66,8 @@ def test_fast_heuristic(data_path: str) -> None:
                 12,
             )
         ),
-        index=list(range(week * number_hours, (week + 1) * number_hours)),
-        columns=[scenario],
+        index=list(range(number_hours)),
+        columns=[week_scenario_index.scenario],
     )
 
     thermal_problem_builder.database.add_data(
@@ -77,8 +77,7 @@ def test_fast_heuristic(data_path: str) -> None:
     # Solve heuristic problem
     resolution_step_heuristic = thermal_problem_builder.get_resolution_step_heuristic(
         id=cluster,
-        week=week,
-        scenario=scenario,
+        index=week_scenario_index,
         model=HeuristicFastModelBuilder(
             number_hours, delta=thermal_problem_builder.compute_delta(cluster)
         ).model,
@@ -87,7 +86,7 @@ def test_fast_heuristic(data_path: str) -> None:
     resolution_step_heuristic.solve()
 
     thermal_problem_builder.update_database_fast_after_heuristic(
-        resolution_step_heuristic.output, week, scenario, [cluster]
+        resolution_step_heuristic.output, week_scenario_index, [cluster]
     )
 
     expected_output = np.loadtxt(
@@ -95,5 +94,7 @@ def test_fast_heuristic(data_path: str) -> None:
     )
     for t in range(number_hours):
         assert thermal_problem_builder.database.get_value(
-            ComponentParameterIndex(cluster, "min_generating"), t, scenario
+            ComponentParameterIndex(cluster, "min_generating"),
+            t,
+            week_scenario_index.scenario,
         ) == pytest.approx(expected_output[t])
