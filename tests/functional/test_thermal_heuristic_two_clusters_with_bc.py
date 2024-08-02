@@ -25,6 +25,7 @@ from andromede.libs.standard import (
 from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
+    Model,
     AccurateModelBuilder,
     FastModelBuilder,
     HeuristicAccurateModelBuilder,
@@ -45,21 +46,25 @@ def data_path() -> str:
     return "data/thermal_heuristic_two_clusters_with_bc"
 
 
-def test_milp_version(data_path: str) -> None:
+@pytest.fixture
+def models() -> list[Model]:
+    return [
+        DEMAND_MODEL,
+        NODE_BALANCE_MODEL,
+        SPILLAGE_MODEL,
+        UNSUPPLIED_ENERGY_MODEL,
+        BINDING_CONSTRAINT,
+    ]
+
+
+def test_milp_version(data_path: str, models: list[Model]) -> None:
     """ """
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
         data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
-        models=[
-            THERMAL_CLUSTER_MODEL_MILP,
-            DEMAND_MODEL,
-            NODE_BALANCE_MODEL,
-            SPILLAGE_MODEL,
-            UNSUPPLIED_ENERGY_MODEL,
-            BINDING_CONSTRAINT,
-        ],
+        models=[THERMAL_CLUSTER_MODEL_MILP] + models,
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
@@ -84,21 +89,15 @@ def test_milp_version(data_path: str) -> None:
     expected_output.check_output_values(main_resolution_step.output)
 
 
-def test_lp_version(data_path: str) -> None:
+def test_lp_version(data_path: str, models: list[Model]) -> None:
     """ """
+
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
         data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
-        models=[
-            AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
-            DEMAND_MODEL,
-            NODE_BALANCE_MODEL,
-            SPILLAGE_MODEL,
-            UNSUPPLIED_ENERGY_MODEL,
-            BINDING_CONSTRAINT,
-        ],
+        models=[AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model] + models,
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
@@ -123,7 +122,7 @@ def test_lp_version(data_path: str) -> None:
     expected_output.check_output_values(main_resolution_step.output)
 
 
-def test_accurate_heuristic(data_path: str) -> None:
+def test_accurate_heuristic(data_path: str, models: list[Model]) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares
     """
@@ -133,14 +132,7 @@ def test_accurate_heuristic(data_path: str) -> None:
         data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
-        models=[
-            AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
-            DEMAND_MODEL,
-            NODE_BALANCE_MODEL,
-            SPILLAGE_MODEL,
-            UNSUPPLIED_ENERGY_MODEL,
-            BINDING_CONSTRAINT,
-        ],
+        models=[AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model] + models,
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
@@ -194,7 +186,7 @@ def test_accurate_heuristic(data_path: str) -> None:
     resolution_step_2.solve(expected_status=pywraplp.Solver.INFEASIBLE)
 
 
-def test_fast_heuristic(data_path: str) -> None:
+def test_fast_heuristic(data_path: str, models: list[Model]) -> None:
     """ """
 
     number_hours = 168
@@ -204,14 +196,7 @@ def test_fast_heuristic(data_path: str) -> None:
         data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
-        models=[
-            FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
-            DEMAND_MODEL,
-            NODE_BALANCE_MODEL,
-            SPILLAGE_MODEL,
-            UNSUPPLIED_ENERGY_MODEL,
-            BINDING_CONSTRAINT,
-        ],
+        models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model] + models,
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
