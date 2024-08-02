@@ -24,7 +24,10 @@ from andromede.libs.standard import (
 )
 from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
-from andromede.thermal_heuristic.problem import ThermalProblemBuilder
+from andromede.thermal_heuristic.problem import (
+    ThermalProblemBuilder,
+    TimeScenarioHourParameter,
+)
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 from andromede.thermal_heuristic.model import (
@@ -62,10 +65,9 @@ def test_milp_version() -> None:
         = 16 805 387
     """
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=168,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
             THERMAL_CLUSTER_MODEL_MILP,
@@ -74,8 +76,7 @@ def test_milp_version() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
-        number_week=1,
-        number_scenario=1,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
     cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
@@ -129,10 +130,9 @@ def test_lp_version() -> None:
         = 16 802 840,55
     """
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=168,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
             AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
@@ -141,8 +141,7 @@ def test_lp_version() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
-        number_week=1,
-        number_scenario=1,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
     cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
@@ -175,10 +174,9 @@ def test_accurate_heuristic() -> None:
     """
 
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=168,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
             AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
@@ -187,8 +185,7 @@ def test_accurate_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
-        number_week=1,
-        number_scenario=1,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
     cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
@@ -205,7 +202,7 @@ def test_accurate_heuristic() -> None:
     thermal_problem_builder.update_database_accurate(
         resolution_step_1.output, 0, 0, None
     )
-    for time_step in range(thermal_problem_builder.number_hours):
+    for time_step in range(thermal_problem_builder.time_scenario_hour_parameter.hour):
         assert (
             thermal_problem_builder.database.get_value(
                 ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
@@ -220,7 +217,7 @@ def test_accurate_heuristic() -> None:
         thermal_problem_builder.get_resolution_step_heuristic(
             week=0,
             scenario=0,
-            cluster_id=cluster,
+            id=cluster,
             model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
         )
     )
@@ -231,7 +228,7 @@ def test_accurate_heuristic() -> None:
         resolution_step_accurate_heuristic.output, 0, 0, None
     )
 
-    for time_step in range(thermal_problem_builder.number_hours):
+    for time_step in range(thermal_problem_builder.time_scenario_hour_parameter.hour):
         assert (
             thermal_problem_builder.database.get_value(
                 ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
@@ -291,10 +288,9 @@ def test_fast_heuristic() -> None:
     number_hours = 168
 
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
         fast=True,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_one_cluster",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
             FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
@@ -303,8 +299,7 @@ def test_fast_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
-        number_week=1,
-        number_scenario=1,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
     )
 
     cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
@@ -322,7 +317,7 @@ def test_fast_heuristic() -> None:
     )
     # Solve heuristic problem
     resolution_step_heuristic = thermal_problem_builder.get_resolution_step_heuristic(
-        cluster_id=cluster,
+        id=cluster,
         week=0,
         scenario=0,
         model=HeuristicFastModelBuilder(

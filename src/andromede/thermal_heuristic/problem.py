@@ -42,42 +42,37 @@ from andromede.thermal_heuristic.data import (
     get_max_unit_for_min_down_time,
 )
 from andromede.thermal_heuristic.workflow import ResolutionStep
+from andromede.thermal_heuristic.time_scenario_parameter import (
+    TimeScenarioHourParameter,
+)
 
 
 class ThermalProblemBuilder:
     def __init__(
         self,
-        number_hours: int,
         fast: bool,
         data_dir: Path,
-        initial_thermal_model: Model,
+        id_thermal_cluster_model: str,
         port_types: List[PortType],
         models: List[Model],
-        number_week: int,
-        number_scenario: int,
+        time_scenario_hour_parameter: TimeScenarioHourParameter,
     ) -> None:
         lib = library(
             port_types=port_types,
             models=models,
         )
-        self.number_week = number_week
-        self.number_scenario = number_scenario
+        self.time_scenario_hour_parameter = time_scenario_hour_parameter
         self.network = get_network(data_dir / "components.yml", lib)
-        self.number_hours = number_hours
-        self.initial_thermal_model = initial_thermal_model
-        self.database = self.get_database(
-            data_dir,
-            "components.yml",
-            number_hours,
-            fast,
-            timesteps=number_hours * number_week,
-            scenarios=number_scenario,
-        )
+        self.id_thermal_cluster_model = id_thermal_cluster_model
+        self.database = self.get_database(data_dir, "components.yml", fast)
 
     def get_main_resolution_step(self, week: int, scenario: int) -> ResolutionStep:
         main_resolution_step = ResolutionStep(
             timesteps=list(
-                range(week * self.number_hours, (week + 1) * self.number_hours)
+                range(
+                    week * self.time_scenario_hour_parameter.hour,
+                    (week + 1) * self.time_scenario_hour_parameter.hour,
+                )
             ),
             scenarios=[scenario],
             database=self.database,
@@ -98,13 +93,19 @@ class ThermalProblemBuilder:
         for cluster in list_cluster_id:
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "nb_units_min"),
-                self.number_hours * self.number_week,
-                self.number_scenario,
+                self.time_scenario_hour_parameter.hour
+                * self.time_scenario_hour_parameter.week,
+                self.time_scenario_hour_parameter.scenario,
             )
             nb_on = output.component(cluster).var("nb_on").value[0]  # type:ignore
 
             for i, t in enumerate(
-                list(range(week * self.number_hours, (week + 1) * self.number_hours))
+                list(
+                    range(
+                        week * self.time_scenario_hour_parameter.hour,
+                        (week + 1) * self.time_scenario_hour_parameter.hour,
+                    )
+                )
             ):
                 self.database.edit_value(
                     ComponentParameterIndex(cluster, "nb_units_min"),
@@ -125,15 +126,16 @@ class ThermalProblemBuilder:
             self.database.add_data(cluster, "n_guide", ConstantData(0))
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "n_guide"),
-                self.number_hours * self.number_week,
-                self.number_scenario,
+                self.time_scenario_hour_parameter.hour
+                * self.time_scenario_hour_parameter.week,
+                self.time_scenario_hour_parameter.scenario,
             )
 
             for i, t in enumerate(
                 list(
                     range(
-                        week * self.number_hours,
-                        (week + 1) * self.number_hours,
+                        week * self.time_scenario_hour_parameter.hour,
+                        (week + 1) * self.time_scenario_hour_parameter.hour,
                     )
                 )
             ):
@@ -161,25 +163,34 @@ class ThermalProblemBuilder:
                 self.database.get_value(
                     ComponentParameterIndex(cluster, "max_generating"), t, scenario
                 )
-                for t in range(week * self.number_hours, (week + 1) * self.number_hours)
+                for t in range(
+                    week * self.time_scenario_hour_parameter.hour,
+                    (week + 1) * self.time_scenario_hour_parameter.hour,
+                )
             ]
 
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "min_generating"),
-                self.number_hours * self.number_week,
-                self.number_scenario,
+                self.time_scenario_hour_parameter.hour
+                * self.time_scenario_hour_parameter.week,
+                self.time_scenario_hour_parameter.scenario,
             )
 
             min_gen = np.minimum(
                 np.array(
                     output.component(cluster).var("n").value[0]  # type:ignore
-                ).reshape((self.number_hours, 1))
+                ).reshape((self.time_scenario_hour_parameter.hour, 1))
                 * pmin,
-                np.array(pdispo).reshape((self.number_hours, 1)),
-            ).reshape(self.number_hours)
+                np.array(pdispo).reshape((self.time_scenario_hour_parameter.hour, 1)),
+            ).reshape(self.time_scenario_hour_parameter.hour)
 
             for i, t in enumerate(
-                list(range(week * self.number_hours, (week + 1) * self.number_hours))
+                list(
+                    range(
+                        week * self.time_scenario_hour_parameter.hour,
+                        (week + 1) * self.time_scenario_hour_parameter.hour,
+                    )
+                )
             ):
                 self.database.edit_value(
                     ComponentParameterIndex(cluster, "min_generating"),
@@ -189,17 +200,20 @@ class ThermalProblemBuilder:
                 )
 
     def get_resolution_step_heuristic(
-        self, week: int, scenario: int, cluster_id: str, model: Model
+        self, week: int, scenario: int, id: str, model: Model
     ) -> ResolutionStep:
 
-        cluster = create_component(model=model, id=cluster_id)
+        cluster = create_component(model=model, id=id)
 
         network = Network("test")
         network.add_component(cluster)
 
         resolution_step = ResolutionStep(
             timesteps=list(
-                range(week * self.number_hours, (week + 1) * self.number_hours)
+                range(
+                    week * self.time_scenario_hour_parameter.hour,
+                    (week + 1) * self.time_scenario_hour_parameter.hour,
+                )
             ),
             scenarios=[scenario],
             database=self.database,
@@ -222,25 +236,16 @@ class ThermalProblemBuilder:
         return delta
 
     def complete_database_for_fast_heuristic(
-        self, database: DataBase, list_cluster_id: list[str], number_hours: int
+        self, database: DataBase, list_cluster_id: list[str]
     ) -> None:
         for cluster_id in list_cluster_id:
-            delta = int(
-                max(
-                    database.get_value(
-                        ComponentParameterIndex(cluster_id, "d_min_up"), 0, 0
-                    ),
-                    database.get_value(
-                        ComponentParameterIndex(cluster_id, "d_min_down"), 0, 0
-                    ),
-                )
-            )
+            delta = self.compute_delta(cluster_id)
             n_max = database.get_data(cluster_id, "nb_units_max").get_max_value()
             database.add_data(cluster_id, "n_max", ConstantData(int(n_max)))
             database.add_data(cluster_id, "delta", ConstantData(delta))
 
             for h in range(delta):
-                start_ajust = self.number_hours - delta + h
+                start_ajust = self.time_scenario_hour_parameter.hour - delta + h
                 database.add_data(
                     cluster_id,
                     f"alpha_ajust_{h}",
@@ -248,15 +253,21 @@ class ThermalProblemBuilder:
                         {
                             TimeIndex(t): (
                                 1
-                                if (t % self.number_hours >= start_ajust)
-                                or (t % self.number_hours < h)
+                                if (
+                                    t % self.time_scenario_hour_parameter.hour
+                                    >= start_ajust
+                                )
+                                or (t % self.time_scenario_hour_parameter.hour < h)
                                 else 0
                             )
-                            for t in range(self.number_hours * self.number_week)
+                            for t in range(
+                                self.time_scenario_hour_parameter.hour
+                                * self.time_scenario_hour_parameter.week
+                            )
                         }
                     ),
                 )
-                for k in range(number_hours // delta):
+                for k in range(self.time_scenario_hour_parameter.hour // delta):
                     start_k = k * delta + h
                     end_k = min(start_ajust, (k + 1) * delta + h)
                     database.add_data(
@@ -266,11 +277,20 @@ class ThermalProblemBuilder:
                             {
                                 TimeIndex(t): (
                                     1
-                                    if (t % self.number_hours >= start_k)
-                                    and (t % self.number_hours < end_k)
+                                    if (
+                                        t % self.time_scenario_hour_parameter.hour
+                                        >= start_k
+                                    )
+                                    and (
+                                        t % self.time_scenario_hour_parameter.hour
+                                        < end_k
+                                    )
                                     else 0
                                 )
-                                for t in range(self.number_hours * self.number_week)
+                                for t in range(
+                                    self.time_scenario_hour_parameter.hour
+                                    * self.time_scenario_hour_parameter.week
+                                )
                             }
                         ),
                     )
@@ -279,25 +299,17 @@ class ThermalProblemBuilder:
         self,
         data_dir: Path,
         yml_file: str,
-        hours_in_week: int,
         fast: bool,
-        timesteps: int,
-        scenarios: int,
     ) -> DataBase:
         components_file = get_input_components(data_dir / yml_file)
         database = build_data_base(components_file, data_dir)
 
-        complete_database_with_cluster_parameters(
-            database,
-            list_cluster_id=self.get_milp_heuristic_components(),
-            hours_in_week=hours_in_week,
-            timesteps=timesteps,
-            scenarios=scenarios,
-        )
+        self.complete_database_with_cluster_parameters(database)
 
         if fast:
             self.complete_database_for_fast_heuristic(
-                database, self.get_milp_heuristic_components(), hours_in_week
+                database,
+                self.get_milp_heuristic_components(),
             )
 
         return database
@@ -306,66 +318,59 @@ class ThermalProblemBuilder:
         return [
             c.id
             for c in self.network.components
-            if c.model.id == self.initial_thermal_model.id
+            if c.model.id == self.id_thermal_cluster_model
         ]
 
+    def complete_database_with_cluster_parameters(self, database: DataBase) -> None:
+        for cluster_id in self.get_milp_heuristic_components():
+            if type(database.get_data(cluster_id, "max_generating")) is ConstantData:
+                database.add_data(
+                    cluster_id,
+                    "max_failure",
+                    ConstantData(0),
+                )
+                database.add_data(
+                    cluster_id,
+                    "nb_units_max_min_down_time",
+                    database.get_data(cluster_id, "nb_units_max"),
+                )
 
-def complete_database_with_cluster_parameters(
-    database: DataBase,
-    list_cluster_id: List[str],
-    hours_in_week: int,
-    timesteps: int,
-    scenarios: int,
-) -> None:
-    for cluster_id in list_cluster_id:
-        if type(database.get_data(cluster_id, "max_generating")) is ConstantData:
-            database.add_data(
-                cluster_id,
-                "max_failure",
-                ConstantData(0),
-            )
-            database.add_data(
-                cluster_id,
-                "nb_units_max_min_down_time",
-                database.get_data(cluster_id, "nb_units_max"),
-            )
-
-        else:
-            (
-                max_units,
-                max_failures,
-                nb_units_max_min_down_time,
-            ) = compute_cluster_parameters(
-                hours_in_week, database, cluster_id, timesteps, scenarios
-            )
-            database.add_data(
-                cluster_id,
-                "nb_units_max",
-                TimeScenarioSeriesData(max_units),
-            )
-            database.add_data(
-                cluster_id,
-                "max_failure",
-                TimeScenarioSeriesData(max_failures),
-            )
-            database.add_data(
-                cluster_id,
-                "nb_units_max_min_down_time",
-                TimeScenarioSeriesData(nb_units_max_min_down_time),
-            )
+            else:
+                (
+                    max_units,
+                    max_failures,
+                    nb_units_max_min_down_time,
+                ) = compute_cluster_parameters(
+                    database,
+                    cluster_id,
+                    self.time_scenario_hour_parameter,
+                )
+                database.add_data(
+                    cluster_id,
+                    "nb_units_max",
+                    TimeScenarioSeriesData(max_units),
+                )
+                database.add_data(
+                    cluster_id,
+                    "max_failure",
+                    TimeScenarioSeriesData(max_failures),
+                )
+                database.add_data(
+                    cluster_id,
+                    "nb_units_max_min_down_time",
+                    TimeScenarioSeriesData(nb_units_max_min_down_time),
+                )
 
 
 def compute_cluster_parameters(
-    hours_in_week: int,
     database: DataBase,
     cluster_id: str,
-    timesteps: int,
-    scenarios: int,
+    time_scenario_hour_parameter: TimeScenarioHourParameter,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     database.convert_to_time_scenario_series_data(
         ComponentParameterIndex(cluster_id, "max_generating"),
-        timesteps=timesteps,
-        scenarios=scenarios,
+        timesteps=time_scenario_hour_parameter.hour * time_scenario_hour_parameter.week,
+        scenarios=time_scenario_hour_parameter.scenario,
     )
     max_units = get_max_unit(
         database.get_value(ComponentParameterIndex(cluster_id, "p_max"), 0, 0),
@@ -374,7 +379,7 @@ def compute_cluster_parameters(
             cluster_id, "max_generating"
         ).time_scenario_series,  # type:ignore
     )
-    max_failures = get_max_failures(max_units, hours_in_week)
+    max_failures = get_max_failures(max_units, time_scenario_hour_parameter.hour)
     nb_units_max_min_down_time = get_max_unit_for_min_down_time(
         int(
             max(
@@ -387,7 +392,7 @@ def compute_cluster_parameters(
             )
         ),
         max_units,
-        hours_in_week,
+        time_scenario_hour_parameter.hour,
     )
 
     return max_units, max_failures, nb_units_max_min_down_time

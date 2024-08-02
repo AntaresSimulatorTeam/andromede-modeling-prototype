@@ -19,7 +19,10 @@ import pytest
 
 from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
-from andromede.thermal_heuristic.problem import ThermalProblemBuilder
+from andromede.thermal_heuristic.problem import (
+    ThermalProblemBuilder,
+    TimeScenarioHourParameter,
+)
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 from andromede.thermal_heuristic.model import (
@@ -40,14 +43,12 @@ def test_accurate_heuristic() -> None:
     week = 0
 
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_six_clusters",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[],
         models=[AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],
-        number_week=1,
-        number_scenario=1,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
 
     parameters = pywraplp.MPSolverParameters()
@@ -80,7 +81,7 @@ def test_accurate_heuristic() -> None:
             thermal_problem_builder.get_resolution_step_heuristic(
                 week=week,
                 scenario=scenario,
-                cluster_id=cluster,
+                id=cluster,
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             )
         )
@@ -115,14 +116,12 @@ def test_fast_heuristic() -> None:
     week = 0
 
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
         fast=True,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_six_clusters",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[],
         models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],
-        number_week=1,
-        number_scenario=1,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
 
     for j, cluster in enumerate(
@@ -152,7 +151,7 @@ def test_fast_heuristic() -> None:
         # Solve heuristic problem
         resolution_step_heuristic = (
             thermal_problem_builder.get_resolution_step_heuristic(
-                cluster_id=cluster,
+                id=cluster,
                 week=week,
                 scenario=scenario,
                 model=HeuristicFastModelBuilder(

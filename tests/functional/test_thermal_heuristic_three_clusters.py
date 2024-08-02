@@ -23,7 +23,10 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
-from andromede.thermal_heuristic.problem import ThermalProblemBuilder
+from andromede.thermal_heuristic.problem import (
+    ThermalProblemBuilder,
+    TimeScenarioHourParameter,
+)
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
@@ -35,17 +38,14 @@ from andromede.thermal_heuristic.model import (
 
 def test_milp_version() -> None:
     """ """
-    number_hours = 168
-    scenarios = 2
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=20, idx_unsupplied=19
     )
 
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
             THERMAL_CLUSTER_MODEL_MILP,
@@ -54,8 +54,7 @@ def test_milp_version() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
-        number_week=2,
-        number_scenario=scenarios,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(2, 2, 168),
     )
 
     parameters = pywraplp.MPSolverParameters()
@@ -63,8 +62,10 @@ def test_milp_version() -> None:
     parameters.SetIntegerParam(parameters.SCALING, 0)
     parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-5)
 
-    for scenario in range(scenarios):
-        for week in range(2):
+    for scenario in range(
+        thermal_problem_builder.time_scenario_hour_parameter.scenario
+    ):
+        for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
             resolution_step = thermal_problem_builder.get_main_resolution_step(
                 week=week,
                 scenario=scenario,
@@ -99,18 +100,14 @@ def test_accurate_heuristic() -> None:
         idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
     )
 
-    number_hours = 168
-    scenarios = 2
-
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
         fast=False,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
             AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
@@ -119,12 +116,13 @@ def test_accurate_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
-        number_week=2,
-        number_scenario=scenarios,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(2, 2, 168),
     )
 
-    for scenario in range(scenarios):
-        for week in range(2):
+    for scenario in range(
+        thermal_problem_builder.time_scenario_hour_parameter.scenario
+    ):
+        for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
             # First optimization
             resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
                 week=week,
@@ -143,7 +141,7 @@ def test_accurate_heuristic() -> None:
                     thermal_problem_builder.get_resolution_step_heuristic(
                         week=week,
                         scenario=scenario,
-                        cluster_id=g,
+                        id=g,
                         model=HeuristicAccurateModelBuilder(
                             THERMAL_CLUSTER_MODEL_MILP
                         ).model,
@@ -191,19 +189,14 @@ def test_fast_heuristic() -> None:
         idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20
     )
 
-    number_hours = 168
-    scenarios = 2
-    weeks = 2
-
     parameters = pywraplp.MPSolverParameters()
     parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
     parameters.SetIntegerParam(parameters.SCALING, 0)
 
     thermal_problem_builder = ThermalProblemBuilder(
-        number_hours=number_hours,
         fast=True,
         data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
-        initial_thermal_model=THERMAL_CLUSTER_MODEL_MILP,
+        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
             FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
@@ -212,12 +205,13 @@ def test_fast_heuristic() -> None:
             SPILLAGE_MODEL,
             UNSUPPLIED_ENERGY_MODEL,
         ],
-        number_week=2,
-        number_scenario=scenarios,
+        time_scenario_hour_parameter=TimeScenarioHourParameter(2, 2, 168),
     )
 
-    for scenario in range(scenarios):
-        for week in range(weeks):
+    for scenario in range(
+        thermal_problem_builder.time_scenario_hour_parameter.scenario
+    ):
+        for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
             # First optimization
             resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
                 week=week,
@@ -233,11 +227,12 @@ def test_fast_heuristic() -> None:
             for g in thermal_problem_builder.get_milp_heuristic_components():  #
                 resolution_step_heuristic = (
                     thermal_problem_builder.get_resolution_step_heuristic(
-                        cluster_id=g,
+                        id=g,
                         week=week,
                         scenario=scenario,
                         model=HeuristicFastModelBuilder(
-                            number_hours, delta=thermal_problem_builder.compute_delta(g)
+                            thermal_problem_builder.time_scenario_hour_parameter.hour,
+                            delta=thermal_problem_builder.compute_delta(g),
                         ).model,
                     )
                 )
