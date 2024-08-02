@@ -29,7 +29,12 @@ from andromede.thermal_heuristic.problem import (
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
-def test_fast_heuristic() -> None:
+@pytest.fixture
+def data_path() -> str:
+    return "data/thermal_heuristic_fast_min_down_not_respected"
+
+
+def test_fast_heuristic(data_path: str) -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
     """
@@ -39,8 +44,7 @@ def test_fast_heuristic() -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=True,
-        data_dir=Path(__file__).parent
-        / "data/thermal_heuristic_fast_min_down_not_respected",
+        data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[],
         models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],

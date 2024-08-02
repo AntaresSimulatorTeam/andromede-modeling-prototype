@@ -45,7 +45,14 @@ def solver_parameters() -> pywraplp.MPSolverParameters:
     return parameters
 
 
-def test_milp_version(solver_parameters: pywraplp.MPSolverParameters) -> None:
+@pytest.fixture
+def data_path() -> str:
+    return "data/thermal_heuristic_three_clusters"
+
+
+def test_milp_version(
+    solver_parameters: pywraplp.MPSolverParameters, data_path: str
+) -> None:
     """ """
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=20, idx_unsupplied=19
@@ -53,7 +60,7 @@ def test_milp_version(solver_parameters: pywraplp.MPSolverParameters) -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
-        data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
+        data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
@@ -81,7 +88,7 @@ def test_milp_version(solver_parameters: pywraplp.MPSolverParameters) -> None:
                 mode="milp",
                 week=week,
                 scenario=scenario,
-                dir_path="data/thermal_heuristic_three_clusters",
+                dir_path=data_path,
                 list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
             )
@@ -93,7 +100,9 @@ def test_milp_version(solver_parameters: pywraplp.MPSolverParameters) -> None:
             )
 
 
-def test_accurate_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> None:
+def test_accurate_heuristic(
+    solver_parameters: pywraplp.MPSolverParameters, data_path: str
+) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares
     """
@@ -104,7 +113,7 @@ def test_accurate_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> N
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
-        data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
+        data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
@@ -161,7 +170,7 @@ def test_accurate_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> N
                 mode="accurate",
                 week=week,
                 scenario=scenario,
-                dir_path="data/thermal_heuristic_three_clusters",
+                dir_path=data_path,
                 list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
             )
@@ -176,7 +185,9 @@ def test_accurate_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> N
             )
 
 
-def test_fast_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> None:
+def test_fast_heuristic(
+    solver_parameters: pywraplp.MPSolverParameters, data_path: str
+) -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
     """
@@ -186,7 +197,7 @@ def test_fast_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> None:
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=True,
-        data_dir=Path(__file__).parent / "data/thermal_heuristic_three_clusters",
+        data_dir=Path(__file__).parent / data_path,
         id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
         port_types=[BALANCE_PORT_TYPE],
         models=[
@@ -243,7 +254,7 @@ def test_fast_heuristic(solver_parameters: pywraplp.MPSolverParameters) -> None:
                 mode="fast",
                 week=week,
                 scenario=scenario,
-                dir_path="data/thermal_heuristic_three_clusters",
+                dir_path=data_path,
                 list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
                 output_idx=output_indexes,
             )
