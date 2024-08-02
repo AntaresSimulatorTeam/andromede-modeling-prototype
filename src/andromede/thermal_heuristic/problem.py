@@ -13,6 +13,7 @@
 from math import ceil
 from pathlib import Path
 from typing import List, Optional
+import ortools.linear_solver.pywraplp as pywraplp
 
 import numpy as np
 import pandas as pd
@@ -68,13 +69,20 @@ class ThermalProblemBuilder:
         self.id_thermal_cluster_model = id_thermal_cluster_model
         self.database = self.get_database(data_dir, "components.yml", fast)
 
-    def get_main_resolution_step(self, index: WeekScenarioIndex) -> ResolutionStep:
+    def get_main_resolution_step(
+        self,
+        index: WeekScenarioIndex,
+        solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters(),
+        expected_status: str = pywraplp.Solver.OPTIMAL,
+    ) -> ResolutionStep:
         main_resolution_step = ResolutionStep(
             timesteps=timesteps(index, self.time_scenario_hour_parameter),
             scenarios=[index.scenario],
             database=self.database,
             network=self.network,
         )
+
+        main_resolution_step.solve(solver_parameters, expected_status)
 
         return main_resolution_step
 
@@ -173,7 +181,12 @@ class ThermalProblemBuilder:
                 )
 
     def get_resolution_step_heuristic(
-        self, index: WeekScenarioIndex, id: str, model: Model
+        self,
+        index: WeekScenarioIndex,
+        id: str,
+        model: Model,
+        solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters(),
+        expected_status: str = pywraplp.Solver.OPTIMAL,
     ) -> ResolutionStep:
         cluster = create_component(model=model, id=id)
 
@@ -187,6 +200,7 @@ class ThermalProblemBuilder:
             network=network,
         )
 
+        resolution_step.solve(solver_parameters, expected_status)
         return resolution_step
 
     def compute_delta(

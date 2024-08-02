@@ -98,9 +98,9 @@ def test_accurate_heuristic(
                 index=week_scenario_index,
                 id=cluster,
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
+                solver_parameters=solver_parameters,
             )
         )
-        resolution_step_accurate_heuristic.solve(solver_parameters)
 
         nb_on_heuristic = np.transpose(
             np.ceil(
@@ -169,8 +169,6 @@ def test_fast_heuristic(data_path: str, week_scenario_index: WeekScenarioIndex) 
                 ).model,
             )
         )
-
-        resolution_step_heuristic.solve()
 
         thermal_problem_builder.update_database_fast_after_heuristic(
             resolution_step_heuristic.output, week_scenario_index, [cluster]

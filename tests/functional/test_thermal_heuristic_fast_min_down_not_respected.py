@@ -83,8 +83,6 @@ def test_fast_heuristic(data_path: str) -> None:
         ).model,
     )
 
-    resolution_step_heuristic.solve()
-
     thermal_problem_builder.update_database_fast_after_heuristic(
         resolution_step_heuristic.output, week_scenario_index, [cluster]
     )

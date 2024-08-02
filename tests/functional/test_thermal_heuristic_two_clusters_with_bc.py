@@ -81,7 +81,6 @@ def test_milp_version(
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
         week_scenario_index
     )
-    main_resolution_step.solve()
 
     assert main_resolution_step.objective == 16822864
 
@@ -116,7 +115,6 @@ def test_lp_version(
     main_resolution_step = thermal_problem_builder.get_main_resolution_step(
         week_scenario_index
     )
-    main_resolution_step.solve()
 
     assert main_resolution_step.objective == pytest.approx(16802840.55)
 
@@ -155,7 +153,6 @@ def test_accurate_heuristic(
     resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
         week_scenario_index
     )
-    resolution_step_1.solve()
 
     # Get number of on units and round it to integer
     thermal_problem_builder.update_database_accurate(
@@ -176,7 +173,6 @@ def test_accurate_heuristic(
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
             )
         )
-        resolution_step_accurate_heuristic.solve()
 
         thermal_problem_builder.update_database_accurate(
             resolution_step_accurate_heuristic.output, week_scenario_index, [g]
@@ -189,9 +185,8 @@ def test_accurate_heuristic(
 
     # Second optimization with lower bound modified
     resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-        week_scenario_index
+        week_scenario_index, expected_status=pywraplp.Solver.INFEASIBLE
     )
-    resolution_step_2.solve(expected_status=pywraplp.Solver.INFEASIBLE)
 
 
 def test_fast_heuristic(
@@ -216,7 +211,6 @@ def test_fast_heuristic(
     resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
         week_scenario_index
     )
-    resolution_step_1.solve()
 
     thermal_problem_builder.update_database_fast_before_heuristic(
         resolution_step_1.output, week_scenario_index
@@ -233,7 +227,6 @@ def test_fast_heuristic(
                 ).model,
             )
         )
-        resolution_step_heuristic.solve()
         thermal_problem_builder.update_database_fast_after_heuristic(
             resolution_step_heuristic.output, week_scenario_index, [g]
         )
@@ -249,6 +242,5 @@ def test_fast_heuristic(
 
     # Second optimization with lower bound modified
     resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-        week_scenario_index
+        week_scenario_index, expected_status=pywraplp.Solver.INFEASIBLE
     )
-    resolution_step_2.solve(expected_status=pywraplp.Solver.INFEASIBLE)
