@@ -25,11 +25,11 @@ from andromede.libs.standard import (
 from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
-    Model,
     AccurateModelBuilder,
     FastModelBuilder,
     HeuristicAccurateModelBuilder,
     HeuristicFastModelBuilder,
+    Model,
 )
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
