@@ -23,7 +23,7 @@ from andromede.expression.expression import (
 )
 
 
-def shifted_x():
+def shifted_x() -> ExpressionNode:
     return var("x").shift(expression_range(0, 2))
 
 
@@ -78,7 +78,7 @@ def test_not_equals(lhs: ExpressionNode, rhs: ExpressionNode) -> None:
     assert not expressions_equal(lhs, rhs)
 
 
-def test_tolerance():
+def test_tolerance() -> None:
     assert expressions_equal(literal(10), literal(10.09), abs_tol=0.1)
     assert not expressions_equal(literal(10), literal(10.11), abs_tol=0.1)
     assert expressions_equal(literal(10), literal(10.9), rel_tol=0.1)

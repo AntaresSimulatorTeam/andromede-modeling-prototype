@@ -212,7 +212,7 @@ class StructureProvider(IndexingStructureProvider):
 
 def test_shift() -> None:
     x = var("x")
-    expr = x.shift(ExpressionRange(1, 4))
+    expr = x.shift(ExpressionRange(literal(1), literal(4)))
 
     provider = StructureProvider()
 
@@ -222,7 +222,7 @@ def test_shift() -> None:
 
 def test_shifting_sum() -> None:
     x = var("x")
-    expr = x.shift(ExpressionRange(1, 4)).sum()
+    expr = x.shift(ExpressionRange(literal(1), literal(4))).sum()
     provider = StructureProvider()
 
     assert compute_indexation(expr, provider) == IndexingStructure(True, True)
@@ -231,7 +231,7 @@ def test_shifting_sum() -> None:
 
 def test_eval() -> None:
     x = var("x")
-    expr = x.eval(ExpressionRange(1, 4))
+    expr = x.eval(ExpressionRange(literal(1), literal(4)))
     provider = StructureProvider()
 
     assert compute_indexation(expr, provider) == IndexingStructure(False, True)
@@ -240,7 +240,7 @@ def test_eval() -> None:
 
 def test_eval_sum() -> None:
     x = var("x")
-    expr = x.eval(ExpressionRange(1, 4)).sum()
+    expr = x.eval(ExpressionRange(literal(1), literal(4))).sum()
     provider = StructureProvider()
 
     assert compute_indexation(expr, provider) == IndexingStructure(False, True)
@@ -259,7 +259,7 @@ def test_sum_over_whole_block() -> None:
 def test_forbidden_composition_should_raise_value_error() -> None:
     x = var("x")
     with pytest.raises(ValueError):
-        _ = x.shift(ExpressionRange(1, 4)) + var("y")
+        _ = x.shift(ExpressionRange(literal(1), literal(4))) + var("y")
 
 
 def test_expectation() -> None:

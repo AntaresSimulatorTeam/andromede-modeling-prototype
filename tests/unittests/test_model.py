@@ -208,7 +208,7 @@ def test_invalid_port_field_definition_should_raise(expression: ExpressionNode) 
         port_field_def(port_name="p", field_name="f", definition=expression)
 
 
-def test_constraint_equals():
+def test_constraint_equals() -> None:
     # checks in particular that expressions are correctly compared
     assert Constraint(name="c", expression=var("x") <= param("p")) == Constraint(
         name="c", expression=var("x") <= param("p")

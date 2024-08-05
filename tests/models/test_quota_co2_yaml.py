@@ -13,6 +13,7 @@
 import math
 from pathlib import Path
 
+from andromede.model.library import Library
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -38,7 +39,7 @@ build the quota CO² test system.
 """ Test of a generation of energy and co2 with a quota to limit the emission"""
 
 
-def test_quota_co2(data_dir: Path, lib: Path, lib_sc: Path):
+def test_quota_co2(data_dir: Path, lib: Library, lib_sc: Library) -> None:
     gen_model = lib_sc.models["generator_with_co2"]
     node_model = lib.models["node"]
     quota_co2_model = lib_sc.models["quota_co2"]
@@ -94,6 +95,6 @@ def test_quota_co2(data_dir: Path, lib: Path, lib_sc: Path):
 
     assert status == problem.solver.OPTIMAL
     assert math.isclose(problem.solver.Objective().Value(), 5500)
-    assert math.isclose(oil1_p, 50)
-    assert math.isclose(coal1_p, 50)
-    assert math.isclose(l12_flow, -50)
+    assert math.isclose(oil1_p, 50)  # type:ignore
+    assert math.isclose(coal1_p, 50)  # type:ignore
+    assert math.isclose(l12_flow, -50)  # type:ignore

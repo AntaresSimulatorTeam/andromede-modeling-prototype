@@ -39,7 +39,7 @@ build the quota CO² test system.
 """ Test of a generation of energy and co2 with a quota to limit the emission"""
 
 
-def test_quota_co2():
+def test_quota_co2() -> None:
     n1 = Node(model=NODE_BALANCE_MODEL, id="N1")
     n2 = Node(model=NODE_BALANCE_MODEL, id="N2")
     oil1 = create_component(model=C02_POWER_MODEL, id="Oil1")
@@ -89,6 +89,6 @@ def test_quota_co2():
 
     assert status == problem.solver.OPTIMAL
     assert math.isclose(problem.solver.Objective().Value(), 5500)
-    assert math.isclose(oil1_p, 50)
-    assert math.isclose(coal1_p, 50)
-    assert math.isclose(l12_flow, -50)
+    assert math.isclose(oil1_p, 50)  # type:ignore
+    assert math.isclose(coal1_p, 50)  # type:ignore
+    assert math.isclose(l12_flow, -50)  # type:ignore

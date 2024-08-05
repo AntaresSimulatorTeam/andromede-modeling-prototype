@@ -286,8 +286,8 @@ def test_benders_decomposed_multi_time_block_single_scenario(
     """
 
     data = {}
-    data[TimeIndex(0)] = 200
-    data[TimeIndex(1)] = 300
+    data[TimeIndex(0)] = 200.0
+    data[TimeIndex(1)] = 300.0
 
     demand_data = TimeSeriesData(time_series=data)
 
@@ -327,7 +327,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
         scenarios,
     )
 
-    data = {
+    data_output = {
         "solution": {
             "overall_cost": 62_000,
             "values": {
@@ -335,7 +335,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
             },
         }
     }
-    solution = BendersSolution(data)
+    solution = BendersSolution(data_output)
 
     assert xpansion.run()
     decomposed_solution = xpansion.solution
@@ -374,8 +374,8 @@ def test_benders_decomposed_single_time_block_multi_scenario(
     """
 
     data = {}
-    data[ScenarioIndex(0)] = 200
-    data[ScenarioIndex(1)] = 300
+    data[ScenarioIndex(0)] = 200.0
+    data[ScenarioIndex(1)] = 300.0
 
     demand_data = ScenarioSeriesData(scenario_series=data)
 
@@ -415,7 +415,7 @@ def test_benders_decomposed_single_time_block_multi_scenario(
         scenarios,
     )
 
-    data = {
+    data_output = {
         "solution": {
             "overall_cost": 55_000,
             "values": {
@@ -423,7 +423,7 @@ def test_benders_decomposed_single_time_block_multi_scenario(
             },
         }
     }
-    solution = BendersSolution(data)
+    solution = BendersSolution(data_output)
 
     assert xpansion.run()
     decomposed_solution = xpansion.solution
@@ -510,7 +510,7 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
         scenarios,
     )
 
-    data = {
+    data_output = {
         "solution": {
             "overall_cost": 58_000,
             "values": {
@@ -518,7 +518,7 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
             },
         }
     }
-    solution = BendersSolution(data)
+    solution = BendersSolution(data_output)
 
     assert xpansion.run()
     decomposed_solution = xpansion.solution
