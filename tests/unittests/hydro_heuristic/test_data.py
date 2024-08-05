@@ -82,15 +82,14 @@ def test_compute_target() -> None:
 
 
 def test_data_aggregator() -> None:
-    mock_raw_data = Mock(spec=RawHydroData)
-    mock_raw_data.time_series = list(range(10))
+    raw_data = [float(i) for i in range(10)]
 
     data_aggregator = DataAggregator([2, 3, 4, 0, 1], [1, 3, 4])
-    aggregated_data = data_aggregator.aggregate_data("sum", mock_raw_data)
+    aggregated_data = data_aggregator.aggregate_data("sum", raw_data)
 
     assert aggregated_data == [9, 0, 9]
 
     data_aggregator = DataAggregator([2, 3, 4, 0, 1], list(range(5)))
-    aggregated_data = data_aggregator.aggregate_data("lag_first_element", mock_raw_data)
+    aggregated_data = data_aggregator.aggregate_data("lag_first_element", raw_data)
 
     assert aggregated_data == [2, 5, 9, 9, 0]
