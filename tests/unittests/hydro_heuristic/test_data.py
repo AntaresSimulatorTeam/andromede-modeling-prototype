@@ -10,15 +10,16 @@
 #
 # This file is part of the Antares project.
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
 from andromede.hydro_heuristic.data import (
+    DataAggregator,
     HydroHeuristicData,
+    RawHydroData,
     calculate_weekly_target,
     get_number_of_days_in_month,
-    DataAggregator,
-    RawHydroData,
 )
 
 
@@ -80,7 +81,6 @@ def test_compute_target() -> None:
 
 
 def test_data_aggregator() -> None:
-
     mock_raw_data = Mock(spec=RawHydroData)
     mock_raw_data.time_series = list(range(10))
 

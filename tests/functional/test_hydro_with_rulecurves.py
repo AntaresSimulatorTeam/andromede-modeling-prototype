@@ -22,7 +22,13 @@ from andromede.hydro_heuristic.data import (
     get_number_of_days_in_month,
     update_generation_target,
 )
-from andromede.hydro_heuristic.problem import optimize_target
+from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
+from andromede.hydro_heuristic.problem import (
+    DataAggregatorParameters,
+    HydroHeuristicParameters,
+    ReservoirParameters,
+    optimize_target,
+)
 from andromede.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
@@ -41,10 +47,9 @@ from andromede.study import (
     create_component,
 )
 from tests.functional.libs.lib_hydro_heuristic import (
-    HYDRO_MODEL_WITH_TARGET,
     HYDRO_MODEL,
+    HYDRO_MODEL_WITH_TARGET,
 )
-from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
 
 expected_weekly_target = [
     109351.86292514109,
@@ -105,36 +110,36 @@ expected_weekly_target = [
 def test_hydro_heuristic_monthly_part() -> None:
     """ """
     capacity = 1e07
-    intermonthly_breakdown = 1
-    folder_name = "hydro_with_rulecurves"
-    initial_level = 0.445 * capacity
 
-    initial_level, status, obj, _ = optimize_target(
-        inter_breakdown=intermonthly_breakdown,
-        folder_name=folder_name,
-        capacity=capacity,
-        scenario=0,
-        initial_level=initial_level,
-        hours_aggregated_time_steps=[
-            24 * get_number_of_days_in_month(m) for m in range(12)
-        ],
-        timesteps=list(range(12)),
-        total_target=None,
+    solving_output, monthly_output = optimize_target(
+        heuristic_parameters=HydroHeuristicParameters(1),
+        data_aggregator_parameters=DataAggregatorParameters(
+            [24 * get_number_of_days_in_month(m) for m in range(12)],
+            list(range(12)),
+        ),
+        reservoir_data=ReservoirParameters(
+            capacity,
+            initial_level=0.445 * capacity,
+            folder_name="hydro_with_rulecurves",
+            scenario=0,
+        ),
         heuristic_model=HeuristicHydroModelBuilder(HYDRO_MODEL, "monthly").get_model(),
     )
 
-    assert status == pywraplp.Solver.OPTIMAL
-
-    assert obj / capacity == pytest.approx(10.1423117689793)
+    assert solving_output.status == pywraplp.Solver.OPTIMAL
+    assert solving_output.objective / capacity == pytest.approx(10.1423117689793)
 
 
 def test_hydro_heuristic_daily_part() -> None:
     """ """
-    scenario = 0
     capacity = 1e07
-    interdaily_breakdown = 1
-    folder_name = "hydro_with_rulecurves"
-    initial_level = 0.445 * capacity
+
+    reservoir_data = ReservoirParameters(
+        capacity,
+        initial_level=0.445 * capacity,
+        folder_name="hydro_with_rulecurves",
+        scenario=0,
+    )
 
     monthly_generation = [
         capacity * target
@@ -160,21 +165,21 @@ def test_hydro_heuristic_daily_part() -> None:
     for month in range(12):
         number_day_month = get_number_of_days_in_month(month)
 
-        initial_level, status, obj, daily_generation = optimize_target(
-            inter_breakdown=interdaily_breakdown,
-            folder_name=folder_name,
-            capacity=capacity,
-            scenario=scenario,
-            initial_level=initial_level,
-            hours_aggregated_time_steps=[24 for d in range(365)],
-            timesteps=list(range(day_in_year, day_in_year + number_day_month)),
-            total_target=monthly_generation[month],
+        solving_output, daily_output = optimize_target(
+            heuristic_parameters=HydroHeuristicParameters(1, monthly_generation[month]),
+            data_aggregator_parameters=DataAggregatorParameters(
+                [24 for d in range(365)],
+                list(range(day_in_year, day_in_year + number_day_month)),
+            ),
+            reservoir_data=reservoir_data,
             heuristic_model=HeuristicHydroModelBuilder(
                 HYDRO_MODEL, "daily"
             ).get_model(),
         )
-        assert status == pywraplp.Solver.OPTIMAL
-        assert obj / capacity == pytest.approx(
+        reservoir_data.initial_level = daily_output.level
+
+        assert solving_output.status == pywraplp.Solver.OPTIMAL
+        assert solving_output.objective / capacity == pytest.approx(
             [
                 -0.405595,
                 -0.354666,
@@ -193,7 +198,7 @@ def test_hydro_heuristic_daily_part() -> None:
         )
 
         all_daily_generation = update_generation_target(
-            all_daily_generation, daily_generation
+            all_daily_generation, daily_output.generating
         )
         day_in_year += number_day_month
 

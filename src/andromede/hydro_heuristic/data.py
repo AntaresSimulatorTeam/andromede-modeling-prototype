@@ -10,10 +10,31 @@
 #
 # This file is part of the Antares project.
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
+
+
+@dataclass
+class ReservoirParameters:
+    capacity: float
+    initial_level: float
+    folder_name: str
+    scenario: int
+
+
+@dataclass
+class HydroHeuristicParameters:
+    inter_breakdown: int = 1
+    total_target: Optional[float] = None
+
+
+@dataclass
+class DataAggregatorParameters:
+    hours_aggregated_time_steps: List[int]
+    timesteps: List[int]
 
 
 def get_number_of_days_in_month(month: int) -> int:
@@ -22,99 +43,100 @@ def get_number_of_days_in_month(month: int) -> int:
 
 
 class RawHydroData:
+    def __init__(self, folder_name: str, scenario: int) -> None:
+        self.folder_name = folder_name
+        self.scenario = scenario
 
-    def __init__(self, name: str, folder_name: str, scenario: int) -> None:
-
-        name_file = {
+        self.name_file = {
             "demand": "load",
             "inflow": "mod",
             "lower_rule_curve": "reservoir",
             "upper_rule_curve": "reservoir",
             "max_generating": "maxpower",
-        }[name]
+        }
 
-        column = {
-            "demand": scenario,
-            "inflow": scenario,
+        self.column = {
+            "demand": self.scenario,
+            "inflow": self.scenario,
             "lower_rule_curve": 0,
             "upper_rule_curve": 2,
             "max_generating": 0,
-        }[name]
+        }
 
+    def read_data(self, name: str) -> list[float]:
         hours_input = 1 if name == "demand" else 24
 
         data = np.loadtxt(
             Path(__file__).parent
             / (
                 "../../../tests/functional/data/"
-                + folder_name
+                + self.folder_name
                 + "/"
-                + name_file
+                + self.name_file[name]
                 + ".txt"
             )
         )
-        data = data[:, column]
+        data = data[:, self.column[name]]
         data = np.repeat(data, hours_input)
-        if name_file == "mod":
+        if self.name_file[name] == "mod":
             data = data / hours_input
 
-        self.time_series = data
+        return list(data)
 
 
 class HydroHeuristicData:
     def __init__(
         self,
-        scenario: int,
-        hours_aggregated_time_steps: List[int],
-        folder_name: str,
-        timesteps: List[int],
-        capacity: float,
-        initial_level: float,
+        data_aggregator_parameters: DataAggregatorParameters,
+        reservoir_data: ReservoirParameters,
     ):
-        self.folder_name = folder_name
+        self.reservoir_data = reservoir_data
 
-        self.capacity = capacity
-        self.initial_level = initial_level
+        data_aggregator = DataAggregator(
+            data_aggregator_parameters.hours_aggregated_time_steps,
+            data_aggregator_parameters.timesteps,
+        )
 
-        data_aggregator = DataAggregator(hours_aggregated_time_steps, timesteps)
+        raw_data_reader = RawHydroData(
+            reservoir_data.folder_name, reservoir_data.scenario
+        )
 
         self.demand = data_aggregator.aggregate_data(
             operator="sum",
-            raw_data=RawHydroData("demand", folder_name, scenario),
+            data=raw_data_reader.read_data("demand"),
         )
         self.inflow = data_aggregator.aggregate_data(
             operator="sum",
-            raw_data=RawHydroData("inflow", folder_name, scenario),
+            data=raw_data_reader.read_data("inflow"),
         )
         self.lower_rule_curve = data_aggregator.aggregate_data(
             operator="lag_first_element",
-            raw_data=RawHydroData("lower_rule_curve", folder_name, scenario),
+            data=raw_data_reader.read_data("lower_rule_curve"),
         )
         self.upper_rule_curve = data_aggregator.aggregate_data(
             operator="lag_first_element",
-            raw_data=RawHydroData("upper_rule_curve", folder_name, scenario),
+            data=raw_data_reader.read_data("upper_rule_curve"),
         )
         self.max_generating = data_aggregator.aggregate_data(
             operator="sum",
-            raw_data=RawHydroData("max_generating", folder_name, scenario),
+            data=raw_data_reader.read_data("max_generating"),
         )
 
-    def compute_target(  # TODO : rajouter un test avec vraiment très peu de données
-        self, total_target: Optional[float], inter_breakdown: int = 1
-    ) -> None:
-        if total_target is None:
+    def compute_target(self, heuristic_parameters: HydroHeuristicParameters) -> None:
+        if heuristic_parameters.total_target is None:
             total_target = sum(self.inflow)
+        else:
+            total_target = heuristic_parameters.total_target
         target = (
             total_target
-            * np.power(self.demand, inter_breakdown)
-            / sum(np.power(self.demand, inter_breakdown))
+            * np.power(self.demand, heuristic_parameters.inter_breakdown)
+            / sum(np.power(self.demand, heuristic_parameters.inter_breakdown))
         )
 
         self.target = list(target)
 
 
 class DataAggregator:
-
     def __init__(
         self,
         hours_aggregated_time_steps: List[int],
@@ -123,8 +145,7 @@ class DataAggregator:
         self.hours_aggregated_time_steps = hours_aggregated_time_steps
         self.timesteps = timesteps
 
-    def aggregate_data(self, operator: str, raw_data: RawHydroData) -> List[float]:
-        data = raw_data.time_series
+    def aggregate_data(self, operator: str, data: list[float]) -> List[float]:
         aggregated_data: List[float] = []
         hour = 0
         for time_step, hours_time_step in enumerate(self.hours_aggregated_time_steps):

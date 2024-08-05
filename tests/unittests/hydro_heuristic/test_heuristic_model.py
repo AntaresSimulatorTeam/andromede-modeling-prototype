@@ -12,15 +12,13 @@
 
 import pytest
 
-from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder, Model
-
 from andromede.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder, Model
 from andromede.model import float_parameter, float_variable, model
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import float_parameter
 from andromede.model.variable import float_variable
-
 
 CONSTANT = IndexingStructure(False, False)
 TIME_AND_SCENARIO_FREE = IndexingStructure(True, True)
@@ -84,7 +82,6 @@ MINIMAL_HYDRO_MODEL = model(
 
 
 def test_empty_model() -> None:
-
     model_builder = HeuristicHydroModelBuilder(Model(id="empty"), "monthly")
 
     with pytest.raises(AssertionError):
@@ -92,7 +89,6 @@ def test_empty_model() -> None:
 
 
 def test_minimal_model() -> None:
-
     model_builder = HeuristicHydroModelBuilder(MINIMAL_HYDRO_MODEL, "monthly")
 
     heuristic_model = model_builder.get_model()

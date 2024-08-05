@@ -10,12 +10,19 @@
 #
 # This file is part of the Antares project.
 
-from typing import Optional, List
+from dataclasses import dataclass
+from typing import List, Optional
 
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
-from andromede.hydro_heuristic.data import HydroHeuristicData
+from andromede.hydro_heuristic.data import (
+    DataAggregatorParameters,
+    HydroHeuristicData,
+    HydroHeuristicParameters,
+    ReservoirParameters,
+)
+from andromede.model import Model
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
@@ -31,7 +38,18 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from andromede.model import Model
+
+
+@dataclass
+class SolvingOutput:
+    status: str
+    objective: float
+
+
+@dataclass
+class OutputHeuristic:
+    generating: list[float]
+    level: float
 
 
 class HydroHeuristicProblem:
@@ -39,9 +57,6 @@ class HydroHeuristicProblem:
         self.hydro_data = hydro_data
         self.id = "H"
         database = self.generate_database()
-
-        time_block = TimeBlock(1, [i for i in range(len(hydro_data.target))])
-        scenarios = 1
 
         hydro = create_component(
             model=heuristic_model,
@@ -54,14 +69,14 @@ class HydroHeuristicProblem:
         problem = build_problem(
             network,
             database,
-            time_block,
-            scenarios,
+            TimeBlock(1, [i for i in range(len(hydro_data.target))]),
+            1,
             border_management=(BlockBorderManagement.CYCLE),
         )
 
         self.problem = problem
 
-    def solve_hydro_problem(self) -> tuple[int, float, list[float], float]:
+    def solve_hydro_problem(self) -> tuple[SolvingOutput, OutputHeuristic]:
         parameters = pywraplp.MPSolverParameters()
         parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
         parameters.SetIntegerParam(parameters.SCALING, 0)
@@ -71,10 +86,11 @@ class HydroHeuristicProblem:
         output = OutputValues(self.problem)
 
         return (
-            status,
-            self.problem.solver.Objective().Value(),
-            output.component(self.id).var("generating").value[0],  # type:ignore
-            output.component(self.id).var("level").value[0][-1],  # type:ignore
+            SolvingOutput(status, self.problem.solver.Objective().Value()),
+            OutputHeuristic(
+                output.component(self.id).var("generating").value[0],  # type:ignore
+                output.component(self.id).var("level").value[0][-1],  # type:ignore
+            ),
         )
 
     def generate_database(
@@ -82,9 +98,13 @@ class HydroHeuristicProblem:
     ) -> DataBase:
         database = DataBase()
 
-        database.add_data(self.id, "capacity", ConstantData(self.hydro_data.capacity))
         database.add_data(
-            self.id, "initial_level", ConstantData(self.hydro_data.initial_level)
+            self.id, "capacity", ConstantData(self.hydro_data.reservoir_data.capacity)
+        )
+        database.add_data(
+            self.id,
+            "initial_level",
+            ConstantData(self.hydro_data.reservoir_data.initial_level),
         )
 
         inflow_data = pd.DataFrame(
@@ -112,7 +132,7 @@ class HydroHeuristicProblem:
             TimeSeriesData(
                 {
                     TimeIndex(i): self.hydro_data.lower_rule_curve[i]
-                    * self.hydro_data.capacity
+                    * self.hydro_data.reservoir_data.capacity
                     for i in range(len(self.hydro_data.lower_rule_curve))
                 }
             ),
@@ -123,7 +143,7 @@ class HydroHeuristicProblem:
             TimeSeriesData(
                 {
                     TimeIndex(i): self.hydro_data.upper_rule_curve[i]
-                    * self.hydro_data.capacity
+                    * self.hydro_data.reservoir_data.capacity
                     for i in range(len(self.hydro_data.lower_rule_curve))
                 }
             ),
@@ -146,7 +166,9 @@ class HydroHeuristicProblem:
             "max_epsilon",
             TimeSeriesData(
                 {
-                    TimeIndex(i): self.hydro_data.capacity if i == 0 else 0
+                    TimeIndex(i): (
+                        self.hydro_data.reservoir_data.capacity if i == 0 else 0
+                    )
                     for i in range(len(self.hydro_data.max_generating))
                 }
             ),
@@ -156,33 +178,24 @@ class HydroHeuristicProblem:
 
 
 def optimize_target(
-    inter_breakdown: int,
-    folder_name: str,
-    capacity: float,
-    scenario: int,
-    initial_level: float,
-    hours_aggregated_time_steps: List[int],
-    timesteps: list[int],
-    total_target: Optional[float],
+    heuristic_parameters: HydroHeuristicParameters,
+    data_aggregator_parameters: DataAggregatorParameters,
+    reservoir_data: ReservoirParameters,
     heuristic_model: Model,
-) -> tuple[float, int, float, list[float]]:
+) -> tuple[SolvingOutput, OutputHeuristic]:
     # Récupération des données
     data = HydroHeuristicData(
-        scenario,
-        hours_aggregated_time_steps=hours_aggregated_time_steps,
-        folder_name=folder_name,
-        timesteps=timesteps,
-        capacity=capacity,
-        initial_level=initial_level,
+        data_aggregator_parameters,
+        reservoir_data,
     )
     # Calcul de la préallocation
-    data.compute_target(total_target, inter_breakdown=inter_breakdown)
+    data.compute_target(heuristic_parameters)
 
     # Ajustement de la réapartition
     heuristic_problem = HydroHeuristicProblem(
         hydro_data=data, heuristic_model=heuristic_model
     )
 
-    status, obj, generation, initial_level = heuristic_problem.solve_hydro_problem()
+    solving_output, heuristic_output = heuristic_problem.solve_hydro_problem()
 
-    return initial_level, status, obj, generation
+    return solving_output, heuristic_output
