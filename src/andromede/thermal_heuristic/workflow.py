@@ -25,7 +25,7 @@ from dataclasses import dataclass
 
 @dataclass
 class SolvingParameters:
-    solver_parameters: pywraplp.MPSolverParameters = (pywraplp.MPSolverParameters(),)
+    solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters()
     expected_status: str = pywraplp.Solver.OPTIMAL
 
 
