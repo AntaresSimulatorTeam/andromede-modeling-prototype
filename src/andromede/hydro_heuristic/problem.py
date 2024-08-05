@@ -11,7 +11,6 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd

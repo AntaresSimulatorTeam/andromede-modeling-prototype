@@ -10,7 +10,6 @@
 #
 # This file is part of the Antares project.
 
-from unittest.mock import Mock
 
 import pytest
 
@@ -19,7 +18,6 @@ from andromede.hydro_heuristic.data import (
     DataAggregatorParameters,
     HydroHeuristicData,
     HydroHeuristicParameters,
-    RawHydroData,
     ReservoirParameters,
     calculate_weekly_target,
     get_number_of_days_in_month,
