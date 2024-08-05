@@ -20,6 +20,14 @@ from andromede.simulation import (
 )
 from andromede.study import DataBase, Network
 
+from dataclasses import dataclass
+
+
+@dataclass
+class SolvingParameters:
+    solver_parameters: pywraplp.MPSolverParameters = (pywraplp.MPSolverParameters(),)
+    expected_status: str = pywraplp.Solver.OPTIMAL
+
 
 class ResolutionStep:
     def __init__(
@@ -29,8 +37,6 @@ class ResolutionStep:
         database: DataBase,
         network: Network,
     ) -> None:
-        self.timesteps = timesteps
-        self.scenarios = scenarios
 
         problem = build_problem(
             network,
@@ -44,22 +50,11 @@ class ResolutionStep:
 
     def solve(
         self,
-        solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters(),
-        expected_status: str = pywraplp.Solver.OPTIMAL,
+        solving_parameters: SolvingParameters,
     ) -> None:
-        status = self.problem.solver.Solve(solver_parameters)
+        self.status = self.problem.solver.Solve(solving_parameters.solver_parameters)
 
         self.output = OutputValues(self.problem)
         self.objective = self.problem.solver.Objective().Value()
 
-        assert status == expected_status
-
-
-class ConnectionBetweenResolutionSteps:
-    def __init__(self) -> None:
-        pass
-
-
-class Workflow:
-    def __init__(self) -> None:
-        pass
+        assert self.status == solving_parameters.expected_status

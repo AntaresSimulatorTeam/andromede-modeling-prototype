@@ -34,6 +34,7 @@ from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     WeekScenarioIndex,
+    SolvingParameters,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -79,15 +80,16 @@ def test_milp_version(
     ):
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
             week_scenario_index = WeekScenarioIndex(week, scenario)
-            resolution_step = thermal_problem_builder.get_main_resolution_step(
-                week_scenario_index, solver_parameters=solver_parameters
+            resolution_step = thermal_problem_builder.main_resolution_step(
+                week_scenario_index,
+                solving_parameters=SolvingParameters(solver_parameters),
             )
 
             expected_output = ExpectedOutput(
                 mode="milp",
                 index=week_scenario_index,
                 dir_path=data_path,
-                list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
+                list_cluster=thermal_problem_builder.heuristic_components(),
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(resolution_step.output)
@@ -124,24 +126,25 @@ def test_accurate_heuristic(
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
             week_scenario_index = WeekScenarioIndex(week, scenario)
             # First optimization
-            resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
-                week_scenario_index, solver_parameters=solver_parameters
+            resolution_step_1 = thermal_problem_builder.main_resolution_step(
+                week_scenario_index,
+                solving_parameters=SolvingParameters(solver_parameters),
             )
 
             thermal_problem_builder.update_database_accurate(
                 resolution_step_1.output, week_scenario_index, None
             )
 
-            for g in thermal_problem_builder.get_milp_heuristic_components():
+            for g in thermal_problem_builder.heuristic_components():
                 # Solve heuristic problem
                 resolution_step_accurate_heuristic = (
-                    thermal_problem_builder.get_resolution_step_heuristic(
+                    thermal_problem_builder.heuristic_resolution_step(
                         week_scenario_index,
-                        id=g,
+                        id_component=g,
                         model=HeuristicAccurateModelBuilder(
                             THERMAL_CLUSTER_MODEL_MILP
                         ).model,
-                        solver_parameters=solver_parameters,
+                        solving_parameters=SolvingParameters(solver_parameters),
                     )
                 )
 
@@ -150,15 +153,16 @@ def test_accurate_heuristic(
                 )
 
             # Second optimization with lower bound modified
-            resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-                week_scenario_index, solver_parameters=solver_parameters
+            resolution_step_2 = thermal_problem_builder.main_resolution_step(
+                week_scenario_index,
+                solving_parameters=SolvingParameters(solver_parameters),
             )
 
             expected_output = ExpectedOutput(
                 mode="accurate",
                 index=week_scenario_index,
                 dir_path=data_path,
-                list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
+                list_cluster=thermal_problem_builder.heuristic_components(),
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(resolution_step_2.output)
@@ -197,18 +201,19 @@ def test_fast_heuristic(
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
             week_scenario_index = WeekScenarioIndex(week, scenario)
             # First optimization
-            resolution_step_1 = thermal_problem_builder.get_main_resolution_step(
-                week_scenario_index, solver_parameters=solver_parameters
+            resolution_step_1 = thermal_problem_builder.main_resolution_step(
+                week_scenario_index,
+                solving_parameters=SolvingParameters(solver_parameters),
             )
 
             thermal_problem_builder.update_database_fast_before_heuristic(
                 resolution_step_1.output, week_scenario_index
             )
 
-            for g in thermal_problem_builder.get_milp_heuristic_components():  #
+            for g in thermal_problem_builder.heuristic_components():  #
                 resolution_step_heuristic = (
-                    thermal_problem_builder.get_resolution_step_heuristic(
-                        id=g,
+                    thermal_problem_builder.heuristic_resolution_step(
+                        id_component=g,
                         index=week_scenario_index,
                         model=HeuristicFastModelBuilder(
                             thermal_problem_builder.time_scenario_hour_parameter.hour,
@@ -222,15 +227,16 @@ def test_fast_heuristic(
                 )
 
             # Second optimization with lower bound modified
-            resolution_step_2 = thermal_problem_builder.get_main_resolution_step(
-                week_scenario_index, solver_parameters=solver_parameters
+            resolution_step_2 = thermal_problem_builder.main_resolution_step(
+                week_scenario_index,
+                solving_parameters=SolvingParameters(solver_parameters),
             )
 
             expected_output = ExpectedOutput(
                 mode="fast",
                 index=week_scenario_index,
                 dir_path=data_path,
-                list_cluster=thermal_problem_builder.get_milp_heuristic_components(),
+                list_cluster=thermal_problem_builder.heuristic_components(),
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(

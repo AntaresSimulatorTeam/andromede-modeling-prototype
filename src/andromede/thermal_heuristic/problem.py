@@ -47,7 +47,7 @@ from andromede.thermal_heuristic.time_scenario_parameter import (
     timesteps,
     WeekScenarioIndex,
 )
-from andromede.thermal_heuristic.workflow import ResolutionStep
+from andromede.thermal_heuristic.workflow import ResolutionStep, SolvingParameters
 
 
 class ThermalProblemBuilder:
@@ -69,11 +69,10 @@ class ThermalProblemBuilder:
         self.id_thermal_cluster_model = id_thermal_cluster_model
         self.database = self.get_database(data_dir, "components.yml", fast)
 
-    def get_main_resolution_step(
+    def main_resolution_step(
         self,
         index: WeekScenarioIndex,
-        solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters(),
-        expected_status: str = pywraplp.Solver.OPTIMAL,
+        solving_parameters: SolvingParameters = SolvingParameters(),
     ) -> ResolutionStep:
         main_resolution_step = ResolutionStep(
             timesteps=timesteps(index, self.time_scenario_hour_parameter),
@@ -82,7 +81,7 @@ class ThermalProblemBuilder:
             network=self.network,
         )
 
-        main_resolution_step.solve(solver_parameters, expected_status)
+        main_resolution_step.solve(solving_parameters)
 
         return main_resolution_step
 
@@ -93,7 +92,7 @@ class ThermalProblemBuilder:
         list_cluster_id: Optional[list[str]],
     ) -> None:
         if list_cluster_id is None:
-            list_cluster_id = self.get_milp_heuristic_components()
+            list_cluster_id = self.heuristic_components()
         for cluster in list_cluster_id:
             self.database.convert_to_time_scenario_series_data(
                 ComponentParameterIndex(cluster, "nb_units_min"),
@@ -114,7 +113,7 @@ class ThermalProblemBuilder:
     def update_database_fast_before_heuristic(
         self, output: OutputValues, index: WeekScenarioIndex
     ) -> None:
-        for cluster in self.get_milp_heuristic_components():
+        for cluster in self.heuristic_components():
             pmax = self.database.get_value(
                 ComponentParameterIndex(cluster, "p_max"), 0, 0
             )
@@ -143,7 +142,7 @@ class ThermalProblemBuilder:
         list_cluster_id: Optional[list[str]],
     ) -> None:
         if list_cluster_id is None:
-            list_cluster_id = self.get_milp_heuristic_components()
+            list_cluster_id = self.heuristic_components()
         for cluster in list_cluster_id:
             pmin = self.database.get_value(
                 ComponentParameterIndex(cluster, "p_min"), 0, 0
@@ -180,15 +179,14 @@ class ThermalProblemBuilder:
                     index.scenario,
                 )
 
-    def get_resolution_step_heuristic(
+    def heuristic_resolution_step(
         self,
         index: WeekScenarioIndex,
-        id: str,
+        id_component: str,
         model: Model,
-        solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters(),
-        expected_status: str = pywraplp.Solver.OPTIMAL,
+        solving_parameters: SolvingParameters = SolvingParameters(),
     ) -> ResolutionStep:
-        cluster = create_component(model=model, id=id)
+        cluster = create_component(model=model, id=id_component)
 
         network = Network("test")
         network.add_component(cluster)
@@ -200,7 +198,7 @@ class ThermalProblemBuilder:
             network=network,
         )
 
-        resolution_step.solve(solver_parameters, expected_status)
+        resolution_step.solve(solving_parameters)
         return resolution_step
 
     def compute_delta(
@@ -294,12 +292,12 @@ class ThermalProblemBuilder:
         if fast:
             self.complete_database_for_fast_heuristic(
                 database,
-                self.get_milp_heuristic_components(),
+                self.heuristic_components(),
             )
 
         return database
 
-    def get_milp_heuristic_components(self) -> list[str]:
+    def heuristic_components(self) -> list[str]:
         return [
             c.id
             for c in self.network.components
@@ -307,7 +305,7 @@ class ThermalProblemBuilder:
         ]
 
     def complete_database_with_cluster_parameters(self, database: DataBase) -> None:
-        for cluster_id in self.get_milp_heuristic_components():
+        for cluster_id in self.heuristic_components():
             if type(database.get_data(cluster_id, "max_generating")) is ConstantData:
                 database.add_data(
                     cluster_id,

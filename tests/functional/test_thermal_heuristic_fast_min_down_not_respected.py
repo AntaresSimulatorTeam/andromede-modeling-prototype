@@ -51,7 +51,7 @@ def test_fast_heuristic(data_path: str) -> None:
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
 
-    cluster = thermal_problem_builder.get_milp_heuristic_components()[0]
+    cluster = thermal_problem_builder.heuristic_components()[0]
 
     pmax = thermal_problem_builder.database.get_value(
         ComponentParameterIndex(cluster, "p_max"), 0, 0
@@ -75,8 +75,8 @@ def test_fast_heuristic(data_path: str) -> None:
     )
 
     # Solve heuristic problem
-    resolution_step_heuristic = thermal_problem_builder.get_resolution_step_heuristic(
-        id=cluster,
+    resolution_step_heuristic = thermal_problem_builder.heuristic_resolution_step(
+        id_component=cluster,
         index=week_scenario_index,
         model=HeuristicFastModelBuilder(
             number_hours, delta=thermal_problem_builder.compute_delta(cluster)

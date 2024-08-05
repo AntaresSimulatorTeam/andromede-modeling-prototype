@@ -29,6 +29,7 @@ from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     WeekScenarioIndex,
+    SolvingParameters,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -71,9 +72,7 @@ def test_accurate_heuristic(
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
 
-    for j, cluster in enumerate(
-        thermal_problem_builder.get_milp_heuristic_components()
-    ):
+    for j, cluster in enumerate(thermal_problem_builder.heuristic_components()):
         nb_on_1 = pd.DataFrame(
             np.transpose(
                 np.ceil(
@@ -94,11 +93,11 @@ def test_accurate_heuristic(
 
         # Solve heuristic problem
         resolution_step_accurate_heuristic = (
-            thermal_problem_builder.get_resolution_step_heuristic(
+            thermal_problem_builder.heuristic_resolution_step(
                 index=week_scenario_index,
-                id=cluster,
+                id_component=cluster,
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
-                solver_parameters=solver_parameters,
+                solving_parameters=SolvingParameters(solver_parameters),
             )
         )
 
@@ -135,9 +134,7 @@ def test_fast_heuristic(data_path: str, week_scenario_index: WeekScenarioIndex) 
         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
     )
 
-    for j, cluster in enumerate(
-        thermal_problem_builder.get_milp_heuristic_components()
-    ):
+    for j, cluster in enumerate(thermal_problem_builder.heuristic_components()):
         pmax = thermal_problem_builder.database.get_value(
             ComponentParameterIndex(cluster, "p_max"), 0, 0
         )
@@ -160,14 +157,12 @@ def test_fast_heuristic(data_path: str, week_scenario_index: WeekScenarioIndex) 
         )
 
         # Solve heuristic problem
-        resolution_step_heuristic = (
-            thermal_problem_builder.get_resolution_step_heuristic(
-                id=cluster,
-                index=week_scenario_index,
-                model=HeuristicFastModelBuilder(
-                    number_hours, delta=thermal_problem_builder.compute_delta(cluster)
-                ).model,
-            )
+        resolution_step_heuristic = thermal_problem_builder.heuristic_resolution_step(
+            id_component=cluster,
+            index=week_scenario_index,
+            model=HeuristicFastModelBuilder(
+                number_hours, delta=thermal_problem_builder.compute_delta(cluster)
+            ).model,
         )
 
         thermal_problem_builder.update_database_fast_after_heuristic(
