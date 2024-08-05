@@ -21,9 +21,10 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
+from andromede.model.library import Library
 
 
-def test_network(lib) -> None:
+def test_network(lib: Library) -> None:
     network = Network("test")
     assert network.id == "test"
     assert list(network.nodes) == []
@@ -47,7 +48,7 @@ def test_network(lib) -> None:
         network.get_component("unknown")
 
 
-def test_basic_balance(lib) -> None:
+def test_basic_balance(lib: Library) -> None:
     """
     Balance on one node with one fixed demand and one generation, on 1 timestep.
     """
@@ -88,7 +89,7 @@ def test_basic_balance(lib) -> None:
     assert problem.solver.Objective().Value() == 3000
 
 
-def test_link(lib) -> None:
+def test_link(lib: Library) -> None:
     """
     Balance on one node with one fixed demand and one generation, on 1 timestep.
     """
@@ -146,7 +147,7 @@ def test_link(lib) -> None:
             assert variable.solution_value() == -100
 
 
-def test_stacking_generation(lib) -> None:
+def test_stacking_generation(lib: Library) -> None:
     """
     Balance on one node with one fixed demand and 2 generations with different costs, on 1 timestep.
     """
@@ -198,7 +199,7 @@ def test_stacking_generation(lib) -> None:
     assert problem.solver.Objective().Value() == 30 * 100 + 50 * 50
 
 
-def test_spillage(lib) -> None:
+def test_spillage(lib: Library) -> None:
     """
     Balance on one node with one fixed demand and 1 generation higher than demand and 1 timestep .
     """
@@ -238,7 +239,7 @@ def test_spillage(lib) -> None:
     assert problem.solver.Objective().Value() == 30 * 200 + 50 * 10
 
 
-def test_min_up_down_times(lib) -> None:
+def test_min_up_down_times(lib: Library) -> None:
     """
     Model on 3 time steps with one thermal generation and one demand on a single node.
         - Demand is the following time series : [500 MW, 0, 0]
@@ -332,7 +333,7 @@ def test_min_up_down_times(lib) -> None:
     assert problem.solver.Objective().Value() == pytest.approx(72000, abs=0.01)
 
 
-def test_changing_demand(lib) -> None:
+def test_changing_demand(lib: Library) -> None:
     """
     Model on 3 time steps simple production, demand
         - P_max = 500 MW
@@ -388,7 +389,7 @@ def test_changing_demand(lib) -> None:
     assert problem.solver.Objective().Value() == 40000
 
 
-def test_min_up_down_times_2(lib) -> None:
+def test_min_up_down_times_2(lib: Library) -> None:
     """
     Model on 3 time steps with one thermal generation and one demand on a single node.
         - Demand is the following time series : [500 MW, 0, 0]
