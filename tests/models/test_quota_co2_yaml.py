@@ -13,6 +13,7 @@
 import math
 from pathlib import Path
 
+from andromede.model.library import Library
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -22,7 +23,6 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from andromede.model.library import Library
 
 """
 build the quota CO² test system.

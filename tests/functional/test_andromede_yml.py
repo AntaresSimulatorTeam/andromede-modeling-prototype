@@ -4,6 +4,7 @@ import pytest
 from andromede.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
+from andromede.model.library import Library
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
     BlockBorderManagement,
@@ -21,7 +22,6 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
-from andromede.model.library import Library
 
 
 def test_network(lib: Library) -> None:
