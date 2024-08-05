@@ -16,8 +16,11 @@ import pytest
 
 from andromede.hydro_heuristic.data import (
     DataAggregator,
+    DataAggregatorParameters,
     HydroHeuristicData,
+    HydroHeuristicParameters,
     RawHydroData,
+    ReservoirParameters,
     calculate_weekly_target,
     get_number_of_days_in_month,
 )
@@ -37,14 +40,13 @@ def test_hydro_heuristic_data_building() -> None:
     initial_level = 0.445 * capacity
 
     data = HydroHeuristicData(
-        scenario=0,
-        hours_aggregated_time_steps=[
-            24 * get_number_of_days_in_month(m) for m in range(12)
-        ],
-        folder_name=folder_name,
-        timesteps=list(range(12)),
-        capacity=capacity,
-        initial_level=initial_level,
+        data_aggregator_parameters=DataAggregatorParameters(
+            hours_aggregated_time_steps=[
+                24 * get_number_of_days_in_month(m) for m in range(12)
+            ],
+            timesteps=list(range(12)),
+        ),
+        reservoir_data=ReservoirParameters(capacity, initial_level, folder_name, 0),
     )
 
     assert len(data.demand) == 12
@@ -65,17 +67,16 @@ def test_compute_target() -> None:
     initial_level = 0.445 * capacity
 
     data = HydroHeuristicData(
-        scenario=0,
-        hours_aggregated_time_steps=[
-            24 * get_number_of_days_in_month(m) for m in range(12)
-        ],
-        folder_name=folder_name,
-        timesteps=list(range(12)),
-        capacity=capacity,
-        initial_level=initial_level,
+        data_aggregator_parameters=DataAggregatorParameters(
+            hours_aggregated_time_steps=[
+                24 * get_number_of_days_in_month(m) for m in range(12)
+            ],
+            timesteps=list(range(12)),
+        ),
+        reservoir_data=ReservoirParameters(capacity, initial_level, folder_name, 0),
     )
 
-    data.compute_target(None, 1)
+    data.compute_target(HydroHeuristicParameters())
 
     assert data.target[0] == pytest.approx(0.0495627 * capacity)
 

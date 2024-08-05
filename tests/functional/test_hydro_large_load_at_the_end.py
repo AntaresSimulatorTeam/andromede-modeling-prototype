@@ -216,7 +216,7 @@ def test_hydro_heuristic() -> None:
         capacity=1e7,
         initial_level=0.445 * 1e7,
         folder_name="hydro_with_large_load",
-        scenario=1,
+        scenario=0,
     )
 
     solving_output, monthly_output = optimize_target(
