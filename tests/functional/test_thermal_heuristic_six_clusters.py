@@ -33,6 +33,8 @@ from andromede.thermal_heuristic.problem import (
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
+from andromede.thermal_heuristic.cluster_parameter import compute_delta
+
 
 @pytest.fixture
 def solver_parameters() -> pywraplp.MPSolverParameters:
@@ -161,7 +163,8 @@ def test_fast_heuristic(data_path: str, week_scenario_index: WeekScenarioIndex) 
             id_component=cluster,
             index=week_scenario_index,
             model=HeuristicFastModelBuilder(
-                number_hours, delta=thermal_problem_builder.compute_delta(cluster)
+                number_hours,
+                delta=compute_delta(cluster, thermal_problem_builder.database),
             ).model,
         )
 

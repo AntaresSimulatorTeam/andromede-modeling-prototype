@@ -42,6 +42,8 @@ from tests.functional.libs.lib_thermal_heuristic import (
     THERMAL_CLUSTER_MODEL_MILP,
 )
 
+from andromede.thermal_heuristic.cluster_parameter import compute_delta
+
 
 @pytest.fixture
 def data_path() -> str:
@@ -224,7 +226,7 @@ def test_fast_heuristic(
             id_component=g,
             index=week_scenario_index,
             model=HeuristicFastModelBuilder(
-                number_hours, delta=thermal_problem_builder.compute_delta(g)
+                number_hours, delta=compute_delta(g, thermal_problem_builder.database)
             ).model,
         )
         thermal_problem_builder.update_database_fast_after_heuristic(
