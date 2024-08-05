@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+from math import ceil
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,7 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.study.data import ComponentParameterIndex
+from andromede.thermal_heuristic.cluster_parameter import compute_delta
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
@@ -36,8 +38,6 @@ from andromede.thermal_heuristic.problem import (
     WeekScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
-
-from andromede.thermal_heuristic.cluster_parameter import compute_delta
 
 
 @pytest.fixture
@@ -194,8 +194,13 @@ def test_accurate_heuristic(
     )
 
     # Get number of on units and round it to integer
-    thermal_problem_builder.update_database_accurate(
-        resolution_step_1.output, week_scenario_index, None
+    thermal_problem_builder.update_database_heuristic(
+        resolution_step_1.output,
+        week_scenario_index,
+        None,
+        param_to_update="nb_units_min",
+        var_to_read="nb_on",
+        fn_to_apply=lambda x: ceil(round(x, 12)),
     )
     for time_step in range(number_hours):
         assert (
@@ -216,8 +221,13 @@ def test_accurate_heuristic(
         )
     )
 
-    thermal_problem_builder.update_database_accurate(
-        resolution_step_accurate_heuristic.output, week_scenario_index, None
+    thermal_problem_builder.update_database_heuristic(
+        resolution_step_accurate_heuristic.output,
+        week_scenario_index,
+        None,
+        param_to_update="nb_units_min",
+        var_to_read="nb_on",
+        fn_to_apply=lambda x: ceil(round(x, 12)),
     )
 
     for time_step in range(number_hours):
@@ -293,8 +303,14 @@ def test_fast_heuristic(
         week_scenario_index
     )
 
-    thermal_problem_builder.update_database_fast_before_heuristic(
-        resolution_step_1.output, week_scenario_index
+    thermal_problem_builder.update_database_heuristic(
+        resolution_step_1.output,
+        week_scenario_index,
+        list_cluster_id=None,
+        var_to_read="generation",
+        param_to_update="n_guide",
+        fn_to_apply=lambda x, y: ceil(round(x / y, 12)),
+        param_needed_to_compute=["p_max"],
     )
     # Solve heuristic problem
     resolution_step_heuristic = thermal_problem_builder.heuristic_resolution_step(
@@ -304,8 +320,14 @@ def test_fast_heuristic(
             number_hours, delta=compute_delta(cluster, thermal_problem_builder.database)
         ).model,
     )
-    thermal_problem_builder.update_database_fast_after_heuristic(
-        resolution_step_heuristic.output, week_scenario_index, None
+    thermal_problem_builder.update_database_heuristic(
+        resolution_step_heuristic.output,
+        week_scenario_index,
+        None,
+        var_to_read="n",
+        param_to_update="min_generating",
+        fn_to_apply=lambda x, y, z: min(x * y, z),
+        param_needed_to_compute=["p_min", "max_generating"],
     )
 
     for time_step in range(number_hours):

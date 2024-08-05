@@ -28,6 +28,8 @@ from andromede.thermal_heuristic.data import (
 )
 from andromede.thermal_heuristic.time_scenario_parameter import (
     TimeScenarioHourParameter,
+    WeekScenarioIndex,
+    timesteps,
 )
 
 
@@ -178,3 +180,20 @@ def compute_cluster_parameters(
     )
 
     return max_units, max_failures, nb_units_max_min_down_time
+
+
+def get_parameter(
+    database: DataBase,
+    name: str,
+    component: str,
+    index: WeekScenarioIndex,
+    time_scenario_hour_parameter: TimeScenarioHourParameter,
+) -> list[float]:
+    return [
+        database.get_value(
+            ComponentParameterIndex(component, name),
+            t,
+            index.scenario,
+        )
+        for t in timesteps(index, time_scenario_hour_parameter)
+    ]

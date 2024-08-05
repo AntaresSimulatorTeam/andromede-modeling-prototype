@@ -12,19 +12,14 @@
 
 from math import ceil
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import numpy as np
 
 from andromede.model import Model, PortType
 from andromede.model.library import Library, library
 from andromede.simulation import OutputValues
-from andromede.study import (
-    ConstantData,
-    DataBase,
-    Network,
-    create_component,
-)
+from andromede.study import ConstantData, DataBase, Network, create_component
 from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import InputComponents, parse_yaml_components
 from andromede.study.resolve_components import (
@@ -32,17 +27,17 @@ from andromede.study.resolve_components import (
     build_network,
     resolve_components_and_cnx,
 )
-from andromede.thermal_heuristic.time_scenario_parameter import (
-    TimeScenarioHourParameter,
-    timesteps,
-    WeekScenarioIndex,
-)
-from andromede.thermal_heuristic.workflow import ResolutionStep, SolvingParameters
-
 from andromede.thermal_heuristic.cluster_parameter import (
     complete_database_for_fast_heuristic,
     complete_database_with_cluster_parameters,
+    get_parameter,
 )
+from andromede.thermal_heuristic.time_scenario_parameter import (
+    TimeScenarioHourParameter,
+    WeekScenarioIndex,
+    timesteps,
+)
+from andromede.thermal_heuristic.workflow import ResolutionStep, SolvingParameters
 
 
 class ThermalProblemBuilder:
@@ -82,96 +77,48 @@ class ThermalProblemBuilder:
 
         return main_resolution_step
 
-    def update_database_accurate(
+    def update_database_heuristic(
         self,
         output: OutputValues,
         index: WeekScenarioIndex,
         list_cluster_id: Optional[list[str]],
+        param_to_update: str,
+        var_to_read: str,
+        fn_to_apply: Callable,
+        param_needed_to_compute: Optional[list[str]] = None,
     ) -> None:
         if list_cluster_id is None:
             list_cluster_id = self.heuristic_components()
         for cluster in list_cluster_id:
+            if (
+                ComponentParameterIndex(cluster, param_to_update)
+                not in self.database.__dict__.keys()
+            ):
+                self.database.add_data(cluster, param_to_update, ConstantData(0))
             self.database.convert_to_time_scenario_series_data(
-                ComponentParameterIndex(cluster, "nb_units_min"),
-                self.time_scenario_hour_parameter.hour
-                * self.time_scenario_hour_parameter.week,
-                self.time_scenario_hour_parameter.scenario,
-            )
-            nb_on = output.component(cluster).var("nb_on").value[0]  # type:ignore
-
-            for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                self.database.edit_value(
-                    ComponentParameterIndex(cluster, "nb_units_min"),
-                    ceil(round(nb_on[i], 12)),  # type:ignore
-                    t,
-                    index.scenario,
-                )
-
-    def update_database_fast_before_heuristic(
-        self, output: OutputValues, index: WeekScenarioIndex
-    ) -> None:
-        for cluster in self.heuristic_components():
-            pmax = self.database.get_value(
-                ComponentParameterIndex(cluster, "p_max"), 0, 0
-            )
-            nb_on_1 = output.component(cluster).var("generation").value[0]  # type: ignore
-
-            self.database.add_data(cluster, "n_guide", ConstantData(0))
-            self.database.convert_to_time_scenario_series_data(
-                ComponentParameterIndex(cluster, "n_guide"),
+                ComponentParameterIndex(cluster, param_to_update),
                 self.time_scenario_hour_parameter.hour
                 * self.time_scenario_hour_parameter.week,
                 self.time_scenario_hour_parameter.scenario,
             )
 
-            for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                self.database.edit_value(
-                    ComponentParameterIndex(cluster, "n_guide"),
-                    ceil(round(nb_on_1[i] / pmax, 12)),  # type: ignore
-                    t,
-                    index.scenario,
-                )
+            sol = output.component(cluster).var(var_to_read).value[0]  # type:ignore
 
-    def update_database_fast_after_heuristic(
-        self,
-        output: OutputValues,
-        index: WeekScenarioIndex,
-        list_cluster_id: Optional[list[str]],
-    ) -> None:
-        if list_cluster_id is None:
-            list_cluster_id = self.heuristic_components()
-        for cluster in list_cluster_id:
-            pmin = self.database.get_value(
-                ComponentParameterIndex(cluster, "p_min"), 0, 0
-            )
-            pdispo = [
-                self.database.get_value(
-                    ComponentParameterIndex(cluster, "max_generating"),
-                    t,
-                    index.scenario,
-                )
-                for t in timesteps(index, self.time_scenario_hour_parameter)
-            ]
-
-            self.database.convert_to_time_scenario_series_data(
-                ComponentParameterIndex(cluster, "min_generating"),
-                self.time_scenario_hour_parameter.hour
-                * self.time_scenario_hour_parameter.week,
-                self.time_scenario_hour_parameter.scenario,
-            )
-
-            min_gen = np.minimum(
-                np.array(
-                    output.component(cluster).var("n").value[0]  # type:ignore
-                ).reshape((self.time_scenario_hour_parameter.hour, 1))
-                * pmin,
-                np.array(pdispo).reshape((self.time_scenario_hour_parameter.hour, 1)),
-            ).reshape(self.time_scenario_hour_parameter.hour)
+            param = {}
+            if param_needed_to_compute is not None:
+                for p in param_needed_to_compute:
+                    param[p] = get_parameter(
+                        self.database,
+                        p,
+                        cluster,
+                        index,
+                        self.time_scenario_hour_parameter,
+                    )
 
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 self.database.edit_value(
-                    ComponentParameterIndex(cluster, "min_generating"),
-                    min_gen[i],
+                    ComponentParameterIndex(cluster, param_to_update),
+                    fn_to_apply(sol[i], *[p[i] for p in param.values()]),  # type:ignore
                     t,
                     index.scenario,
                 )
@@ -204,7 +151,6 @@ class ThermalProblemBuilder:
         data_dir: Path,
         fast: bool,
     ) -> DataBase:
-
         database = build_data_base(components_file, data_dir)
 
         complete_database_with_cluster_parameters(

@@ -19,6 +19,7 @@ import pytest
 
 from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
+from andromede.thermal_heuristic.cluster_parameter import compute_delta
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
     FastModelBuilder,
@@ -26,14 +27,12 @@ from andromede.thermal_heuristic.model import (
     HeuristicFastModelBuilder,
 )
 from andromede.thermal_heuristic.problem import (
+    SolvingParameters,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     WeekScenarioIndex,
-    SolvingParameters,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
-
-from andromede.thermal_heuristic.cluster_parameter import compute_delta
 
 
 @pytest.fixture
@@ -168,8 +167,14 @@ def test_fast_heuristic(data_path: str, week_scenario_index: WeekScenarioIndex) 
             ).model,
         )
 
-        thermal_problem_builder.update_database_fast_after_heuristic(
-            resolution_step_heuristic.output, week_scenario_index, [cluster]
+        thermal_problem_builder.update_database_heuristic(
+            resolution_step_heuristic.output,
+            week_scenario_index,
+            [cluster],
+            var_to_read="n",
+            param_to_update="min_generating",
+            fn_to_apply=lambda x, y, z: min(x * y, z),
+            param_needed_to_compute=["p_min", "max_generating"],
         )
 
         expected_output = np.loadtxt(

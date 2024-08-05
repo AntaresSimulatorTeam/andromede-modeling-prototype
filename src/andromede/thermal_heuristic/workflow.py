@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+from dataclasses import dataclass
+
 import ortools.linear_solver.pywraplp as pywraplp
 
 from andromede.simulation import (
@@ -19,8 +21,6 @@ from andromede.simulation import (
     build_problem,
 )
 from andromede.study import DataBase, Network
-
-from dataclasses import dataclass
 
 
 @dataclass
@@ -37,7 +37,6 @@ class ResolutionStep:
         database: DataBase,
         network: Network,
     ) -> None:
-
         problem = build_problem(
             network,
             database,
