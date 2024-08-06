@@ -76,7 +76,8 @@ class RawHydroData:
                 + ".txt"
             )
         )
-        data = data[:, self.column[name]]
+        if len(data.shape) >= 2:
+            data = data[:, self.column[name]]
         data = np.repeat(data, hours_input)
         if self.name_file[name] == "mod":
             data = data / hours_input
