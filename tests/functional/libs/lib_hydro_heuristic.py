@@ -11,6 +11,7 @@
 # This file is part of the Antares project.
 
 from andromede.expression import literal, param, var
+from andromede.expression.expression import port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import float_parameter, float_variable, model
 from andromede.model.constraint import Constraint
@@ -230,6 +231,20 @@ HYDRO_MODEL_WITH_TARGET = model(
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
             definition=var("generating"),
+        )
+    ],
+)
+
+
+BINDING_CONSTRAINT = model(
+    id="BC",
+    parameters=[float_parameter("lower_bound", structure=CONSTANT)],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    binding_constraints=[
+        Constraint(
+            name="Binding constraint",
+            expression=port_field("balance_port", "flow").sum_connections()
+            >= param("lower_bound"),
         )
     ],
 )
