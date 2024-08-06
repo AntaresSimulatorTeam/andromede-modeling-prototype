@@ -47,9 +47,9 @@ from andromede.study import (
     create_component,
 )
 from tests.functional.libs.lib_hydro_heuristic import (
+    BINDING_CONSTRAINT,
     HYDRO_MODEL,
     HYDRO_MODEL_WITH_TARGET,
-    BINDING_CONSTRAINT,
 )
 
 
