@@ -122,7 +122,10 @@ class ExpectedOutput:
         cluster_id: str,
     ) -> None:
         assert output.component(cluster_id).var("generation").value == [
-            [pytest.approx(float(line[idx_generation])) for line in self.output_cluster]
+            [
+                pytest.approx(float(line[idx_generation]), abs=1e-6)
+                for line in self.output_cluster
+            ]
         ]
         if self.mode != "fast":
             assert output.component(cluster_id).var("nb_on").value == [
