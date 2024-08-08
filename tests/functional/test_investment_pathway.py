@@ -12,17 +12,19 @@
 
 import pytest
 
-from andromede.expression import literal, var
+from andromede.expression import literal, param, var
+from andromede.expression.expression import port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
     NODE_WITH_SPILL_AND_ENS,
-    THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA,
 )
 from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
-from andromede.model.model import model
+from andromede.model.model import ModelPort, model
+from andromede.model.parameter import float_parameter
+from andromede.model.port import PortField, PortFieldDefinition, PortFieldId, PortType
 from andromede.model.variable import float_variable
 from andromede.simulation import (
     BendersSolution,
@@ -46,10 +48,73 @@ def generator() -> Component:
     return generator
 
 
+CONSTANT = IndexingStructure(False, False)
+BALANCE_PORT_TYPE = PortType(id="balance", fields=[PortField("flow")])
+PATHWAY_PORT_TYPE = PortType(id="pathway", fields=[PortField("invest")])
+
+
 @pytest.fixture
 def candidate() -> Component:
     candidate = create_component(
-        model=THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA, id="CAND"
+        model=model(
+            id="GEN_WITH_INSTALLED_CAPA",
+            parameters=[
+                float_parameter("op_cost", CONSTANT),
+                float_parameter("invest_cost", CONSTANT),
+                float_parameter("max_invest", CONSTANT),
+                float_parameter("installed_capa", CONSTANT),
+            ],
+            variables=[
+                float_variable("generation", lower_bound=literal(0)),
+                float_variable(
+                    "invested_capa",
+                    lower_bound=literal(0),
+                    structure=CONSTANT,
+                    context=ProblemContext.COUPLING,
+                ),
+                float_variable(
+                    "delta_invest",
+                    lower_bound=literal(0),
+                    upper_bound=param("max_invest"),
+                    structure=CONSTANT,
+                    context=ProblemContext.INVESTMENT,
+                ),
+            ],
+            ports=[
+                ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port"),
+                ModelPort(port_type=PATHWAY_PORT_TYPE, port_name="pathway_port"),
+            ],
+            port_fields_definitions=[
+                PortFieldDefinition(
+                    port_field=PortFieldId("balance_port", "flow"),
+                    definition=var("generation"),
+                ),
+                PortFieldDefinition(
+                    port_field=PortFieldId("pathway_port", "invest"),
+                    definition=var("invested_capa"),
+                ),
+            ],
+            constraints=[
+                Constraint(
+                    name="Max generation",
+                    expression=var("generation")
+                    <= param("installed_capa") + var("invested_capa"),
+                )
+            ],
+            binding_constraints=[
+                Constraint(
+                    name="Pathway",
+                    expression=port_field("pathway_port", "invest")
+                    == var("invested_capa") - var("delta_invest"),
+                )
+            ],
+            objective_operational_contribution=(param("op_cost") * var("generation"))
+            .sum()
+            .expec(),
+            objective_investment_contribution=param("invest_cost")
+            * var("delta_invest"),
+        ),
+        id="CAND",
     )
     return candidate
 
@@ -121,7 +186,7 @@ def test_investment_pathway_on_sequential_nodes(
     )
 
     database.add_data("CAND", "op_cost", ConstantData(10))
-    database.add_data("CAND", "already_installed_capa", ConstantData(100))
+    database.add_data("CAND", "installed_capa", ConstantData(100))
 
     database.add_data(
         "CAND",
@@ -318,7 +383,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
 
     database.add_data("CAND", "op_cost", ConstantData(10))
-    database.add_data("CAND", "already_installed_capa", ConstantData(200))
+    database.add_data("CAND", "installed_capa", ConstantData(200))
     database.add_data(
         "CAND",
         "invest_cost",
