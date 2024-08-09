@@ -38,7 +38,7 @@ def data_path() -> str:
 
 def test_fast_heuristic(data_path: str) -> None:
     """
-    Solve the same problem as before with the heuristic fast of Antares
+    Solve a weekly problem with fast heuristic. The thermal cluster has long d_min_up and d_min_down. The fast heuristic doesn't respect the d_min constraints.
     """
     number_hours = 168
     week_scenario_index = WeekScenarioIndex(0, 0)

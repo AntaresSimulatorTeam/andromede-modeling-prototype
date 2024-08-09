@@ -60,7 +60,7 @@ def week_scenario_index() -> WeekScenarioIndex:
 def test_milp_version(
     data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
 ) -> None:
-    """ """
+    """Solve weekly problem with one cluster and ramp constraints with milp."""
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
         data_dir=Path(__file__).parent / data_path,
@@ -110,7 +110,7 @@ def test_milp_version(
 def test_classic_accurate_heuristic(
     data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
 ) -> None:
-    """ """
+    """Solve weekly problem with one cluster and ramp constraints with accurate heuristic. The solution found is not integer."""
 
     number_hours = 168
     thermal_problem_builder = ThermalProblemBuilder(
@@ -246,7 +246,7 @@ def test_classic_accurate_heuristic(
 def test_modified_accurate_heuristic(
     data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
 ) -> None:
-    """ """
+    """Solve weekly problem with one cluster and ramp constraints with modified accurate heuristic such that the number of on units, starting units and stoping units are fixed at the end of the heuristic."""
 
     number_hours = 168
     thermal_problem_builder = ThermalProblemBuilder(
@@ -348,7 +348,7 @@ def test_modified_accurate_heuristic(
 def test_classic_fast_heuristic(
     data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
 ) -> None:
-    """ """
+    """Solve weekly problem with one cluster and ramp constraints with fast heuristic. The solution found is not feasible bevause ramp constraints are not respected if we consider that the number of on units is 1."""
 
     number_hours = 168
 

@@ -63,7 +63,7 @@ def models() -> list[Model]:
 def test_milp_version(
     solver_parameters: pywraplp.MPSolverParameters, data_path: str, models: list[Model]
 ) -> None:
-    """ """
+    """Solve weekly problems with milp"""
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=20, idx_unsupplied=19
     )
@@ -106,7 +106,7 @@ def test_accurate_heuristic(
     solver_parameters: pywraplp.MPSolverParameters, data_path: str, models: list[Model]
 ) -> None:
     """
-    Solve the same problem as before with the heuristic accurate of Antares
+    Solve the same problems as before with the heuristic accurate of Antares
     """
 
     output_indexes = ExpectedOutputIndexes(
@@ -192,7 +192,7 @@ def test_fast_heuristic(
     solver_parameters: pywraplp.MPSolverParameters, data_path: str, models: list[Model]
 ) -> None:
     """
-    Solve the same problem as before with the heuristic fast of Antares
+    Solve the same problems as before with the heuristic fast of Antares
     """
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=12, idx_spillage=21, idx_unsupplied=20

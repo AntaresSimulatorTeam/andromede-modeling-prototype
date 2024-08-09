@@ -59,7 +59,7 @@ def test_milp_version(
     data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
 ) -> None:
     """
-    Model on 168 time steps with one thermal generation and one demand on a single node.
+    Model on 168 time steps with one thermal generation and demand on a single node.
         - Demand is constant to 2000 MW except for the 13th hour for which it is 2050 MW
         - Thermal generation is characterized with:
             - P_min = 700 MW
@@ -73,7 +73,7 @@ def test_milp_version(
         - Unsupplied energy = 1000 €/MWh
         - Spillage = 0 €/MWh
 
-    The optimal solution consists in turning on two thermal plants at the begining, turning on a third thermal plant at the 13th hour and turning off the first thermal plant at the 14th hour, the other two thermal plants stay on for the rest of the week producing 1000MW each. At the 13th hour, the production is [700,700,700] to satisfy Pmin constraints.
+    The optimal milp solution consists in turning on two thermal plants at the begining, turning on a third thermal plant at the 13th hour and turning off the first thermal plant at the 14th hour, the other two thermal plants stay on for the rest of the week producing 1000MW each. At the 13th hour, the production is [700,700,700] to satisfy Pmin constraints.
 
     The optimal cost is then :
           50 x 2 x 1000 x 167 (prod step 1-12 and 14-168)
@@ -130,7 +130,7 @@ def test_lp_version(
         - Unsupplied energy = 1000 €/MWh
         - Spillage = 0 €/MWh
 
-    The optimal solution consists in producing exactly the demand at each hour. The number of on units is equal to the production divided by P_max.
+    The optimal solution of the linear relaxation consists in producing exactly the demand at each hour. The number of on units is equal to the production divided by P_max.
 
     The optimal cost is then :
           50 x 2000 x 167 (prod step 1-12 and 14-168)
@@ -173,7 +173,7 @@ def test_accurate_heuristic(
     data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
 ) -> None:
     """
-    Solve the same problem as before with the heuristic accurate of Antares
+    Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic is able to retrieve the milp optimal solution because when the number of on units found in the linear relaxation is ceiled, we found the optimal number of on units which is already feasible.
     """
 
     number_hours = 168
@@ -277,7 +277,7 @@ def test_fast_heuristic(
         - Unsupplied energy = 1000 €/MWh
         - Spillage = 0 €/MWh
 
-    The optimal solution consists in having 3 units turned on between time steps 10 and 19 with production equal to 2100 to respect pmin and 2 the rest of the time.
+    The optimal solution consists in having 3 units turned on between time steps 10 and 19 with production equal to 2100 to respect pmin and 2 the rest of the time. Fast heuristic turns on 3 units for 10 timesteps because min down time is equal to 10.
 
     The optimal cost is then :
           50 x 2000 x 158 (prod step 1-9 and 20-168)

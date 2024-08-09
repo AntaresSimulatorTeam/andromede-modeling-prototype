@@ -71,7 +71,9 @@ def test_milp_version(
     models: list[Model],
     week_scenario_index: WeekScenarioIndex,
 ) -> None:
-    """ """
+    """Solve weekly problem with two clusters and a binding constraint between these two clusters.
+    The optimal solution consists in turning on the first unit all the and the second unit which is more expensive but more flexible when the load increases at the 13th timestep.
+    """
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
         data_dir=Path(__file__).parent / data_path,
@@ -104,7 +106,7 @@ def test_lp_version(
     models: list[Model],
     week_scenario_index: WeekScenarioIndex,
 ) -> None:
-    """ """
+    """Solve the same problem as before with linear relaxation. The linear relaxation solution consists in turning one the first unit all the time and keep off the second unit."""
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=False,
@@ -139,7 +141,7 @@ def test_accurate_heuristic(
     week_scenario_index: WeekScenarioIndex,
 ) -> None:
     """
-    Solve the same problem as before with the heuristic accurate of Antares
+    Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem become infeasible.
     """
 
     number_hours = 168
@@ -208,7 +210,7 @@ def test_fast_heuristic(
     models: list[Model],
     week_scenario_index: WeekScenarioIndex,
 ) -> None:
-    """ """
+    """Solve the same problem as before with the heuristic fast of Antares. The fast heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem become infeasible."""
 
     number_hours = 168
 
