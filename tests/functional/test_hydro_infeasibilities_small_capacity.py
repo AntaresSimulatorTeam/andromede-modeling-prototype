@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
@@ -35,7 +35,7 @@ from andromede.libs.standard import (
     NODE_WITH_SPILL_AND_ENS_MODEL,
 )
 from andromede.model.model import Model
-from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -120,10 +120,96 @@ def test_hydro_heuristic() -> None:
         ) == pytest.approx(weekly_target[week], abs=1)
 
 
+def test_complete_year_as_weekly_blocks() -> None:
+    """ """
+    database, network = create_database_and_network(
+        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False, bc=False
+    )
+
+    capacity = 2945
+    initial_level = 0.5 * capacity
+
+    expected_output_file = open(
+        "tests/functional/data/hydro_small_capacity/values-weekly.txt",
+        "r",
+    )
+    expected_output = expected_output_file.readlines()
+
+    for week in range(52):
+        database.add_data(
+            "H",
+            "overall_target",
+            ConstantData(
+                float(expected_output[week + 7].strip().split("\t")[42])
+                - 0.75 * float(expected_output[week + 7].strip().split("\t")[43])
+            ),
+        )
+        database.add_data("H", "initial_level", ConstantData(initial_level))
+        problem = build_problem(
+            network,
+            database,
+            TimeBlock(1, list(range(168 * week, 168 * (week + 1)))),
+            1,
+        )
+        status = problem.solver.Solve()
+        assert status == problem.solver.OPTIMAL
+
+        output = OutputValues(problem)
+        initial_level = output.component("H").var("level").value[0][-1]  # type:ignore
+
+
 def test_complete_year_as_weekly_blocks_with_binding_constraint() -> None:
     """ """
     database, network = create_database_and_network(
-        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
+        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False, bc=True
+    )
+
+    capacity = 2945
+    initial_level = 0.5 * capacity
+
+    expected_output_file = open(
+        "tests/functional/data/hydro_small_capacity/values-weekly.txt",
+        "r",
+    )
+    expected_output = expected_output_file.readlines()
+
+    week = 0
+    database.add_data(
+        "H",
+        "overall_target",
+        ConstantData(
+            float(expected_output[week + 7].strip().split("\t")[42])
+            - 0.75 * float(expected_output[week + 7].strip().split("\t")[43])
+        ),
+    )
+    database.add_data("H", "initial_level", ConstantData(initial_level))
+    problem = build_problem(
+        network,
+        database,
+        TimeBlock(1, list(range(168 * week, 168 * (week + 1)))),
+        1,
+    )
+    status = problem.solver.Solve()
+    assert status == problem.solver.INFEASIBLE
+
+
+def test_complete_year_as_weekly_blocks_with_hourly_infeasibilities() -> None:
+    """ """
+    inflow_data = (
+        np.loadtxt(
+            Path(__file__).parent
+            / "../../tests/functional/data/hydro_small_capacity/mod.txt",
+            usecols=0,
+        ).repeat(24)
+        / 24
+    )
+    variation_inflow = np.tile(np.array([2300] + [-100] * 23), 365)
+
+    database, network = create_database_and_network(
+        HYDRO_MODEL_WITH_TARGET,
+        return_to_initial_level=False,
+        bc=False,
+        inflow_data=list(inflow_data + variation_inflow),
     )
 
     capacity = 2945
@@ -158,22 +244,25 @@ def test_complete_year_as_weekly_blocks_with_binding_constraint() -> None:
 def create_database_and_network(
     hydro_model: Model,
     return_to_initial_level: bool,
+    bc: bool,
+    inflow_data: Optional[list[float]] = None,
 ) -> tuple[DataBase, Network]:
-    capacity = 1e07
-    initial_level = 0.445 * capacity
+    capacity = 2945
+    initial_level = 0.5 * capacity
     demand_data = np.loadtxt(
         Path(__file__).parent
         / "../../tests/functional/data/hydro_small_capacity/load.txt",
         usecols=0,
     )
-    inflow_data = (
-        np.loadtxt(
-            Path(__file__).parent
-            / "../../tests/functional/data/hydro_small_capacity/mod.txt",
-            usecols=0,
-        ).repeat(24)
-        / 24
-    )
+    if inflow_data is None:
+        inflow_data = list(
+            np.loadtxt(
+                Path(__file__).parent
+                / "../../tests/functional/data/hydro_small_capacity/mod.txt",
+                usecols=0,
+            ).repeat(24)
+            / 24
+        )
     rule_curve_data = np.loadtxt(
         Path(__file__).parent
         / "../../tests/functional/data/hydro_small_capacity/reservoir.txt"
@@ -200,8 +289,8 @@ def create_database_and_network(
         model=DEMAND_MODEL,
         id="D",
     )
-
-    lb = create_component(model=BINDING_CONSTRAINT, id="lb")
+    if bc:
+        lb = create_component(model=BINDING_CONSTRAINT, id="lb")
 
     hydro = create_component(model=hydro_model, id="H")
 
@@ -222,7 +311,7 @@ def create_database_and_network(
     database.add_data("G3", "p_max", ConstantData(750))
     database.add_data("G3", "cost", ConstantData(300))
 
-    database.add_data("H", "min_generating", ConstantData(-599))
+    database.add_data("H", "min_generating", ConstantData(0))
 
     database.add_data(
         "H",
@@ -284,11 +373,13 @@ def create_database_and_network(
     network.add_component(thermal_2)
     network.add_component(thermal_3)
     network.add_component(hydro)
-    network.add_component(lb)
+    if bc:
+        network.add_component(lb)
     network.connect(PortRef(node, "balance_port"), PortRef(demand, "balance_port"))
     network.connect(PortRef(node, "balance_port"), PortRef(thermal_1, "balance_port"))
     network.connect(PortRef(node, "balance_port"), PortRef(thermal_2, "balance_port"))
     network.connect(PortRef(node, "balance_port"), PortRef(thermal_3, "balance_port"))
     network.connect(PortRef(node, "balance_port"), PortRef(hydro, "balance_port"))
-    network.connect(PortRef(lb, "balance_port"), PortRef(hydro, "balance_port"))
+    if bc:
+        network.connect(PortRef(lb, "balance_port"), PortRef(hydro, "balance_port"))
     return database, network
