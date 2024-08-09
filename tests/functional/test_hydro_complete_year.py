@@ -149,7 +149,7 @@ weekly_cost = [
 
 
 def test_complete_year_as_one_block() -> None:
-    """ """
+    """Solve yearly problem as one block to compute optimal weekly targets."""
     database, network = create_database_and_network(
         HYDRO_MODEL, return_to_initial_level=True
     )
@@ -189,7 +189,7 @@ def test_complete_year_as_one_block() -> None:
 
 
 def test_complete_year_as_weekly_blocks() -> None:
-    """ """
+    """Solve weekly problems with optimal weekly targets for the stock and check that weekly solution costs are the same."""
     database, network = create_database_and_network(
         HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
     )

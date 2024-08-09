@@ -54,7 +54,7 @@ from tests.functional.libs.lib_hydro_heuristic import (
 
 
 def test_hydro_heuristic() -> None:
-    """ """
+    """Check that weekly targets are the same in the POC and in Antares."""
     capacity = 2945
     reservoir_data = ReservoirParameters(
         capacity,
@@ -121,7 +121,7 @@ def test_hydro_heuristic() -> None:
 
 
 def test_complete_year_as_weekly_blocks() -> None:
-    """ """
+    """Solve weekly problems with heuristic weekly targets for the stock."""
     database, network = create_database_and_network(
         HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False, bc=False
     )
@@ -159,7 +159,7 @@ def test_complete_year_as_weekly_blocks() -> None:
 
 
 def test_complete_year_as_weekly_blocks_with_binding_constraint() -> None:
-    """ """
+    """Solve weekly problems with heuristic weekly targets for the stock with a binding constraint that implements a minimum generation for the stock. As this constraint is not seen by the heuristic, the problem is infeasible."""
     database, network = create_database_and_network(
         HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False, bc=True
     )
@@ -194,7 +194,7 @@ def test_complete_year_as_weekly_blocks_with_binding_constraint() -> None:
 
 
 def test_complete_year_as_weekly_blocks_with_hourly_infeasibilities() -> None:
-    """ """
+    """Solve weekly problems with heuristic weekly targets for the stock with modified inflow. Daily inflows remain the same. Inflows at the first hour of each day are large and there is oveflow that the heuristic didn't see due to agregation of data."""
     inflow_data = (
         np.loadtxt(
             Path(__file__).parent

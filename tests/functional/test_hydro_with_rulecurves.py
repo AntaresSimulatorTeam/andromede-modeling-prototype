@@ -108,7 +108,7 @@ expected_weekly_target = [
 
 
 def test_hydro_heuristic_monthly_part() -> None:
-    """ """
+    """Check that the cost of the monthly problem is the same in the POC and in Antares."""
     capacity = 1e07
 
     solving_output, monthly_output = optimize_target(
@@ -131,7 +131,7 @@ def test_hydro_heuristic_monthly_part() -> None:
 
 
 def test_hydro_heuristic_daily_part() -> None:
-    """ """
+    """Check that the costs of the daily problems are the same in the POC and in Antares."""
     capacity = 1e07
 
     reservoir_data = ReservoirParameters(
@@ -220,7 +220,7 @@ def test_hydro_heuristic_daily_part() -> None:
 
 
 def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
-    """ """
+    """Solve weekly problems with heuristic weekly targets for the stock."""
     database, network = create_database_and_network(
         HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
     )

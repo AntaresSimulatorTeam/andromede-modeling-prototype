@@ -30,7 +30,7 @@ from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL
 
 
 def test_hydro_heuristic() -> None:
-    """ """
+    """Check that weekly targets are the same in the POC and in Antares."""
     capacity = 1711510
     reservoir_data = ReservoirParameters(
         capacity,

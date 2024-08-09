@@ -181,7 +181,7 @@ expected_weekly_target = [
 
 
 def test_complete_year_as_one_block() -> None:
-    """ """
+    """Solve yearly problem as one block to see the difference between this optimal solution and the solution found by the heuristic. As the heuristic dosen't see thermal unavaibility and as the heuristic doesn't take into account pumping capacity, the heuristic solution is suboptimal."""
     database, network = create_database_and_network(
         HYDRO_MODEL_RULE_CURVES, return_to_initial_level=True
     )
@@ -210,7 +210,7 @@ def test_complete_year_as_one_block() -> None:
 
 
 def test_hydro_heuristic() -> None:
-    """ """
+    """Check that weekly targets are the same in the POC and in Antares."""
     capacity = 1e7
 
     reservoir_data = ReservoirParameters(
@@ -271,7 +271,7 @@ def test_hydro_heuristic() -> None:
 
 
 def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
-    """ """
+    """Solve weekly problems with heuristic weekly targets for the stock."""
     database, network = create_database_and_network(
         HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
     )
