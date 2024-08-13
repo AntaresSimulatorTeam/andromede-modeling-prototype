@@ -119,22 +119,22 @@ def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
     Utility method to dispatch calls to the right method of a visitor.
     """
     TYPES = {
-        LiteralNode: 'literal',
-        NegationNode: 'negation',
-        VariableNode: 'variable',
-        ParameterNode: 'parameter',
-        ComponentParameterNode: 'comp_parameter',
-        ComponentVariableNode: 'comp_variable',
-        AdditionNode: 'addition',
-        MultiplicationNode: 'multiplication',
-        DivisionNode: 'division',
-        SubstractionNode: 'substraction',
-        ComparisonNode: 'comparison',
-        TimeOperatorNode: 'time_operator',
-        TimeAggregatorNode: 'time_aggregator',
-        ScenarioOperatorNode: 'scenario_operator',
-        PortFieldNode: 'port_field',
-        PortFieldAggregatorNode: 'port_field_aggregator'
+        LiteralNode: "literal",
+        NegationNode: "negation",
+        VariableNode: "variable",
+        ParameterNode: "parameter",
+        ComponentParameterNode: "comp_parameter",
+        ComponentVariableNode: "comp_variable",
+        AdditionNode: "addition",
+        MultiplicationNode: "multiplication",
+        DivisionNode: "division",
+        SubstractionNode: "substraction",
+        ComparisonNode: "comparison",
+        TimeOperatorNode: "time_operator",
+        TimeAggregatorNode: "time_aggregator",
+        ScenarioOperatorNode: "scenario_operator",
+        PortFieldNode: "port_field",
+        PortFieldAggregatorNode: "port_field_aggregator",
     }
     if type(root) in TYPES:
         return getattr(visitor, TYPES[type(root)])(root)
