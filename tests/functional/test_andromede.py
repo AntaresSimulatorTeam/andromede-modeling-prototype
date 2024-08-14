@@ -197,7 +197,7 @@ def generate_data(
     for scenario in range(scenarios):
         for absolute_timestep in range(horizon):
             if absolute_timestep == 0:
-                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18
+                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18.0
             else:
                 data[TimeScenarioIndex(absolute_timestep, scenario)] = 2 * efficiency
 
