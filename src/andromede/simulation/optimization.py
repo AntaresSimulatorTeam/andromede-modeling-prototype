@@ -745,6 +745,8 @@ class OptimizationProblem:
             component_context = self.context.get_component_context(component)
             model = component.model
 
+            value_provider = _make_value_provider(self.context, component)
+
             for model_var in self.strategy.get_variables(model):
                 var_indexing = IndexingStructure(
                     model_var.structure.time, model_var.structure.scenario
@@ -764,13 +766,22 @@ class OptimizationProblem:
                         lower_bound = -self.solver.infinity()
                         upper_bound = self.solver.infinity()
                         if instantiated_lb_expr:
-                            lower_bound = component_context.get_values(
-                                instantiated_lb_expr
-                            ).get_value(block_timestep, scenario)
+                            if instantiated_lb_expr.is_constant():
+                                # TODO: Improve API
+                                lower_bound = instantiated_lb_expr.resolve_coefficient(
+                                    value_provider, RowIndex(block_timestep, scenario)
+                                ).constant
+                            # lower_bound = component_context.get_values(
+                            #     instantiated_lb_expr
+                            # ).get_value(block_timestep, scenario)
                         if instantiated_ub_expr:
-                            upper_bound = component_context.get_values(
-                                instantiated_ub_expr
-                            ).get_value(block_timestep, scenario)
+                            if instantiated_ub_expr.is_constant():
+                                upper_bound = instantiated_ub_expr.resolve_coefficient(
+                                    value_provider, RowIndex(block_timestep, scenario)
+                                ).constant
+                            # upper_bound = component_context.get_values(
+                            #     instantiated_ub_expr
+                            # ).get_value(block_timestep, scenario)
 
                         # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
                         # Externally, for the Solver, this variable will have a full name
