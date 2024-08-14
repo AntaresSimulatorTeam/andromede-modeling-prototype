@@ -549,7 +549,7 @@ class TimeOperatorNode(UnaryOperatorNode):
 @dataclass(frozen=True, eq=False)
 class TimeAggregatorNode(UnaryOperatorNode):
     name: TimeAggregatorName
-    stay_roll: bool
+    stay_roll: bool # TODO: Is it still useful ?
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, TimeAggregatorName):

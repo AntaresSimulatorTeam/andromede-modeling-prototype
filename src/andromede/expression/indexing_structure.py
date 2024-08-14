@@ -37,3 +37,6 @@ class RowIndex:
 
     time: int
     scenario: int
+
+    def __str__(self) -> str:
+        return f"t{self.time}_s{self.scenario}"

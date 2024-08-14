@@ -34,14 +34,15 @@ from andromede.expression.linear_expression_efficient import (
     PortFieldKey,
     RowIndex,
 )
+from andromede.expression.resolved_linear_expression import ResolvedLinearExpression
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
+from andromede.expression.value_provider import TimeScenarioIndex, TimeScenarioIndices
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
-from andromede.expression.resolved_linear_expression import ResolvedLinearExpression
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
@@ -95,40 +96,60 @@ def _make_value_provider(
     """
 
     class Provider(ValueProvider):
-        # def get_component_variable_value(self, component_id: str, name: str) -> float:
-        #     raise NotImplementedError(
-        #         "Cannot provide variable value at problem build time."
-        #     )
+        def get_component_variable_value(
+            self,
+            component_id: str,
+            name: str,
+            time_scenarios_indices: TimeScenarioIndices,
+        ) -> Dict[TimeScenarioIndex, float]:
+            raise NotImplementedError(
+                "Cannot provide variable value at problem build time."
+            )
 
         def get_component_parameter_value(
             self,
             component_id: str,
             name: str,
-            time_ids: List[int],
-            scenario_ids: List[int],
-        ) -> List[float]:
-            return [
-                _get_parameter_value(
-                    context, block_timestep, scenario, component_id, name
-                )
-                for block_timestep in time_ids
-                for scenario in scenario_ids
-            ]
+            time_scenarios_indices: TimeScenarioIndices,
+        ) -> Dict[TimeScenarioIndex, float]:
+            result = {}
+            for block_timestep in time_scenarios_indices.time_indices:
+                for scenario in time_scenarios_indices.scenario_indices:
+                    result[TimeScenarioIndex(block_timestep, scenario)] = (
+                        _get_parameter_value(
+                            context, block_timestep, scenario, component_id, name
+                        )
+                    )
+            return result
 
-        # def get_variable_value(self, name: str) -> float:
-        #     raise NotImplementedError(
-        #         "Cannot provide variable value at problem build time."
-        #     )
+        def get_variable_value(
+            self,
+            name: str,
+            time_scenarios_indices: TimeScenarioIndices,
+        ) -> Dict[TimeScenarioIndex, float]:
+            raise NotImplementedError(
+                "Cannot provide variable value at problem build time."
+            )
 
         def get_parameter_value(
-            self, name: str, time_ids: List[int], scenario_ids: List[int]
-        ) -> List[float]:
+            self,
+            name: str,
+            time_scenarios_indices: TimeScenarioIndices,
+        ) -> Dict[TimeScenarioIndex, float]:
             raise ValueError(
                 "Parameter must be associated to its component before resolution."
             )
 
         def parameter_is_constant_over_time(self, name: str) -> bool:
             return not component.model.parameters[name].structure.time
+
+        @staticmethod
+        def block_length() -> int:
+            return context.block_length()
+
+        @staticmethod
+        def scenarios() -> int:
+            return context.scenarios
 
     return Provider()
 
@@ -463,7 +484,7 @@ def _create_constraint(
     # linear_expr = context.linearize_expression(0, 0, constraint.expression)
     # # Will there be cases where instances > 1 ? If not, maybe just a check that get_number_of_instances == 1 is sufficient ? Anyway, the function should be implemented
     # instances_per_time_step = linear_expr.number_of_instances()
-    instances_per_time_step = 1
+    # instances_per_time_step = 1
 
     value_provider = _make_value_provider(context.opt_context, context.component)
 
@@ -474,29 +495,24 @@ def _create_constraint(
             # )
             row_id = RowIndex(block_timestep, scenario)
 
-            resolved_expr = constraint.expression.resolve_coefficient(value_provider, row_id)
-            resolved_lb = constraint.lower_bound.resolve_coefficient(value_provider, row_id)
-            resolved_ub = constraint.upper_bound.resolve_coefficient(value_provider, row_id)
+            resolved_expr = constraint.expression.resolve_coefficient(
+                value_provider, row_id
+            )
+            resolved_lb = constraint.lower_bound.resolve_coefficient(
+                value_provider, row_id
+            )
+            resolved_ub = constraint.upper_bound.resolve_coefficient(
+                value_provider, row_id
+            )
 
             # What happens if there is some time_operator in the bounds ? -> Pb réglé avec le nouveau design !
             constraint_data = ConstraintData(
                 name=constraint.name,
-                lower_bound=context.get_values(constraint.lower_bound).get_value(
-                    block_timestep, scenario
-                ),
-                upper_bound=context.get_values(constraint.upper_bound).get_value(
-                    block_timestep, scenario
-                ),
-                expression=linear_expr_at_t,
+                lower_bound=resolved_lb,
+                upper_bound=resolved_ub,
+                expression=resolved_expr,
             )
-            make_constraint(
-                solver,
-                context.opt_context,
-                block_timestep,
-                scenario,
-                constraint_data,
-                instances_per_time_step,
-            )
+            make_constraint(solver, row_id, constraint_data)
 
 
 def _create_objective(
@@ -630,57 +646,47 @@ def _get_solver_vars(
 
 def make_constraint(
     solver: lp.Solver,
-    context: OptimizationContext,
-    block_timestep: int,
-    scenario: int,
+    row_id: RowIndex,
     data: ConstraintData,
-    instances: int,
-) -> Dict[str, lp.Constraint]:
+) -> lp.Constraint:
     """
     Adds constraint to the solver.
     """
-    solver_constraints = {}
-    constraint_name = f"{data.name}_t{block_timestep}_s{scenario}"
 
-    # TODO : Check if instance can be removed
-    for instance in range(instances):
-        if instances > 1:
-            constraint_name += f"_{instance}"
+    constraint_name = f"{data.name}_{str(row_id)}"
 
-        solver_constraint: lp.Constraint = solver.Constraint(constraint_name)
-        constant: float = 0
+    solver_constraint: lp.Constraint = solver.Constraint(constraint_name)
+    constant: float = 0
 
-        for term in data.expression.terms:
-            solver_constraint.SetCoefficient(
-                term.variable,
-                term.coefficient + solver_constraint.GetCoefficient(term.variable),
-            )
-
-        # TODO : To be done in linear expression resolution coeff
-        # for term in data.expression.terms.values():
-        #     # Move this to resolve coefficient
-        #     solver_vars = _get_solver_vars(
-        #         term,
-        #         context,
-        #         block_timestep,
-        #         scenario,
-        #         instance,
-        #     )
-        #     for solver_var in solver_vars:
-        #         coefficient = term.coefficient + solver_constraint.GetCoefficient(
-        #             solver_var
-        #         )
-        #         solver_constraint.SetCoefficient(solver_var, coefficient)
-        # TODO: On pourrait aussi faire que l'objet Constraint n'ait pas de terme constant dans son expression et que les constantes soit déjà prises en compte dans les bornes, ça simplifierait le traitement ici
-        constant += data.expression.constant
-
-        solver_constraint.SetBounds(
-            data.lower_bound - constant, data.upper_bound - constant
+    for term in data.expression.terms:
+        solver_constraint.SetCoefficient(
+            term.variable,
+            term.coefficient + solver_constraint.GetCoefficient(term.variable),
         )
 
-        # TODO: this dictionary does not make sense, we override the content when there are multiple instances
-        solver_constraints[constraint_name] = solver_constraint
-    return solver_constraints
+    # TODO : To be done in linear expression resolution coeff
+    # for term in data.expression.terms.values():
+    #     # Move this to resolve coefficient
+    #     solver_vars = _get_solver_vars(
+    #         term,
+    #         context,
+    #         block_timestep,
+    #         scenario,
+    #         instance,
+    #     )
+    #     for solver_var in solver_vars:
+    #         coefficient = term.coefficient + solver_constraint.GetCoefficient(
+    #             solver_var
+    #         )
+    #         solver_constraint.SetCoefficient(solver_var, coefficient)
+    # TODO: On pourrait aussi faire que l'objet Constraint n'ait pas de terme constant dans son expression et que les constantes soit déjà prises en compte dans les bornes, ça simplifierait le traitement ici
+    constant += data.expression.constant
+
+    solver_constraint.SetBounds(
+        data.lower_bound - constant, data.upper_bound - constant
+    )
+
+    return solver_constraint
 
 
 class OptimizationProblem:

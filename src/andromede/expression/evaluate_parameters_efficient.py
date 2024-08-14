@@ -10,98 +10,129 @@
 #
 # This file is part of the Antares project.
 
-from abc import ABC, abstractmethod
+import operator
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Callable, Dict, List
 
-from andromede.expression.expression import VariableNode
 from andromede.expression.expression_efficient import (
+    AdditionNode,
     ComparisonNode,
     ComponentParameterNode,
+    DivisionNode,
     ExpressionNodeEfficient,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
+    MultiplicationNode,
+    NegationNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorName,
     ScenarioOperatorNode,
+    SubstractionNode,
     TimeAggregatorName,
     TimeAggregatorNode,
     TimeOperatorName,
     TimeOperatorNode,
 )
 from andromede.expression.indexing_structure import RowIndex
+from andromede.expression.value_provider import (
+    TimeScenarioIndex,
+    TimeScenarioIndices,
+    ValueProvider,
+)
 
-from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
-
-
-@dataclass
-class TimeScenarioIndices:
-    time_indices: List[int]
-    scenario_indices: List[int]
-
-
-class ValueProvider(ABC):
-    """
-    Implementations are in charge of mapping parameters and variables to their values.
-    Depending on the implementation, evaluation may require a component id or not.
-    """
-
-    # @abstractmethod
-    # def get_variable_value(self, name: str) -> float: ...
-
-    @abstractmethod
-    def get_parameter_value(
-        self, name: str, time_scenarios_indices: TimeScenarioIndices
-    ) -> List[float]: ...
-
-    # @abstractmethod
-    # def get_component_variable_value(self, component_id: str, name: str) -> float: ...
-
-    @abstractmethod
-    def get_component_parameter_value(
-        self, component_id: str, name: str, time_scenarios_indices: TimeScenarioIndices
-    ) -> List[float]: ...
-
-    # TODO: Should this really be an abstract method ? Or maybe, only the Provider in _make_value_provider should implement it. And the context attribute in the InstancesIndexVisitor is a ValueProvider that implements the parameter_is_constant_over_time method. Maybe create a child class of ValueProvider like TimeValueProvider ?
-    @abstractmethod
-    def parameter_is_constant_over_time(self, name: str) -> bool: ...
+from .visitor import ExpressionVisitor, visit
 
 
+# TODO: (almost) same function as in linear_expression _merge_dicts
+def _merge_dicts(
+    lhs: Dict[TimeScenarioIndex, float],
+    rhs: Dict[TimeScenarioIndex, float],
+    merge_func: Callable[[float, float], float],
+    neutral: float,
+) -> Dict[TimeScenarioIndex, float]:
+    res = {}
+    for k, v in lhs.items():
+        res[k] = merge_func(v, rhs.get(k, neutral))
+    for k, v in rhs.items():
+        if k not in lhs:
+            res[k] = merge_func(neutral, v)
+    return res
+
+
+# It is better to return a list of float than a single float to minimize the number of calls to the visit function. We access values of the parameters at different time steps with a single visit of the tree
 @dataclass(frozen=True)
-class ParameterEvaluationVisitor(ExpressionVisitorOperations[float]):
+class ParameterEvaluationVisitor(ExpressionVisitor[Dict[TimeScenarioIndex, float]]):
     """
     Evaluates the expression with respect to the provided context
     (variables and parameters values).
     """
 
     context: ValueProvider
+    # Useful to keep track of row id for time shift
     row_id: RowIndex  # TODO to be included in ValueProvider ?
-    time_scenario_indices: TimeScenarioIndices
+    time_scenario_indices: TimeScenarioIndices = field(init=False)
 
-    def literal(self, node: LiteralNode) -> float:
-        return [node.value]
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "time_scenario_indices",
+            TimeScenarioIndices([self.row_id.time], [self.row_id.scenario]),
+        )
 
-    # def comparison(self, node: ComparisonNode) -> float:
-    #     raise ValueError("Cannot evaluate comparison operator.")
+    # Redefine common operations so that it works as expected on lists (i.e. summing element wise rather than appending to it)
+    def negation(self, node: NegationNode) -> Dict[TimeScenarioIndex, float]:
+        return {k: -v for k, v in visit(node.operand, self).items()}
 
-    # def variable(self, node: VariableNode) -> float:
-    #     return self.context.get_variable_value(node.name)
+    def addition(self, node: AdditionNode) -> Dict[TimeScenarioIndex, float]:
+        left_value = visit(node.left, self)
+        right_value = visit(node.right, self)
+        result = _merge_dicts(left_value, right_value, operator.add, 0)
+        return result
 
-    def parameter(self, node: ParameterNode) -> float:
+    def substraction(self, node: SubstractionNode) -> Dict[TimeScenarioIndex, float]:
+        left_value = visit(node.left, self)
+        right_value = visit(node.right, self)
+        result = _merge_dicts(left_value, right_value, operator.sub, 0)
+        return result
+
+    def multiplication(
+        self, node: MultiplicationNode
+    ) -> Dict[TimeScenarioIndex, float]:
+        left_value = visit(node.left, self)
+        right_value = visit(node.right, self)
+        result = _merge_dicts(left_value, right_value, operator.mul, 1)
+        return result
+
+    def division(self, node: DivisionNode) -> Dict[TimeScenarioIndex, float]:
+        left_value = visit(node.left, self)
+        right_value = visit(node.right, self)
+        result = _merge_dicts(left_value, right_value, operator.truediv, 1)
+        return result
+
+    def literal(self, node: LiteralNode) -> Dict[TimeScenarioIndex, float]:
+        result = {}
+        for time in self.time_scenario_indices.time_indices:
+            for scenario in self.time_scenario_indices.scenario_indices:
+                result[TimeScenarioIndex(time, scenario)] = node.value
+        return result
+
+    def comparison(self, node: ComparisonNode) -> Dict[TimeScenarioIndex, float]:
+        raise ValueError("Cannot evaluate comparison operator.")
+
+    def parameter(self, node: ParameterNode) -> Dict[TimeScenarioIndex, float]:
         return self.context.get_parameter_value(node.name, self.time_scenario_indices)
 
-    def comp_parameter(self, node: ComponentParameterNode) -> float:
+    def comp_parameter(
+        self, node: ComponentParameterNode
+    ) -> Dict[TimeScenarioIndex, float]:
         return self.context.get_component_parameter_value(
             node.component_id, node.name, self.time_scenario_indices
         )
 
-    # def comp_variable(self, node: ComponentVariableNode) -> float:
-    #     return self.context.get_component_variable_value(node.component_id, node.name)
-
-    def time_operator(self, node: TimeOperatorNode) -> float:
+    def time_operator(self, node: TimeOperatorNode) -> Dict[TimeScenarioIndex, float]:
         self.time_scenario_indices.time_indices = get_time_ids_from_instances_index(
             node.instances_index, self.context
         )
@@ -114,30 +145,78 @@ class ParameterEvaluationVisitor(ExpressionVisitorOperations[float]):
             return NotImplemented
         return visit(node.operand, self)
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> float:
-        if node.name in [TimeAggregatorName.SUM]:
-            # TODO: Where is the sum ?
-            return visit(node.operand, self)
+    def time_aggregator(
+        self, node: TimeAggregatorNode
+    ) -> Dict[TimeScenarioIndex, float]:
+        if node.name == TimeAggregatorName.TIME_SUM:
+            if not isinstance(node.operand, TimeOperatorNode):
+                # Sum over all time block
+                self.time_scenario_indices.time_indices = list(
+                    range(self.context.block_length())
+                )
+            # Time indices for the case where node.operand is a TimeOperatorNode are handled in time_operator function directly
+            operand_dict = visit(node.operand, self)
+            result = {}
+            for scenario in self.time_scenario_indices.scenario_indices:
+                result[TimeScenarioIndex(self.row_id.time, scenario)] = sum(
+                    operand_dict[k]
+                    for k in operand_dict.keys()
+                    if k.scenario == scenario
+                )
+            return result
         else:
             return NotImplemented
 
-    def scenario_operator(self, node: ScenarioOperatorNode) -> float:
-        if node.name in [ScenarioOperatorName.EXPECTATION]:
-            return visit(node.operand, self)
+    def scenario_operator(
+        self, node: ScenarioOperatorNode
+    ) -> Dict[TimeScenarioIndex, float]:
+        if node.name == ScenarioOperatorName.EXPECTATION:
+            self.time_scenario_indices.scenario_indices = list(
+                range(self.context.scenarios())
+            )
+            operand_dict = visit(node.operand, self)
+            result = {}
+            for time in self.time_scenario_indices.time_indices:
+                # TODO: Make this more general to consider weighted expectations
+                result[TimeScenarioIndex(time, self.row_id.scenario)] = (
+                    1
+                    / self.context.scenarios()
+                    * sum(
+                        operand_dict[k] for k in operand_dict.keys() if k.time == time
+                    )
+                )
+            return result
+
         else:
             return NotImplemented
 
-    def port_field(self, node: PortFieldNode) -> float:
+    def port_field(self, node: PortFieldNode) -> Dict[TimeScenarioIndex, float]:
         raise ValueError("Port fields must be resolved before evaluating parameters")
 
-    def port_field_aggregator(self, node: PortFieldAggregatorNode) -> float:
+    def port_field_aggregator(
+        self, node: PortFieldAggregatorNode
+    ) -> Dict[TimeScenarioIndex, float]:
         raise ValueError("Port fields must be resolved before evaluating parameters")
+
+
+def is_valid_resolved_expr(
+    resolved_expr: Dict[TimeScenarioIndex, float], row_id: RowIndex
+) -> bool:
+    # Check that the resolved expression has been correctly time and scenario aggregated so that only a float is left
+    return (
+        len(resolved_expr) == 1
+        and TimeScenarioIndex(row_id.time, row_id.scenario) in resolved_expr
+    )
 
 
 def resolve_coefficient(
     expression: ExpressionNodeEfficient, value_provider: ValueProvider, row_id: RowIndex
 ) -> float:
-    return visit(expression, ParameterEvaluationVisitor(value_provider, row_id))
+    result = visit(expression, ParameterEvaluationVisitor(value_provider, row_id))
+    if is_valid_resolved_expr(result, row_id):
+        return result[TimeScenarioIndex(row_id.time, row_id.scenario)]
+    else:
+        raise ValueError("Evaluation of expression cannot be reduced to a float value")
 
 
 @dataclass(frozen=True)

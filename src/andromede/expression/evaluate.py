@@ -10,7 +10,6 @@
 #
 # This file is part of the Antares project.
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict
 
@@ -27,36 +26,9 @@ from andromede.expression.expression_efficient import (
     TimeAggregatorNode,
     TimeOperatorNode,
 )
+from andromede.expression.value_provider import ValueProvider
 
-from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
-
-
-class ValueProvider(ABC):
-    """
-    Implementations are in charge of mapping parameters and variables to their values.
-    Depending on the implementation, evaluation may require a component id or not.
-    """
-
-    # @abstractmethod
-    # def get_variable_value(self, name: str) -> float:
-    #     ...
-
-    @abstractmethod
-    def get_parameter_value(self, name: str) -> float:
-        ...
-
-    # @abstractmethod
-    # def get_component_variable_value(self, component_id: str, name: str) -> float:
-        # ...
-
-    @abstractmethod
-    def get_component_parameter_value(self, component_id: str, name: str) -> float:
-        ...
-
-    # TODO: Should this really be an abstract method ? Or maybe, only the Provider in _make_value_provider should implement it. And the context attribute in the InstancesIndexVisitor is a ValueProvider that implements the parameter_is_constant_over_time method. Maybe create a child class of ValueProvider like TimeValueProvider ?
-    @abstractmethod
-    def parameter_is_constant_over_time(self, name: str) -> bool:
-        ...
+from .visitor import ExpressionVisitorOperations, visit
 
 
 @dataclass(frozen=True)

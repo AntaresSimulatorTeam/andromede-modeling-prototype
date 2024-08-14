@@ -31,7 +31,7 @@ from typing import (
 from andromede.expression.context_adder import add_component_context
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import evaluate
-from andromede.expression.evaluate_parameters_efficient import ValueProvider, resolve_coefficient
+from andromede.expression.evaluate_parameters_efficient import resolve_coefficient
 from andromede.expression.expression_efficient import (
     ExpressionNodeEfficient,
     ExpressionRange,
@@ -66,6 +66,7 @@ from andromede.expression.resolved_linear_expression import (
     ResolvedLinearExpression,
     ResolvedTerm,
 )
+from andromede.expression.value_provider import ValueProvider
 
 
 @dataclass(frozen=True)

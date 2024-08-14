@@ -39,3 +39,7 @@ class ResolvedLinearExpression:
 
     terms: List[ResolvedTerm] = field(default_factory=list)
     constant: float = field(default=0)
+
+    def is_constant(self) -> bool:
+        # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
+        return not self.terms
