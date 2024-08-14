@@ -19,23 +19,23 @@ from .evaluate_parameters import (
     resolve_parameters,
 )
 
-# from .expression import (
+from .expression import (
 #     AdditionNode,
 #     Comparator,
 #     ComparisonNode,
 #     DivisionNode,
-#     ExpressionNode,
+    ExpressionNode,
 #     LiteralNode,
 #     MultiplicationNode,
 #     NegationNode,
 #     ParameterNode,
 #     SubstractionNode,
-#     VariableNode,
-#     literal,
-#     param,
-#     sum_expressions,
-#     var,
-# )
+    VariableNode,
+    literal,
+    param,
+    sum_expressions,
+    var,
+)
 from .expression_efficient import (
     AdditionNode,
     Comparator,

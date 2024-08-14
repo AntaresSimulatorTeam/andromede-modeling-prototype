@@ -26,3 +26,14 @@ class IndexingStructure:
         time = self.time or other.time
         scenario = self.scenario or other.scenario
         return IndexingStructure(time, scenario)
+
+
+# Contrary to IndexingStructure, time and scenario are integers to "count/identify" the constraint whereas IndexingStructure is used used to know whether or not an expression is indexed by time or scenario.
+@dataclass(frozen=True)
+class RowIndex:
+    """
+    Indexing of rows in a problem.
+    """
+
+    time: int
+    scenario: int

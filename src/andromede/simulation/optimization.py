@@ -24,9 +24,9 @@ import ortools.linear_solver.pywraplp as lp
 
 from andromede.expression import (  # ExpressionNode,
     ParameterValueProvider,
-    ValueProvider,
     resolve_parameters,
 )
+from andromede.expression.evaluate_parameters_efficient import ValueProvider
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
@@ -41,7 +41,7 @@ from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import linearize_expression
-from andromede.simulation.resolved_linear_expression import ResolvedLinearExpression
+from andromede.expression.resolved_linear_expression import ResolvedLinearExpression
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase

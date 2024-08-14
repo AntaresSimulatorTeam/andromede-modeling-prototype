@@ -30,8 +30,8 @@ from typing import (
 
 from andromede.expression.context_adder import add_component_context
 from andromede.expression.equality import expressions_equal
-from andromede.expression.evaluate import ValueProvider, evaluate
-from andromede.expression.evaluate_parameters_efficient import resolve_coefficient
+from andromede.expression.evaluate import evaluate
+from andromede.expression.evaluate_parameters_efficient import ValueProvider, resolve_coefficient
 from andromede.expression.expression_efficient import (
     ExpressionNodeEfficient,
     ExpressionRange,
@@ -51,7 +51,7 @@ from andromede.expression.expression_efficient import (
     wrap_in_node,
 )
 from andromede.expression.indexing import IndexingStructureProvider
-from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.indexing_structure import IndexingStructure, RowIndex
 from andromede.expression.port_operator import PortAggregator, PortSum
 from andromede.expression.print import print_expr
 from andromede.expression.scenario_operator import Expectation, ScenarioOperator
@@ -62,7 +62,7 @@ from andromede.expression.time_operator import (
     TimeShift,
     TimeSum,
 )
-from andromede.simulation.resolved_linear_expression import (
+from andromede.expression.resolved_linear_expression import (
     ResolvedLinearExpression,
     ResolvedTerm,
 )
@@ -419,12 +419,6 @@ def _add_terms(lhs: T_val, rhs: T_val) -> T_val:
 def _substract_terms(lhs: T_val, rhs: T_val) -> T_val:
     _merge_is_possible(lhs, rhs)
     return dataclasses.replace(lhs, coefficient=lhs.coefficient - rhs.coefficient)
-
-
-@dataclass(frozen=True)
-class RowIndex:
-    time: int
-    scenario: int
 
 
 class LinearExpressionEfficient:

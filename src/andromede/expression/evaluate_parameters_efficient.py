@@ -32,7 +32,7 @@ from andromede.expression.expression_efficient import (
     TimeOperatorName,
     TimeOperatorNode,
 )
-from andromede.expression.linear_expression_efficient import RowIndex
+from andromede.expression.indexing_structure import RowIndex
 
 from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
 
