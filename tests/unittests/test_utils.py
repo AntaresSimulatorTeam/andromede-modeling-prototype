@@ -27,7 +27,7 @@ from andromede.utils import get_or_add
 def test_get_or_add_should_evaluate_lazily() -> None:
     d = {"key1": "value1"}
 
-    def raise_factory() -> None:
+    def raise_factory() -> str:
         raise AssertionError("No value should be created")
 
     assert get_or_add(d, "key1", raise_factory) == "value1"

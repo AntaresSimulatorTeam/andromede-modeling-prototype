@@ -27,7 +27,7 @@ ValueOrExprNodeOrLinearExpr = Union[
 class ValueType(Enum):
     FLOAT = "FLOAT"
     INTEGER = "INTEGER"
-    # Needs more ?
+    BOOL = "BOOL"
 
 
 class ProblemContext(Enum):

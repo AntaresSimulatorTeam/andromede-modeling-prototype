@@ -31,7 +31,7 @@ from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 
 
-def test_library_parsing(data_dir: Path):
+def test_library_parsing(data_dir: Path) -> None:
     lib_file = data_dir / "lib.yml"
 
     with lib_file.open() as f:
@@ -116,7 +116,7 @@ def test_library_parsing(data_dir: Path):
     )
 
 
-def test_library_error_parsing(data_dir: Path):
+def test_library_error_parsing(data_dir: Path) -> None:
     lib_file = data_dir / "model_port_definition_ko.yml"
 
     with lib_file.open() as f:
@@ -129,7 +129,7 @@ def test_library_error_parsing(data_dir: Path):
         resolve_library(input_lib)
 
 
-def test_library_port_model_ok_parsing(data_dir: Path):
+def test_library_port_model_ok_parsing(data_dir: Path) -> None:
     lib_file = data_dir / "model_port_definition_ok.yml"
 
     with lib_file.open() as f:

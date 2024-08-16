@@ -139,7 +139,7 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
             float_variable(
                 "var",
                 lower_bound=literal(1),
-                upper_bound=literal(1),
+                upper_bound=literal(2),
                 structure=IndexingStructure(True, False),
             ),
         ],

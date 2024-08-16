@@ -387,8 +387,14 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
 
     output = OutputValues(problem)
     expected_output = OutputValues()
-    expected_output.component("G1").var("generation").value = [[0, 200], [0, 100]]
-    expected_output.component("CAND").var("generation").value = [[300, 300], [200, 300]]
+    expected_output.component("G1").var("generation").value = [
+        [0.0, 200.0],
+        [0.0, 100.0],
+    ]
+    expected_output.component("CAND").var("generation").value = [
+        [300.0, 300.0],
+        [200.0, 300.0],
+    ]
     expected_output.component("CAND").var("p_max").value = 300.0
 
     assert output == expected_output, f"Output differs from expected: {output}"

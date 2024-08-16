@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from andromede.expression.equality import expressions_equal_if_present
+from andromede.expression.expression_efficient import literal
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
@@ -72,6 +73,14 @@ def int_variable(
         structure,
         context,
     )
+
+
+def bool_var(
+    name: str,
+    structure: IndexingStructure = IndexingStructure(True, True),
+    context: ProblemContext = ProblemContext.OPERATIONAL,
+) -> Variable:
+    return Variable(name, ValueType.BOOL, literal(0), literal(1), structure, context)
 
 
 def float_variable(

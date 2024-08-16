@@ -16,7 +16,7 @@ import pytest
 
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeShift, TimeSum
-from andromede.simulation.linear_expression import LinearExpression, Term
+from andromede.simulation.linear_expression import LinearExpression, Term, TermKey
 
 
 @pytest.mark.parametrize(
@@ -93,7 +93,7 @@ def test_constant_expressions(lhs: LinearExpression, rhs: LinearExpression) -> N
     ],
 )
 def test_instantiate_linear_expression_from_dict(
-    terms_dict: Dict[str, Term],
+    terms_dict: Dict[TermKey, Term],
     constant: float,
     exp_terms: Dict[str, Term],
     exp_constant: float,

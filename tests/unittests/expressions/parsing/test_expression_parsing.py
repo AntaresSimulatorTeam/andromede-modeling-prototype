@@ -175,7 +175,7 @@ def test_parsing_visitor(
         "x[t 4]",
     ],
 )
-def test_parse_cancellation_should_throw(expression_str: str):
+def test_parse_cancellation_should_throw(expression_str: str) -> None:
     # Console log error is displayed !
     identifiers = ModelIdentifiers(
         variables={"x"},
