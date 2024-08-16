@@ -27,6 +27,18 @@ class IndexingStructure:
         scenario = self.scenario or other.scenario
         return IndexingStructure(time, scenario)
 
+    def is_time_varying(self) -> bool:
+        return self.time
+
+    def is_scenario_varying(self) -> bool:
+        return self.scenario
+
+    def is_time_scenario_varying(self) -> bool:
+        return self.is_time_varying() and self.is_scenario_varying()
+
+    def is_constant(self) -> bool:
+        return (not self.is_time_varying()) and (not self.is_scenario_varying())
+
 
 # Contrary to IndexingStructure, time and scenario are integers to "count/identify" the constraint whereas IndexingStructure is used used to know whether or not an expression is indexed by time or scenario.
 @dataclass(frozen=True)
@@ -40,14 +52,3 @@ class RowIndex:
 
     def __str__(self) -> str:
         return f"t{self.time}_s{self.scenario}"
-    def is_time_varying(self) -> bool:
-        return self.time
-
-    def is_scenario_varying(self) -> bool:
-        return self.scenario
-
-    def is_time_scenario_varying(self) -> bool:
-        return self.is_time_varying() and self.is_scenario_varying()
-
-    def is_constant(self) -> bool:
-        return (not self.is_time_varying()) and (not self.is_scenario_varying())

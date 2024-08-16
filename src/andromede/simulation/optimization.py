@@ -516,10 +516,10 @@ def _create_constraint(
             resolved_expr = constraint.expression.resolve_coefficient(
                 value_provider, row_id
             )
-            resolved_lb = constraint.lower_bound.resolve_coefficient(
+            resolved_lb = constraint.lower_bound.resolve_constant_expr(
                 value_provider, row_id
             )
-            resolved_ub = constraint.upper_bound.resolve_coefficient(
+            resolved_ub = constraint.upper_bound.resolve_constant_expr(
                 value_provider, row_id
             )
 
@@ -579,8 +579,8 @@ def _create_objective(
 @dataclass
 class ConstraintData:
     name: str
-    lower_bound: ResolvedLinearExpression  # Or a float ?
-    upper_bound: ResolvedLinearExpression  # Or a float ?
+    lower_bound: float
+    upper_bound: float
     expression: ResolvedLinearExpression
 
 
@@ -794,19 +794,16 @@ class OptimizationProblem:
                         lower_bound = -self.solver.infinity()
                         upper_bound = self.solver.infinity()
                         if instantiated_lb_expr:
-                            if instantiated_lb_expr.is_constant():
-                                # TODO: Improve API
-                                lower_bound = instantiated_lb_expr.resolve_coefficient(
-                                    value_provider, RowIndex(block_timestep, scenario)
-                                ).constant
+                            lower_bound = instantiated_lb_expr.resolve_constant_expr(
+                                value_provider, RowIndex(block_timestep, scenario)
+                            )
                             # lower_bound = component_context.get_values(
                             #     instantiated_lb_expr
                             # ).get_value(block_timestep, scenario)
                         if instantiated_ub_expr:
-                            if instantiated_ub_expr.is_constant():
-                                upper_bound = instantiated_ub_expr.resolve_coefficient(
-                                    value_provider, RowIndex(block_timestep, scenario)
-                                ).constant
+                            upper_bound = instantiated_ub_expr.resolve_constant_expr(
+                                value_provider, RowIndex(block_timestep, scenario)
+                            )
                             # upper_bound = component_context.get_values(
                             #     instantiated_ub_expr
                             # ).get_value(block_timestep, scenario)

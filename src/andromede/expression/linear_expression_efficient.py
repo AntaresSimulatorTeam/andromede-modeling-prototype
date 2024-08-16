@@ -980,6 +980,14 @@ class LinearExpressionEfficient:
         resolved_constant = resolve_coefficient(self.constant, value_provider, row_id)
         return ResolvedLinearExpression(resolved_terms, resolved_constant)
 
+    def resolve_constant_expr(
+        self, value_provider: ValueProvider, row_id: RowIndex
+    ) -> float:
+        if not self.is_constant():
+            raise ValueError(f"{str(self)} is not a constant expression")
+        resolved_expr = self.resolve_coefficient(value_provider, row_id)
+        return resolved_expr.constant
+
 
 def linear_expressions_equal(
     lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
