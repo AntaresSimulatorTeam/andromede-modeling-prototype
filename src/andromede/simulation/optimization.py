@@ -85,6 +85,14 @@ class TimestepValueProvider(ABC):
         raise NotImplementedError()
 
 
+def _get_data_time_key(block_timestep: int, data_indexing: IndexingStructure) -> int:
+    return block_timestep if data_indexing.time else 0
+
+
+def _get_data_scenario_key(scenario: int, data_indexing: IndexingStructure) -> int:
+    return scenario if data_indexing.scenario else 0
+
+
 def _make_value_provider(
     context: "OptimizationContext",
     component: Component,
@@ -114,11 +122,20 @@ def _make_value_provider(
             time_scenarios_indices: TimeScenarioIndices,
         ) -> Dict[TimeScenarioIndex, float]:
             result = {}
+            param_index = (
+                context.network.get_component(component_id)
+                .model.parameters[name]
+                .structure
+            )
             for block_timestep in time_scenarios_indices.time_indices:
                 for scenario in time_scenarios_indices.scenario_indices:
                     result[TimeScenarioIndex(block_timestep, scenario)] = (
                         _get_parameter_value(
-                            context, block_timestep, scenario, component_id, name
+                            context,
+                            _get_data_time_key(block_timestep, param_index),
+                            _get_data_scenario_key(scenario, param_index),
+                            component_id,
+                            name,
                         )
                     )
             return result

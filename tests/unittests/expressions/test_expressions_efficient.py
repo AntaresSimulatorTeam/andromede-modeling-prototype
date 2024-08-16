@@ -34,7 +34,7 @@ from andromede.expression.expression_efficient import (
     param,
 )
 from andromede.expression.indexing import IndexingStructureProvider
-from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.indexing_structure import IndexingStructure, RowIndex
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     StandaloneConstraint,
@@ -47,6 +47,7 @@ from andromede.expression.linear_expression_efficient import (
     wrap_in_linear_expr,
 )
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
+from andromede.expression.value_provider import TimeScenarioIndex, TimeScenarioIndices
 
 
 @dataclass(frozen=True)
@@ -69,19 +70,35 @@ class ComponentEvaluationContext(ValueProvider):
     variables: Dict[ComponentValueKey, float] = field(default_factory=dict)
     parameters: Dict[ComponentValueKey, float] = field(default_factory=dict)
 
-    def get_variable_value(self, name: str) -> float:
+    def get_variable_value(
+        self, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
         raise NotImplementedError()
 
-    def get_parameter_value(self, name: str) -> float:
+    def get_parameter_value(
+        self, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
         raise NotImplementedError()
 
-    def get_component_variable_value(self, component_id: str, name: str) -> float:
-        return self.variables[comp_key(component_id, name)]
+    def get_component_variable_value(
+        self, component_id: str, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
+        return {TimeScenarioIndex(0, 0): self.variables[comp_key(component_id, name)]}
 
-    def get_component_parameter_value(self, component_id: str, name: str) -> float:
-        return self.parameters[comp_key(component_id, name)]
+    def get_component_parameter_value(
+        self, component_id: str, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
+        return {TimeScenarioIndex(0, 0): self.parameters[comp_key(component_id, name)]}
 
     def parameter_is_constant_over_time(self, name: str) -> bool:
+        raise NotImplementedError()
+
+    @staticmethod
+    def block_length() -> int:
+        raise NotImplementedError()
+
+    @staticmethod
+    def scenarios() -> int:
         raise NotImplementedError()
 
 
@@ -98,7 +115,8 @@ def test_comp_parameter() -> None:
     context = ComponentEvaluationContext(
         variables={comp_key("comp1", "x"): 3}, parameters={comp_key("comp1", "p"): 4}
     )
-    assert expr2.evaluate(context) == 1
+    # Need to specify at which (t, w) to evaluate as the information is not contained anymore within the value provider
+    assert expr2.evaluate(context, RowIndex(0, 0)) == 1
 
 
 # TODO: Find a better name
@@ -111,7 +129,7 @@ def test_ast() -> None:
     assert str(expr2) == "(1.0 / p)x + (1.0 / p)"
 
     context = EvaluationContext(variables={"x": 3}, parameters={"p": 4})
-    assert expr2.evaluate(context) == 1
+    assert expr2.evaluate(context, RowIndex(0, 0)) == 1
 
 
 def test_operators() -> None:
@@ -122,9 +140,9 @@ def test_operators() -> None:
     assert str(expr) == "(5.0 / p)x + ((3.0 / p) - 2.0)"
 
     context = EvaluationContext(variables={"x": 3}, parameters={"p": 4})
-    assert expr.evaluate(context) == pytest.approx(2.5, 1e-16)
+    assert expr.evaluate(context, RowIndex(0, 0)) == pytest.approx(2.5, 1e-16)
 
-    assert -expr.evaluate(context) == pytest.approx(-2.5, 1e-16)
+    assert -expr.evaluate(context, RowIndex(0, 0)) == pytest.approx(-2.5, 1e-16)
 
 
 # def test_degree() -> None:
@@ -568,6 +586,7 @@ def test_eval_on_time_step_list_raises_value_error() -> None:
         _ = x.eval(ExpressionRange(1, 4))
 
 
+# TODO: Shoudl be moved to test_linear_expression_efficient
 @pytest.mark.parametrize(
     "linear_expr, expected_indexation",
     [

@@ -134,7 +134,7 @@ class ParameterEvaluationVisitor(ExpressionVisitor[Dict[TimeScenarioIndex, float
 
     def time_operator(self, node: TimeOperatorNode) -> Dict[TimeScenarioIndex, float]:
         self.time_scenario_indices.time_indices = get_time_ids_from_instances_index(
-            node.instances_index, self.context
+            node.instances_index, self.context, self.row_id
         )
         if node.name == TimeOperatorName.SHIFT:
             self.time_scenario_indices.time_indices = [
@@ -199,24 +199,22 @@ class ParameterEvaluationVisitor(ExpressionVisitor[Dict[TimeScenarioIndex, float
         raise ValueError("Port fields must be resolved before evaluating parameters")
 
 
-def is_valid_resolved_expr(
+def check_resolved_expr(
     resolved_expr: Dict[TimeScenarioIndex, float], row_id: RowIndex
 ) -> bool:
     # Check that the resolved expression has been correctly time and scenario aggregated so that only a float is left
-    return (
-        len(resolved_expr) == 1
-        and TimeScenarioIndex(row_id.time, row_id.scenario) in resolved_expr
-    )
+    if len(resolved_expr) != 1:
+        raise ValueError("Evaluation of expression cannot be reduced to a float value")
+    if TimeScenarioIndex(row_id.time, row_id.scenario) not in resolved_expr:
+        raise ValueError("Expression has a time operator but not time aggregator, maybe you are missing a sum(), necessary even on one element")
 
 
 def resolve_coefficient(
     expression: ExpressionNodeEfficient, value_provider: ValueProvider, row_id: RowIndex
 ) -> float:
     result = visit(expression, ParameterEvaluationVisitor(value_provider, row_id))
-    if is_valid_resolved_expr(result, row_id):
-        return result[TimeScenarioIndex(row_id.time, row_id.scenario)]
-    else:
-        raise ValueError("Evaluation of expression cannot be reduced to a float value")
+    check_resolved_expr(result, row_id)
+    return result[TimeScenarioIndex(row_id.time, row_id.scenario)]
 
 
 @dataclass(frozen=True)
@@ -228,12 +226,25 @@ class InstancesIndexVisitor(ParameterEvaluationVisitor):
     # def variable(self, node: VariableNode) -> float:
     #     raise ValueError("An instance index expression cannot contain variable")
 
+    # Probably useless as parameter nodes should have already be replaced by component parameter nodes ?
     def parameter(self, node: ParameterNode) -> float:
         if not self.context.parameter_is_constant_over_time(node.name):
             raise ValueError(
                 "Parameter given in an instance index expression must be constant over time"
             )
-        return self.context.get_parameter_value(node.name)
+        
+        return self.context.get_parameter_value(node.name, self.time_scenario_indices)
+
+    def comp_parameter(
+        self, node: ComponentParameterNode
+    ) -> Dict[TimeScenarioIndex, float]:
+        if not self.context.parameter_is_constant_over_time(node.name):
+            raise ValueError(
+                "Parameter given in an instance index expression must be constant over time"
+            )
+        return self.context.get_component_parameter_value(
+            node.component_id, node.name, self.time_scenario_indices
+        )
 
     def time_operator(self, node: TimeOperatorNode) -> float:
         raise ValueError("An instance index expression cannot contain time operator")
@@ -250,30 +261,39 @@ def float_to_int(value: float) -> int:
 
 
 def evaluate_time_id(
-    expr: ExpressionNodeEfficient, value_provider: ValueProvider
+    expr: ExpressionNodeEfficient, value_provider: ValueProvider, row_id: RowIndex
 ) -> int:
-    float_time_id = visit(expr, InstancesIndexVisitor(value_provider))
+    float_time_id_in_list = visit(expr, InstancesIndexVisitor(value_provider, row_id))
+    check_resolved_expr(float_time_id_in_list, row_id)
     try:
-        time_id = float_to_int(float_time_id)
+        time_id = float_to_int(
+            float_time_id_in_list[TimeScenarioIndex(row_id.time, row_id.scenario)]
+        )
     except ValueError:
         print(f"{expr} does not represent an integer time index.")
     return time_id
 
 
 def get_time_ids_from_instances_index(
-    instances_index: InstancesTimeIndex, value_provider: ValueProvider
+    instances_index: InstancesTimeIndex, value_provider: ValueProvider, row_id: RowIndex
 ) -> List[int]:
     time_ids = []
     if isinstance(instances_index.expressions, list):  # List[ExpressionNode]
         for expr in instances_index.expressions:
-            time_ids.append(evaluate_time_id(expr, value_provider))
+            time_ids.append(evaluate_time_id(expr, value_provider, row_id))
 
     elif isinstance(instances_index.expressions, ExpressionRange):  # ExpressionRange
-        start_id = evaluate_time_id(instances_index.expressions.start, value_provider)
-        stop_id = evaluate_time_id(instances_index.expressions.stop, value_provider)
+        start_id = evaluate_time_id(
+            instances_index.expressions.start, value_provider, row_id
+        )
+        stop_id = evaluate_time_id(
+            instances_index.expressions.stop, value_provider, row_id
+        )
         step_id = 1
         if instances_index.expressions.step is not None:
-            step_id = evaluate_time_id(instances_index.expressions.step, value_provider)
+            step_id = evaluate_time_id(
+                instances_index.expressions.step, value_provider, row_id
+            )
         # ExpressionRange includes stop_id whereas range excludes it
         time_ids = list(range(start_id, stop_id + 1, step_id))
 

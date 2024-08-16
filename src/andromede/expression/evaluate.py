@@ -26,11 +26,15 @@ from andromede.expression.expression_efficient import (
     TimeAggregatorNode,
     TimeOperatorNode,
 )
-from andromede.expression.value_provider import ValueProvider
+from andromede.expression.value_provider import (
+    TimeScenarioIndex,
+    TimeScenarioIndices,
+    ValueProvider,
+)
 
 from .visitor import ExpressionVisitorOperations, visit
 
-
+# Used only for tests
 @dataclass(frozen=True)
 class EvaluationContext(ValueProvider):
     """
@@ -41,19 +45,35 @@ class EvaluationContext(ValueProvider):
     variables: Dict[str, float] = field(default_factory=dict)
     parameters: Dict[str, float] = field(default_factory=dict)
 
-    def get_variable_value(self, name: str) -> float:
-        return self.variables[name]
+    def get_variable_value(
+        self, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
+        return {TimeScenarioIndex(0, 0): self.variables[name]}
 
-    def get_parameter_value(self, name: str) -> float:
-        return self.parameters[name]
+    def get_parameter_value(
+        self, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
+        return {TimeScenarioIndex(0, 0): self.parameters[name]}
 
-    def get_component_variable_value(self, component_id: str, name: str) -> float:
+    def get_component_variable_value(
+        self, component_id: str, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
         raise NotImplementedError()
 
-    def get_component_parameter_value(self, component_id: str, name: str) -> float:
+    def get_component_parameter_value(
+        self, component_id: str, name: str, time_scenarios_indices: TimeScenarioIndices
+    ) -> Dict[TimeScenarioIndex, float]:
         raise NotImplementedError()
 
     def parameter_is_constant_over_time(self, name: str) -> bool:
+        raise NotImplementedError()
+
+    @staticmethod
+    def block_length() -> int:
+        raise NotImplementedError()
+
+    @staticmethod
+    def scenarios() -> int:
         raise NotImplementedError()
 
 

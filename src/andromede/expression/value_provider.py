@@ -32,7 +32,7 @@ class ValueProvider(ABC):
     Implementations are in charge of mapping parameters and variables to their values.
     Depending on the implementation, evaluation may require a component id or not.
     """
-
+    #TODO: To be removed, or should we keep it to evaluate solutions ?
     @abstractmethod
     def get_variable_value(
         self, name: str, time_scenarios_indices: TimeScenarioIndices
@@ -44,6 +44,7 @@ class ValueProvider(ABC):
         self, name: str, time_scenarios_indices: TimeScenarioIndices
     ) -> Dict[TimeScenarioIndex, float]: ...
 
+    #TODO: To be removed ?
     @abstractmethod
     def get_component_variable_value(
         self, component_id: str, name: str, time_scenarios_indices: TimeScenarioIndices

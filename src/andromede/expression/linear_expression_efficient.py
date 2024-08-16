@@ -31,7 +31,10 @@ from typing import (
 from andromede.expression.context_adder import add_component_context
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import evaluate
-from andromede.expression.evaluate_parameters_efficient import resolve_coefficient
+from andromede.expression.evaluate_parameters_efficient import (
+    check_resolved_expr,
+    resolve_coefficient,
+)
 from andromede.expression.expression_efficient import (
     ExpressionNodeEfficient,
     ExpressionRange,
@@ -54,6 +57,10 @@ from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure, RowIndex
 from andromede.expression.port_operator import PortAggregator, PortSum
 from andromede.expression.print import print_expr
+from andromede.expression.resolved_linear_expression import (
+    ResolvedLinearExpression,
+    ResolvedTerm,
+)
 from andromede.expression.scenario_operator import Expectation, ScenarioOperator
 from andromede.expression.time_operator import (
     TimeAggregator,
@@ -62,11 +69,11 @@ from andromede.expression.time_operator import (
     TimeShift,
     TimeSum,
 )
-from andromede.expression.resolved_linear_expression import (
-    ResolvedLinearExpression,
-    ResolvedTerm,
+from andromede.expression.value_provider import (
+    TimeScenarioIndex,
+    TimeScenarioIndices,
+    ValueProvider,
 )
-from andromede.expression.value_provider import ValueProvider
 
 
 @dataclass(frozen=True)
@@ -141,16 +148,29 @@ class TermEfficient:
             result += f".{str(self.scenario_operator)}"
         return result
 
-    def evaluate(self, context: ValueProvider) -> float:
+    def evaluate(self, context: ValueProvider, time_scenario_index: RowIndex) -> float:
         # TODO: Take care of component variables, multiple time scenarios, operators, etc
+        time_scenario_indices = TimeScenarioIndices(
+            [time_scenario_index.time], [time_scenario_index.scenario]
+        )
         # Probably very error prone
         if self.component_id:
             variable_value = context.get_component_variable_value(
-                self.component_id, self.variable_name
+                self.component_id, self.variable_name, time_scenario_indices
             )
         else:
-            variable_value = context.get_variable_value(self.variable_name)
-        return evaluate(self.coefficient, context) * variable_value
+            variable_value = context.get_variable_value(
+                self.variable_name, time_scenario_indices
+            )
+        check_resolved_expr(variable_value, time_scenario_index)
+        return (
+            resolve_coefficient(self.coefficient, context, time_scenario_index)
+            * variable_value[
+                TimeScenarioIndex(
+                    time_scenario_index.time, time_scenario_index.scenario
+                )
+            ]
+        )
 
     def compute_indexation(
         self, provider: IndexingStructureProvider
@@ -693,10 +713,13 @@ class LinearExpressionEfficient:
             if is_zero(port_term.coefficient):
                 del self.port_field_terms[port_term_key]
 
-    def evaluate(self, context: ValueProvider) -> float:
-        return sum([term.evaluate(context) for term in self.terms.values()]) + evaluate(
-            self.constant, context
-        )
+    def evaluate(self, context: ValueProvider, time_scenario_index: RowIndex) -> float:
+        return sum(
+            [
+                term.evaluate(context, time_scenario_index)
+                for term in self.terms.values()
+            ]
+        ) + resolve_coefficient(self.constant, context, time_scenario_index)
 
     def is_constant(self) -> bool:
         # Constant expr like x-x could be seen as non constant as we do not simplify coefficient tree...
