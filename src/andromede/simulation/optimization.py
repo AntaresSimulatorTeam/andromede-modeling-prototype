@@ -133,43 +133,34 @@ def _create_objective(
     solver: lp.Solver,
     opt_context: OptimizationContext,
     component: Component,
-    component_context: ComponentContext,
     objective_contribution: LinearExpressionEfficient,
 ) -> None:
     instantiated_expr = _instantiate_model_expression(
         objective_contribution, component.id, opt_context
     )
     # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
-    linear_expr = component_context.linearize_expression(0, 0, instantiated_expr)
+
+    value_provider = _make_value_provider(opt_context, component)
+    expression_resolver = LinearExpressionResolver(opt_context, value_provider)
+    resolved_expr = expression_resolver.resolve(instantiated_expr, RowIndex(0, 0))
 
     obj: lp.Objective = solver.Objective()
-    for term in linear_expr.terms.values():
+    for term in resolved_expr.terms:
         # TODO : How to handle the scenario operator in a general manner ?
-        if isinstance(term.scenario_aggregator, Expectation):
-            weight = 1 / opt_context.scenarios
-            scenario_ids = range(opt_context.scenarios)
-        else:
-            weight = 1
-            scenario_ids = range(1)
-
-        for scenario in scenario_ids:
-            solver_vars = _get_solver_vars(
-                term,
-                opt_context,
-                0,
-                scenario,
-                0,
-            )
-
-            for solver_var in solver_vars:
-                opt_context._solver_variables[solver_var].is_in_objective = True
-                obj.SetCoefficient(
-                    solver_var,
-                    obj.GetCoefficient(solver_var) + weight * term.coefficient,
-                )
+        # if isinstance(term.scenario_aggregator, Expectation):
+        #     weight = 1 / opt_context.scenarios
+        #     scenario_ids = range(opt_context.scenarios)
+        # else:
+        #     weight = 1
+        #     scenario_ids = range(1)
+        opt_context._solver_variables[term.variable].is_in_objective = True
+        obj.SetCoefficient(
+            term.variable,
+            obj.GetCoefficient(term.variable) + term.coefficient,
+        )
 
     # This should have no effect on the optimization
-    obj.SetOffset(linear_expr.constant + obj.offset())
+    obj.SetOffset(resolved_expr.constant + obj.offset())
 
 
 @dataclass
@@ -178,84 +169,6 @@ class ConstraintData:
     lower_bound: float
     upper_bound: float
     expression: ResolvedLinearExpression
-
-
-def _get_solver_vars(
-    term: Term,
-    context: OptimizationContext,
-    block_timestep: int,
-    scenario: int,
-    instance: int,
-) -> List[lp.Variable]:
-    solver_vars = []
-    if isinstance(term.time_aggregator, TimeSum):
-        if isinstance(term.time_operator, TimeShift):
-            for time_id in term.time_operator.time_ids:
-                solver_vars.append(
-                    context.get_component_variable(
-                        block_timestep + time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
-                )
-        elif isinstance(term.time_operator, TimeEvaluation):
-            for time_id in term.time_operator.time_ids:
-                solver_vars.append(
-                    context.get_component_variable(
-                        time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
-                )
-        else:  # time_operator is None, retrieve variable for each time step of the block. What happens if we do x.sum() with x not being indexed by time ? Is there a check that it is a valid expression ?
-            for time_id in range(context.block_length()):
-                solver_vars.append(
-                    context.get_component_variable(
-                        block_timestep + time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
-                )
-
-    else:  # time_aggregator is None
-        if isinstance(term.time_operator, TimeShift):
-            solver_vars.append(
-                context.get_component_variable(
-                    block_timestep + term.time_operator.time_ids[instance],
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
-            )
-        elif isinstance(term.time_operator, TimeEvaluation):
-            solver_vars.append(
-                context.get_component_variable(
-                    term.time_operator.time_ids[instance],
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
-            )
-        else:  # time_operator is None
-            # TODO: horrible tous ces if/else
-            solver_vars.append(
-                context.get_component_variable(
-                    block_timestep,
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
-            )
-    return solver_vars
 
 
 def make_constraint(
@@ -277,23 +190,6 @@ def make_constraint(
             term.variable,
             term.coefficient + solver_constraint.GetCoefficient(term.variable),
         )
-
-    # TODO : To be done in linear expression resolution coeff
-    # for term in data.expression.terms.values():
-    #     # Move this to resolve coefficient
-    #     solver_vars = _get_solver_vars(
-    #         term,
-    #         context,
-    #         block_timestep,
-    #         scenario,
-    #         instance,
-    #     )
-    #     for solver_var in solver_vars:
-    #         coefficient = term.coefficient + solver_constraint.GetCoefficient(
-    #             solver_var
-    #         )
-    #         solver_constraint.SetCoefficient(solver_var, coefficient)
-    # TODO: On pourrait aussi faire que l'objet Constraint n'ait pas de terme constant dans son expression et que les constantes soit déjà prises en compte dans les bornes, ça simplifierait le traitement ici
     constant += data.expression.constant
 
     solver_constraint.SetBounds(
@@ -479,7 +375,6 @@ class OptimizationProblem:
                         self.solver,
                         self.context,
                         component,
-                        component_context,
                         objective,
                     )
 

@@ -50,11 +50,15 @@ class LinearExpressionResolver:
             # Here, the value provide is used only to evaluate possible time operator args if the term has one
             resolved_variables = self.resolve_variables(term, row_id)
 
+            # TODO: For now all coefficients are the same for a given "variable_name", we are not able to represent things like sum(a_t * x_t)... but everything else is ok:
+            # sum(a_t') * x_t
+            # a_t * sum(x_t')
+            # a_t * x_t
+            # TODO: Next line is to be moved inside the for loop once we have figured out how to represent sum(a_t * x_t)
+            resolved_coeff = resolve_coefficient(
+                term.coefficient, self.value_provider, row_id
+            )
             for ts_id, lp_variable in resolved_variables.items():
-                # TODO: Where is key going to play a role ?
-                resolved_coeff = resolve_coefficient(
-                    term.coefficient, self.value_provider, row_id
-                )
                 resolved_terms.append(ResolvedTerm(resolved_coeff, lp_variable))
 
         resolved_constant = resolve_coefficient(
