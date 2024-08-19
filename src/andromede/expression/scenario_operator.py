@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class ScenarioOperator(ABC):
+class ScenarioAggregator(ABC):
     def __str__(self) -> str:
         return NotImplemented
 
@@ -30,7 +30,7 @@ class ScenarioOperator(ABC):
 
 
 @dataclass(frozen=True)
-class Expectation(ScenarioOperator):
+class Expectation(ScenarioAggregator):
     def __str__(self) -> str:
         return "expec()"
 
@@ -40,7 +40,7 @@ class Expectation(ScenarioOperator):
 
 
 @dataclass(frozen=True)
-class Variance(ScenarioOperator):
+class Variance(ScenarioAggregator):
     def __str__(self) -> str:
         return "variance()"
 

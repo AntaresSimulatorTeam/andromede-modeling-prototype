@@ -435,7 +435,9 @@ class ScenarioOperatorNode(UnaryOperatorNode):
             for _, cls in inspect.getmembers(
                 andromede.expression.scenario_operator, inspect.isclass
             )
-            if issubclass(cls, andromede.expression.scenario_operator.ScenarioOperator)
+            if issubclass(
+                cls, andromede.expression.scenario_operator.ScenarioAggregator
+            )
         ]
         if self.name not in valid_names:
             raise ValueError(

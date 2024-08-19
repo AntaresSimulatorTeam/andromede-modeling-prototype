@@ -411,7 +411,7 @@ def test_comparison() -> None:
                     time_aggregator=TimeSum(
                         stay_roll=True
                     ),  # The internal representation of shift(1) is sum(shift=1)
-                    scenario_operator=None,
+                    scenario_aggregator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
                         LiteralNode(1), TimeOperatorName.SHIFT, InstancesTimeIndex(1)
@@ -430,7 +430,7 @@ def test_comparison() -> None:
                         InstancesTimeIndex(1),
                     ),
                     time_aggregator=TimeSum(stay_roll=True),
-                    scenario_operator=None,
+                    scenario_aggregator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
                         LiteralNode(1), TimeOperatorName.SHIFT, InstancesTimeIndex(1)
@@ -459,7 +459,7 @@ def test_comparison() -> None:
                     time_aggregator=TimeSum(
                         stay_roll=True
                     ),  # The internal representation of eval(1) is sum(eval=1)
-                    scenario_operator=None,
+                    scenario_aggregator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
                         LiteralNode(1),
@@ -480,7 +480,7 @@ def test_comparison() -> None:
                         InstancesTimeIndex(1),
                     ),
                     time_aggregator=TimeSum(stay_roll=True),
-                    scenario_operator=None,
+                    scenario_aggregator=None,
                 ): TermEfficient(
                     TimeOperatorNode(
                         LiteralNode(1),
@@ -509,7 +509,7 @@ def test_comparison() -> None:
                     "x",
                     time_operator=None,
                     time_aggregator=TimeSum(stay_roll=False),
-                    scenario_operator=None,
+                    scenario_aggregator=None,
                 ): TermEfficient(
                     LiteralNode(1),  # Sum is not distributed to coeff
                     "",
@@ -522,7 +522,7 @@ def test_comparison() -> None:
                     "y",
                     time_operator=None,
                     time_aggregator=TimeSum(stay_roll=False),
-                    scenario_operator=None,
+                    scenario_aggregator=None,
                 ): TermEfficient(
                     LiteralNode(1),  # Sum is not distributed to coeff
                     "",

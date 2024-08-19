@@ -5,7 +5,8 @@ import pytest
 
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
+from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation.optimization_context import BlockBorderManagement
 from andromede.study import TimeScenarioIndex, TimeScenarioSeriesData
 from andromede.study.parsing import InputComponents, parse_yaml_components
 from andromede.study.resolve_components import (

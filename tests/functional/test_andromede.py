@@ -27,11 +27,8 @@ from andromede.libs.standard import (
 )
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
 from andromede.model.model import PortFieldDefinition, PortFieldId
-from andromede.simulation import (
-    BlockBorderManagement,
-    TimeBlock,
-    build_problem,
-)
+from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation.optimization_context import BlockBorderManagement
 from andromede.study import (
     ConstantData,
     DataBase,

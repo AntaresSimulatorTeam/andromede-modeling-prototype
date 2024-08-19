@@ -192,7 +192,7 @@ def test_is_zero(expr: LinearExpressionEfficient, expected: bool) -> None:
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ]
             ),
@@ -204,7 +204,7 @@ def test_is_zero(expr: LinearExpressionEfficient, expected: bool) -> None:
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     ),
                 ]
             ),
@@ -254,7 +254,7 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 3,
@@ -267,7 +267,7 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 6,
@@ -308,7 +308,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 5,
@@ -321,7 +321,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 -5,
@@ -397,7 +397,7 @@ def test_negation(
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ]
             ),
@@ -410,7 +410,7 @@ def test_negation(
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     ),
                 ]
             ),
@@ -447,7 +447,7 @@ def test_substraction(
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 15,
@@ -461,7 +461,7 @@ def test_substraction(
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 3,

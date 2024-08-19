@@ -2,12 +2,8 @@ import pandas as pd
 import pytest
 
 from andromede.model.library import Library
-from andromede.simulation import (
-    BlockBorderManagement,
-    OutputValues,
-    TimeBlock,
-    build_problem,
-)
+from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation.optimization_context import BlockBorderManagement
 from andromede.study import (
     ConstantData,
     DataBase,

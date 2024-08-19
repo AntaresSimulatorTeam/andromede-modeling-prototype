@@ -201,12 +201,14 @@ class ParameterEvaluationVisitor(ExpressionVisitor[Dict[TimeScenarioIndex, float
 
 def check_resolved_expr(
     resolved_expr: Dict[TimeScenarioIndex, float], row_id: RowIndex
-) -> bool:
+) -> None:
     # Check that the resolved expression has been correctly time and scenario aggregated so that only a float is left
     if len(resolved_expr) != 1:
         raise ValueError("Evaluation of expression cannot be reduced to a float value")
     if TimeScenarioIndex(row_id.time, row_id.scenario) not in resolved_expr:
-        raise ValueError("Expression has a time operator but not time aggregator, maybe you are missing a sum(), necessary even on one element")
+        raise ValueError(
+            "Expression has a time operator but not time aggregator, maybe you are missing a sum(), necessary even on one element"
+        )
 
 
 def resolve_coefficient(
@@ -227,12 +229,12 @@ class InstancesIndexVisitor(ParameterEvaluationVisitor):
     #     raise ValueError("An instance index expression cannot contain variable")
 
     # Probably useless as parameter nodes should have already be replaced by component parameter nodes ?
-    def parameter(self, node: ParameterNode) -> float:
+    def parameter(self, node: ParameterNode) -> Dict[TimeScenarioIndex, float]:
         if not self.context.parameter_is_constant_over_time(node.name):
             raise ValueError(
                 "Parameter given in an instance index expression must be constant over time"
             )
-        
+
         return self.context.get_parameter_value(node.name, self.time_scenario_indices)
 
     def comp_parameter(
@@ -246,10 +248,12 @@ class InstancesIndexVisitor(ParameterEvaluationVisitor):
             node.component_id, node.name, self.time_scenario_indices
         )
 
-    def time_operator(self, node: TimeOperatorNode) -> float:
+    def time_operator(self, node: TimeOperatorNode) -> Dict[TimeScenarioIndex, float]:
         raise ValueError("An instance index expression cannot contain time operator")
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> float:
+    def time_aggregator(
+        self, node: TimeAggregatorNode
+    ) -> Dict[TimeScenarioIndex, float]:
         raise ValueError("An instance index expression cannot contain time aggregator")
 
 

@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, TypeVar, Union
 
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.scenario_operator import ScenarioOperator
+from andromede.expression.scenario_operator import ScenarioAggregator
 from andromede.expression.time_operator import TimeAggregator, TimeOperator
 from andromede.model.model import PortFieldId
 
@@ -53,7 +53,7 @@ class TermKey:
     variable_name: str
     time_operator: Optional[TimeOperator]
     time_aggregator: Optional[TimeAggregator]
-    scenario_operator: Optional[ScenarioOperator]
+    scenario_aggregator: Optional[ScenarioAggregator]
 
 
 @dataclass(frozen=True)
@@ -74,7 +74,7 @@ class Term:
     )
     time_operator: Optional[TimeOperator] = None
     time_aggregator: Optional[TimeAggregator] = None
-    scenario_operator: Optional[ScenarioOperator] = None
+    scenario_aggregator: Optional[ScenarioAggregator] = None
 
     # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
 
@@ -98,8 +98,8 @@ class Term:
             result += f".{str(self.time_operator)}"
         if self.time_aggregator is not None:
             result += f".{str(self.time_aggregator)}"
-        if self.scenario_operator is not None:
-            result += f".{str(self.scenario_operator)}"
+        if self.scenario_aggregator is not None:
+            result += f".{str(self.scenario_aggregator)}"
         return result
 
     def number_of_instances(self) -> int:
@@ -118,7 +118,7 @@ def generate_key(term: Term) -> TermKey:
         term.variable_name,
         term.time_operator,
         term.time_aggregator,
-        term.scenario_operator,
+        term.scenario_aggregator,
     )
 
 
@@ -141,7 +141,7 @@ def _merge_dicts(
                     v.structure,
                     v.time_operator,
                     v.time_aggregator,
-                    v.scenario_operator,
+                    v.scenario_aggregator,
                 ),
             ),
         )
@@ -155,7 +155,7 @@ def _merge_dicts(
                     v.structure,
                     v.time_operator,
                     v.time_aggregator,
-                    v.scenario_operator,
+                    v.scenario_aggregator,
                 ),
                 v,
             )
@@ -168,7 +168,7 @@ def _merge_is_possible(lhs: Term, rhs: Term) -> None:
     if (
         lhs.time_operator != rhs.time_operator
         or lhs.time_aggregator != rhs.time_aggregator
-        or lhs.scenario_operator != rhs.scenario_operator
+        or lhs.scenario_aggregator != rhs.scenario_aggregator
     ):
         raise ValueError("Cannot merge terms with different operators")
     if lhs.structure != rhs.structure:
@@ -184,7 +184,7 @@ def _add_terms(lhs: Term, rhs: Term) -> Term:
         lhs.structure,
         lhs.time_operator,
         lhs.time_aggregator,
-        lhs.scenario_operator,
+        lhs.scenario_aggregator,
     )
 
 
@@ -197,7 +197,7 @@ def _substract_terms(lhs: Term, rhs: Term) -> Term:
         lhs.structure,
         lhs.time_operator,
         lhs.time_aggregator,
-        lhs.scenario_operator,
+        lhs.scenario_aggregator,
     )
 
 
@@ -342,7 +342,7 @@ class LinearExpression:
                         term.structure,
                         term.time_operator,
                         term.time_aggregator,
-                        term.scenario_operator,
+                        term.scenario_aggregator,
                     )
                 _copy_expression(left_expr, self)
         return self
@@ -374,7 +374,7 @@ class LinearExpression:
                         term.structure,
                         term.time_operator,
                         term.time_aggregator,
-                        term.scenario_operator,
+                        term.scenario_aggregator,
                     )
         return self
 

@@ -28,11 +28,14 @@ from typing import (
     overload,
 )
 
+import ortools.linear_solver.pywraplp as lp
+
 from andromede.expression.context_adder import add_component_context
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import evaluate
 from andromede.expression.evaluate_parameters_efficient import (
     check_resolved_expr,
+    get_time_ids_from_instances_index,
     resolve_coefficient,
 )
 from andromede.expression.expression_efficient import (
@@ -61,7 +64,7 @@ from andromede.expression.resolved_linear_expression import (
     ResolvedLinearExpression,
     ResolvedTerm,
 )
-from andromede.expression.scenario_operator import Expectation, ScenarioOperator
+from andromede.expression.scenario_operator import Expectation, ScenarioAggregator
 from andromede.expression.time_operator import (
     TimeAggregator,
     TimeEvaluation,
@@ -86,7 +89,7 @@ class TermKeyEfficient:
     variable_name: str
     time_operator: Optional[TimeOperator]
     time_aggregator: Optional[TimeAggregator]
-    scenario_operator: Optional[ScenarioOperator]
+    scenario_aggregator: Optional[ScenarioAggregator]
 
 
 @dataclass(frozen=True)
@@ -107,7 +110,7 @@ class TermEfficient:
     )
     time_operator: Optional[TimeOperator] = None
     time_aggregator: Optional[TimeAggregator] = None
-    scenario_operator: Optional[ScenarioOperator] = None
+    scenario_aggregator: Optional[ScenarioAggregator] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "coefficient", wrap_in_node(self.coefficient))
@@ -121,7 +124,7 @@ class TermEfficient:
             and self.structure == other.structure
             and self.time_operator == other.time_operator
             and self.time_aggregator == other.time_aggregator
-            and self.scenario_operator == other.scenario_operator
+            and self.scenario_aggregator == other.scenario_aggregator
         )
 
     def is_zero(self) -> bool:
@@ -144,8 +147,8 @@ class TermEfficient:
             result += f".{str(self.time_operator)}"
         if self.time_aggregator is not None:
             result += f".{str(self.time_aggregator)}"
-        if self.scenario_operator is not None:
-            result += f".{str(self.scenario_operator)}"
+        if self.scenario_aggregator is not None:
+            result += f".{str(self.scenario_aggregator)}"
         return result
 
     def evaluate(self, context: ValueProvider, time_scenario_index: RowIndex) -> float:
@@ -195,7 +198,7 @@ class TermEfficient:
         return time
 
     def _compute_scenario_indexing(self, provider: IndexingStructureProvider) -> bool:
-        if self.scenario_operator:
+        if self.scenario_aggregator:
             scenario = False
         else:
             # TODO: Improve this if/else structure, probably simplify IndexingStructureProvider
@@ -320,7 +323,7 @@ class TermEfficient:
 
     def expec(self) -> "TermEfficient":
         # TODO: Do we need checks, in case a scenario operator is already specified ?
-        return dataclasses.replace(self, scenario_operator=Expectation())
+        return dataclasses.replace(self, scenario_aggregator=Expectation())
 
 
 def generate_key(term: TermEfficient) -> TermKeyEfficient:
@@ -329,7 +332,7 @@ def generate_key(term: TermEfficient) -> TermKeyEfficient:
         term.variable_name,
         term.time_operator,
         term.time_aggregator,
-        term.scenario_operator,
+        term.scenario_aggregator,
     )
 
 
@@ -377,7 +380,8 @@ def _merge_dicts(
     rhs: Dict[TermKeyEfficient, TermEfficient],
     merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
     neutral: float,
-) -> Dict[TermKeyEfficient, TermEfficient]: ...
+) -> Dict[TermKeyEfficient, TermEfficient]:
+    ...
 
 
 @overload
@@ -386,7 +390,8 @@ def _merge_dicts(
     rhs: Dict[PortFieldId, PortFieldTerm],
     merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
     neutral: float,
-) -> Dict[PortFieldId, PortFieldTerm]: ...
+) -> Dict[PortFieldId, PortFieldTerm]:
+    ...
 
 
 def _get_neutral_term(term: T_val, neutral: float) -> T_val:
@@ -418,7 +423,7 @@ def _merge_term_is_possible(lhs: TermEfficient, rhs: TermEfficient) -> None:
     if (
         lhs.time_operator != rhs.time_operator
         or lhs.time_aggregator != rhs.time_aggregator
-        or lhs.scenario_operator != rhs.scenario_operator
+        or lhs.scenario_aggregator != rhs.scenario_aggregator
     ):
         raise ValueError("Cannot merge terms with different operators")
     if lhs.structure != rhs.structure:
@@ -964,29 +969,6 @@ class LinearExpressionEfficient:
         return LinearExpressionEfficient(
             result_terms, result_constant, self.port_field_terms
         )
-
-    def resolve_coefficient(
-        self, value_provider: ValueProvider, row_id: RowIndex
-    ) -> ResolvedLinearExpression:
-
-        resolved_terms = []
-        for term in self.terms.values():
-            resolved_coeff = resolve_coefficient(
-                term.coefficient, value_provider, row_id
-            )
-            resolved_variable = ...
-            resolved_terms.append(ResolvedTerm(resolved_coeff, resolved_variable))
-
-        resolved_constant = resolve_coefficient(self.constant, value_provider, row_id)
-        return ResolvedLinearExpression(resolved_terms, resolved_constant)
-
-    def resolve_constant_expr(
-        self, value_provider: ValueProvider, row_id: RowIndex
-    ) -> float:
-        if not self.is_constant():
-            raise ValueError(f"{str(self)} is not a constant expression")
-        resolved_expr = self.resolve_coefficient(value_provider, row_id)
-        return resolved_expr.constant
 
 
 def linear_expressions_equal(

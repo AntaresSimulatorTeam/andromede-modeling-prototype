@@ -18,11 +18,8 @@ with Benders solver related functions
 import pathlib
 from typing import Any, Dict, List, Optional
 
-from andromede.simulation.optimization import (
-    BlockBorderManagement,
-    OptimizationProblem,
-    build_problem,
-)
+from andromede.simulation.optimization import OptimizationProblem, build_problem
+from andromede.simulation.optimization_context import BlockBorderManagement
 from andromede.simulation.output_values import (
     BendersDecomposedSolution,
     BendersMergedSolution,

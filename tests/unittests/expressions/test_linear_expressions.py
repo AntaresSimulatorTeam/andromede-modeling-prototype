@@ -38,14 +38,14 @@ from andromede.simulation.linear_expression import LinearExpression, Term, TermK
             ),
             "-3x.shift([2, 3]).sum(False)",
         ),
-        (Term(-3, "c", "x", scenario_operator=Expectation()), "-3x.expec()"),
+        (Term(-3, "c", "x", scenario_aggregator=Expectation()), "-3x.expec()"),
         (
             Term(
                 -3,
                 "c",
                 "x",
                 time_aggregator=TimeSum(True),
-                scenario_operator=Expectation(),
+                scenario_aggregator=Expectation(),
             ),
             "-3x.sum(True).expec()",
         ),
@@ -151,7 +151,7 @@ def test_instantiate_linear_expression_from_dict(
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ]
             ),
@@ -163,7 +163,7 @@ def test_instantiate_linear_expression_from_dict(
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     ),
                 ]
             ),
@@ -217,7 +217,7 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 3,
@@ -230,7 +230,7 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         "c",
                         "x",
                         time_operator=TimeShift(-1),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 6,
@@ -269,7 +269,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 5,
@@ -282,7 +282,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 -5,
@@ -343,7 +343,7 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ]
             ),
@@ -356,7 +356,7 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     ),
                 ]
             ),
@@ -391,7 +391,7 @@ def test_substraction(
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 15,
@@ -405,7 +405,7 @@ def test_substraction(
                         "x",
                         time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 3,

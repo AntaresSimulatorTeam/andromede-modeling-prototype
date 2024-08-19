@@ -130,7 +130,7 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
         result_terms = {}
         for term in operand_expr.terms.values():
             term_with_operator = dataclasses.replace(
-                term, scenario_operator=scenario_operator_cls()
+                term, scenario_aggregator=scenario_operator_cls()
             )
             result_terms[generate_key(term_with_operator)] = term_with_operator
 

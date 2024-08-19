@@ -34,6 +34,7 @@ from andromede.expression.value_provider import (
 
 from .visitor import ExpressionVisitorOperations, visit
 
+
 # Used only for tests
 @dataclass(frozen=True)
 class EvaluationContext(ValueProvider):

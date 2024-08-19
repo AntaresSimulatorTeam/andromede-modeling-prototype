@@ -236,7 +236,6 @@ def test_resolve_coefficient_on_expression_with_shift_but_without_sum_raises_val
 def test_resolve_coefficient_with_no_time_varying_parameter_in_time_operator_argument_raises_value_error(
     expr: ExpressionNodeEfficient,
 ) -> None:
-
     class TimeVaryingParameterValueProvider(CustomValueProvider):
         def parameter_is_constant_over_time(self, name: str) -> bool:
             return False

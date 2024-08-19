@@ -14,7 +14,8 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.libs.standard_sc import SHORT_TERM_STORAGE_COMPLEX
-from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
+from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation.optimization_context import BlockBorderManagement
 from andromede.study import (
     ConstantData,
     DataBase,
