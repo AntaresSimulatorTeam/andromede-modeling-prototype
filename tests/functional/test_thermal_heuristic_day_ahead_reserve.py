@@ -19,7 +19,6 @@ from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
 )
 from andromede.study.data import ComponentParameterIndex
-from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
     HeuristicAccurateModelBuilder,
@@ -35,6 +34,7 @@ from tests.functional.libs.lib_thermal_heuristic import (
     NODE_WITH_RESERVE_MODEL,
     DEMAND_WITH_RESERVE_MODEL,
 )
+from tests.functional.conftest import ExpectedOutput, ExpectedOutputIndexes
 
 
 @pytest.fixture

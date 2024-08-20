@@ -24,7 +24,7 @@ from andromede.libs.standard import (
 )
 from andromede.study.data import ComponentParameterIndex
 from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
-from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
+from tests.functional.conftest import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
     FastModelBuilder,

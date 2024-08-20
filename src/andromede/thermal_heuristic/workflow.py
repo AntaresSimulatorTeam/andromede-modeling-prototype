@@ -23,7 +23,8 @@ from andromede.simulation import (
 from andromede.study import DataBase, Network
 from typing import List
 
-@dataclass
+
+@dataclass(frozen=True)
 class SolvingParameters:
     solver_parameters: pywraplp.MPSolverParameters = pywraplp.MPSolverParameters()
     expected_status: str = pywraplp.Solver.OPTIMAL

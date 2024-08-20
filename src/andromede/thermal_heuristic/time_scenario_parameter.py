@@ -15,14 +15,14 @@ from dataclasses import dataclass
 from typing import List
 
 
-@dataclass
+@dataclass(frozen=True)
 class TimeScenarioHourParameter:
     week: int
     scenario: int
     hour: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class BlockScenarioIndex:
     week: int
     scenario: int
