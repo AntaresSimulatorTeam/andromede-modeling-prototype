@@ -11,6 +11,7 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
+from typing import List
 
 import ortools.linear_solver.pywraplp as pywraplp
 
@@ -21,7 +22,6 @@ from andromede.simulation import (
     build_problem,
 )
 from andromede.study import DataBase, Network
-from typing import List
 
 
 @dataclass(frozen=True)

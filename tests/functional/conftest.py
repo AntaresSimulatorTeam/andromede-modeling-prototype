@@ -9,19 +9,16 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+from dataclasses import dataclass
 from pathlib import Path
+from typing import List, Tuple
 
 import pytest
 
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from dataclasses import dataclass
-
-import pytest
-
 from andromede.simulation import OutputValues
 from andromede.thermal_heuristic.time_scenario_parameter import BlockScenarioIndex
-from typing import List, Tuple
 
 
 @pytest.fixture(scope="session")
@@ -53,7 +50,7 @@ class ExpectedOutput:
         self,
         mode: str,
         index: BlockScenarioIndex,
-        dir_path: str,
+        dir_path: Path,
         list_cluster: List[str],
         output_idx: ExpectedOutputIndexes,
     ):
@@ -106,20 +103,18 @@ class ExpectedOutput:
             ]
 
     def read_expected_output(
-        self, dir_path: str, index: BlockScenarioIndex
+        self, dir_path: Path, index: BlockScenarioIndex
     ) -> Tuple[List[List[str]], List[List[str]]]:
-        folder_name = (
-            "tests/functional/" + dir_path + "/" + self.mode + "/" + str(index.scenario)
-        )
+        folder_name = dir_path / self.mode / str(index.scenario)
 
         expected_output_clusters_file = open(
-            folder_name + "/details-hourly.txt",
+            folder_name / "details-hourly.txt",
             "r",
         )
         expected_output_clusters = expected_output_clusters_file.readlines()
 
         expected_output_general_file = open(
-            folder_name + "/values-hourly.txt",
+            folder_name / "values-hourly.txt",
             "r",
         )
         expected_output_general = expected_output_general_file.readlines()

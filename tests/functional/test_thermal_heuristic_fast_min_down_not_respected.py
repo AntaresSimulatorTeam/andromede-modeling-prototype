@@ -11,6 +11,7 @@
 # This file is part of the Antares project.
 
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -18,44 +19,77 @@ import pytest
 
 from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
+from andromede.study.parsing import InputComponents
 from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
 from andromede.thermal_heuristic.model import (
     FastModelBuilder,
     HeuristicFastModelBuilder,
 )
 from andromede.thermal_heuristic.problem import (
+    BlockScenarioIndex,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    BlockScenarioIndex,
+    get_database,
+    get_heuristic_components,
+    get_input_components,
+    get_network,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 @pytest.fixture
-def data_path() -> str:
-    return "data/thermal_heuristic_fast_min_down_not_respected"
+def data_path() -> Path:
+    return Path(__file__).parent / "data/thermal_heuristic_fast_min_down_not_respected"
 
 
-def test_fast_heuristic(data_path: str) -> None:
+@pytest.fixture
+def input_components() -> InputComponents:
+    return get_input_components(data_path() / "components.yml")
+
+
+@pytest.fixture
+def heuristic_components() -> List[str]:
+    return get_heuristic_components(input_components(), THERMAL_CLUSTER_MODEL_MILP.id)
+
+
+@pytest.fixture
+def time_scenario_parameters() -> TimeScenarioHourParameter:
+    return TimeScenarioHourParameter(1, 1, 168)
+
+
+def test_fast_heuristic(
+    data_path: Path,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
+) -> None:
     """
     Solve a weekly problem with fast heuristic. The thermal cluster has long d_min_up and d_min_down. The fast heuristic doesn't respect the d_min constraints.
     """
     number_hours = 168
     week_scenario_index = BlockScenarioIndex(0, 0)
 
-    thermal_problem_builder = ThermalProblemBuilder(
-        fast=True,
-        data_dir=Path(__file__).parent / data_path,
-        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
+    network = get_network(
+        input_components,
         port_types=[],
         models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model],
-        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=True,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
     )
 
-    cluster = thermal_problem_builder.heuristic_components()[0]
+    thermal_problem_builder = ThermalProblemBuilder(
+        database=database,
+        network=network,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
 
     pmax = thermal_problem_builder.database.get_value(
-        ComponentParameterIndex(cluster, "p_max"), 0, 0
+        ComponentParameterIndex(heuristic_components[0], "p_max"), 0, 0
     )
     nb_on_1 = pd.DataFrame(
         np.ceil(
@@ -72,23 +106,25 @@ def test_fast_heuristic(data_path: str) -> None:
     )
 
     thermal_problem_builder.database.add_data(
-        cluster, "n_guide", TimeScenarioSeriesData(nb_on_1)
+        heuristic_components[0], "n_guide", TimeScenarioSeriesData(nb_on_1)
     )
 
     # Solve heuristic problem
     resolution_step_heuristic = thermal_problem_builder.heuristic_resolution_step(
-        id_component=cluster,
+        id_component=heuristic_components[0],
         index=week_scenario_index,
         model=HeuristicFastModelBuilder(
             number_hours,
-            slot_length=compute_slot_length(cluster, thermal_problem_builder.database),
+            slot_length=compute_slot_length(
+                heuristic_components[0], thermal_problem_builder.database
+            ),
         ).model,
     )
 
     thermal_problem_builder.update_database_heuristic(
         resolution_step_heuristic.output,
         week_scenario_index,
-        [cluster],
+        heuristic_components,
         var_to_read="n",
         param_to_update="min_generating",
         fn_to_apply=lambda x, y, z: min(x * y, z),
@@ -100,7 +136,7 @@ def test_fast_heuristic(data_path: str) -> None:
     )
     for t in range(number_hours):
         assert thermal_problem_builder.database.get_value(
-            ComponentParameterIndex(cluster, "min_generating"),
+            ComponentParameterIndex(heuristic_components[0], "min_generating"),
             t,
             week_scenario_index.scenario,
         ) == pytest.approx(expected_output[t])

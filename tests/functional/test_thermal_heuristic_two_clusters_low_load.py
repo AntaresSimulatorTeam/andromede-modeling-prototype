@@ -12,6 +12,7 @@
 
 from math import ceil
 from pathlib import Path
+from typing import List
 
 import ortools.linear_solver.pywraplp as pywraplp
 import pytest
@@ -23,8 +24,8 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
+from andromede.study.parsing import InputComponents
 from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
-from tests.functional.conftest import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
     FastModelBuilder,
@@ -33,11 +34,16 @@ from andromede.thermal_heuristic.model import (
     Model,
 )
 from andromede.thermal_heuristic.problem import (
+    BlockScenarioIndex,
     SolvingParameters,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    BlockScenarioIndex,
+    get_database,
+    get_heuristic_components,
+    get_input_components,
+    get_network,
 )
+from tests.functional.conftest import ExpectedOutput, ExpectedOutputIndexes
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
@@ -50,8 +56,8 @@ def solver_parameters() -> pywraplp.MPSolverParameters:
 
 
 @pytest.fixture
-def data_path() -> str:
-    return "data/thermal_heuristic_two_clusters_low_load"
+def data_path() -> Path:
+    return Path(__file__).parent / "data/thermal_heuristic_two_clusters_low_load"
 
 
 @pytest.fixture
@@ -59,21 +65,50 @@ def models() -> list[Model]:
     return [DEMAND_MODEL, NODE_BALANCE_MODEL, SPILLAGE_MODEL, UNSUPPLIED_ENERGY_MODEL]
 
 
+@pytest.fixture
+def input_components() -> InputComponents:
+    return get_input_components(data_path() / "components.yml")
+
+
+@pytest.fixture
+def heuristic_components() -> List[str]:
+    return get_heuristic_components(input_components(), THERMAL_CLUSTER_MODEL_MILP.id)
+
+
+@pytest.fixture
+def time_scenario_parameters() -> TimeScenarioHourParameter:
+    return TimeScenarioHourParameter(1, 1, 168)
+
+
 def test_milp_version(
-    solver_parameters: pywraplp.MPSolverParameters, data_path: str, models: list[Model]
+    solver_parameters: pywraplp.MPSolverParameters,
+    models: list[Model],
+    data_path: Path,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
 ) -> None:
     """Solve weekly problem with two clusters and low residual load."""
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=8, idx_spillage=10, idx_unsupplied=9
     )
-
-    thermal_problem_builder = ThermalProblemBuilder(
-        fast=False,
-        data_dir=Path(__file__).parent / data_path,
-        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
+    network = get_network(
+        input_components,
         port_types=[BALANCE_PORT_TYPE],
         models=[THERMAL_CLUSTER_MODEL_MILP] + models,
-        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=False,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
+
+    thermal_problem_builder = ThermalProblemBuilder(
+        network=network,
+        database=database,
+        time_scenario_hour_parameter=time_scenario_parameters,
     )
 
     for scenario in range(
@@ -90,7 +125,7 @@ def test_milp_version(
                 mode="milp",
                 index=week_scenario_index,
                 dir_path=data_path,
-                list_cluster=thermal_problem_builder.heuristic_components(),
+                list_cluster=heuristic_components,
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(resolution_step.output)
@@ -102,7 +137,12 @@ def test_milp_version(
 
 
 def test_accurate_heuristic(
-    solver_parameters: pywraplp.MPSolverParameters, data_path: str, models: list[Model]
+    solver_parameters: pywraplp.MPSolverParameters,
+    models: list[Model],
+    data_path: Path,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
 ) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares. Spillage is bigger.
@@ -111,14 +151,23 @@ def test_accurate_heuristic(
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=8, idx_spillage=11, idx_unsupplied=10
     )
-
-    thermal_problem_builder = ThermalProblemBuilder(
-        fast=False,
-        data_dir=Path(__file__).parent / data_path,
-        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
+    network = get_network(
+        input_components,
         port_types=[BALANCE_PORT_TYPE],
         models=[AccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model] + models,
-        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=False,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
+
+    thermal_problem_builder = ThermalProblemBuilder(
+        network=network,
+        database=database,
+        time_scenario_hour_parameter=time_scenario_parameters,
     )
 
     for scenario in range(
@@ -135,13 +184,13 @@ def test_accurate_heuristic(
             thermal_problem_builder.update_database_heuristic(
                 resolution_step_1.output,
                 week_scenario_index,
-                None,
+                heuristic_components,
                 param_to_update="nb_units_min",
                 var_to_read="nb_on",
                 fn_to_apply=lambda x: ceil(round(x, 12)),
             )
 
-            for g in thermal_problem_builder.heuristic_components():
+            for g in heuristic_components:
                 # Solve heuristic problem
                 resolution_step_accurate_heuristic = (
                     thermal_problem_builder.heuristic_resolution_step(
@@ -173,7 +222,7 @@ def test_accurate_heuristic(
                 mode="accurate",
                 index=week_scenario_index,
                 dir_path=data_path,
-                list_cluster=thermal_problem_builder.heuristic_components(),
+                list_cluster=heuristic_components,
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(resolution_step_2.output)
@@ -185,7 +234,12 @@ def test_accurate_heuristic(
 
 
 def test_fast_heuristic(
-    solver_parameters: pywraplp.MPSolverParameters, data_path: str, models: list[Model]
+    solver_parameters: pywraplp.MPSolverParameters,
+    models: list[Model],
+    data_path: Path,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
 ) -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares. Spillage is bigger.
@@ -193,14 +247,23 @@ def test_fast_heuristic(
     output_indexes = ExpectedOutputIndexes(
         idx_generation=4, idx_nodu=8, idx_spillage=11, idx_unsupplied=10
     )
-
-    thermal_problem_builder = ThermalProblemBuilder(
-        fast=True,
-        data_dir=Path(__file__).parent / data_path,
-        id_thermal_cluster_model=THERMAL_CLUSTER_MODEL_MILP.id,
+    network = get_network(
+        input_components,
         port_types=[BALANCE_PORT_TYPE],
         models=[FastModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model] + models,
-        time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=True,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
+
+    thermal_problem_builder = ThermalProblemBuilder(
+        network=network,
+        database=database,
+        time_scenario_hour_parameter=time_scenario_parameters,
     )
 
     for scenario in range(
@@ -217,14 +280,14 @@ def test_fast_heuristic(
             thermal_problem_builder.update_database_heuristic(
                 resolution_step_1.output,
                 week_scenario_index,
-                list_cluster_id=None,
+                list_cluster_id=heuristic_components,
                 var_to_read="generation",
                 param_to_update="n_guide",
                 fn_to_apply=lambda x, y: ceil(round(x / y, 12)),
                 param_needed_to_compute=["p_max"],
             )
 
-            for g in thermal_problem_builder.heuristic_components():  #
+            for g in heuristic_components:  #
                 resolution_step_heuristic = (
                     thermal_problem_builder.heuristic_resolution_step(
                         id_component=g,
@@ -258,7 +321,7 @@ def test_fast_heuristic(
                 mode="fast",
                 index=week_scenario_index,
                 dir_path=data_path,
-                list_cluster=thermal_problem_builder.heuristic_components(),
+                list_cluster=heuristic_components,
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(

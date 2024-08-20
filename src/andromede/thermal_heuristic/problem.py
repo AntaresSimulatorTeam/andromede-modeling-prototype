@@ -10,14 +10,11 @@
 #
 # This file is part of the Antares project.
 
-from math import ceil
 from pathlib import Path
 from typing import Callable, List, Optional
 
-import numpy as np
-
 from andromede.model import Model, PortType
-from andromede.model.library import Library, library
+from andromede.model.library import library
 from andromede.simulation import OutputValues
 from andromede.study import ConstantData, DataBase, Network, create_component
 from andromede.study.data import ComponentParameterIndex
@@ -30,11 +27,10 @@ from andromede.study.resolve_components import (
 from andromede.thermal_heuristic.cluster_parameter import (
     complete_database_for_fast_heuristic,
     complete_database_with_cluster_parameters,
-    get_parameter,
 )
 from andromede.thermal_heuristic.time_scenario_parameter import (
-    TimeScenarioHourParameter,
     BlockScenarioIndex,
+    TimeScenarioHourParameter,
     timesteps,
 )
 from andromede.thermal_heuristic.workflow import ResolutionStep, SolvingParameters
@@ -43,23 +39,13 @@ from andromede.thermal_heuristic.workflow import ResolutionStep, SolvingParamete
 class ThermalProblemBuilder:
     def __init__(
         self,
-        fast: bool,
-        data_dir: Path,
-        id_thermal_cluster_model: str,
-        port_types: List[PortType],
-        models: List[Model],
         time_scenario_hour_parameter: TimeScenarioHourParameter,
+        network: Network,
+        database: DataBase,
     ) -> None:
-        lib = library(
-            port_types=port_types,
-            models=models,
-        )
         self.time_scenario_hour_parameter = time_scenario_hour_parameter
-        self.id_thermal_cluster_model = id_thermal_cluster_model
-
-        input_components = get_input_components(data_dir / "components.yml")
-        self.network = get_network(input_components, lib)
-        self.database = self.get_database(input_components, data_dir, fast)
+        self.database = database
+        self.network = network
 
     def main_resolution_step(
         self,
@@ -81,14 +67,12 @@ class ThermalProblemBuilder:
         self,
         output: OutputValues,
         index: BlockScenarioIndex,
-        list_cluster_id: Optional[List[str]],
+        list_cluster_id: List[str],
         param_to_update: str,
         var_to_read: str,
         fn_to_apply: Callable,
         param_needed_to_compute: Optional[List[str]] = None,
     ) -> None:
-        if list_cluster_id is None:
-            list_cluster_id = self.heuristic_components()
         for cluster in list_cluster_id:
             if (
                 ComponentParameterIndex(cluster, param_to_update)
@@ -146,34 +130,41 @@ class ThermalProblemBuilder:
         resolution_step.solve(solving_parameters)
         return resolution_step
 
-    def get_database(
-        self,
-        components_file: InputComponents,
-        data_dir: Path,
-        fast: bool,
-    ) -> DataBase:
-        database = build_data_base(components_file, data_dir)
 
-        complete_database_with_cluster_parameters(
-            database, self.heuristic_components(), self.time_scenario_hour_parameter
+def get_database(
+    components_file: InputComponents,
+    data_dir: Path,
+    fast: bool,
+    cluster: List[str],
+    time_scenario_hour_parameter: TimeScenarioHourParameter,
+) -> DataBase:
+    database = build_data_base(components_file, data_dir)
+
+    complete_database_with_cluster_parameters(
+        database, cluster, time_scenario_hour_parameter
+    )
+
+    if fast:
+        complete_database_for_fast_heuristic(
+            database, cluster, time_scenario_hour_parameter
         )
 
-        if fast:
-            complete_database_for_fast_heuristic(
-                database, self.heuristic_components(), self.time_scenario_hour_parameter
-            )
-
-        return database
-
-    def heuristic_components(self) -> List[str]:
-        return [
-            c.id
-            for c in self.network.components
-            if c.model.id == self.id_thermal_cluster_model
-        ]
+    return database
 
 
-def get_network(components_file: InputComponents, lib: Library) -> Network:
+def get_heuristic_components(
+    components_file: InputComponents, id_heuristic_model: str
+) -> List[str]:
+    return [c.id for c in components_file.components if c.model == id_heuristic_model]
+
+
+def get_network(
+    components_file: InputComponents, port_types: List[PortType], models: List[Model]
+) -> Network:
+    lib = library(
+        port_types=port_types,
+        models=models,
+    )
     components_input = resolve_components_and_cnx(components_file, lib)
     network = build_network(components_input)
     return network

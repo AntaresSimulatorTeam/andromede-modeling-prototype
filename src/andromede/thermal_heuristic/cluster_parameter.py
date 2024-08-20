@@ -11,6 +11,8 @@
 # This file is part of the Antares project.
 
 
+from typing import List, Tuple
+
 import pandas as pd
 
 from andromede.study import (
@@ -27,12 +29,10 @@ from andromede.thermal_heuristic.data import (
     get_max_unit_for_min_down_time,
 )
 from andromede.thermal_heuristic.time_scenario_parameter import (
-    TimeScenarioHourParameter,
     BlockScenarioIndex,
+    TimeScenarioHourParameter,
     timesteps,
 )
-
-from typing import List, Tuple
 
 
 def compute_slot_length(thermal_cluster: str, database: DataBase) -> int:
