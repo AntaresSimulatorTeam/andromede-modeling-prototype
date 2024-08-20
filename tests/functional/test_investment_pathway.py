@@ -82,7 +82,10 @@ def candidate() -> Component:
             ],
             ports=[
                 ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port"),
-                ModelPort(port_type=PATHWAY_PORT_TYPE, port_name="pathway_port"),
+                ModelPort(
+                    port_type=PATHWAY_PORT_TYPE, port_name="pathway_port_receive"
+                ),
+                ModelPort(port_type=PATHWAY_PORT_TYPE, port_name="pathway_port_send"),
             ],
             port_fields_definitions=[
                 PortFieldDefinition(
@@ -90,7 +93,7 @@ def candidate() -> Component:
                     definition=var("generation"),
                 ),
                 PortFieldDefinition(
-                    port_field=PortFieldId("pathway_port", "invest"),
+                    port_field=PortFieldId("pathway_port_send", "invest"),
                     definition=var("invested_capa"),
                 ),
             ],
@@ -104,8 +107,9 @@ def candidate() -> Component:
             binding_constraints=[
                 Constraint(
                     name="Pathway",
-                    expression=port_field("pathway_port", "invest")
+                    expression=port_field("pathway_port_receive", "invest")
                     == var("invested_capa") - var("delta_invest"),
+                    context=ProblemContext.INVESTMENT,
                 )
             ],
             objective_operational_contribution=(param("op_cost") * var("generation"))
@@ -225,6 +229,28 @@ def test_investment_pathway_on_sequential_nodes(
         PortRef(candidate_par, "balance_port"), PortRef(node, "balance_port")
     )
 
+    stub_model = create_component(
+        model=model(
+            id="Toto",
+            ports=[
+                ModelPort(port_type=PATHWAY_PORT_TYPE, port_name="pathway_port_stub")
+            ],
+            port_fields_definitions=[
+                PortFieldDefinition(
+                    port_field=PortFieldId("pathway_port_stub", "invest"),
+                    definition=literal(1),
+                )
+            ],
+        ),
+        id="Tata",
+    )
+
+    network_par.connect2(
+        PortRef(candidate_par, "pathway_port_receive"),
+        network_par,
+        PortRef(stub_model, "pathway_port_stub"),
+    )
+
     demand_chd = demand.replicate()
     candidate_chd = candidate.replicate()
 
@@ -239,6 +265,12 @@ def test_investment_pathway_on_sequential_nodes(
         PortRef(candidate_chd, "balance_port"), PortRef(node, "balance_port")
     )
 
+    network_chd.connect2(
+        PortRef(candidate_chd, "pathway_port_receive"),
+        network_par,
+        PortRef(candidate_par, "pathway_port_send"),
+    )
+
     # === Decision tree creation ===
     config = InterDecisionTimeScenarioConfig([TimeBlock(0, [0])], 1)
 
@@ -248,7 +280,7 @@ def test_investment_pathway_on_sequential_nodes(
     )
 
     # === Coupling model ===
-    decision_tree_par.add_coupling_component(candidate, "invested_capa", "delta_invest")
+    # decision_tree_par.add_coupling_component(candidate, "invested_capa", "delta_invest")
 
     # === Build problem ===
     xpansion = build_benders_decomposed_problem(decision_tree_par, database)
@@ -267,7 +299,7 @@ def test_investment_pathway_on_sequential_nodes(
     solution = BendersSolution(data)
 
     # === Run ===
-    assert xpansion.run()
+    assert xpansion.run(show_debug=True)
     decomposed_solution = xpansion.solution
     if decomposed_solution is not None:  # For mypy only
         assert decomposed_solution.is_close(

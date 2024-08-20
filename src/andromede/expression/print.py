@@ -51,7 +51,7 @@ class PrinterVisitor(ExpressionVisitor[str]):
     """
     Produces a string representing the mathematical expression.
 
-    TODO: remove parenthis where not necessary.
+    TODO: remove parenthesis where not necessary.
     """
 
     def literal(self, node: LiteralNode) -> str:

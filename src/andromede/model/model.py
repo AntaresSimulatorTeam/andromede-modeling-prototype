@@ -130,6 +130,9 @@ class Model:
                     f"Invalid port field in port field definition: {port_field}"
                 )
 
+    def __repr__(self) -> str:
+        return f"Model(id='{self.id}')"
+
     def get_all_constraints(self) -> Iterable[Constraint]:
         """
         Get binding constraints and inner constraints altogether.

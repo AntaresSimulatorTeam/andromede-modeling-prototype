@@ -342,7 +342,7 @@ class OptimizationContext:
     def connection_fields_expressions(self) -> Dict[PortFieldKey, List[ExpressionNode]]:
         return self._connection_fields_expressions
 
-    # TODO: Need to think about data processing when creating blocks with varying or inequal time steps length (aggregation, sum ?, mean of data ?)
+    # TODO: Need to think about data processing when creating blocks with varying or unequal time steps length (aggregation, sum ?, mean of data ?)
     def block_timestep_to_absolute_timestep(self, block_timestep: int) -> int:
         return self._block.timesteps[block_timestep]
 
@@ -696,8 +696,7 @@ class OptimizationProblem:
 
     def _register_connection_fields_definitions(self) -> None:
         for cnx in self.context.network.connections:
-            for field_name in list(cnx.master_port.keys()):
-                master_port = cnx.master_port[field_name]
+            for field_name, master_port in cnx.master_port.items():
                 port_definition = (
                     master_port.component.model.port_fields_definitions.get(
                         PortFieldId(
@@ -778,7 +777,6 @@ class OptimizationProblem:
                         # Externally, for the Solver, this variable will have a full name
                         # Internally, it will be indexed by a structure that into account
                         # the component id, variable name, timestep and scenario separately
-                        solver_var = None
                         solver_var_name = f"{tree_prefix}{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
 
                         if math.isclose(lower_bound, upper_bound):

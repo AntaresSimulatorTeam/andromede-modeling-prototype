@@ -286,6 +286,12 @@ def build_benders_decomposed_problem(
                 )
             )
 
+    for master in masters:
+        BendersDecomposedProblem(
+            master, subproblems, struct_filename=struct_filename
+        ).initialise(is_debug=True)
+    exit()
+
     master = fusion_problems(masters, coupler)
 
     return BendersDecomposedProblem(

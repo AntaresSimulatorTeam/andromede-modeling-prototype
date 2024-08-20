@@ -33,6 +33,9 @@ class Component:
     model: Model
     id: str
 
+    def __repr__(self) -> str:
+        return f"Component(id='{self.id}', model='{self.model.id}')"
+
     def is_variable_in_model(self, var_id: str) -> bool:
         return var_id in self.model.variables.keys()
 
@@ -50,7 +53,8 @@ class Node(Component):
     A node in the network.
     """
 
-    pass
+    def __repr__(self) -> str:
+        return f"Node(id='{self.id}', model='{self.model.id}')"
 
 
 def create_node(model: Model, id: str) -> Node:
@@ -62,12 +66,17 @@ class PortRef:
     component: Component
     port_id: str
 
+    def __repr__(self) -> str:
+        return f"PortRef(id='{self.port_id}', component='{self.component.id}')"
+
 
 @dataclass()
 class PortsConnection:
     port1: PortRef
     port2: PortRef
-    master_port: Dict[PortField, PortRef] = field(init=False, default_factory=dict)
+    master_port: Dict[PortField, PortRef] = field(
+        init=False, default_factory=dict, repr=False
+    )
 
     def __post_init__(self) -> None:
         self.__validate_ports()
@@ -126,9 +135,13 @@ class Network:
     """
 
     id: str
-    _nodes: Dict[str, Node] = field(init=False, default_factory=dict)
-    _components: Dict[str, Component] = field(init=False, default_factory=dict)
-    _connections: List[PortsConnection] = field(init=False, default_factory=list)
+    _nodes: Dict[str, Node] = field(init=False, default_factory=dict, repr=False)
+    _components: Dict[str, Component] = field(
+        init=False, default_factory=dict, repr=False
+    )
+    _connections: List[PortsConnection] = field(
+        init=False, default_factory=list, repr=False
+    )
 
     def _check_node_exists(self, node_id: str) -> None:
         if node_id not in self._nodes:
@@ -167,6 +180,10 @@ class Network:
         return itertools.chain(self.nodes, self.components)
 
     def connect(self, port1: PortRef, port2: PortRef) -> None:
+        ports_connection = PortsConnection(port1, port2)
+        self._connections.append(ports_connection)
+
+    def connect2(self, port1: PortRef, parent: "Network", port2: PortRef) -> None:
         ports_connection = PortsConnection(port1, port2)
         self._connections.append(ports_connection)
 
