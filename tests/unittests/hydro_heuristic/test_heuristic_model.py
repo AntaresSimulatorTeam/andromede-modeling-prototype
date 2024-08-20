@@ -84,7 +84,7 @@ MINIMAL_HYDRO_MODEL = model(
 def test_empty_model() -> None:
     model_builder = HeuristicHydroModelBuilder(Model(id="empty"), "monthly")
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         heuristic_model = model_builder.get_model()
 
 

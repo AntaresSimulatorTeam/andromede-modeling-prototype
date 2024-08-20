@@ -49,11 +49,16 @@ class HeuristicHydroModelBuilder:
     def get_model(
         self,
     ) -> Model:
-        assert "level" in self.hydro_model.variables.keys()
-        assert "generating" in self.hydro_model.variables.keys()
-        assert "overflow" in self.hydro_model.variables.keys()
-        assert "lower_rule_curve" in self.hydro_model.parameters.keys()
-        assert "upper_rule_curve" in self.hydro_model.parameters.keys()
+        if "level" not in self.hydro_model.variables.keys():
+            raise ValueError("Hydro model requires a variable named level")
+        if "generating" not in self.hydro_model.variables.keys():
+            raise ValueError("Hydro model requires a variable named generating")
+        if "overflow" not in self.hydro_model.variables.keys():
+            raise ValueError("Hydro model requires a variable named overflow")
+        if "lower_rule_curve" not in self.hydro_model.parameters.keys():
+            raise ValueError("Hydro model requires a parameter named lower_rule_curve")
+        if "upper_rule_curve" not in self.hydro_model.parameters.keys():
+            raise ValueError("Hydro model requires a parameter named upper_rule_curve")
         HYDRO_HEURISTIC = model(
             id="H",
             parameters=list(self.hydro_model.parameters.values())
