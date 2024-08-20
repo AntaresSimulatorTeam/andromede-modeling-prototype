@@ -159,24 +159,29 @@ class HeuristicAccurateModelBuilder(ModelEditor):
 
 
 class HeuristicFastModelBuilder:
-    def __init__(self, number_hours: int, delta: int):
+    def __init__(self, number_hours: int, slot_length: int):
         BLOCK_MODEL_FAST_HEURISTIC = model(
             id="BLOCK_FAST",
-            parameters=self.get_parameters(number_hours // delta, delta),
-            variables=self.get_variables(number_hours // delta, delta),
-            constraints=self.get_constraints(number_hours // delta, delta),
+            parameters=self.get_parameters(number_hours // slot_length, slot_length),
+            variables=self.get_variables(number_hours // slot_length, slot_length),
+            constraints=self.get_constraints(number_hours // slot_length, slot_length),
             objective_operational_contribution=self.get_objective_operational_contribution(
-                delta
+                slot_length
             ),
         )
         self.model = BLOCK_MODEL_FAST_HEURISTIC
 
-    def get_objective_operational_contribution(self, delta: int) -> ExpressionNode:
+    def get_objective_operational_contribution(
+        self, slot_length: int
+    ) -> ExpressionNode:
         return (var("n")).sum().expec() + sum(
-            [var(f"t_ajust_{h}") * (h + 1) / 10 / delta for h in range(delta)]
+            [
+                var(f"t_ajust_{h}") * (h + 1) / 10 / slot_length
+                for h in range(slot_length)
+            ]
         ).expec()  # type:ignore
 
-    def get_constraints(self, Q: int, delta: int) -> List[Constraint]:
+    def get_constraints(self, slot: int, slot_length: int) -> List[Constraint]:
         return (
             [
                 Constraint(
@@ -185,8 +190,8 @@ class HeuristicFastModelBuilder:
                     >= param("n_guide") * param(f"alpha_{k}_{h}")
                     - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
                 )
-                for k in range(Q)
-                for h in range(delta)
+                for k in range(slot)
+                for h in range(slot_length)
             ]
             + [
                 Constraint(
@@ -195,7 +200,7 @@ class HeuristicFastModelBuilder:
                     >= param("n_guide") * param(f"alpha_ajust_{h}")
                     - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
                 )
-                for h in range(delta)
+                for h in range(slot_length)
             ]
             + [
                 Constraint(
@@ -204,8 +209,8 @@ class HeuristicFastModelBuilder:
                     >= param(f"alpha_{k}_{h}") * var(f"n_block_{k}")
                     - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
                 )
-                for k in range(Q)
-                for h in range(delta)
+                for k in range(slot)
+                for h in range(slot_length)
             ]
             + [
                 Constraint(
@@ -214,18 +219,18 @@ class HeuristicFastModelBuilder:
                     >= param(f"alpha_ajust_{h}") * var(f"n_ajust")
                     - param("n_max") * (literal(1) - var(f"t_ajust_{h}")),
                 )
-                for h in range(delta)
+                for h in range(slot_length)
             ]
             + [
                 Constraint(
                     "Choose one t ajust",
-                    literal(0) + sum([var(f"t_ajust_{h}") for h in range(delta)])
+                    literal(0) + sum([var(f"t_ajust_{h}") for h in range(slot_length)])
                     == literal(1),
                 )
             ]
         )
 
-    def get_variables(self, Q: int, delta: int) -> List[Variable]:
+    def get_variables(self, slot: int, slot_length: int) -> List[Variable]:
         return (
             [
                 float_variable(
@@ -234,7 +239,7 @@ class HeuristicFastModelBuilder:
                     upper_bound=param("n_max"),
                     structure=CONSTANT_PER_SCENARIO,
                 )
-                for k in range(Q)
+                for k in range(slot)
             ]
             + [
                 float_variable(
@@ -251,7 +256,7 @@ class HeuristicFastModelBuilder:
                     upper_bound=literal(1),
                     structure=CONSTANT_PER_SCENARIO,
                 )
-                for h in range(delta)
+                for h in range(slot_length)
             ]
             + [
                 float_variable(
@@ -263,20 +268,20 @@ class HeuristicFastModelBuilder:
             ]
         )
 
-    def get_parameters(self, Q: int, delta: int) -> List[Parameter]:
+    def get_parameters(self, slot: int, slot_length: int) -> List[Parameter]:
         return (
             [
                 float_parameter("n_guide", TIME_AND_SCENARIO_FREE),
-                float_parameter("delta", CONSTANT),
+                float_parameter("slot_length", CONSTANT),
                 float_parameter("n_max", CONSTANT),
             ]
             + [
                 int_parameter(f"alpha_{k}_{h}", NON_ANTICIPATIVE_TIME_VARYING)
-                for k in range(Q)
-                for h in range(delta)
+                for k in range(slot)
+                for h in range(slot_length)
             ]
             + [
                 int_parameter(f"alpha_ajust_{h}", NON_ANTICIPATIVE_TIME_VARYING)
-                for h in range(delta)
+                for h in range(slot_length)
             ]
         )

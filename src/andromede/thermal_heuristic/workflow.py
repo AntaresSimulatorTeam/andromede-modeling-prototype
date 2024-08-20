@@ -21,7 +21,7 @@ from andromede.simulation import (
     build_problem,
 )
 from andromede.study import DataBase, Network
-
+from typing import List
 
 @dataclass
 class SolvingParameters:
@@ -32,8 +32,8 @@ class SolvingParameters:
 class ResolutionStep:
     def __init__(
         self,
-        timesteps: list[int],
-        scenarios: list[int],
+        timesteps: List[int],
+        scenarios: List[int],
         database: DataBase,
         network: Network,
     ) -> None:

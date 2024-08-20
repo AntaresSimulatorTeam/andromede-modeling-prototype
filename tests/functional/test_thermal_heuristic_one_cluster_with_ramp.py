@@ -23,7 +23,7 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.study.data import ComponentParameterIndex
-from andromede.thermal_heuristic.cluster_parameter import compute_delta
+from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
@@ -35,7 +35,7 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import (
     THERMAL_CLUSTER_MODEL_MILP_WITH_RAMP,
@@ -53,12 +53,12 @@ def models() -> list[Model]:
 
 
 @pytest.fixture
-def week_scenario_index() -> WeekScenarioIndex:
-    return WeekScenarioIndex(0, 0)
+def week_scenario_index() -> BlockScenarioIndex:
+    return BlockScenarioIndex(0, 0)
 
 
 def test_milp_version(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """Solve weekly problem with one cluster and ramp constraints with milp."""
     thermal_problem_builder = ThermalProblemBuilder(
@@ -108,7 +108,7 @@ def test_milp_version(
 
 
 def test_classic_accurate_heuristic(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """Solve weekly problem with one cluster and ramp constraints with accurate heuristic. The solution found is not integer."""
 
@@ -244,7 +244,7 @@ def test_classic_accurate_heuristic(
 
 
 def test_modified_accurate_heuristic(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """Solve weekly problem with one cluster and ramp constraints with modified accurate heuristic such that the number of on units, starting units and stoping units are fixed at the end of the heuristic."""
 
@@ -346,7 +346,7 @@ def test_modified_accurate_heuristic(
 
 
 def test_classic_fast_heuristic(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """Solve weekly problem with one cluster and ramp constraints with fast heuristic. The solution found is not feasible bevause ramp constraints are not respected if we consider that the number of on units is 1."""
 
@@ -389,7 +389,8 @@ def test_classic_fast_heuristic(
         id_component=cluster,
         index=week_scenario_index,
         model=HeuristicFastModelBuilder(
-            number_hours, delta=compute_delta(cluster, thermal_problem_builder.database)
+            number_hours,
+            slot_length=compute_slot_length(cluster, thermal_problem_builder.database),
         ).model,
     )
     thermal_problem_builder.update_database_heuristic(

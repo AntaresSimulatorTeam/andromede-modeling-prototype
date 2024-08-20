@@ -28,7 +28,7 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import (
     THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP,
@@ -48,12 +48,12 @@ def models() -> list[Model]:
 
 
 @pytest.fixture
-def week_scenario_index() -> WeekScenarioIndex:
-    return WeekScenarioIndex(0, 0)
+def week_scenario_index() -> BlockScenarioIndex:
+    return BlockScenarioIndex(0, 0)
 
 
 def test_milp_with_day_ahead_reserve(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """ """
     thermal_problem_builder = ThermalProblemBuilder(
@@ -86,7 +86,7 @@ def test_milp_with_day_ahead_reserve(
 
 
 def test_milp_without_day_ahead_reserve(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """ """
     thermal_problem_builder = ThermalProblemBuilder(
@@ -119,7 +119,7 @@ def test_milp_without_day_ahead_reserve(
 
 
 def test_accurate_heuristic_with_day_ahead_reserve(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic is able to retrieve the milp optimal solution because when the number of on units found in the linear relaxation is ceiled, we found the optimal number of on units which is already feasible.
@@ -211,7 +211,7 @@ def test_accurate_heuristic_with_day_ahead_reserve(
 
 
 def test_accurate_heuristic_without_day_ahead_reserve(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic is able to retrieve the milp optimal solution because when the number of on units found in the linear relaxation is ceiled, we found the optimal number of on units which is already feasible.

@@ -12,6 +12,8 @@
 
 from dataclasses import dataclass
 
+from typing import List
+
 
 @dataclass
 class TimeScenarioHourParameter:
@@ -21,15 +23,15 @@ class TimeScenarioHourParameter:
 
 
 @dataclass
-class WeekScenarioIndex:
+class BlockScenarioIndex:
     week: int
     scenario: int
 
 
 def timesteps(
-    index: WeekScenarioIndex,
+    index: BlockScenarioIndex,
     parameter: TimeScenarioHourParameter,
-) -> list[int]:
+) -> List[int]:
     return list(
         range(
             index.week * parameter.hour,

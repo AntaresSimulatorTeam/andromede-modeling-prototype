@@ -23,7 +23,7 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from andromede.thermal_heuristic.cluster_parameter import compute_delta
+from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
@@ -36,7 +36,7 @@ from andromede.thermal_heuristic.problem import (
     SolvingParameters,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -80,7 +80,7 @@ def test_milp_version(
         thermal_problem_builder.time_scenario_hour_parameter.scenario
     ):
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
-            week_scenario_index = WeekScenarioIndex(week, scenario)
+            week_scenario_index = BlockScenarioIndex(week, scenario)
             resolution_step = thermal_problem_builder.main_resolution_step(
                 week_scenario_index,
                 solving_parameters=SolvingParameters(solver_parameters),
@@ -125,7 +125,7 @@ def test_accurate_heuristic(
         thermal_problem_builder.time_scenario_hour_parameter.scenario
     ):
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
-            week_scenario_index = WeekScenarioIndex(week, scenario)
+            week_scenario_index = BlockScenarioIndex(week, scenario)
             # First optimization
             resolution_step_1 = thermal_problem_builder.main_resolution_step(
                 week_scenario_index,
@@ -207,7 +207,7 @@ def test_fast_heuristic(
         thermal_problem_builder.time_scenario_hour_parameter.scenario
     ):
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
-            week_scenario_index = WeekScenarioIndex(week, scenario)
+            week_scenario_index = BlockScenarioIndex(week, scenario)
             # First optimization
             resolution_step_1 = thermal_problem_builder.main_resolution_step(
                 week_scenario_index,
@@ -231,7 +231,9 @@ def test_fast_heuristic(
                         index=week_scenario_index,
                         model=HeuristicFastModelBuilder(
                             thermal_problem_builder.time_scenario_hour_parameter.hour,
-                            delta=compute_delta(g, thermal_problem_builder.database),
+                            slot_length=compute_slot_length(
+                                g, thermal_problem_builder.database
+                            ),
                         ).model,
                     )
                 )

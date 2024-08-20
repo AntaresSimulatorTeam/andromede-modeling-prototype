@@ -24,7 +24,7 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.study.data import ComponentParameterIndex
-from andromede.thermal_heuristic.cluster_parameter import compute_delta
+from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
@@ -37,7 +37,7 @@ from andromede.thermal_heuristic.problem import (
     SolvingParameters,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import (
     BINDING_CONSTRAINT,
@@ -62,14 +62,14 @@ def models() -> list[Model]:
 
 
 @pytest.fixture
-def week_scenario_index() -> WeekScenarioIndex:
-    return WeekScenarioIndex(0, 0)
+def week_scenario_index() -> BlockScenarioIndex:
+    return BlockScenarioIndex(0, 0)
 
 
 def test_milp_version(
     data_path: str,
     models: list[Model],
-    week_scenario_index: WeekScenarioIndex,
+    week_scenario_index: BlockScenarioIndex,
 ) -> None:
     """Solve weekly problem with two clusters and a binding constraint between these two clusters.
     The optimal solution consists in turning on the first unit all the and the second unit which is more expensive but more flexible when the load increases at the 13th timestep.
@@ -104,7 +104,7 @@ def test_milp_version(
 def test_lp_version(
     data_path: str,
     models: list[Model],
-    week_scenario_index: WeekScenarioIndex,
+    week_scenario_index: BlockScenarioIndex,
 ) -> None:
     """Solve the same problem as before with linear relaxation. The linear relaxation solution consists in turning one the first unit all the time and keep off the second unit."""
 
@@ -138,7 +138,7 @@ def test_lp_version(
 def test_accurate_heuristic(
     data_path: str,
     models: list[Model],
-    week_scenario_index: WeekScenarioIndex,
+    week_scenario_index: BlockScenarioIndex,
 ) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem become infeasible.
@@ -208,7 +208,7 @@ def test_accurate_heuristic(
 def test_fast_heuristic(
     data_path: str,
     models: list[Model],
-    week_scenario_index: WeekScenarioIndex,
+    week_scenario_index: BlockScenarioIndex,
 ) -> None:
     """Solve the same problem as before with the heuristic fast of Antares. The fast heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem become infeasible."""
 
@@ -244,7 +244,8 @@ def test_fast_heuristic(
             id_component=g,
             index=week_scenario_index,
             model=HeuristicFastModelBuilder(
-                number_hours, delta=compute_delta(g, thermal_problem_builder.database)
+                number_hours,
+                slot_length=compute_slot_length(g, thermal_problem_builder.database),
             ).model,
         )
         thermal_problem_builder.update_database_heuristic(

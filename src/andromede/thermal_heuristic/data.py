@@ -18,17 +18,18 @@ import pandas as pd
 import pytest
 
 from andromede.simulation import OutputValues
-from andromede.thermal_heuristic.time_scenario_parameter import WeekScenarioIndex
+from andromede.thermal_heuristic.time_scenario_parameter import BlockScenarioIndex
+from typing import List, Tuple
 
 
 def get_max_unit_for_min_down_time(
-    delta: int, max_units: pd.DataFrame, hours_in_week: int
+    slot_length: int, max_units: pd.DataFrame, hours_in_week: int
 ) -> pd.DataFrame:
     max_units = shorten_df(max_units, hours_in_week)
-    nb_units_max_min_down_time = shift_df(max_units, delta, hours_in_week)
+    nb_units_max_min_down_time = shift_df(max_units, slot_length, hours_in_week)
     end_failures = max_units - shift_df(max_units, 1, hours_in_week)
     end_failures.where(end_failures > 0, 0, inplace=True)
-    for j in range(delta):
+    for j in range(slot_length):
         nb_units_max_min_down_time += shift_df(end_failures, j, hours_in_week)
 
     return nb_units_max_min_down_time
@@ -79,9 +80,9 @@ class ExpectedOutput:
     def __init__(
         self,
         mode: str,
-        index: WeekScenarioIndex,
+        index: BlockScenarioIndex,
         dir_path: str,
-        list_cluster: list[str],
+        list_cluster: List[str],
         output_idx: ExpectedOutputIndexes,
     ):
         self.mode = mode
@@ -133,8 +134,8 @@ class ExpectedOutput:
             ]
 
     def read_expected_output(
-        self, dir_path: str, index: WeekScenarioIndex
-    ) -> tuple[list[list[str]], list[list[str]]]:
+        self, dir_path: str, index: BlockScenarioIndex
+    ) -> Tuple[List[List[str]], List[List[str]]]:
         folder_name = (
             "tests/functional/" + dir_path + "/" + self.mode + "/" + str(index.scenario)
         )

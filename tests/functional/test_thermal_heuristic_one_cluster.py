@@ -23,7 +23,7 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.study.data import ComponentParameterIndex
-from andromede.thermal_heuristic.cluster_parameter import compute_delta
+from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
 from andromede.thermal_heuristic.data import ExpectedOutput, ExpectedOutputIndexes
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
@@ -35,7 +35,7 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -51,12 +51,12 @@ def models() -> list[Model]:
 
 
 @pytest.fixture
-def week_scenario_index() -> WeekScenarioIndex:
-    return WeekScenarioIndex(0, 0)
+def week_scenario_index() -> BlockScenarioIndex:
+    return BlockScenarioIndex(0, 0)
 
 
 def test_milp_version(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """
     Model on 168 time steps with one thermal generation and demand on a single node.
@@ -113,7 +113,7 @@ def test_milp_version(
 
 
 def test_lp_version(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """
     Model on 168 time steps with one thermal generation and one demand on a single node.
@@ -170,7 +170,7 @@ def test_lp_version(
 
 
 def test_accurate_heuristic(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """
     Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic is able to retrieve the milp optimal solution because when the number of on units found in the linear relaxation is ceiled, we found the optimal number of on units which is already feasible.
@@ -259,7 +259,7 @@ def test_accurate_heuristic(
 
 
 def test_fast_heuristic(
-    data_path: str, models: list[Model], week_scenario_index: WeekScenarioIndex
+    data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
 ) -> None:
     """
     Solve the same problem as before with the heuristic fast of Antares
@@ -317,7 +317,8 @@ def test_fast_heuristic(
         id_component=cluster,
         index=week_scenario_index,
         model=HeuristicFastModelBuilder(
-            number_hours, delta=compute_delta(cluster, thermal_problem_builder.database)
+            number_hours,
+            slot_length=compute_slot_length(cluster, thermal_problem_builder.database),
         ).model,
     )
     thermal_problem_builder.update_database_heuristic(

@@ -18,7 +18,7 @@ import pytest
 
 from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
-from andromede.thermal_heuristic.cluster_parameter import compute_delta
+from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
 from andromede.thermal_heuristic.model import (
     FastModelBuilder,
     HeuristicFastModelBuilder,
@@ -26,7 +26,7 @@ from andromede.thermal_heuristic.model import (
 from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
@@ -41,7 +41,7 @@ def test_fast_heuristic(data_path: str) -> None:
     Solve a weekly problem with fast heuristic. The thermal cluster has long d_min_up and d_min_down. The fast heuristic doesn't respect the d_min constraints.
     """
     number_hours = 168
-    week_scenario_index = WeekScenarioIndex(0, 0)
+    week_scenario_index = BlockScenarioIndex(0, 0)
 
     thermal_problem_builder = ThermalProblemBuilder(
         fast=True,
@@ -80,7 +80,8 @@ def test_fast_heuristic(data_path: str) -> None:
         id_component=cluster,
         index=week_scenario_index,
         model=HeuristicFastModelBuilder(
-            number_hours, delta=compute_delta(cluster, thermal_problem_builder.database)
+            number_hours,
+            slot_length=compute_slot_length(cluster, thermal_problem_builder.database),
         ).model,
     )
 

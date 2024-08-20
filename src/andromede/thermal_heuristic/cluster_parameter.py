@@ -28,13 +28,15 @@ from andromede.thermal_heuristic.data import (
 )
 from andromede.thermal_heuristic.time_scenario_parameter import (
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
     timesteps,
 )
 
+from typing import List, Tuple
 
-def compute_delta(thermal_cluster: str, database: DataBase) -> int:
-    delta = int(
+
+def compute_slot_length(thermal_cluster: str, database: DataBase) -> int:
+    slot_length = int(
         max(
             database.get_value(
                 ComponentParameterIndex(thermal_cluster, "d_min_up"), 0, 0
@@ -44,22 +46,22 @@ def compute_delta(thermal_cluster: str, database: DataBase) -> int:
             ),
         )
     )
-    return delta
+    return slot_length
 
 
 def complete_database_for_fast_heuristic(
     database: DataBase,
-    list_cluster_id: list[str],
+    list_cluster_id: List[str],
     time_scenario_hour_parameter: TimeScenarioHourParameter,
 ) -> None:
     for cluster_id in list_cluster_id:
-        delta = compute_delta(cluster_id, database)
+        slot_length = compute_slot_length(cluster_id, database)
         n_max = database.get_data(cluster_id, "nb_units_max").get_max_value()
         database.add_data(cluster_id, "n_max", ConstantData(int(n_max)))
-        database.add_data(cluster_id, "delta", ConstantData(delta))
+        database.add_data(cluster_id, "slot_length", ConstantData(slot_length))
 
-        for h in range(delta):
-            start_ajust = time_scenario_hour_parameter.hour - delta + h
+        for h in range(slot_length):
+            start_ajust = time_scenario_hour_parameter.hour - slot_length + h
             database.add_data(
                 cluster_id,
                 f"alpha_ajust_{h}",
@@ -78,9 +80,9 @@ def complete_database_for_fast_heuristic(
                     }
                 ),
             )
-            for k in range(time_scenario_hour_parameter.hour // delta):
-                start_k = k * delta + h
-                end_k = min(start_ajust, (k + 1) * delta + h)
+            for k in range(time_scenario_hour_parameter.hour // slot_length):
+                start_k = k * slot_length + h
+                end_k = min(start_ajust, (k + 1) * slot_length + h)
                 database.add_data(
                     cluster_id,
                     f"alpha_{k}_{h}",
@@ -103,11 +105,11 @@ def complete_database_for_fast_heuristic(
 
 def complete_database_with_cluster_parameters(
     database: DataBase,
-    list_cluster: list[str],
+    list_cluster: List[str],
     time_scenario_hour_parameter: TimeScenarioHourParameter,
 ) -> None:
     for cluster_id in list_cluster:
-        if type(database.get_data(cluster_id, "max_generating")) is ConstantData:
+        if isinstance(database.get_data(cluster_id, "max_generating"), ConstantData):
             database.add_data(
                 cluster_id,
                 "max_failure",
@@ -150,7 +152,7 @@ def compute_cluster_parameters(
     database: DataBase,
     cluster_id: str,
     time_scenario_hour_parameter: TimeScenarioHourParameter,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     database.convert_to_time_scenario_series_data(
         ComponentParameterIndex(cluster_id, "max_generating"),
         timesteps=time_scenario_hour_parameter.hour * time_scenario_hour_parameter.week,
@@ -186,9 +188,9 @@ def get_parameter(
     database: DataBase,
     name: str,
     component: str,
-    index: WeekScenarioIndex,
+    index: BlockScenarioIndex,
     time_scenario_hour_parameter: TimeScenarioHourParameter,
-) -> list[float]:
+) -> List[float]:
     return [
         database.get_value(
             ComponentParameterIndex(component, name),

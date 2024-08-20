@@ -34,7 +34,7 @@ from andromede.thermal_heuristic.cluster_parameter import (
 )
 from andromede.thermal_heuristic.time_scenario_parameter import (
     TimeScenarioHourParameter,
-    WeekScenarioIndex,
+    BlockScenarioIndex,
     timesteps,
 )
 from andromede.thermal_heuristic.workflow import ResolutionStep, SolvingParameters
@@ -63,7 +63,7 @@ class ThermalProblemBuilder:
 
     def main_resolution_step(
         self,
-        index: WeekScenarioIndex,
+        index: BlockScenarioIndex,
         solving_parameters: SolvingParameters = SolvingParameters(),
     ) -> ResolutionStep:
         main_resolution_step = ResolutionStep(
@@ -80,12 +80,12 @@ class ThermalProblemBuilder:
     def update_database_heuristic(
         self,
         output: OutputValues,
-        index: WeekScenarioIndex,
-        list_cluster_id: Optional[list[str]],
+        index: BlockScenarioIndex,
+        list_cluster_id: Optional[List[str]],
         param_to_update: str,
         var_to_read: str,
         fn_to_apply: Callable,
-        param_needed_to_compute: Optional[list[str]] = None,
+        param_needed_to_compute: Optional[List[str]] = None,
     ) -> None:
         if list_cluster_id is None:
             list_cluster_id = self.heuristic_components()
@@ -107,13 +107,14 @@ class ThermalProblemBuilder:
             param = {}
             if param_needed_to_compute is not None:
                 for p in param_needed_to_compute:
-                    param[p] = get_parameter(
-                        self.database,
-                        p,
-                        cluster,
-                        index,
-                        self.time_scenario_hour_parameter,
-                    )
+                    param[p] = [
+                        self.database.get_value(
+                            ComponentParameterIndex(cluster, p),
+                            t,
+                            index.scenario,
+                        )
+                        for t in timesteps(index, self.time_scenario_hour_parameter)
+                    ]
 
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 self.database.set_value(
@@ -125,7 +126,7 @@ class ThermalProblemBuilder:
 
     def heuristic_resolution_step(
         self,
-        index: WeekScenarioIndex,
+        index: BlockScenarioIndex,
         id_component: str,
         model: Model,
         solving_parameters: SolvingParameters = SolvingParameters(),
@@ -164,7 +165,7 @@ class ThermalProblemBuilder:
 
         return database
 
-    def heuristic_components(self) -> list[str]:
+    def heuristic_components(self) -> List[str]:
         return [
             c.id
             for c in self.network.components
