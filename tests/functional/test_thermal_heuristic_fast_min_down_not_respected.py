@@ -43,13 +43,13 @@ def data_path() -> Path:
 
 
 @pytest.fixture
-def input_components() -> InputComponents:
-    return get_input_components(data_path() / "components.yml")
+def input_components(data_path: Path) -> InputComponents:
+    return get_input_components(data_path / "components.yml")
 
 
 @pytest.fixture
-def heuristic_components() -> List[str]:
-    return get_heuristic_components(input_components(), THERMAL_CLUSTER_MODEL_MILP.id)
+def heuristic_components(input_components: InputComponents) -> List[str]:
+    return get_heuristic_components(input_components, THERMAL_CLUSTER_MODEL_MILP.id)
 
 
 @pytest.fixture
