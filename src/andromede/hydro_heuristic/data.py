@@ -63,7 +63,7 @@ class RawHydroData:
             "max_generating": 0,
         }
 
-    def read_data(self, name: str) -> list[float]:
+    def read_data(self, name: str) -> List[float]:
         hours_input = 1 if name == "demand" else 24
 
         data = np.loadtxt(
@@ -146,7 +146,7 @@ class DataAggregator:
         self.hours_aggregated_time_steps = hours_aggregated_time_steps
         self.timesteps = timesteps
 
-    def aggregate_data(self, operator: str, data: list[float]) -> List[float]:
+    def aggregate_data(self, operator: str, data: List[float]) -> List[float]:
         aggregated_data: List[float] = []
         hour = 0
         for time_step, hours_time_step in enumerate(self.hours_aggregated_time_steps):
@@ -160,13 +160,13 @@ class DataAggregator:
 
 
 def update_generation_target(
-    all_daily_generation: list[float], daily_generation: list[float]
-) -> list[float]:
+    all_daily_generation: List[float], daily_generation: List[float]
+) -> List[float]:
     all_daily_generation = all_daily_generation + daily_generation
     return all_daily_generation
 
 
-def calculate_weekly_target(all_daily_generation: list[float]) -> list[float]:
+def calculate_weekly_target(all_daily_generation: List[float]) -> List[float]:
     weekly_target = [
         sum([all_daily_generation[day] for day in range(7 * week, 7 * (week + 1))])
         for week in range(len(all_daily_generation) // 7)

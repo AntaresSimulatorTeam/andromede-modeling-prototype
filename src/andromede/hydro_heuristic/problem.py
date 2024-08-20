@@ -12,6 +12,8 @@
 
 from dataclasses import dataclass
 
+from typing import List
+
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 
@@ -47,7 +49,7 @@ class SolvingOutput:
 
 @dataclass
 class OutputHeuristic:
-    generating: list[float]
+    generating: List[float]
     level: float
 
 
