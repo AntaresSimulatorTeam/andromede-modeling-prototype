@@ -116,7 +116,7 @@ class ThermalProblemBuilder:
                     )
 
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                self.database.edit_value(
+                self.database.set_value(
                     ComponentParameterIndex(cluster, param_to_update),
                     fn_to_apply(sol[i], *[p[i] for p in param.values()]),  # type:ignore
                     t,

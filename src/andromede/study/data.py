@@ -41,8 +41,8 @@ class AbstractDataStructure(ABC):
     def get_value(self, timestep: int, scenario: int) -> float:
         return NotImplemented
 
-    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
-        return NotImplemented
+    def set_value(self, value: float, timestep: int, scenario: int) -> None:
+        raise NotImplementedError
 
     def get_max_value(self) -> float:
         return NotImplemented
@@ -62,9 +62,6 @@ class ConstantData(AbstractDataStructure):
 
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.value
-
-    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
-        return NotImplemented
 
     def get_max_value(self) -> float:
         return self.value
@@ -89,9 +86,8 @@ class TimeSeriesData(AbstractDataStructure):
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.time_series[TimeIndex(timestep)]
 
-    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+    def set_value(self, value: float, timestep: int, scenario: int) -> None:
         self.time_series[TimeIndex(timestep)] = value
-        return True
 
     def get_max_value(self) -> float:
         return max(self.time_series.values())
@@ -116,9 +112,8 @@ class ScenarioSeriesData(AbstractDataStructure):
     def get_value(self, timestep: int, scenario: int) -> float:
         return self.scenario_series[ScenarioIndex(scenario)]
 
-    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+    def set_value(self, value: float, timestep: int, scenario: int) -> None:
         self.scenario_series[ScenarioIndex(scenario)] = value
-        return True
 
     def get_max_value(self) -> float:
         return max(self.scenario_series.values())
@@ -156,9 +151,8 @@ class TimeScenarioSeriesData(AbstractDataStructure):
         value = str(self.time_scenario_series.iloc[timestep, scenario])
         return float(value)
 
-    def edit_value(self, value: float, timestep: int, scenario: int) -> bool:
+    def set_value(self, value: float, timestep: int, scenario: int) -> None:
         self.time_scenario_series.iloc[timestep, scenario] = value
-        return True
 
     def get_max_value(self) -> float:
         return self.time_scenario_series.values.max()
@@ -205,12 +199,10 @@ class DataBase:
         else:
             raise KeyError(f"Index {index} not found.")
 
-    def edit_value(
+    def set_value(
         self, index: ComponentParameterIndex, value: float, timestep: int, scenario: int
     ) -> None:
-        done = self._data[index].edit_value(value, timestep, scenario)
-        if done is not True:
-            raise ValueError
+        self._data[index].set_value(value, timestep, scenario)
 
     def convert_to_time_scenario_series_data(
         self, index: ComponentParameterIndex, timesteps: int, scenarios: int
