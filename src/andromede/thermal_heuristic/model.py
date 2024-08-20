@@ -75,16 +75,19 @@ class ModelEditor:
             if v.data_type == ValueType.INTEGER
         ]
 
-    def remove_integer_variables_and_keep_others(self) -> List[Variable]:
+    def fix_to_zero_integer_variables_and_keep_others(self) -> List[Variable]:
         return [
             float_variable(
                 v.name,
-                lower_bound=(v.lower_bound),
-                upper_bound=(v.upper_bound),
+                lower_bound=(
+                    (v.lower_bound) if v.data_type == ValueType.FLOAT else literal(0)
+                ),
+                upper_bound=(
+                    (v.upper_bound) if v.data_type == ValueType.FLOAT else literal(0)
+                ),
                 structure=v.structure,
             )
             for v in self.initial_model.variables.values()
-            if v.data_type == ValueType.FLOAT
         ]
 
     def keep_constraints_with_no_variables_from_list(
@@ -134,7 +137,7 @@ class FastModelBuilder(ModelEditor):
         THERMAL_CLUSTER_MODEL_FAST = model(
             id=self.initial_model.id,
             parameters=self.initial_model.parameters.values(),
-            variables=self.remove_integer_variables_and_keep_others(),
+            variables=self.fix_to_zero_integer_variables_and_keep_others(),
             ports=self.initial_model.ports.values(),
             port_fields_definitions=self.initial_model.port_fields_definitions.values(),
             constraints=self.keep_constraints_with_no_variables_from_list(
