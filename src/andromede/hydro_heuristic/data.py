@@ -131,7 +131,7 @@ class HydroHeuristicData:
         self.target = list(target)
 
 
-@dataclass
+@dataclass(frozen=True)
 class DataAggregator:
     data_aggregator_parameters: DataAggregatorParameters
 

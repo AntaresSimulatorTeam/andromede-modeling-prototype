@@ -41,13 +41,13 @@ from andromede.study import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class SolvingOutput:
     status: str
     objective: float
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutputHeuristic:
     generating: List[float]
     level: float

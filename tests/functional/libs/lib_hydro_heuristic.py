@@ -236,7 +236,7 @@ HYDRO_MODEL_WITH_TARGET = model(
 )
 
 
-BINDING_CONSTRAINT = model(
+MIN_GEN_CONSTRAINT = model(
     id="BC",
     parameters=[float_parameter("lower_bound", structure=CONSTANT)],
     ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],

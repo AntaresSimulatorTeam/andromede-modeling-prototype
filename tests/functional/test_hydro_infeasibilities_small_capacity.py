@@ -47,7 +47,7 @@ from andromede.study import (
     create_component,
 )
 from tests.functional.libs.lib_hydro_heuristic import (
-    BINDING_CONSTRAINT,
+    MIN_GEN_CONSTRAINT,
     HYDRO_MODEL,
     HYDRO_MODEL_WITH_TARGET,
 )
@@ -286,7 +286,7 @@ def create_database_and_network(
         id="D",
     )
     if bc:
-        lb = create_component(model=BINDING_CONSTRAINT, id="lb")
+        lb = create_component(model=MIN_GEN_CONSTRAINT, id="lb")
 
     hydro = create_component(model=hydro_model, id="H")
 
