@@ -75,29 +75,30 @@ class ModelEditor:
             if v.data_type == ValueType.INTEGER
         ]
 
-    def fix_integer_variables_to_zero_and_keep_others(self) -> List[Variable]:
+    def remove_integer_variables_and_keep_others(self) -> List[Variable]:
         return [
             float_variable(
                 v.name,
-                lower_bound=(
-                    v.lower_bound if v.data_type == ValueType.FLOAT else literal(0)
-                ),
-                upper_bound=(
-                    v.upper_bound if v.data_type == ValueType.FLOAT else literal(0)
-                ),
+                lower_bound=(v.lower_bound),
+                upper_bound=(v.upper_bound),
                 structure=v.structure,
             )
             for v in self.initial_model.variables.values()
+            if v.data_type == ValueType.FLOAT
         ]
 
-    def filter_constraints_on_variable(self, variables: List[str]) -> List[Constraint]:
+    def keep_constraints_with_no_variables_from_list(
+        self, variables: List[str]
+    ) -> List[Constraint]:
         return [
             c
             for c in self.initial_model.constraints.values()
             if not (self.variable_in_constraint(c, variables))
         ]
 
-    def filter_and_linearize_variables(self, variables: List[str]) -> List[Variable]:
+    def keep_variables_with_no_variables_from_list_and_linearize(
+        self, variables: List[str]
+    ) -> List[Variable]:
         return [
             float_variable(
                 v.name,
@@ -133,10 +134,12 @@ class FastModelBuilder(ModelEditor):
         THERMAL_CLUSTER_MODEL_FAST = model(
             id=self.initial_model.id,
             parameters=self.initial_model.parameters.values(),
-            variables=self.fix_integer_variables_to_zero_and_keep_others(),
+            variables=self.remove_integer_variables_and_keep_others(),
             ports=self.initial_model.ports.values(),
             port_fields_definitions=self.initial_model.port_fields_definitions.values(),
-            constraints=self.filter_constraints_on_variable(integer_variables),
+            constraints=self.keep_constraints_with_no_variables_from_list(
+                integer_variables
+            ),
             objective_operational_contribution=self.initial_model.objective_operational_contribution,
         )
 
@@ -151,8 +154,12 @@ class HeuristicAccurateModelBuilder(ModelEditor):
         THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
             id=self.initial_model.id,
             parameters=self.initial_model.parameters.values(),
-            variables=self.filter_and_linearize_variables(generation_variable),
-            constraints=self.filter_constraints_on_variable(generation_variable),
+            variables=self.keep_variables_with_no_variables_from_list_and_linearize(
+                generation_variable
+            ),
+            constraints=self.keep_constraints_with_no_variables_from_list(
+                generation_variable
+            ),
             objective_operational_contribution=(var("nb_on")).sum().expec(),
         )
         self.model = THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC

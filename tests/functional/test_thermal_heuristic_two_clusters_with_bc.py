@@ -40,7 +40,7 @@ from andromede.thermal_heuristic.problem import (
     BlockScenarioIndex,
 )
 from tests.functional.libs.lib_thermal_heuristic import (
-    BINDING_CONSTRAINT,
+    UPPER_BOUND_ON_SUM_OF_GENERATION,
     THERMAL_CLUSTER_MODEL_MILP,
 )
 
@@ -57,7 +57,7 @@ def models() -> list[Model]:
         NODE_BALANCE_MODEL,
         SPILLAGE_MODEL,
         UNSUPPLIED_ENERGY_MODEL,
-        BINDING_CONSTRAINT,
+        UPPER_BOUND_ON_SUM_OF_GENERATION,
     ]
 
 

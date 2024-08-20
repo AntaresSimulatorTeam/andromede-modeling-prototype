@@ -126,7 +126,7 @@ THERMAL_CLUSTER_MODEL_MILP = model(
     .expec(),
 )
 
-BINDING_CONSTRAINT = model(
+UPPER_BOUND_ON_SUM_OF_GENERATION = model(
     id="BC",
     parameters=[float_parameter("upper_bound", structure=CONSTANT)],
     ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
