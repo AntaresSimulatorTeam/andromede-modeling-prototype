@@ -35,6 +35,8 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL_WITH_TARGET,
 )
 
+from typing import Tuple
+
 weekly_generation = np.array(
     [
         1146984.0,
@@ -219,7 +221,7 @@ def test_complete_year_as_weekly_blocks() -> None:
 def create_database_and_network(
     hydro_model: Model,
     return_to_initial_level: bool,
-) -> tuple[DataBase, Network]:
+) -> Tuple[DataBase, Network]:
     capacity = 1e07
     initial_level = 0.445 * capacity
     demand_data = np.loadtxt(

@@ -12,7 +12,7 @@
 
 from dataclasses import dataclass
 
-from typing import List
+from typing import List, Tuple
 
 import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
@@ -77,7 +77,7 @@ class HydroHeuristicProblem:
 
         self.problem = problem
 
-    def solve_hydro_problem(self) -> tuple[SolvingOutput, OutputHeuristic]:
+    def solve_hydro_problem(self) -> Tuple[SolvingOutput, OutputHeuristic]:
         parameters = pywraplp.MPSolverParameters()
         parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
         parameters.SetIntegerParam(parameters.SCALING, 0)
@@ -183,7 +183,7 @@ def optimize_target(
     data_aggregator_parameters: DataAggregatorParameters,
     reservoir_data: ReservoirParameters,
     heuristic_model: Model,
-) -> tuple[SolvingOutput, OutputHeuristic]:
+) -> Tuple[SolvingOutput, OutputHeuristic]:
     # Récupération des données
     data = HydroHeuristicData(
         data_aggregator_parameters,

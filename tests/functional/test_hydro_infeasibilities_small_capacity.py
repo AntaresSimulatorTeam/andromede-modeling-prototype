@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
@@ -59,8 +59,7 @@ def test_hydro_heuristic() -> None:
     reservoir_data = ReservoirParameters(
         capacity,
         initial_level=0.5 * capacity,
-        folder_name=str(Path(__file__).parent)
-        + "../../tests/functional/data/hydro_small_capacity",
+        folder_name=str(Path(__file__).parent) + "/data/hydro_small_capacity",
         scenario=0,
     )
 
@@ -198,8 +197,7 @@ def test_complete_year_as_weekly_blocks_with_hourly_infeasibilities() -> None:
     """Solve weekly problems with heuristic weekly targets for the stock with modified inflow. Daily inflows remain the same. Inflows at the first hour of each day are large and there is oveflow that the heuristic didn't see due to agregation of data."""
     inflow_data = (
         np.loadtxt(
-            Path(__file__).parent
-            / "../../tests/functional/data/hydro_small_capacity/mod.txt",
+            Path(__file__).parent / "/data/hydro_small_capacity/mod.txt",
             usecols=0,
         ).repeat(24)
         / 24
@@ -247,26 +245,23 @@ def create_database_and_network(
     return_to_initial_level: bool,
     bc: bool,
     inflow_data: Optional[list[float]] = None,
-) -> tuple[DataBase, Network]:
+) -> Tuple[DataBase, Network]:
     capacity = 2945
     initial_level = 0.5 * capacity
     demand_data = np.loadtxt(
-        Path(__file__).parent
-        / "../../tests/functional/data/hydro_small_capacity/load.txt",
+        Path(__file__).parent / "/data/hydro_small_capacity/load.txt",
         usecols=0,
     )
     if inflow_data is None:
         inflow_data = list(
             np.loadtxt(
-                Path(__file__).parent
-                / "../../tests/functional/data/hydro_small_capacity/mod.txt",
+                Path(__file__).parent / "/data/hydro_small_capacity/mod.txt",
                 usecols=0,
             ).repeat(24)
             / 24
         )
     rule_curve_data = np.loadtxt(
-        Path(__file__).parent
-        / "../../tests/functional/data/hydro_small_capacity/reservoir.txt"
+        Path(__file__).parent / "/data/hydro_small_capacity/reservoir.txt"
     ).repeat(24, axis=0)
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="1")

@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
@@ -216,8 +216,7 @@ def test_hydro_heuristic() -> None:
     reservoir_data = ReservoirParameters(
         capacity,
         initial_level=0.445 * capacity,
-        folder_name=str(Path(__file__).parent)
-        + "../../tests/functional/data/hydro_with_rulecurves",
+        folder_name=str(Path(__file__).parent) + "/data/hydro_with_rulecurves",
         scenario=0,
     )
 
@@ -308,25 +307,22 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
 def create_database_and_network(
     hydro_model: Model,
     return_to_initial_level: bool,
-) -> tuple[DataBase, Network]:
+) -> Tuple[DataBase, Network]:
     capacity = 1e07
     initial_level = 0.445 * capacity
     demand_data = np.loadtxt(
-        Path(__file__).parent
-        / "../../tests/functional/data/hydro_with_rulecurves/load.txt",
+        Path(__file__).parent / "/data/hydro_with_rulecurves/load.txt",
         usecols=0,
     )
     inflow_data = (
         np.loadtxt(
-            Path(__file__).parent
-            / "../../tests/functional/data/hydro_with_rulecurves/mod.txt",
+            Path(__file__).parent / "/data/hydro_with_rulecurves/mod.txt",
             usecols=0,
         ).repeat(24)
         / 24
     )
     rule_curve_data = np.loadtxt(
-        Path(__file__).parent
-        / "../../tests/functional/data/hydro_with_rulecurves/reservoir.txt"
+        Path(__file__).parent / "/data/hydro_with_rulecurves/reservoir.txt"
     ).repeat(24, axis=0)
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="1")
