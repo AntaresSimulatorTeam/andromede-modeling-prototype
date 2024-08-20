@@ -27,6 +27,7 @@ from andromede.hydro_heuristic.problem import (
     optimize_target,
 )
 from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL
+from pathlib import Path
 
 
 def test_hydro_heuristic() -> None:
@@ -35,7 +36,8 @@ def test_hydro_heuristic() -> None:
     reservoir_data = ReservoirParameters(
         capacity,
         initial_level=0.5 * capacity,
-        folder_name="hydro_without_rulecurves",
+        folder_name=str(Path(__file__).parent)
+        + "../../tests/functional/data/hydro_without_rulecurves",
         scenario=0,
     )
 

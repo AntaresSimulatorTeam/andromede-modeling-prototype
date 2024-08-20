@@ -17,7 +17,7 @@ from typing import List, Optional
 import numpy as np
 
 
-@dataclass
+@dataclass(frozen=False)
 class ReservoirParameters:
     capacity: float
     initial_level: float
@@ -25,13 +25,13 @@ class ReservoirParameters:
     scenario: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class HydroHeuristicParameters:
     inter_breakdown: int = 1
     total_target: Optional[float] = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class DataAggregatorParameters:
     hours_aggregated_time_steps: List[int]
     timesteps: List[int]
@@ -64,25 +64,20 @@ class RawHydroData:
         }
 
     def read_data(self, name: str) -> List[float]:
-        hours_input = 1 if name == "demand" else 24
 
-        data = np.loadtxt(
-            Path(__file__).parent
-            / (
-                "../../../tests/functional/data/"
-                + self.folder_name
-                + "/"
-                + self.name_file[name]
-                + ".txt"
-            )
-        )
+        data = np.loadtxt(f"{self.folder_name}/{self.name_file[name]}.txt")
         if len(data.shape) >= 2:
             data = data[:, self.column[name]]
-        data = np.repeat(data, hours_input)
-        if self.name_file[name] == "mod":
-            data = data / hours_input
+        hourly_data = self.convert_to_hourly_data(name, list(data))
 
-        return list(data)
+        return hourly_data
+
+    def convert_to_hourly_data(self, name: str, data: List[float]) -> List[float]:
+        hours_input = 1 if name == "demand" else 24
+        hourly_data = np.repeat(np.array(data), hours_input)
+        if self.name_file[name] == "mod":
+            hourly_data = hourly_data / hours_input
+        return list(hourly_data)
 
 
 class HydroHeuristicData:
@@ -94,8 +89,7 @@ class HydroHeuristicData:
         self.reservoir_data = reservoir_data
 
         data_aggregator = DataAggregator(
-            data_aggregator_parameters.hours_aggregated_time_steps,
-            data_aggregator_parameters.timesteps,
+            data_aggregator_parameters,
         )
 
         raw_data_reader = RawHydroData(
@@ -137,20 +131,17 @@ class HydroHeuristicData:
         self.target = list(target)
 
 
+@dataclass
 class DataAggregator:
-    def __init__(
-        self,
-        hours_aggregated_time_steps: List[int],
-        timesteps: List[int],
-    ) -> None:
-        self.hours_aggregated_time_steps = hours_aggregated_time_steps
-        self.timesteps = timesteps
+    data_aggregator_parameters: DataAggregatorParameters
 
     def aggregate_data(self, operator: str, data: List[float]) -> List[float]:
         aggregated_data: List[float] = []
         hour = 0
-        for time_step, hours_time_step in enumerate(self.hours_aggregated_time_steps):
-            if time_step in self.timesteps:
+        for time_step, hours_time_step in enumerate(
+            self.data_aggregator_parameters.hours_aggregated_time_steps
+        ):
+            if time_step in self.data_aggregator_parameters.timesteps:
                 if operator == "sum":
                     aggregated_data.append(np.sum(data[hour : hour + hours_time_step]))
                 elif operator == "lag_first_element":

@@ -144,7 +144,8 @@ def test_hydro_heuristic() -> None:
     reservoir_data = ReservoirParameters(
         capacity,
         initial_level=0.445 * capacity,
-        folder_name="hydro_without_inflow",
+        folder_name=str(Path(__file__).parent)
+        + "../../tests/functional/data/hydro_without_inflow",
         scenario=0,
     )
 

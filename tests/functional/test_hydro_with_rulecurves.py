@@ -120,7 +120,8 @@ def test_hydro_heuristic_monthly_part() -> None:
         reservoir_data=ReservoirParameters(
             capacity,
             initial_level=0.445 * capacity,
-            folder_name="hydro_with_rulecurves",
+            folder_name=str(Path(__file__).parent)
+            + "../../tests/functional/data/hydro_with_rulecurves",
             scenario=0,
         ),
         heuristic_model=HeuristicHydroModelBuilder(HYDRO_MODEL, "monthly").get_model(),
@@ -137,7 +138,8 @@ def test_hydro_heuristic_daily_part() -> None:
     reservoir_data = ReservoirParameters(
         capacity,
         initial_level=0.445 * capacity,
-        folder_name="hydro_with_rulecurves",
+        folder_name=str(Path(__file__).parent)
+        + "../../tests/functional/data/hydro_with_rulecurves",
         scenario=0,
     )
 

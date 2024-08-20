@@ -23,6 +23,8 @@ from andromede.hydro_heuristic.data import (
     get_number_of_days_in_month,
 )
 
+from pathlib import Path
+
 
 def test_calculate_weekly_target() -> None:
     output = calculate_weekly_target([0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0])
@@ -34,7 +36,9 @@ def test_calculate_weekly_target() -> None:
 
 def test_hydro_heuristic_data_building() -> None:
     capacity = 1e07
-    folder_name = "hydro_with_rulecurves"
+    folder_name = (
+        str(Path(__file__).parent) + "../../tests/functional/data/hydro_with_rulecurves"
+    )
     initial_level = 0.445 * capacity
 
     data = HydroHeuristicData(
@@ -61,7 +65,9 @@ def test_hydro_heuristic_data_building() -> None:
 
 def test_compute_target() -> None:
     capacity = 1e07
-    folder_name = "hydro_with_rulecurves"
+    folder_name = (
+        str(Path(__file__).parent) + "../../tests/functional/data/hydro_with_rulecurves"
+    )
     initial_level = 0.445 * capacity
 
     data = HydroHeuristicData(
@@ -82,12 +88,16 @@ def test_compute_target() -> None:
 def test_data_aggregator() -> None:
     raw_data = [float(i) for i in range(10)]
 
-    data_aggregator = DataAggregator([2, 3, 4, 0, 1], [1, 3, 4])
+    data_aggregator = DataAggregator(
+        DataAggregatorParameters([2, 3, 4, 0, 1], [1, 3, 4])
+    )
     aggregated_data = data_aggregator.aggregate_data("sum", raw_data)
 
     assert aggregated_data == [9, 0, 9]
 
-    data_aggregator = DataAggregator([2, 3, 4, 0, 1], list(range(5)))
+    data_aggregator = DataAggregator(
+        DataAggregatorParameters([2, 3, 4, 0, 1], list(range(5)))
+    )
     aggregated_data = data_aggregator.aggregate_data("lag_first_element", raw_data)
 
     assert aggregated_data == [2, 5, 9, 9, 0]
