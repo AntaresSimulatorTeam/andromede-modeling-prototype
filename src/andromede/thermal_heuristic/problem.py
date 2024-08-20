@@ -15,7 +15,13 @@ from typing import Callable, List, Optional
 
 from andromede.model import Model, PortType
 from andromede.model.library import library
-from andromede.simulation import OutputValues
+from andromede.simulation import (
+    BlockBorderManagement,
+    OptimizationProblem,
+    OutputValues,
+    TimeBlock,
+    build_problem,
+)
 from andromede.study import ConstantData, DataBase, Network, create_component
 from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import InputComponents, parse_yaml_components
@@ -33,7 +39,6 @@ from andromede.thermal_heuristic.time_scenario_parameter import (
     TimeScenarioHourParameter,
     timesteps,
 )
-from andromede.thermal_heuristic.workflow import ResolutionStep, SolvingParameters
 
 
 class ThermalProblemBuilder:
@@ -50,18 +55,16 @@ class ThermalProblemBuilder:
     def main_resolution_step(
         self,
         index: BlockScenarioIndex,
-        solving_parameters: SolvingParameters = SolvingParameters(),
-    ) -> ResolutionStep:
-        main_resolution_step = ResolutionStep(
-            timesteps=timesteps(index, self.time_scenario_hour_parameter),
-            scenarios=[index.scenario],
-            database=self.database,
-            network=self.network,
+    ) -> OptimizationProblem:
+        problem = build_problem(
+            self.network,
+            self.database,
+            TimeBlock(1, timesteps(index, self.time_scenario_hour_parameter)),
+            [index.scenario],
+            border_management=BlockBorderManagement.CYCLE,
         )
 
-        main_resolution_step.solve(solving_parameters)
-
-        return main_resolution_step
+        return problem
 
     def update_database_heuristic(
         self,
@@ -113,22 +116,21 @@ class ThermalProblemBuilder:
         index: BlockScenarioIndex,
         id_component: str,
         model: Model,
-        solving_parameters: SolvingParameters = SolvingParameters(),
-    ) -> ResolutionStep:
+    ) -> OptimizationProblem:
         cluster = create_component(model=model, id=id_component)
 
         network = Network("test")
         network.add_component(cluster)
 
-        resolution_step = ResolutionStep(
-            timesteps=timesteps(index, self.time_scenario_hour_parameter),
-            scenarios=[index.scenario],
-            database=self.database,
-            network=network,
+        problem = build_problem(
+            network,
+            self.database,
+            TimeBlock(1, timesteps(index, self.time_scenario_hour_parameter)),
+            [index.scenario],
+            border_management=BlockBorderManagement.CYCLE,
         )
 
-        resolution_step.solve(solving_parameters)
-        return resolution_step
+        return problem
 
 
 def get_database(

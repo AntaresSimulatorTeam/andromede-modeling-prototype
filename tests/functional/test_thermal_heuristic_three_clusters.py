@@ -24,6 +24,7 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
+from andromede.simulation import OutputValues
 from andromede.study.parsing import InputComponents
 from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
 from andromede.thermal_heuristic.model import (
@@ -35,7 +36,6 @@ from andromede.thermal_heuristic.model import (
 )
 from andromede.thermal_heuristic.problem import (
     BlockScenarioIndex,
-    SolvingParameters,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     get_database,
@@ -119,9 +119,11 @@ def test_milp_version(
         for week in range(thermal_problem_builder.time_scenario_hour_parameter.week):
             week_scenario_index = BlockScenarioIndex(week, scenario)
             resolution_step = thermal_problem_builder.main_resolution_step(
-                week_scenario_index,
-                solving_parameters=SolvingParameters(solver_parameters),
+                week_scenario_index
             )
+
+            status = resolution_step.solver.Solve(solver_parameters)
+            assert status == pywraplp.Solver.OPTIMAL
 
             expected_output = ExpectedOutput(
                 mode="milp",
@@ -130,10 +132,10 @@ def test_milp_version(
                 list_cluster=heuristic_components,
                 output_idx=output_indexes,
             )
-            expected_output.check_output_values(resolution_step.output)
+            expected_output.check_output_values(OutputValues(resolution_step))
 
             expected_cost = [[78933742, 102103587], [17472101, 17424769]]
-            assert resolution_step.objective == pytest.approx(
+            assert resolution_step.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
 
@@ -181,11 +183,13 @@ def test_accurate_heuristic(
             # First optimization
             resolution_step_1 = thermal_problem_builder.main_resolution_step(
                 week_scenario_index,
-                solving_parameters=SolvingParameters(solver_parameters),
             )
 
+            status = resolution_step_1.solver.Solve(solver_parameters)
+            assert status == pywraplp.Solver.OPTIMAL
+
             thermal_problem_builder.update_database_heuristic(
-                resolution_step_1.output,
+                OutputValues(resolution_step_1),
                 week_scenario_index,
                 heuristic_components,
                 param_to_update="nb_units_min",
@@ -202,12 +206,16 @@ def test_accurate_heuristic(
                         model=HeuristicAccurateModelBuilder(
                             THERMAL_CLUSTER_MODEL_MILP
                         ).model,
-                        solving_parameters=SolvingParameters(solver_parameters),
                     )
                 )
 
+                status = resolution_step_accurate_heuristic.solver.Solve(
+                    solver_parameters
+                )
+                assert status == pywraplp.Solver.OPTIMAL
+
                 thermal_problem_builder.update_database_heuristic(
-                    resolution_step_accurate_heuristic.output,
+                    OutputValues(resolution_step_accurate_heuristic),
                     week_scenario_index,
                     [g],
                     param_to_update="nb_units_min",
@@ -218,8 +226,10 @@ def test_accurate_heuristic(
             # Second optimization with lower bound modified
             resolution_step_2 = thermal_problem_builder.main_resolution_step(
                 week_scenario_index,
-                solving_parameters=SolvingParameters(solver_parameters),
             )
+
+            status = resolution_step_2.solver.Solve(solver_parameters)
+            assert status == pywraplp.Solver.OPTIMAL
 
             expected_output = ExpectedOutput(
                 mode="accurate",
@@ -228,13 +238,13 @@ def test_accurate_heuristic(
                 list_cluster=heuristic_components,
                 output_idx=output_indexes,
             )
-            expected_output.check_output_values(resolution_step_2.output)
+            expected_output.check_output_values(OutputValues(resolution_step_2))
 
             expected_cost = [
                 [78996726, 102215087 - 69500],
                 [17589534, 17641808],
             ]
-            assert resolution_step_2.objective == pytest.approx(
+            assert resolution_step_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
 
@@ -280,11 +290,13 @@ def test_fast_heuristic(
             # First optimization
             resolution_step_1 = thermal_problem_builder.main_resolution_step(
                 week_scenario_index,
-                solving_parameters=SolvingParameters(solver_parameters),
             )
 
+            status = resolution_step_1.solver.Solve(solver_parameters)
+            assert status == pywraplp.Solver.OPTIMAL
+
             thermal_problem_builder.update_database_heuristic(
-                resolution_step_1.output,
+                OutputValues(resolution_step_1),
                 week_scenario_index,
                 list_cluster_id=heuristic_components,
                 var_to_read="generation",
@@ -306,9 +318,11 @@ def test_fast_heuristic(
                         ).model,
                     )
                 )
+                status = resolution_step_heuristic.solver.Solve()
+                assert status == pywraplp.Solver.OPTIMAL
 
                 thermal_problem_builder.update_database_heuristic(
-                    resolution_step_heuristic.output,
+                    OutputValues(resolution_step_heuristic),
                     week_scenario_index,
                     [g],
                     var_to_read="n",
@@ -320,8 +334,10 @@ def test_fast_heuristic(
             # Second optimization with lower bound modified
             resolution_step_2 = thermal_problem_builder.main_resolution_step(
                 week_scenario_index,
-                solving_parameters=SolvingParameters(solver_parameters),
             )
+
+            status = resolution_step_2.solver.Solve(solver_parameters)
+            assert status == pywraplp.Solver.OPTIMAL
 
             expected_output = ExpectedOutput(
                 mode="fast",
@@ -331,13 +347,13 @@ def test_fast_heuristic(
                 output_idx=output_indexes,
             )
             expected_output.check_output_values(
-                resolution_step_2.output,
+                OutputValues(resolution_step_2),
             )
 
             expected_cost = [
                 [79277215 - 630089, 102461792 - 699765],
                 [17803738 - 661246, 17720390 - 661246],
             ]
-            assert resolution_step_2.objective == pytest.approx(
+            assert resolution_step_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )

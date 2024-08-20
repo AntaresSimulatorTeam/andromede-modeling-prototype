@@ -69,7 +69,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #         week_scenario_index
 #     )
 
-#     assert main_resolution_step.objective == 16805387
+#     assert main_resolution_step.solver.Objective().Value() == 16805387
 
 #     expected_output = ExpectedOutput(
 #         mode="milp",
@@ -80,7 +80,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
 #         ),
 #     )
-#     expected_output.check_output_values(main_resolution_step.output)
+#     expected_output.check_output_values(OutputValues(main_resolution_step))
 
 
 # def test_milp_without_day_ahead_reserve(
@@ -102,7 +102,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #         week_scenario_index
 #     )
 
-#     assert main_resolution_step.objective == 16805387
+#     assert main_resolution_step.solver.Objective().Value() == 16805387
 
 #     expected_output = ExpectedOutput(
 #         mode="milp",
@@ -113,7 +113,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
 #         ),
 #     )
-#     expected_output.check_output_values(main_resolution_step.output)
+#     expected_output.check_output_values(OutputValues(main_resolution_step))
 
 
 # def test_accurate_heuristic_with_day_ahead_reserve(
@@ -143,7 +143,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 
 #     # Get number of on units and round it to integer
 #     thermal_problem_builder.update_database_heuristic(
-#         resolution_step_1.output,
+#         OutputValues(resolution_step_1),
 #         week_scenario_index,
 #         None,
 #         param_to_update="nb_units_min",
@@ -172,7 +172,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #     )
 
 #     thermal_problem_builder.update_database_heuristic(
-#         resolution_step_accurate_heuristic.output,
+#         OutputValues(resolution_step_accurate_heuristic),
 #         week_scenario_index,
 #         None,
 #         param_to_update="nb_units_min",
@@ -194,7 +194,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #     resolution_step_2 = thermal_problem_builder.main_resolution_step(
 #         week_scenario_index
 #     )
-#     assert resolution_step_2.objective == 16805387
+#     assert resolution_step_2.solver.Objective().Value() == 16805387
 
 #     expected_output = ExpectedOutput(
 #         mode="accurate",
@@ -205,7 +205,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
 #         ),
 #     )
-#     expected_output.check_output_values(resolution_step_2.output)
+#     expected_output.check_output_values(OutputValues(resolution_step_2))
 
 
 # def test_accurate_heuristic_without_day_ahead_reserve(
@@ -235,7 +235,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 
 #     # Get number of on units and round it to integer
 #     thermal_problem_builder.update_database_heuristic(
-#         resolution_step_1.output,
+#         OutputValues(resolution_step_1),
 #         week_scenario_index,
 #         None,
 #         param_to_update="nb_units_min",
@@ -264,7 +264,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #     )
 
 #     thermal_problem_builder.update_database_heuristic(
-#         resolution_step_accurate_heuristic.output,
+#         OutputValues(resolution_step_accurate_heuristic),
 #         week_scenario_index,
 #         None,
 #         param_to_update="nb_units_min",
@@ -286,7 +286,7 @@ def week_scenario_index() -> BlockScenarioIndex:
 #     resolution_step_2 = thermal_problem_builder.main_resolution_step(
 #         week_scenario_index
 #     )
-#     assert resolution_step_2.objective == 16805387
+#     assert resolution_step_2.solver.Objective().Value() == 16805387
 
 #     expected_output = ExpectedOutput(
 #         mode="accurate",
@@ -297,4 +297,4 @@ def week_scenario_index() -> BlockScenarioIndex:
 #             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
 #         ),
 #     )
-#     expected_output.check_output_values(resolution_step_2.output)
+#     expected_output.check_output_values(OutputValues(resolution_step_2))

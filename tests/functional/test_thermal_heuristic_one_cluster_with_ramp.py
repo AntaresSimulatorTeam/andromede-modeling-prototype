@@ -14,6 +14,7 @@ from math import ceil
 from pathlib import Path
 from typing import List
 
+import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.libs.standard import (
@@ -23,6 +24,7 @@ from andromede.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
+from andromede.simulation import OutputValues
 from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import InputComponents
 from andromede.thermal_heuristic.cluster_parameter import compute_slot_length
@@ -112,6 +114,9 @@ def test_milp_version(
         week_scenario_index
     )
 
+    status = main_resolution_step.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+
     expected_output = ExpectedOutput(
         mode="milp",
         index=week_scenario_index,
@@ -121,26 +126,24 @@ def test_milp_version(
             idx_generation=4, idx_nodu=6, idx_spillage=52, idx_unsupplied=51
         ),
     )
-    expected_output.check_output_values(main_resolution_step.output)
+
+    output = OutputValues(main_resolution_step)
+    expected_output.check_output_values(output)
 
     assert (
         sum(
-            main_resolution_step.output.component("G")
-            .var("nb_start")
-            .value[0]  # type:ignore
+            output.component("G").var("nb_start").value[0]  # type:ignore
         )
         == 4
     )
     assert (
         sum(
-            main_resolution_step.output.component("G")
-            .var("nb_stop")
-            .value[0]  # type:ignore
+            output.component("G").var("nb_stop").value[0]  # type:ignore
         )
         == 4
     )
 
-    assert main_resolution_step.objective == pytest.approx(29040)
+    assert main_resolution_step.solver.Objective().Value() == pytest.approx(29040)
 
 
 def test_classic_accurate_heuristic(
@@ -179,9 +182,12 @@ def test_classic_accurate_heuristic(
         week_scenario_index
     )
 
+    status = resolution_step_1.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+
     # Get number of on units and round it to integer
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_1.output,
+        OutputValues(resolution_step_1),
         week_scenario_index,
         heuristic_components,
         param_to_update="nb_units_min",
@@ -208,8 +214,11 @@ def test_classic_accurate_heuristic(
         )
     )
 
+    status = resolution_step_accurate_heuristic.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_accurate_heuristic.output,
+        OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
         param_to_update="nb_units_min",
@@ -230,10 +239,13 @@ def test_classic_accurate_heuristic(
     resolution_step_2 = thermal_problem_builder.main_resolution_step(
         week_scenario_index
     )
-    assert resolution_step_2.objective == pytest.approx(29011.4616736)
+    status = resolution_step_2.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+    assert resolution_step_2.solver.Objective().Value() == pytest.approx(29011.4616736)
 
     assert [
-        resolution_step_2.output.component(heuristic_components[0])
+        OutputValues(resolution_step_2)
+        .component(heuristic_components[0])
         .var("nb_on")
         .value[0][time_step]  # type:ignore
         for time_step in range(13)
@@ -254,7 +266,8 @@ def test_classic_accurate_heuristic(
     ]  # non integer !!!!!!
 
     assert [
-        resolution_step_2.output.component(heuristic_components[0])
+        OutputValues(resolution_step_2)
+        .component(heuristic_components[0])
         .var("nb_start")
         .value[0][time_step]  # type:ignore
         for time_step in range(13)
@@ -275,7 +288,8 @@ def test_classic_accurate_heuristic(
     ]
 
     assert [
-        resolution_step_2.output.component(heuristic_components[0])
+        OutputValues(resolution_step_2)
+        .component(heuristic_components[0])
         .var("nb_stop")
         .value[0][time_step]  # type:ignore
         for time_step in range(13)
@@ -330,10 +344,12 @@ def test_modified_accurate_heuristic(
     resolution_step_1 = thermal_problem_builder.main_resolution_step(
         week_scenario_index
     )
+    status = resolution_step_1.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
     # Get number of on units and round it to integer
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_1.output,
+        OutputValues(resolution_step_1),
         week_scenario_index,
         heuristic_components,
         param_to_update="nb_units_min",
@@ -351,9 +367,11 @@ def test_modified_accurate_heuristic(
             ).model,
         )
     )
+    status = resolution_step_accurate_heuristic.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_accurate_heuristic.output,
+        OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
         param_to_update="nb_units_min",
@@ -361,7 +379,7 @@ def test_modified_accurate_heuristic(
         fn_to_apply=lambda x: ceil(round(x, 12)),
     )
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_accurate_heuristic.output,
+        OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
         param_to_update="nb_units_max",
@@ -369,7 +387,7 @@ def test_modified_accurate_heuristic(
         fn_to_apply=lambda x: ceil(round(x, 12)),
     )
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_accurate_heuristic.output,
+        OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
         param_to_update="nb_start_max",
@@ -377,7 +395,7 @@ def test_modified_accurate_heuristic(
         fn_to_apply=lambda x: ceil(round(x, 12)),
     )
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_accurate_heuristic.output,
+        OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
         param_to_update="nb_stop_max",
@@ -398,7 +416,9 @@ def test_modified_accurate_heuristic(
     resolution_step_2 = thermal_problem_builder.main_resolution_step(
         week_scenario_index
     )
-    assert resolution_step_2.objective == pytest.approx(84010)
+    status = resolution_step_2.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+    assert resolution_step_2.solver.Objective().Value() == pytest.approx(84010)
 
     expected_output = ExpectedOutput(
         mode="accurate",
@@ -409,7 +429,7 @@ def test_modified_accurate_heuristic(
             idx_generation=4, idx_nodu=6, idx_spillage=53, idx_unsupplied=52
         ),
     )
-    expected_output.check_output_values(resolution_step_2.output)
+    expected_output.check_output_values(OutputValues(resolution_step_2))
 
 
 def test_classic_fast_heuristic(
@@ -447,16 +467,19 @@ def test_classic_fast_heuristic(
     resolution_step_1 = thermal_problem_builder.main_resolution_step(
         week_scenario_index
     )
+    status = resolution_step_1.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
     assert [
-        resolution_step_1.output.component(heuristic_components[0])
+        OutputValues(resolution_step_1)
+        .component(heuristic_components[0])
         .var("generation")
         .value[0][time_step]  # type:ignore
         for time_step in range(13)
     ] == [0, 50, 100, 150, 200, 250, 300, 250, 200, 150, 100, 50, 0]
 
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_1.output,
+        OutputValues(resolution_step_1),
         week_scenario_index,
         list_cluster_id=heuristic_components,
         var_to_read="generation",
@@ -475,8 +498,11 @@ def test_classic_fast_heuristic(
             ),
         ).model,
     )
+    status = resolution_step_heuristic.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_heuristic.output,
+        OutputValues(resolution_step_heuristic),
         week_scenario_index,
         heuristic_components,
         var_to_read="n",
@@ -498,10 +524,13 @@ def test_classic_fast_heuristic(
     resolution_step_2 = thermal_problem_builder.main_resolution_step(
         week_scenario_index
     )
-    assert resolution_step_2.objective == pytest.approx(29000)
+    status = resolution_step_2.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+    assert resolution_step_2.solver.Objective().Value() == pytest.approx(29000)
 
     assert [
-        resolution_step_2.output.component(heuristic_components[0])
+        OutputValues(resolution_step_2)
+        .component(heuristic_components[0])
         .var("generation")
         .value[0][time_step]  # type:ignore
         for time_step in range(13)

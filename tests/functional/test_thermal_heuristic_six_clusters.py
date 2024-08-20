@@ -18,6 +18,7 @@ import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
 
+from andromede.simulation import OutputValues
 from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import InputComponents
@@ -30,7 +31,6 @@ from andromede.thermal_heuristic.model import (
 )
 from andromede.thermal_heuristic.problem import (
     BlockScenarioIndex,
-    SolvingParameters,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     get_database,
@@ -131,14 +131,16 @@ def test_accurate_heuristic(
                 index=week_scenario_index,
                 id_component=cluster,
                 model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_MODEL_MILP).model,
-                solving_parameters=SolvingParameters(solver_parameters),
             )
         )
+        status = resolution_step_accurate_heuristic.solver.Solve(solver_parameters)
+        assert status == pywraplp.Solver.OPTIMAL
 
         nb_on_heuristic = np.transpose(
             np.ceil(
                 np.array(
-                    resolution_step_accurate_heuristic.output.component(cluster)
+                    OutputValues(resolution_step_accurate_heuristic)
+                    .component(cluster)
                     .var("nb_on")
                     .value
                 )
@@ -217,9 +219,11 @@ def test_fast_heuristic(
                 ),
             ).model,
         )
+        status = resolution_step_heuristic.solver.Solve()
+        assert status == pywraplp.Solver.OPTIMAL
 
         thermal_problem_builder.update_database_heuristic(
-            resolution_step_heuristic.output,
+            OutputValues(resolution_step_heuristic),
             week_scenario_index,
             [cluster],
             var_to_read="n",

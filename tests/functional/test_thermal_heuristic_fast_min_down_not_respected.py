@@ -14,9 +14,11 @@ from pathlib import Path
 from typing import List
 
 import numpy as np
+import ortools.linear_solver.pywraplp as pywraplp
 import pandas as pd
 import pytest
 
+from andromede.simulation import OutputValues
 from andromede.study import TimeScenarioSeriesData
 from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import InputComponents
@@ -120,9 +122,11 @@ def test_fast_heuristic(
             ),
         ).model,
     )
+    status = resolution_step_heuristic.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
     thermal_problem_builder.update_database_heuristic(
-        resolution_step_heuristic.output,
+        OutputValues(resolution_step_heuristic),
         week_scenario_index,
         heuristic_components,
         var_to_read="n",
