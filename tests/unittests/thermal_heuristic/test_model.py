@@ -23,13 +23,15 @@ def test_variable_in_expression() -> None:
     expression_2 = (
         var("z").shift(-1) + var("z") + literal(0) * var("y") + var("x").expec()
     )
+    expression_3 = param("pmax")
 
-    assert model_editer.variable_in_expression(expression_1, ["x"]) is True
-    assert model_editer.variable_in_expression(expression_1, ["y"]) is True
-    assert model_editer.variable_in_expression(expression_1, ["z"]) is False
-    assert model_editer.variable_in_expression(expression_2, ["x"]) is True
-    assert model_editer.variable_in_expression(expression_2, ["y"]) is True
-    assert model_editer.variable_in_expression(expression_2, ["z"]) is True
+    assert model_editer.variable_in_expression(expression_1, ["x"])
+    assert model_editer.variable_in_expression(expression_1, ["y"])
+    assert not model_editer.variable_in_expression(expression_1, ["z"])
+    assert model_editer.variable_in_expression(expression_2, ["x"])
+    assert model_editer.variable_in_expression(expression_2, ["y"])
+    assert model_editer.variable_in_expression(expression_2, ["z"])
+    # assert not model_editer.variable_in_expression(expression_3, ["p"])
 
 
 def test_variable_in_constraint() -> None:
@@ -42,8 +44,8 @@ def test_variable_in_constraint() -> None:
     expression_3 = var("y") - var("y") + param("a")
     constraint = Constraint("cst", expression_1 <= expression_2 <= expression_3)
 
-    assert model_editer.variable_in_constraint(constraint, ["x"]) is True
-    assert model_editer.variable_in_constraint(constraint, ["y"]) is True
-    assert model_editer.variable_in_constraint(constraint, ["z"]) is True
-    assert model_editer.variable_in_constraint(constraint, ["xy"]) is False
-    assert model_editer.variable_in_constraint(constraint, ["a"]) is True
+    assert model_editer.variable_in_constraint(constraint, ["x"])
+    assert model_editer.variable_in_constraint(constraint, ["y"])
+    assert model_editer.variable_in_constraint(constraint, ["z"])
+    assert not model_editer.variable_in_constraint(constraint, ["xy"])
+    assert model_editer.variable_in_constraint(constraint, ["a"])
