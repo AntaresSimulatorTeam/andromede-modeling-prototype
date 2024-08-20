@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
@@ -28,6 +28,7 @@ from andromede.hydro_heuristic.problem import (
     HydroHeuristicParameters,
     ReservoirParameters,
     optimize_target,
+    HydroHeuristicData,
 )
 from andromede.libs.standard import (
     DEMAND_MODEL,
@@ -122,9 +123,8 @@ def test_hydro_heuristic() -> None:
 
 def test_complete_year_as_weekly_blocks() -> None:
     """Solve weekly problems with heuristic weekly targets for the stock."""
-    database, network = create_database_and_network(
-        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False, bc=False
-    )
+    network = get_network(HYDRO_MODEL_WITH_TARGET, bc=False)
+    database = get_database(return_to_initial_level=False)
 
     capacity = 2945
     initial_level = 0.5 * capacity
@@ -160,9 +160,8 @@ def test_complete_year_as_weekly_blocks() -> None:
 
 def test_complete_year_as_weekly_blocks_with_binding_constraint() -> None:
     """Solve weekly problems with heuristic weekly targets for the stock with a binding constraint that implements a minimum generation for the stock. As this constraint is not seen by the heuristic, the problem is infeasible."""
-    database, network = create_database_and_network(
-        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False, bc=True
-    )
+    network = get_network(HYDRO_MODEL_WITH_TARGET, bc=True)
+    database = get_database(return_to_initial_level=False)
 
     capacity = 2945
     initial_level = 0.5 * capacity
@@ -204,11 +203,9 @@ def test_complete_year_as_weekly_blocks_with_hourly_infeasibilities() -> None:
     )
     variation_inflow = np.tile(np.array([2300] + [-100] * 23), 365)
 
-    database, network = create_database_and_network(
-        HYDRO_MODEL_WITH_TARGET,
-        return_to_initial_level=False,
-        bc=False,
-        inflow_data=list(inflow_data + variation_inflow),
+    network = get_network(HYDRO_MODEL_WITH_TARGET, bc=False)
+    database = get_database(
+        return_to_initial_level=False, inflow_data=list(inflow_data + variation_inflow)
     )
 
     capacity = 2945
@@ -240,55 +237,58 @@ def test_complete_year_as_weekly_blocks_with_hourly_infeasibilities() -> None:
     assert status == problem.solver.INFEASIBLE
 
 
-def create_database_and_network(
+def get_network(
     hydro_model: Model,
-    return_to_initial_level: bool,
     bc: bool,
-    inflow_data: Optional[list[float]] = None,
-) -> Tuple[DataBase, Network]:
-    capacity = 2945
-    initial_level = 0.5 * capacity
-    demand_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_small_capacity/load.txt",
-        usecols=0,
-    )
-    if inflow_data is None:
-        inflow_data = list(
-            np.loadtxt(
-                Path(__file__).parent / "/data/hydro_small_capacity/mod.txt",
-                usecols=0,
-            ).repeat(24)
-            / 24
-        )
-    rule_curve_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_small_capacity/reservoir.txt"
-    ).repeat(24, axis=0)
+) -> Network:
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="1")
 
-    thermal_1 = create_component(
-        model=GENERATOR_MODEL,
-        id="G1",
-    )
-
-    thermal_2 = create_component(
-        model=GENERATOR_MODEL,
-        id="G2",
-    )
-
-    thermal_3 = create_component(
-        model=GENERATOR_MODEL,
-        id="G3",
-    )
-
-    demand = create_component(
-        model=DEMAND_MODEL,
-        id="D",
-    )
+    thermal_1 = create_component(model=GENERATOR_MODEL, id="G1")
+    thermal_2 = create_component(model=GENERATOR_MODEL, id="G2")
+    thermal_3 = create_component(model=GENERATOR_MODEL, id="G3")
+    demand = create_component(model=DEMAND_MODEL, id="D")
     if bc:
         lb = create_component(model=MIN_GEN_CONSTRAINT, id="lb")
-
     hydro = create_component(model=hydro_model, id="H")
+
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(thermal_1)
+    network.add_component(thermal_2)
+    network.add_component(thermal_3)
+    network.add_component(hydro)
+    if bc:
+        network.add_component(lb)
+    network.connect(PortRef(node, "balance_port"), PortRef(demand, "balance_port"))
+    network.connect(PortRef(node, "balance_port"), PortRef(thermal_1, "balance_port"))
+    network.connect(PortRef(node, "balance_port"), PortRef(thermal_2, "balance_port"))
+    network.connect(PortRef(node, "balance_port"), PortRef(thermal_3, "balance_port"))
+    network.connect(PortRef(node, "balance_port"), PortRef(hydro, "balance_port"))
+    if bc:
+        network.connect(PortRef(lb, "balance_port"), PortRef(hydro, "balance_port"))
+    return network
+
+
+def get_database(
+    return_to_initial_level: bool,
+    inflow_data: Optional[list[float]] = None,
+) -> DataBase:
+    capacity = 2945
+    initial_level = 0.5 * capacity
+
+    data = HydroHeuristicData(
+        DataAggregatorParameters(list(range(8760)), list(range(8760))),
+        ReservoirParameters(
+            capacity,
+            initial_level,
+            str(Path(__file__).parent) + "/data/hydro_small_capacity/load.txt",
+            0,
+        ),
+    )
+    if inflow_data is None:
+        inflow_data = data.inflow
 
     database = DataBase()
 
@@ -297,7 +297,7 @@ def create_database_and_network(
     database.add_data(
         "D",
         "demand",
-        TimeSeriesData({TimeIndex(t): demand_data[t] for t in range(8760)}),
+        TimeSeriesData({TimeIndex(t): data.demand[t] for t in range(8760)}),
     )
 
     database.add_data("G1", "p_max", ConstantData(3000))
@@ -309,11 +309,7 @@ def create_database_and_network(
 
     database.add_data("H", "min_generating", ConstantData(0))
 
-    database.add_data(
-        "H",
-        "max_generating",
-        ConstantData(204),
-    )
+    database.add_data("H", "max_generating", ConstantData(204))
 
     database.add_data("H", "capacity", ConstantData(capacity))
     database.add_data("H", "initial_level", ConstantData(initial_level))
@@ -328,20 +324,14 @@ def create_database_and_network(
         "H",
         "lower_rule_curve",
         TimeSeriesData(
-            {
-                TimeIndex(i): rule_curve_data[(i - 1) % 8760][0] * capacity
-                for i in range(8760)
-            }
+            {TimeIndex(i): data.lower_rule_curve[i] * capacity for i in range(8760)}
         ),
     )
     database.add_data(
         "H",
         "upper_rule_curve",
         TimeSeriesData(
-            {
-                TimeIndex(i): rule_curve_data[(i - 1) % 8760][2] * capacity
-                for i in range(8760)
-            }
+            {TimeIndex(i): data.upper_rule_curve[i] * capacity for i in range(8760)}
         ),
     )
 
@@ -362,20 +352,4 @@ def create_database_and_network(
             ),
         )
 
-    network = Network("test")
-    network.add_node(node)
-    network.add_component(demand)
-    network.add_component(thermal_1)
-    network.add_component(thermal_2)
-    network.add_component(thermal_3)
-    network.add_component(hydro)
-    if bc:
-        network.add_component(lb)
-    network.connect(PortRef(node, "balance_port"), PortRef(demand, "balance_port"))
-    network.connect(PortRef(node, "balance_port"), PortRef(thermal_1, "balance_port"))
-    network.connect(PortRef(node, "balance_port"), PortRef(thermal_2, "balance_port"))
-    network.connect(PortRef(node, "balance_port"), PortRef(thermal_3, "balance_port"))
-    network.connect(PortRef(node, "balance_port"), PortRef(hydro, "balance_port"))
-    if bc:
-        network.connect(PortRef(lb, "balance_port"), PortRef(hydro, "balance_port"))
-    return database, network
+    return database
