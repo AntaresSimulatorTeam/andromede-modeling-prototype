@@ -133,6 +133,30 @@ GENERATOR_MODEL = model(
     .expec(),
 )
 
+GENERATOR_MODEL_WITH_AVAILIBILITY = model(
+    id="GEN",
+    parameters=[
+        float_parameter("p_max", TIME_AND_SCENARIO_FREE),
+        float_parameter("cost", CONSTANT),
+    ],
+    variables=[float_variable("generation", lower_bound=literal(0))],
+    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+    port_fields_definitions=[
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "flow"),
+            definition=var("generation"),
+        )
+    ],
+    constraints=[
+        Constraint(
+            name="Max generation", expression=var("generation") <= param("p_max")
+        ),
+    ],
+    objective_operational_contribution=(param("cost") * var("generation"))
+    .sum()
+    .expec(),
+)
+
 GENERATOR_MODEL_WITH_PMIN = model(
     id="GEN",
     parameters=[
