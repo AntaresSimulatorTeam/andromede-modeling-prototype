@@ -52,132 +52,18 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL_WITH_TARGET,
 )
 
-optimal_generation = np.array(
-    [
-        970769.54166667,
-        861569.45833333,
-        62812.0,
-        200749.91666667,
-        141134.41666667,
-        126312.5,
-        363693.41666667,
-        108870.0,
-        282407.75,
-        195624.33333333,
-        224115.45833333,
-        178595.75,
-        169385.41666667,
-        218124.83333333,
-        -23170.375,
-        -95656.125,
-        -14351.70833333,
-        -126658.0,
-        -505373.25,
-        -500585.33333333,
-        -506195.75,
-        -502971.33333333,
-        -233037.0,
-        -241259.75,
-        -188374.75,
-        -179215.0,
-        39146.16666667,
-        -57964.41666667,
-        34419.625,
-        -296548.91666667,
-        -363752.0,
-        -281616.0,
-        -194688.0,
-        -155247.0,
-        -174545.0,
-        -157275.0,
-        -165210.0,
-        -163579.0,
-        17827.0,
-        48997.0,
-        84822.0,
-        111583.0,
-        408906.0,
-        564588.0,
-        337915.0,
-        508152.0,
-        678530.0,
-        898910.0,
-        796024.0,
-        556589.12499998,
-        552651.0,
-        670764.0,
-    ]
-)
-
-expected_monthly_generation = [
-    152697.73105305,
-    438785.26894695,
-    392228.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    283540.0,
-    811245.60160001,
-    939332.74547519,
-    961679.01031377,
-    1311898.64261102,
-]
-
-expected_weekly_target = [
-    30808.59868795,
-    34138.59595819,
-    33878.95450005,
-    37138.74177906,
-    68243.30211844,
-    109585.49868441,
-    116206.55310524,
-    106413.64170753,
-    106235.09659609,
-    94120.89889535,
-    87772.00295574,
-    86306.95398197,
-    72862.16102998,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    50475.29566149,
-    63276.90557923,
-    66979.26924831,
-    123852.52951097,
-    195032.417803,
-    183190.90389278,
-    186094.70977249,
-    225883.57013174,
-    183224.09230019,
-    188761.4662071,
-    195376.51984883,
-    237680.27684789,
-    242770.15796234,
-    194253.57880885,
-    211696.55361414,
-    237810.22449688,
-    257421.57201802,
-    202072.25316213,
-    256981.90893995,
-    375423.77165044,
-    390653.48131144,
-]
+optimal_generation = open(
+    Path(__file__).parent / "/data/hydro_with_large_load/optimal_generation.txt", "r"
+).readlines()
+expected_monthly_generation = open(
+    Path(__file__).parent
+    / "/data/hydro_with_large_load/expected_monthly_generation.txt",
+    "r",
+).readlines()
+expected_weekly_target = open(
+    Path(__file__).parent / "/data/hydro_with_large_load/expected_weekly_target.txt",
+    "r",
+).readlines()
 
 
 def test_complete_year_as_one_block() -> None:
@@ -206,7 +92,7 @@ def test_complete_year_as_one_block() -> None:
                 generating[t] + overflow[t]  # type:ignore
                 for t in range(168 * week, 168 * (week + 1))
             ]
-        ) == pytest.approx(optimal_generation[week])
+        ) == pytest.approx(float(optimal_generation[week]))
 
 
 def test_hydro_heuristic() -> None:
@@ -230,7 +116,9 @@ def test_hydro_heuristic() -> None:
     )
 
     assert solving_output.status == pywraplp.Solver.OPTIMAL
-    assert monthly_output.generating == pytest.approx(expected_monthly_generation)
+    assert monthly_output.generating == pytest.approx(
+        [float(x) for x in expected_monthly_generation]
+    )
 
     all_daily_generation: List[float] = []
     day_in_year = 0
@@ -267,7 +155,7 @@ def test_hydro_heuristic() -> None:
     )
 
     # Vérification des valeurs trouvées
-    assert weekly_target == pytest.approx(expected_weekly_target)
+    assert weekly_target == pytest.approx([float(x) for x in expected_weekly_target])
 
 
 def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
@@ -285,7 +173,7 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
 
     for week in range(52):
         database.add_data(
-            "H", "overall_target", ConstantData(expected_weekly_target[week])
+            "H", "overall_target", ConstantData(float(expected_weekly_target[week]))
         )
         database.add_data("H", "initial_level", ConstantData(initial_level))
         problem = build_problem(

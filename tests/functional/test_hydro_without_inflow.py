@@ -51,62 +51,10 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL_WITH_TARGET,
 )
 
-weekly_generation = np.array(
-    [
-        1146984,
-        1326912,
-        848176,
-        196577,
-        13755,
-        97279,
-        173275,
-        44154,
-        203481,
-        180828,
-        54701,
-        99758,
-        -56398,
-        115504,
-        422,
-        -33918,
-        34460,
-        2103,
-        -17772,
-        -52055,
-        -20063,
-        29862,
-        -54541,
-        -39715,
-        -78495,
-        -52954,
-        -84570,
-        -368825,
-        -153642,
-        -437611,
-        -363752,
-        -281616,
-        -194688,
-        -155247,
-        -174545,
-        -157275,
-        -165210,
-        -163579,
-        17827,
-        48997,
-        84822,
-        111583,
-        408906,
-        564588,
-        -95571,
-        -751848,
-        -581470,
-        -361090,
-        -463976,
-        -133420,
-        -157252,
-        -153856,
-    ]
-)
+weekly_generation = open(
+    Path(__file__).parent / "/data/hydro_without_inflow/weekly_generation.txt",
+    "r",
+).readlines()
 
 
 def test_complete_year_as_one_block() -> None:
@@ -135,7 +83,7 @@ def test_complete_year_as_one_block() -> None:
                 generating[t] + overflow[t]  # type:ignore
                 for t in range(168 * week, 168 * (week + 1))
             ]
-        ) == pytest.approx(weekly_generation[week], rel=1e-6, abs=1e-11)
+        ) == pytest.approx(float(weekly_generation[week]), rel=1e-6, abs=1e-11)
 
 
 def test_hydro_heuristic() -> None:
