@@ -413,9 +413,7 @@ def test_comparison() -> None:
                     ),  # The internal representation of shift(1) is sum(shift=1)
                     scenario_aggregator=None,
                 ): TermEfficient(
-                    TimeOperatorNode(
-                        LiteralNode(1), TimeOperatorName.SHIFT, InstancesTimeIndex(1)
-                    ),
+                    LiteralNode(1),
                     "",
                     "x",
                     time_operator=TimeShift(
@@ -432,9 +430,7 @@ def test_comparison() -> None:
                     time_aggregator=TimeSum(stay_roll=True),
                     scenario_aggregator=None,
                 ): TermEfficient(
-                    TimeOperatorNode(
-                        LiteralNode(1), TimeOperatorName.SHIFT, InstancesTimeIndex(1)
-                    ),
+                    LiteralNode(1),
                     "",
                     "y",
                     time_operator=TimeShift(InstancesTimeIndex(1)),
@@ -461,11 +457,7 @@ def test_comparison() -> None:
                     ),  # The internal representation of eval(1) is sum(eval=1)
                     scenario_aggregator=None,
                 ): TermEfficient(
-                    TimeOperatorNode(
-                        LiteralNode(1),
-                        TimeOperatorName.EVALUATION,
-                        InstancesTimeIndex(1),
-                    ),
+                    LiteralNode(1),
                     "",
                     "x",
                     time_operator=TimeEvaluation(
@@ -482,11 +474,7 @@ def test_comparison() -> None:
                     time_aggregator=TimeSum(stay_roll=True),
                     scenario_aggregator=None,
                 ): TermEfficient(
-                    TimeOperatorNode(
-                        LiteralNode(1),
-                        TimeOperatorName.EVALUATION,
-                        InstancesTimeIndex(1),
-                    ),
+                    LiteralNode(1),
                     "",
                     "y",
                     time_operator=TimeEvaluation(InstancesTimeIndex(1)),

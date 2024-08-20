@@ -30,6 +30,7 @@ from andromede.expression.expression_efficient import (
     TimeOperatorName,
     TimeOperatorNode,
     comp_param,
+    literal,
     param,
 )
 from andromede.expression.indexing_structure import IndexingStructure, RowIndex
@@ -275,6 +276,7 @@ def test_resolve_coefficient_on_elementary_operations(
     [
         (param("p").shift(2).sum(), RowIndex(0, 0), 3.0),
         (param("p").shift(-1).sum(), RowIndex(2, 1), 5.0),
+        (literal(0).shift(-1).sum(), RowIndex(0, 0), 0.0),
         (param("p").eval(2).sum(), RowIndex(0, 0), 3.0),
         (param("p").eval(2).sum(), RowIndex(2, 0), 3.0),
         (param("p").shift(ExpressionRange(0, 3)).sum(), RowIndex(0, 0), 13.0),
@@ -305,6 +307,25 @@ def test_resolve_coefficient_on_time_shift_and_sum(
     ],
 )
 def test_resolve_coefficient_on_expectation(
+    expr: ExpressionNodeEfficient,
+    row_id: RowIndex,
+    expected: float,
+    provider: CustomValueProvider,
+) -> None:
+    assert math.isclose(resolve_coefficient(expr, provider, row_id), expected)
+
+
+@pytest.mark.parametrize(
+    "expr, row_id, expected",
+    [
+        (param("p").expec().sum(), RowIndex(0, 0), 18.0),
+        (param("p").sum().expec(), RowIndex(0, 0), 18.0),
+        (param("p").shift(comp_param("c", "q")).sum().expec(), RowIndex(1, 0), 6.5),
+        (param("p").expec().shift(comp_param("c", "q")).sum(), RowIndex(1, 0), 7.5),
+        (param("p").shift(comp_param("c", "q")).expec().sum(), RowIndex(1, 0), 6.5),
+    ],
+)
+def test_resolve_coefficient_on_sum_and_expectation(
     expr: ExpressionNodeEfficient,
     row_id: RowIndex,
     expected: float,

@@ -25,6 +25,7 @@ from typing import (
     Sequence,
     TypeVar,
     Union,
+    cast,
     overload,
 )
 
@@ -231,26 +232,25 @@ class TermEfficient:
         if shift is not None and eval is not None:
             raise ValueError("Only shift or eval arguments should specified, not both.")
 
-        # The shift or eval operators distribute over the coefficients whereas the sum only applies to the whole as (param("a") * var("x")).shift([1,5]) represents: a[t+1]x[t+1] + ... + a[t+5]x[t+5]
-        # And (param("a") * var("x")).eval([1,5]) represents: a[1]x[1] + ... + a[5]x[5]
+        # The shift or eval operators applies on the variable, then it will define at which time step the term coefficient * variable will be evaluated
 
         if shift is not None:
             return dataclasses.replace(
                 self,
-                coefficient=TimeOperatorNode(
-                    self.coefficient, TimeOperatorName.SHIFT, InstancesTimeIndex(shift)
-                ),
+                # coefficient=TimeOperatorNode(
+                #     self.coefficient, TimeOperatorName.SHIFT, InstancesTimeIndex(shift)
+                # ),
                 time_operator=TimeShift(InstancesTimeIndex(shift)),
                 time_aggregator=TimeSum(stay_roll=True),
             )
         elif eval is not None:
             return dataclasses.replace(
                 self,
-                coefficient=TimeOperatorNode(
-                    self.coefficient,
-                    TimeOperatorName.EVALUATION,
-                    InstancesTimeIndex(eval),
-                ),
+                # coefficient=TimeOperatorNode(
+                #     self.coefficient,
+                #     TimeOperatorName.EVALUATION,
+                #     InstancesTimeIndex(eval),
+                # ),
                 time_operator=TimeEvaluation(InstancesTimeIndex(eval)),
                 time_aggregator=TimeSum(stay_roll=True),
             )
@@ -380,8 +380,7 @@ def _merge_dicts(
     rhs: Dict[TermKeyEfficient, TermEfficient],
     merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
     neutral: float,
-) -> Dict[TermKeyEfficient, TermEfficient]:
-    ...
+) -> Dict[TermKeyEfficient, TermEfficient]: ...
 
 
 @overload
@@ -390,8 +389,7 @@ def _merge_dicts(
     rhs: Dict[PortFieldId, PortFieldTerm],
     merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
     neutral: float,
-) -> Dict[PortFieldId, PortFieldTerm]:
-    ...
+) -> Dict[PortFieldId, PortFieldTerm]: ...
 
 
 def _get_neutral_term(term: T_val, neutral: float) -> T_val:
@@ -959,16 +957,56 @@ class LinearExpressionEfficient:
                 raise ValueError(
                     "This expression has already been associated to another component."
                 )
+
             result_term = dataclasses.replace(
                 term,
                 component_id=component_id,
                 coefficient=add_component_context(component_id, term.coefficient),
+                time_operator=(
+                    dataclasses.replace(
+                        term.time_operator,
+                        time_ids=_add_component_context_to_instances_index(
+                            component_id, term.time_operator.time_ids
+                        ),
+                    )
+                    if term.time_operator
+                    else None
+                ),
             )
             result_terms[generate_key(result_term)] = result_term
         result_constant = add_component_context(component_id, self.constant)
         return LinearExpressionEfficient(
             result_terms, result_constant, self.port_field_terms
         )
+
+
+def _add_component_context_to_expression_range(
+    component_id: str, expression_range: ExpressionRange
+) -> ExpressionRange:
+    return ExpressionRange(
+        start=add_component_context(component_id, expression_range.start),
+        stop=add_component_context(component_id, expression_range.stop),
+        step=(
+            add_component_context(component_id, expression_range.step)
+            if expression_range.step is not None
+            else None
+        ),
+    )
+
+
+def _add_component_context_to_instances_index(
+    component_id: str, instances_index: InstancesTimeIndex
+) -> InstancesTimeIndex:
+    expressions = instances_index.expressions
+    if isinstance(expressions, ExpressionRange):
+        return InstancesTimeIndex(
+            _add_component_context_to_expression_range(component_id, expressions)
+        )
+    if isinstance(expressions, list):
+        expressions_list = cast(List[ExpressionNodeEfficient], expressions)
+        copy = [add_component_context(component_id, e) for e in expressions_list]
+        return InstancesTimeIndex(copy)
+    raise ValueError("Unexpected type in instances index")
 
 
 def linear_expressions_equal(

@@ -163,6 +163,8 @@ class ParameterEvaluationVisitor(ExpressionVisitor[Dict[TimeScenarioIndex, float
                     for k in operand_dict.keys()
                     if k.scenario == scenario
                 )
+            # As the sum aggregates on time, time indices on which to evaluate parent expression collapses on row_id.time
+            self.time_scenario_indices.time_indices = [self.row_id.time]
             return result
         else:
             return NotImplemented
@@ -185,6 +187,8 @@ class ParameterEvaluationVisitor(ExpressionVisitor[Dict[TimeScenarioIndex, float
                         operand_dict[k] for k in operand_dict.keys() if k.time == time
                     )
                 )
+            # As the expectation aggregates on scenario, scenario indices on which to evaluate parent expression collapses on row_id.scenario
+            self.time_scenario_indices.scenario_indices = [self.row_id.scenario]
             return result
 
         else:

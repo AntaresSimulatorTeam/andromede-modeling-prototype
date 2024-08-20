@@ -55,10 +55,14 @@ class LinearExpressionResolver:
             # a_t * sum(x_t')
             # a_t * x_t
             # TODO: Next line is to be moved inside the for loop once we have figured out how to represent sum(a_t * x_t)
-            resolved_coeff = resolve_coefficient(
-                term.coefficient, self.value_provider, row_id
-            )
+
             for ts_id, lp_variable in resolved_variables.items():
+                # TODO: Could we check in which case coeff resolution leads to the same result for each element in the for loop ? When there is only a literal, etc, etc ?
+                resolved_coeff = resolve_coefficient(
+                    term.coefficient,
+                    self.value_provider,
+                    RowIndex(ts_id.time, ts_id.scenario),
+                )
                 resolved_terms.append(ResolvedTerm(resolved_coeff, lp_variable))
 
         resolved_constant = resolve_coefficient(
@@ -80,14 +84,14 @@ class LinearExpressionResolver:
         operator_ts_ids = self._row_id_to_term_time_scenario_id(term, row_id)
         for time in operator_ts_ids.time_indices:
             for scenario in operator_ts_ids.scenario_indices:
-                solver_vars[
-                    TimeScenarioIndex(time, scenario)
-                ] = self.context.get_component_variable(
-                    time,
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
+                solver_vars[TimeScenarioIndex(time, scenario)] = (
+                    self.context.get_component_variable(
+                        time,
+                        scenario,
+                        term.component_id,
+                        term.variable_name,
+                        term.structure,
+                    )
                 )
         return solver_vars
 
