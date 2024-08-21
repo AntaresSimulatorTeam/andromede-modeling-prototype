@@ -30,21 +30,10 @@ class ContextAdder(CopyVisitor):
 
     component_id: str
 
-    # def variable(self, node: VariableNode) -> ExpressionNodeEfficient:
-    #     return ComponentVariableNode(self.component_id, node.name)
-
     def parameter(self, node: ParameterNode) -> ExpressionNodeEfficient:
         return ComponentParameterNode(self.component_id, node.name)
 
-    # def comp_variable(self, node: ComponentVariableNode) -> ExpressionNodeEfficient:
-    #     raise ValueError(
-    #         "This expression has already been associated to another component."
-    #     )
-
-    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNodeEfficient:
-        raise ValueError(
-            "This expression has already been associated to another component."
-        )
+    # Nothing is done is a component parameter node is encountered as it may have been generated from port resolution
 
 
 def add_component_context(

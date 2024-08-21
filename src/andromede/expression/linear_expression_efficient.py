@@ -953,19 +953,16 @@ class LinearExpressionEfficient:
             port_expr += sum_expressions(
                 [port_term.coefficient * expression for expression in expressions]
             )
-        return self + port_expr
+        self_without_ports = LinearExpressionEfficient(self.terms, self.constant)
+        return self_without_ports + port_expr
 
     def add_component_context(self, component_id: str) -> "LinearExpressionEfficient":
         result_terms = {}
         for term in self.terms.values():
-            if term.component_id:
-                raise ValueError(
-                    "This expression has already been associated to another component."
-                )
-
+            # Some terms may involve variable from other component if they arise from previous port resolution
             result_term = dataclasses.replace(
                 term,
-                component_id=component_id,
+                component_id=term.component_id if term.component_id else component_id,
                 coefficient=add_component_context(component_id, term.coefficient),
                 time_operator=(
                     dataclasses.replace(

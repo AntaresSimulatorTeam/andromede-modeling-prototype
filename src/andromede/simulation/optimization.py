@@ -74,10 +74,11 @@ def _instantiate_model_expression(
      1. add component ID for variables and parameters of THIS component
      2. replace port fields by their definition
     """
-    with_component = model_expression.add_component_context(component_id)
-    with_component_and_ports = with_component.resolve_port(
+    # We need to resolve ports before adding component context as binding constraints with ports may involve parameters from the current component
+    with_ports = model_expression.resolve_port(
         component_id, optimization_context.connection_fields_expressions
     )
+    with_component_and_ports = with_ports.add_component_context(component_id)
     return with_component_and_ports
 
 
