@@ -13,7 +13,6 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-from andromede.expression.expression import VariableNode
 from andromede.expression.expression_efficient import (
     ComparisonNode,
     ComponentParameterNode,
@@ -93,17 +92,11 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
     def comparison(self, node: ComparisonNode) -> float:
         raise ValueError("Cannot evaluate comparison operator.")
 
-    def variable(self, node: VariableNode) -> float:
-        return self.context.get_variable_value(node.name)
-
     def parameter(self, node: ParameterNode) -> float:
         return self.context.get_parameter_value(node.name)
 
     def comp_parameter(self, node: ComponentParameterNode) -> float:
         return self.context.get_component_parameter_value(node.component_id, node.name)
-
-    # def comp_variable(self, node: ComponentVariableNode) -> float:
-    #     return self.context.get_component_variable_value(node.component_id, node.name)
 
     def time_operator(self, node: TimeOperatorNode) -> float:
         raise NotImplementedError()
@@ -132,9 +125,6 @@ class InstancesIndexVisitor(EvaluationVisitor):
     """
     Evaluates an expression given as instances index which should have no variable and constant parameter values.
     """
-
-    def variable(self, node: VariableNode) -> float:
-        raise ValueError("An instance index expression cannot contain variable")
 
     def parameter(self, node: ParameterNode) -> float:
         if not self.context.parameter_is_constant_over_time(node.name):
