@@ -22,12 +22,13 @@ from andromede.expression.expression_efficient import (
     ExpressionNodeEfficient,
     ExpressionRange,
     PortFieldNode,
+    literal,
     param,
 )
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
-    literal,
     var,
+    wrap_in_linear_expr,
 )
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
 from andromede.expression.parsing.antlr.ExprParser import ExprParser
@@ -65,7 +66,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     # Visit a parse tree produced by ExprParser#number.
     def visitNumber(self, ctx: ExprParser.NumberContext) -> LinearExpressionEfficient:
-        return literal(float(ctx.NUMBER().getText()))  # type: ignore
+        return wrap_in_linear_expr(literal(float(ctx.NUMBER().getText())))  # type: ignore
 
     # Visit a parse tree produced by ExprParser#identifier.
     def visitIdentifier(
@@ -117,7 +118,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         if self.identifiers.is_variable(identifier):
             return var(identifier)
         elif self.identifiers.is_parameter(identifier):
-            return param(identifier)
+            return wrap_in_linear_expr(param(identifier))
         raise ValueError(f"{identifier} is not a valid variable or parameter name.")
 
     # Visit a parse tree produced by ExprParser#portField.
