@@ -44,14 +44,8 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNodeEfficient]):
             visit(node.left, self), visit(node.right, self), node.comparator
         )
 
-    # def variable(self, node: VariableNode) -> ExpressionNodeEfficient:
-    #     return VariableNode(node.name)
-
     def parameter(self, node: ParameterNode) -> ExpressionNodeEfficient:
         return ParameterNode(node.name)
-
-    # def comp_variable(self, node: ComponentVariableNode) -> ExpressionNodeEfficient:
-    #     return ComponentVariableNode(node.component_id, node.name)
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNodeEfficient:
         return ComponentParameterNode(node.component_id, node.name)
