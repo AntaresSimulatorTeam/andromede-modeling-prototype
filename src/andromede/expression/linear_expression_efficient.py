@@ -1079,6 +1079,7 @@ def _copy_expression(
 
 # TODO : Define shortcuts for "x", is_one etc ....
 def var(name: str) -> LinearExpressionEfficient:
+    # TODO: At term build time, no information on the variable structure is known, we use a default time, scenario varying, maybe discard structure as term attribute ?
     return LinearExpressionEfficient(
         [
             TermEfficient(

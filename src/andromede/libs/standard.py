@@ -343,7 +343,7 @@ THERMAL_CLUSTER_MODEL_DHD = model(
             var("nb_stop").sum(
                 shift=ExpressionRange(-param("d_min_down") + 1, literal(0))
             )
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+            <= param("nb_units_max").shift(-param("d_min_down")).sum() - var("nb_on"),
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
