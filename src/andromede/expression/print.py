@@ -14,29 +14,28 @@ from dataclasses import dataclass
 from typing import Dict
 
 from andromede.expression.expression import (
-    ComponentParameterNode,
-    ComponentVariableNode,
-    ExpressionNode,
-    PortFieldAggregatorNode,
-    PortFieldNode,
-)
-from andromede.expression.visitor import T
-
-from .expression import (
     AdditionNode,
     Comparator,
     ComparisonNode,
+    ComponentParameterNode,
+    ComponentVariableNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     DivisionNode,
+    ExpressionNode,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
     ScenarioOperatorNode,
     SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
     VariableNode,
 )
+
 from .visitor import ExpressionVisitor, visit
 
 _COMPARISON_OPERATOR_TO_STRING: Dict[Comparator, str] = {
@@ -97,6 +96,12 @@ class PrinterVisitor(ExpressionVisitor[str]):
 
     def comp_parameter(self, node: ComponentParameterNode) -> str:
         return f"{node.component_id}.{node.name}"
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> str:
+        return f"{node.decision_tree_id}.{node.component_id}.{node.name}"
+
+    def dt_variable(self, node: DecisionTreeVariableNode) -> str:
+        return f"{node.decision_tree_id}.{node.component_id}.{node.name}"
 
     # TODO: Add pretty print for node.instances_index
     def time_operator(self, node: TimeOperatorNode) -> str:

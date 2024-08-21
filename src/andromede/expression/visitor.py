@@ -22,6 +22,8 @@ from andromede.expression.expression import (
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     DivisionNode,
     ExpressionNode,
     LiteralNode,
@@ -94,6 +96,14 @@ class ExpressionVisitor(ABC, Generic[T]):
         ...
 
     @abstractmethod
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> T:
+        ...
+
+    @abstractmethod
+    def dt_variable(self, node: DecisionTreeVariableNode) -> T:
+        ...
+
+    @abstractmethod
     def time_operator(self, node: TimeOperatorNode) -> T:
         ...
 
@@ -130,6 +140,10 @@ def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
         return visitor.comp_parameter(root)
     elif isinstance(root, ComponentVariableNode):
         return visitor.comp_variable(root)
+    elif isinstance(root, DecisionTreeParameterNode):
+        return visitor.dt_parameter(root)
+    elif isinstance(root, DecisionTreeVariableNode):
+        return visitor.dt_variable(root)
     elif isinstance(root, AdditionNode):
         return visitor.addition(root)
     elif isinstance(root, MultiplicationNode):

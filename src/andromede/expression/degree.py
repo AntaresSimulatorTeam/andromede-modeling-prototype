@@ -12,28 +12,28 @@
 
 import andromede.expression.scenario_operator
 from andromede.expression.expression import (
-    ComponentParameterNode,
-    ComponentVariableNode,
-    PortFieldAggregatorNode,
-    PortFieldNode,
-    TimeOperatorNode,
-)
-
-from .expression import (
     AdditionNode,
     ComparisonNode,
+    ComponentParameterNode,
+    ComponentVariableNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     DivisionNode,
     ExpressionNode,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
     ScenarioOperatorNode,
     SubstractionNode,
     TimeAggregatorNode,
+    TimeOperatorNode,
     VariableNode,
 )
-from .visitor import ExpressionVisitor, T, visit
+
+from .visitor import ExpressionVisitor, visit
 
 
 class ExpressionDegreeVisitor(ExpressionVisitor[int]):
@@ -76,6 +76,12 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
         return 1
 
     def comp_parameter(self, node: ComponentParameterNode) -> int:
+        return 0
+
+    def dt_variable(self, node: DecisionTreeVariableNode) -> int:
+        return 1
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> int:
         return 0
 
     def time_operator(self, node: TimeOperatorNode) -> int:

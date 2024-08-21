@@ -214,6 +214,40 @@ def comp_var(component_id: str, name: str) -> ComponentVariableNode:
 
 
 @dataclass(frozen=True, eq=False)
+class DecisionTreeParameterNode(ExpressionNode):
+    """
+    Represents one parameter of one component of one decision tree node.
+    """
+
+    decision_tree_id: str
+    component_id: str
+    name: str
+
+
+def decision_tree_param(
+    decision_tree_id: str, component_id: str, name: str
+) -> DecisionTreeParameterNode:
+    return DecisionTreeParameterNode(decision_tree_id, component_id, name)
+
+
+@dataclass(frozen=True, eq=False)
+class DecisionTreeVariableNode(ExpressionNode):
+    """
+    Represents one variable of one component of one decision tree node.
+    """
+
+    decision_tree_id: str
+    component_id: str
+    name: str
+
+
+def decision_tree_var(
+    decision_tree_id: str, component_id: str, name: str
+) -> DecisionTreeVariableNode:
+    return DecisionTreeVariableNode(decision_tree_id, component_id, name)
+
+
+@dataclass(frozen=True, eq=False)
 class LiteralNode(ExpressionNode):
     value: float
 

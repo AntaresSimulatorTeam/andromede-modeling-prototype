@@ -15,28 +15,23 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 from andromede.expression.expression import (
+    ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
-    PortFieldAggregatorNode,
-    PortFieldNode,
-    TimeOperatorNode,
-)
-
-from .expression import (
-    AdditionNode,
-    ComparisonNode,
-    DivisionNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     ExpressionNode,
     LiteralNode,
-    MultiplicationNode,
-    NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
     ScenarioOperatorNode,
-    SubstractionNode,
     TimeAggregatorNode,
+    TimeOperatorNode,
     VariableNode,
 )
-from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
+
+from .visitor import ExpressionVisitorOperations, visit
 
 
 class ValueProvider(ABC):
@@ -61,7 +56,11 @@ class ValueProvider(ABC):
     def get_component_parameter_value(self, component_id: str, name: str) -> float:
         ...
 
-    # TODO: Should this really be an abstract method ? Or maybe, only the Provider in _make_value_provider should implement it. And the context attribute in the InstancesIndexVisitor is a ValueProvider that implements the parameter_is_constant_over_time method. Maybe create a child class of ValueProvider like TimeValueProvider ?
+    # TODO: Should this really be an abstract method ?
+    # Or maybe, only the Provider in _make_value_provider should implement it.
+    # And the context attribute in the InstancesIndexVisitor is a ValueProvider
+    # that implements the parameter_is_constant_over_time method.
+    # Maybe create a child class of ValueProvider like TimeValueProvider ?
     @abstractmethod
     def parameter_is_constant_over_time(self, name: str) -> bool:
         ...
@@ -119,6 +118,12 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
 
     def comp_variable(self, node: ComponentVariableNode) -> float:
         return self.context.get_component_variable_value(node.component_id, node.name)
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> float:
+        return visit(ComponentParameterNode(node.component_id, node.name), self)
+
+    def dt_variable(self, node: DecisionTreeVariableNode) -> float:
+        return visit(ComponentVariableNode(node.component_id, node.name), self)
 
     def time_operator(self, node: TimeOperatorNode) -> float:
         raise NotImplementedError()

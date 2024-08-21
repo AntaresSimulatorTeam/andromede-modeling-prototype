@@ -13,28 +13,28 @@
 from dataclasses import dataclass, replace
 from typing import Any, List
 
-from andromede.expression import (
+from andromede.expression import ExpressionVisitor
+from andromede.expression.expression import (
     AdditionNode,
+    BinaryOperatorNode,
     ComparisonNode,
+    ComponentParameterNode,
+    ComponentVariableNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     DivisionNode,
     ExpressionNode,
-    ExpressionVisitor,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
-    VariableNode,
-)
-from andromede.expression.expression import (
-    BinaryOperatorNode,
-    ComponentParameterNode,
-    ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
+    SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
+    VariableNode,
 )
 from andromede.expression.visitor import visit
 
@@ -135,6 +135,12 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
         raise ValueError(
             "Port definition must not contain a variable associated to a component."
         )
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> None:
+        return visit(ComponentParameterNode(node.component_id, node.name), self)
+
+    def dt_variable(self, node: DecisionTreeVariableNode) -> None:
+        return visit(ComponentVariableNode(node.component_id, node.name), self)
 
     def time_operator(self, node: TimeOperatorNode) -> None:
         visit(node.operand, self)

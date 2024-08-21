@@ -14,22 +14,19 @@ from dataclasses import dataclass
 from typing import List, Union, cast
 
 from .expression import (
-    AdditionNode,
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
-    DivisionNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
-    MultiplicationNode,
-    NegationNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
-    SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
     VariableNode,
@@ -62,6 +59,16 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
         return ComponentParameterNode(node.component_id, node.name)
+
+    def dt_variable(self, node: DecisionTreeVariableNode) -> ExpressionNode:
+        return DecisionTreeVariableNode(
+            node.decision_tree_id, node.component_id, node.name
+        )
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> ExpressionNode:
+        return DecisionTreeParameterNode(
+            node.decision_tree_id, node.component_id, node.name
+        )
 
     def copy_expression_range(
         self, expression_range: ExpressionRange

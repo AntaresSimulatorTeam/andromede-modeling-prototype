@@ -10,7 +10,6 @@
 #
 # This file is part of the Antares project.
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
@@ -19,6 +18,7 @@ from andromede.expression.evaluate import InstancesIndexVisitor, ValueProvider
 from .copy import CopyVisitor
 from .expression import (
     ComponentParameterNode,
+    DecisionTreeParameterNode,
     ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
@@ -28,14 +28,15 @@ from .expression import (
 from .visitor import visit
 
 
-class ParameterValueProvider(ABC):
-    @abstractmethod
-    def get_parameter_value(self, name: str) -> float:
-        ...
+class ParameterValueProvider(ValueProvider):
+    def get_variable_value(self, name: str) -> float:
+        raise NotImplementedError()
 
-    @abstractmethod
-    def get_component_parameter_value(self, component_id: str, name: str) -> float:
-        ...
+    def get_component_variable_value(self, component_id: str, name: str) -> float:
+        raise NotImplementedError()
+
+    def parameter_is_constant_over_time(self, name: str) -> bool:
+        raise NotImplementedError()
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,9 @@ class ParameterResolver(CopyVisitor):
             node.component_id, node.name
         )
         return LiteralNode(value)
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> ExpressionNode:
+        return visit(ComponentParameterNode(node.component_id, node.name), self)
 
 
 def resolve_parameters(

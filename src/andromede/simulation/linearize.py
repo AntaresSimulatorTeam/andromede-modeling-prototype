@@ -22,6 +22,8 @@ from andromede.expression.expression import (
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     ExpressionNode,
     LiteralNode,
     ParameterNode,
@@ -79,6 +81,12 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
 
     def comp_parameter(self, node: ComponentParameterNode) -> LinearExpression:
         raise ValueError("Parameters must be evaluated before linearization.")
+
+    def dt_variable(self, node: DecisionTreeVariableNode) -> LinearExpression:
+        return visit(ComponentVariableNode(node.component_id, node.name), self)
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> LinearExpression:
+        return visit(ComponentParameterNode(node.component_id, node.name), self)
 
     def time_operator(self, node: TimeOperatorNode) -> LinearExpression:
         if self.value_provider is None:

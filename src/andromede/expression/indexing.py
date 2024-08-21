@@ -21,6 +21,8 @@ from .expression import (
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    DecisionTreeParameterNode,
+    DecisionTreeVariableNode,
     DivisionNode,
     ExpressionNode,
     LiteralNode,
@@ -108,6 +110,12 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
         return self.context.get_component_parameter_structure(
             node.component_id, node.name
         )
+
+    def dt_variable(self, node: DecisionTreeVariableNode) -> IndexingStructure:
+        return visit(ComponentVariableNode(node.component_id, node.name), self)
+
+    def dt_parameter(self, node: DecisionTreeParameterNode) -> IndexingStructure:
+        return visit(ComponentParameterNode(node.component_id, node.name), self)
 
     def time_operator(self, node: TimeOperatorNode) -> IndexingStructure:
         time_operator_cls = getattr(andromede.expression.time_operator, node.name)
