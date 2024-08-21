@@ -13,11 +13,11 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from andromede.expression.equality import expressions_equal_if_present
 from andromede.expression.expression_efficient import literal
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
+    linear_expressions_equal_if_present,
     wrap_in_linear_expr_if_present,
 )
 from andromede.model.common import (
@@ -52,8 +52,8 @@ class Variable:
         return (
             self.name == other.name
             and self.data_type == other.data_type
-            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
-            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and linear_expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and linear_expressions_equal_if_present(self.upper_bound, other.upper_bound)
             and self.structure == other.structure
         )
 

@@ -19,16 +19,6 @@ import itertools
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional
 
-# from andromede.expression.expression import (
-#     BinaryOperatorNode,
-#     ComponentParameterNode,
-#     ComponentVariableNode,
-#     PortFieldAggregatorNode,
-#     PortFieldNode,
-#     ScenarioOperatorNode,
-#     TimeAggregatorNode,
-#     TimeOperatorNode,
-# )
 from andromede.expression.expression_efficient import (
     AdditionNode,
     BinaryOperatorNode,
@@ -46,7 +36,7 @@ from andromede.expression.expression_efficient import (
     TimeAggregatorNode,
     TimeOperatorNode,
 )
-from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
+from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
@@ -60,38 +50,6 @@ from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
 from andromede.model.variable import Variable
-
-# from andromede.expression import (
-#     AdditionNode,
-#     ComparisonNode,
-#     DivisionNode,
-#     ExpressionNode,
-#     ExpressionVisitor,
-#     LiteralNode,
-#     MultiplicationNode,
-#     NegationNode,
-#     ParameterNode,
-#     SubstractionNode,
-#     VariableNode,
-# )
-# from andromede.expression.expression_efficient import (
-#     AdditionNode,
-#     BinaryOperatorNode,
-#     ComparisonNode,
-#     ComponentParameterNode,
-#     DivisionNode,
-#     ExpressionNodeEfficient,
-#     LiteralNode,
-#     MultiplicationNode,
-#     NegationNode,
-#     ParameterNode,
-#     PortFieldAggregatorNode,
-#     PortFieldNode,
-#     ScenarioOperatorNode,
-#     SubstractionNode,
-#     TimeAggregatorNode,
-#     TimeOperatorNode,
-# )
 
 
 # TODO: Introduce bool_variable ?

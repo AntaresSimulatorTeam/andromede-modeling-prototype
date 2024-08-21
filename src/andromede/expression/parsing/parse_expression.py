@@ -12,22 +12,22 @@
 from dataclasses import dataclass
 from typing import Set
 
-from antlr4 import CommonTokenStream, DiagnosticErrorListener, InputStream
+from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression_efficient import (
     Comparator,
     ComparisonNode,
-    ExpressionNodeEfficient,
     ExpressionRange,
-    PortFieldNode,
+    literal,
     param,
 )
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
-    literal,
+    port_field,
     var,
+    wrap_in_linear_expr,
 )
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
 from andromede.expression.parsing.antlr.ExprParser import ExprParser
@@ -124,7 +124,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     def visitPortField(
         self, ctx: ExprParser.PortFieldContext
     ) -> LinearExpressionEfficient:
-        return PortFieldNode(
+        return port_field(
             port_name=ctx.IDENTIFIER(0).getText(),  # type: ignore
             field_name=ctx.IDENTIFIER(1).getText(),  # type: ignore
         )
@@ -137,11 +137,11 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         exp1 = ctx.expr(0).accept(self)  # type: ignore
         exp2 = ctx.expr(1).accept(self)  # type: ignore
         comp = {
-            "=": Comparator.EQUAL,
-            "<=": Comparator.LESS_THAN,
-            ">=": Comparator.GREATER_THAN,
+            "=": LinearExpressionEfficient.__eq__,
+            "<=": LinearExpressionEfficient.__le__,
+            ">=": LinearExpressionEfficient.__ge__,
         }[op]
-        return ComparisonNode(exp1, exp2, comp)
+        return comp(exp1, exp2)
 
     # Visit a parse tree produced by ExprParser#timeShift.
     def visitTimeIndex(
@@ -157,7 +157,8 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     ) -> LinearExpressionEfficient:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
         expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.eval(ExpressionRange(expressions[0], expressions[1]))
+        # TODO: Is there a visitSum somewhere that is not needed ? Are the correct symbol parsed (sum(...) ?) ?
+        return shifted_expr.sum(eval=ExpressionRange(expressions[0], expressions[1]))
 
     def visitTimeShift(
         self, ctx: ExprParser.TimeShiftContext
@@ -167,7 +168,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         # specifics for x[t] ...
         if len(time_shifts) == 1 and expressions_equal(time_shifts[0], literal(0)):
             return shifted_expr
-        return shifted_expr.shift(time_shifts)
+        return shifted_expr.sum(shift=time_shifts)
 
     def visitTimeShiftRange(
         self, ctx: ExprParser.TimeShiftRangeContext
@@ -175,7 +176,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
         shift1 = ctx.shift1.accept(self)  # type: ignore
         shift2 = ctx.shift2.accept(self)  # type: ignore
-        return shifted_expr.shift(ExpressionRange(shift1, shift2))
+        return shifted_expr.sum(shift=ExpressionRange(shift1, shift2))
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(
@@ -266,9 +267,9 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
 
 _FUNCTIONS = {
-    "sum": ExpressionNodeEfficient.sum,
-    "sum_connections": ExpressionNodeEfficient.sum_connections,
-    "expec": ExpressionNodeEfficient.expec,
+    "sum": LinearExpressionEfficient.sum,
+    "sum_connections": LinearExpressionEfficient.sum_connections,
+    "expec": LinearExpressionEfficient.expec,
 }
 
 
