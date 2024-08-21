@@ -107,17 +107,9 @@ def test_accurate_heuristic(
     )
 
     for j, cluster in enumerate(heuristic_components):
+        input_data = np.loadtxt(data_path / "accurate/itr1_accurate_cluster{j+1}.txt")
         nb_on_1 = pd.DataFrame(
-            np.transpose(
-                np.ceil(
-                    np.round(
-                        np.loadtxt(
-                            f"tests/functional/data/thermal_heuristic_six_clusters/accurate/itr1_accurate_cluster{j+1}.txt"
-                        ),
-                        12,
-                    )
-                )
-            ),
+            np.transpose(np.ceil(np.round(input_data, 12))),
             index=list(range(number_hours)),
             columns=[week_scenario_index.scenario],
         )
@@ -148,7 +140,7 @@ def test_accurate_heuristic(
         )
 
         expected_output = np.loadtxt(
-            f"tests/functional/data/thermal_heuristic_six_clusters/accurate/itr2_accurate_cluster{j+1}.txt"
+            data_path / "accurate/itr2_accurate_cluster{j+1}.txt"
         )
         assert list(nb_on_heuristic[:, 0]) == [
             pytest.approx(x) for x in expected_output
@@ -190,16 +182,10 @@ def test_fast_heuristic(
         pmax = thermal_problem_builder.database.get_value(
             ComponentParameterIndex(cluster, "p_max"), 0, 0
         )
+        input_data = np.loadtxt(data_path / "fast/itr1_fast_cluster{j+1}.txt")
+
         nb_on_1 = pd.DataFrame(
-            np.ceil(
-                np.round(
-                    np.loadtxt(
-                        f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr1_fast_cluster{j+1}.txt"
-                    )  # type: ignore
-                    / pmax,
-                    12,
-                )
-            ),
+            np.ceil(np.round(input_data / pmax, 12)),  # type: ignore
             index=list(range(number_hours)),
             columns=[week_scenario_index.scenario],
         )
@@ -232,9 +218,7 @@ def test_fast_heuristic(
             param_needed_to_compute=["p_min", "max_generating"],
         )
 
-        expected_output = np.loadtxt(
-            f"tests/functional/data/thermal_heuristic_six_clusters/fast/itr2_fast_cluster{j+1}.txt"
-        )
+        expected_output = np.loadtxt(data_path / "fast/itr2_fast_cluster{j+1}.txt")
         for t in range(number_hours):
             assert thermal_problem_builder.database.get_value(
                 ComponentParameterIndex(cluster, "min_generating"),

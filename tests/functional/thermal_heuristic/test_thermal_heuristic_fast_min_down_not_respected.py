@@ -93,16 +93,9 @@ def test_fast_heuristic(
     pmax = thermal_problem_builder.database.get_value(
         ComponentParameterIndex(heuristic_components[0], "p_max"), 0, 0
     )
+    input_data = np.loadtxt(data_path / "itr1_fast_cluster.txt")
     nb_on_1 = pd.DataFrame(
-        np.ceil(
-            np.round(
-                np.loadtxt(
-                    f"tests/functional/data/thermal_heuristic_fast_min_down_not_respected/itr1_fast_cluster.txt"
-                )  # type: ignore
-                / pmax,
-                12,
-            )
-        ),
+        np.ceil(np.round(input_data / pmax, 12)),  # type: ignore
         index=list(range(number_hours)),
         columns=[week_scenario_index.scenario],
     )
@@ -135,9 +128,7 @@ def test_fast_heuristic(
         param_needed_to_compute=["p_min", "max_generating"],
     )
 
-    expected_output = np.loadtxt(
-        f"tests/functional/data/thermal_heuristic_fast_min_down_not_respected/itr2_fast_cluster.txt"
-    )
+    expected_output = np.loadtxt(data_path / "itr2_fast_cluster.txt")
     for t in range(number_hours):
         assert thermal_problem_builder.database.get_value(
             ComponentParameterIndex(heuristic_components[0], "min_generating"),
