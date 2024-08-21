@@ -11,7 +11,6 @@
 # This file is part of the Antares project.
 
 from .copy import CopyVisitor, copy_expression
-from .degree import ExpressionDegreeVisitor, compute_degree
 from .evaluate_parameters_efficient import ValueProvider
 from .expression_efficient import (
     AdditionNode,

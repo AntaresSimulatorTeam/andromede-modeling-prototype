@@ -36,11 +36,8 @@ class TimeOperator(ABC):
     def rolling(cls) -> bool:
         raise NotImplementedError
 
-    def key(self) -> Tuple[int, ...]:
+    def key(self) -> InstancesTimeIndex:
         return self.time_ids
-
-    def size(self) -> int:
-        return len(self.time_ids.expressions)
 
 
 @dataclass(frozen=True)

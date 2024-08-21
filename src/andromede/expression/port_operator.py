@@ -30,5 +30,5 @@ class PortAggregator:
 
 @dataclass(frozen=True)
 class PortSum(PortAggregator):
-    def __str__(self):
+    def __str__(self) -> str:
         return "PortSum"

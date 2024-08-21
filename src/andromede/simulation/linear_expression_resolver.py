@@ -52,7 +52,7 @@ class LinearExpressionResolver:
             resolved_variables = self.resolve_variables(term, row_id)
 
             # TODO: Contrary to the time aggregator that does a sum which is the default behaviour when append resolved terms, expectation performs an averaging, so weights must be included in coefficients. We feel here that we could generalize time and scenario aggregation over variables with more general operators, the following lines are very specific to expectation with same weights over all scenarios
-            weight = 1
+            weight: float = 1
             if isinstance(term.scenario_aggregator, Expectation):
                 weight = 1 / self.value_provider.scenarios()
 

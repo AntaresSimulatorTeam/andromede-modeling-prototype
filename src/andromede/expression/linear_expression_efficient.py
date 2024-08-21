@@ -21,6 +21,8 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
+    Mapping,
     Optional,
     Sequence,
     TypeVar,
@@ -31,10 +33,7 @@ from typing import (
 
 from .context_adder import add_component_context
 from .equality import expressions_equal
-from .evaluate_parameters_efficient import (
-    check_resolved_expr,
-    resolve_coefficient,
-)
+from .evaluate_parameters_efficient import check_resolved_expr, resolve_coefficient
 from .expression_efficient import (
     ExpressionNodeEfficient,
     ExpressionRange,
@@ -65,11 +64,7 @@ from .time_operator import (
     TimeShift,
     TimeSum,
 )
-from .value_provider import (
-    TimeScenarioIndex,
-    TimeScenarioIndices,
-    ValueProvider,
-)
+from .value_provider import TimeScenarioIndex, TimeScenarioIndices, ValueProvider
 
 
 @dataclass(frozen=True)
@@ -368,13 +363,17 @@ class PortFieldTerm:
             result += f".{str(self.aggregator)}"
         return result
 
-    def sum_connections(self) -> "LinearExpressionEfficient":
+    def sum_connections(self) -> "PortFieldTerm":
         if self.aggregator is not None:
             raise ValueError(f"Port field {str(self)} already has a port aggregator")
         return dataclasses.replace(self, aggregator=PortSum())
 
 
 T_val = TypeVar("T_val", bound=Union[TermEfficient, PortFieldTerm])
+
+
+def _get_neutral_term(term: T_val, neutral: float) -> T_val:
+    return dataclasses.replace(term, coefficient=wrap_in_node(neutral))
 
 
 @overload
@@ -395,10 +394,6 @@ def _merge_dicts(
     neutral: float,
 ) -> Dict[PortFieldId, PortFieldTerm]:
     ...
-
-
-def _get_neutral_term(term: T_val, neutral: float) -> T_val:
-    return dataclasses.replace(term, coefficient=neutral)
 
 
 def _merge_dicts(lhs, rhs, merge_func, neutral):
@@ -821,7 +816,7 @@ class LinearExpressionEfficient:
 
     def _apply_operator(
         self,
-        sum_args: Dict[
+        sum_args: Mapping[
             str,
             Union[
                 int,
@@ -838,13 +833,6 @@ class LinearExpressionEfficient:
             result_terms[generate_key(term_with_operator)] = term_with_operator
 
         return result_terms
-
-    # def sum_connections(self) -> "ExpressionNode":
-    #     if isinstance(self, PortFieldNode):
-    #         return PortFieldAggregatorNode(self, aggregator=PortFieldAggregatorName.PORT_SUM)
-    #     raise ValueError(
-    #         f"sum_connections() applies only for PortFieldNode, whereas the current node is of type {type(self)}."
-    #     )
 
     def shift(
         self,
@@ -1036,7 +1024,7 @@ def linear_expressions_equal_if_present(
 # TODO: Is this function useful ? Could we just rely on the sum operator overloading ? Only the case with an empty list may make the function useful
 def sum_expressions(
     expressions: Sequence[LinearExpressionEfficient],
-) -> LinearExpressionEfficient:
+) -> Union[LinearExpressionEfficient, Literal[0]]:
     if len(expressions) == 0:
         return wrap_in_linear_expr(literal(0))
     else:
@@ -1059,7 +1047,7 @@ class StandaloneConstraint:
         for bound in [self.lower_bound, self.upper_bound]:
             if not bound.is_constant():
                 raise ValueError(
-                    f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
+                    f"The bounds of a constraint should not contain variables, {str(bound)} was given."
                 )
 
     def __str__(self) -> str:

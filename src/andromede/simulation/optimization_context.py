@@ -193,16 +193,6 @@ class OptimizationContext:
         )
 
 
-class TimestepValueProvider(ABC):
-    """
-    Interface which provides numerical values for individual timesteps.
-    """
-
-    @abstractmethod
-    def get_value(self, block_timestep: int, scenario: int) -> float:
-        raise NotImplementedError()
-
-
 def _get_parameter_value(
     context: OptimizationContext,
     block_timestep: int,
@@ -294,21 +284,6 @@ def make_value_provider(
     return Provider()
 
 
-@dataclass(frozen=True)
-class ExpressionTimestepValueProvider(TimestepValueProvider):
-    context: "OptimizationContext"
-    component: Component
-    expression: LinearExpressionEfficient
-
-    # OptimizationContext has knowledge of the block, so that get_value only needs block_timestep and scenario to get the correct data value
-
-    def get_value(self, block_timestep: int, scenario: int) -> float:
-        param_value_provider = make_value_provider(
-            self.context, block_timestep, scenario, self.component
-        )
-        return self.expression.evaluate(param_value_provider)
-
-
 def make_data_structure_provider(
     network: Network, component: Component
 ) -> IndexingStructureProvider:
@@ -344,16 +319,6 @@ class ComponentContext:
 
     opt_context: OptimizationContext
     component: Component
-
-    def get_values(
-        self, expression: LinearExpressionEfficient
-    ) -> TimestepValueProvider:
-        """
-        The returned value provider will evaluate the provided expression.
-        """
-        return ExpressionTimestepValueProvider(
-            self.opt_context, self.component, expression
-        )
 
     def add_variable(
         self,

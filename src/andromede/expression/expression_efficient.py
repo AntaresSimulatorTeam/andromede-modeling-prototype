@@ -132,7 +132,7 @@ class ExpressionNodeEfficient:
 
     def variance(self) -> "ExpressionNodeEfficient":
         return _apply_if_node(
-            self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.Variance)
+            self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.VARIANCE)
         )
 
 
@@ -141,6 +141,8 @@ def wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
         return LiteralNode(float(obj))
+    # else:
+    #     return None
     # Do not raise excpetion so that we can return NotImplemented in _apply_if_node
     # raise TypeError(f"Unable to wrap {obj} into an expression node")
 

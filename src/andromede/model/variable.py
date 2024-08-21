@@ -18,6 +18,7 @@ from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     linear_expressions_equal_if_present,
+    wrap_in_linear_expr,
     wrap_in_linear_expr_if_present,
 )
 from andromede.model.common import (
@@ -80,7 +81,14 @@ def bool_var(
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    return Variable(name, ValueType.BOOL, literal(0), literal(1), structure, context)
+    return Variable(
+        name,
+        ValueType.BOOL,
+        wrap_in_linear_expr(literal(0)),
+        wrap_in_linear_expr(literal(1)),
+        structure,
+        context,
+    )
 
 
 def float_variable(
