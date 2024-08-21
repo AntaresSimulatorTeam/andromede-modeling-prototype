@@ -224,9 +224,6 @@ class InstancesIndexVisitor(ParameterEvaluationVisitor):
     Evaluates an expression given as instances index which should have no variable and constant parameter values.
     """
 
-    # def variable(self, node: VariableNode) -> float:
-    #     raise ValueError("An instance index expression cannot contain variable")
-
     # Probably useless as parameter nodes should have already be replaced by component parameter nodes ?
     def parameter(self, node: ParameterNode) -> Dict[TimeScenarioIndex, float]:
         if not self.context.parameter_is_constant_over_time(node.name):

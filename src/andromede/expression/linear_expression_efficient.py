@@ -235,20 +235,12 @@ class TermEfficient:
         if shift is not None:
             return dataclasses.replace(
                 self,
-                # coefficient=TimeOperatorNode(
-                #     self.coefficient, TimeOperatorName.SHIFT, InstancesTimeIndex(shift)
-                # ),
                 time_operator=TimeShift(InstancesTimeIndex(shift)),
                 time_aggregator=TimeSum(stay_roll=True),
             )
         elif eval is not None:
             return dataclasses.replace(
                 self,
-                # coefficient=TimeOperatorNode(
-                #     self.coefficient,
-                #     TimeOperatorName.EVALUATION,
-                #     InstancesTimeIndex(eval),
-                # ),
                 time_operator=TimeEvaluation(InstancesTimeIndex(eval)),
                 time_aggregator=TimeSum(stay_roll=True),
             )
@@ -901,9 +893,6 @@ class LinearExpressionEfficient:
         )
         result_expr = LinearExpressionEfficient(result_terms, result_constant)
         return result_expr
-
-    # def variance(self) -> "ExpressionNode":
-    #     return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.Variance))
 
     def sum_connections(self) -> "LinearExpressionEfficient":
         if not self.is_zero():

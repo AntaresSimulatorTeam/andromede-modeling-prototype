@@ -74,10 +74,6 @@ class ExpressionVisitor(ABC, Generic[T]):
     def comparison(self, node: ComparisonNode) -> T:
         ...
 
-    # @abstractmethod
-    # def variable(self, node: VariableNode) -> T:
-    #     ...
-
     @abstractmethod
     def parameter(self, node: ParameterNode) -> T:
         ...
@@ -85,10 +81,6 @@ class ExpressionVisitor(ABC, Generic[T]):
     @abstractmethod
     def comp_parameter(self, node: ComponentParameterNode) -> T:
         ...
-
-    # @abstractmethod
-    # def comp_variable(self, node: ComponentVariableNode) -> T:
-    #     ...
 
     @abstractmethod
     def time_operator(self, node: TimeOperatorNode) -> T:
@@ -119,14 +111,10 @@ def visit(root: ExpressionNodeEfficient, visitor: ExpressionVisitor[T]) -> T:
         return visitor.literal(root)
     elif isinstance(root, NegationNode):
         return visitor.negation(root)
-    # elif isinstance(root, VariableNode):
-    #     return visitor.variable(root)
     elif isinstance(root, ParameterNode):
         return visitor.parameter(root)
     elif isinstance(root, ComponentParameterNode):
         return visitor.comp_parameter(root)
-    # elif isinstance(root, ComponentVariableNode):
-    #     return visitor.comp_variable(root)
     elif isinstance(root, AdditionNode):
         return visitor.addition(root)
     elif isinstance(root, MultiplicationNode):

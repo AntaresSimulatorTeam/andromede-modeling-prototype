@@ -265,9 +265,6 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
     def comparison(self, node: ComparisonNode) -> None:
         raise ValueError("Port definition cannot contain a comparison operator.")
 
-    # def variable(self, node: VariableNode) -> None:
-    #     pass
-
     def parameter(self, node: ParameterNode) -> None:
         pass
 
@@ -275,11 +272,6 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
         raise ValueError(
             "Port definition must not contain a parameter associated to a component."
         )
-
-    # def comp_variable(self, node: ComponentVariableNode) -> None:
-    #     raise ValueError(
-    #         "Port definition must not contain a variable associated to a component."
-    #     )
 
     def time_operator(self, node: TimeOperatorNode) -> None:
         visit(node.operand, self)

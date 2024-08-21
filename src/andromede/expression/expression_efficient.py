@@ -141,8 +141,6 @@ def wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
         return LiteralNode(float(obj))
-    # else:
-    #     return None
     # Do not raise excpetion so that we can return NotImplemented in _apply_if_node
     # raise TypeError(f"Unable to wrap {obj} into an expression node")
 
@@ -236,10 +234,6 @@ def _are_parameter_nodes_equal(
         and isinstance(rhs, ParameterNode)
         and lhs.name == rhs.name
     )
-
-
-# def _is_parameter_multiplication(node: ExpressionNodeEfficient, name: str):
-#     return isinstance(node, MultiplicationNode) and ((isinstance(node.left, ParameterNode) and node.left.name == name) or
 
 
 def _substract_node(
@@ -644,8 +638,6 @@ class EqualityVisitor:
             return self.multiplication(left, right)
         if isinstance(left, ComparisonNode) and isinstance(right, ComparisonNode):
             return self.comparison(left, right)
-        # if isinstance(left, VariableNode) and isinstance(right, VariableNode):
-        #     return self.variable(left, right)
         if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
             return self.parameter(left, right)
         if isinstance(left, ComponentParameterNode) and isinstance(
@@ -700,9 +692,6 @@ class EqualityVisitor:
 
     def comparison(self, left: ComparisonNode, right: ComparisonNode) -> bool:
         return left.comparator == right.comparator and self._visit_operands(left, right)
-
-    # def variable(self, left: VariableNode, right: VariableNode) -> bool:
-    #     return left.name == right.name
 
     def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
         return left.name == right.name

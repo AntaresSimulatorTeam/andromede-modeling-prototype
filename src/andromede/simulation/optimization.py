@@ -26,10 +26,12 @@ from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     RowIndex,
 )
-from .resolved_linear_expression import ResolvedLinearExpression
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
+from andromede.study.data import DataBase
+from andromede.study.network import Component, Network
+
 from .linear_expression_resolver import LinearExpressionResolver
 from .optimization_context import (
     BlockBorderManagement,
@@ -38,10 +40,9 @@ from .optimization_context import (
     make_data_structure_provider,
     make_value_provider,
 )
+from .resolved_linear_expression import ResolvedLinearExpression
 from .strategy import MergedProblemStrategy, ModelSelectionStrategy
 from .time_block import TimeBlock
-from andromede.study.data import DataBase
-from andromede.study.network import Component, Network
 
 
 def _get_indexing(
@@ -92,20 +93,11 @@ def _create_constraint(
     """
     constraint_indexing = _compute_indexing_structure(context, constraint)
 
-    # Perf: Perform linearization (tree traversing) without timesteps so that we can get the number of instances for the expression (from the time_ids of operators)
-    # linear_expr = context.linearize_expression(0, 0, constraint.expression)
-    # # Will there be cases where instances > 1 ? If not, maybe just a check that get_number_of_instances == 1 is sufficient ? Anyway, the function should be implemented
-    # instances_per_time_step = linear_expr.number_of_instances()
-    # instances_per_time_step = 1
-
     value_provider = make_value_provider(context.opt_context, context.component)
     expression_resolver = LinearExpressionResolver(context.opt_context, value_provider)
 
     for block_timestep in context.opt_context.get_time_indices(constraint_indexing):
         for scenario in context.opt_context.get_scenario_indices(constraint_indexing):
-            # linear_expr_at_t = context.linearize_expression(
-            #     block_timestep, scenario, constraint.expression
-            # )
             row_id = RowIndex(block_timestep, scenario)
 
             resolved_expr = expression_resolver.resolve(constraint.expression, row_id)
@@ -143,13 +135,6 @@ def _create_objective(
 
     obj: lp.Objective = solver.Objective()
     for term in resolved_expr.terms:
-        # TODO : How to handle the scenario operator in a general manner ?
-        # if isinstance(term.scenario_aggregator, Expectation):
-        #     weight = 1 / opt_context.scenarios
-        #     scenario_ids = range(opt_context.scenarios)
-        # else:
-        #     weight = 1
-        #     scenario_ids = range(1)
         opt_context._solver_variables[term.variable].is_in_objective = True
         obj.SetCoefficient(
             term.variable,

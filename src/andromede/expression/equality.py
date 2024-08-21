@@ -35,29 +35,6 @@ from andromede.expression.expression_efficient import (
     TimeOperatorNode,
 )
 
-# from andromede.expression import (
-#     AdditionNode,
-#     ComparisonNode,
-#     DivisionNode,
-#     ExpressionNode,
-#     LiteralNode,
-#     MultiplicationNode,
-#     NegationNode,
-#     ParameterNode,
-#     SubstractionNode,
-#     VariableNode,
-# )
-# from andromede.expression.expression import (
-#     BinaryOperatorNode,
-#     ExpressionRange,
-#     InstancesTimeIndex,
-#     PortFieldAggregatorNode,
-#     PortFieldNode,
-#     ScenarioOperatorNode,
-#     TimeAggregatorNode,
-#     TimeOperatorNode,
-# )
-
 
 @dataclass(frozen=True)
 class EqualityVisitor:
@@ -95,8 +72,6 @@ class EqualityVisitor:
             return self.multiplication(left, right)
         if isinstance(left, ComparisonNode) and isinstance(right, ComparisonNode):
             return self.comparison(left, right)
-        # if isinstance(left, VariableNode) and isinstance(right, VariableNode):
-        #     return self.variable(left, right)
         if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
             return self.parameter(left, right)
         if isinstance(left, ComponentParameterNode) and isinstance(
@@ -150,9 +125,6 @@ class EqualityVisitor:
 
     def comparison(self, left: ComparisonNode, right: ComparisonNode) -> bool:
         return left.comparator == right.comparator and self._visit_operands(left, right)
-
-    # def variable(self, left: VariableNode, right: VariableNode) -> bool:
-    #     return left.name == right.name
 
     def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
         return left.name == right.name
