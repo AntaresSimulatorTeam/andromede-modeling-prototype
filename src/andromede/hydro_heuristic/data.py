@@ -37,6 +37,13 @@ class DataAggregatorParameters:
     timesteps: List[int]
 
 
+@dataclass(frozen=True)
+class RawDataProperties:
+    name_file: str
+    column: int
+    hours_input: int
+
+
 def get_number_of_days_in_month(month: int) -> int:
     number_day_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month]
     return number_day_month
@@ -47,36 +54,29 @@ class RawHydroData:
         self.folder_name = folder_name
         self.scenario = scenario
 
-        self.name_file = {
-            "demand": "load",
-            "inflow": "mod",
-            "lower_rule_curve": "reservoir",
-            "upper_rule_curve": "reservoir",
-            "max_generating": "maxpower",
-        }
-
-        self.column = {
-            "demand": self.scenario,
-            "inflow": self.scenario,
-            "lower_rule_curve": 0,
-            "upper_rule_curve": 2,
-            "max_generating": 0,
+        self.properties = {
+            "demand": RawDataProperties("load", self.scenario, 1),
+            "inflow": RawDataProperties("mod", self.scenario, 24),
+            "lower_rule_curve": RawDataProperties("reservoir", 0, 24),
+            "upper_rule_curve": RawDataProperties("reservoir", 2, 24),
+            "max_generating": RawDataProperties("maxpower", 0, 24),
         }
 
     def read_data(self, name: str) -> List[float]:
-
-        data = np.loadtxt(f"{self.folder_name}/{self.name_file[name]}.txt")
+        properties = self.properties[name]
+        data = np.loadtxt(f"{self.folder_name}/{properties.name_file}.txt")
         if len(data.shape) >= 2:
-            data = data[:, self.column[name]]
-        hourly_data = self.convert_to_hourly_data(name, list(data))
+            data = data[:, properties.column]
+        hourly_data = self.convert_to_hourly_data(properties, list(data))
 
         return hourly_data
 
-    def convert_to_hourly_data(self, name: str, data: List[float]) -> List[float]:
-        hours_input = 1 if name == "demand" else 24
-        hourly_data = np.repeat(np.array(data), hours_input)
-        if self.name_file[name] == "mod":
-            hourly_data = hourly_data / hours_input
+    def convert_to_hourly_data(
+        self, properties: RawDataProperties, data: List[float]
+    ) -> List[float]:
+        hourly_data = np.repeat(np.array(data), properties.hours_input)
+        if properties.name_file == "mod":
+            hourly_data = hourly_data / properties.hours_input
         return list(hourly_data)
 
 
