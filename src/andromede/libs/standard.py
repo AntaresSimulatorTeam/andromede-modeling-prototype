@@ -260,12 +260,13 @@ THERMAL_CLUSTER_MODEL_HD = model(
             )
             <= var("nb_on"),
         ),
+        # TODO : Improve API so that we are not forced to use sum() on one shifted element for ExpressionNodeEfficient
         Constraint(
             "Min down time",
             var("nb_stop").sum(
                 shift=ExpressionRange(-param("d_min_down") + 1, literal(0))
             )
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+            <= param("nb_units_max").shift(-param("d_min_down")).sum() - var("nb_on"),
         ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
