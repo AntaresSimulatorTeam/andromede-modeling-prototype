@@ -19,7 +19,7 @@ from andromede.hydro_heuristic.data import (
     HydroHeuristicData,
     HydroHeuristicParameters,
     ReservoirParameters,
-    calculate_weekly_target,
+    compute_weekly_target,
     get_number_of_days_in_month,
 )
 
@@ -27,7 +27,7 @@ from pathlib import Path
 
 
 def test_calculate_weekly_target() -> None:
-    output = calculate_weekly_target([0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0])
+    output = compute_weekly_target([0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0])
 
     assert len(output) == 2
     assert output[0] == 21

@@ -150,14 +150,14 @@ class DataAggregator:
         return aggregated_data
 
 
-def update_generation_target(
+def save_generation_target(
     all_daily_generation: List[float], daily_generation: List[float]
 ) -> List[float]:
     all_daily_generation = all_daily_generation + daily_generation
     return all_daily_generation
 
 
-def calculate_weekly_target(all_daily_generation: List[float]) -> List[float]:
+def compute_weekly_target(all_daily_generation: List[float]) -> List[float]:
     weekly_target = [
         sum([all_daily_generation[day] for day in range(7 * week, 7 * (week + 1))])
         for week in range(len(all_daily_generation) // 7)

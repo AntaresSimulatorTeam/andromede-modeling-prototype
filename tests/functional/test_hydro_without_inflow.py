@@ -18,9 +18,9 @@ import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.hydro_heuristic.data import (
-    calculate_weekly_target,
+    compute_weekly_target,
     get_number_of_days_in_month,
-    update_generation_target,
+    save_generation_target,
 )
 from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
 from andromede.hydro_heuristic.problem import (
@@ -28,6 +28,7 @@ from andromede.hydro_heuristic.problem import (
     HydroHeuristicParameters,
     ReservoirParameters,
     optimize_target,
+    update_initial_level,
 )
 from andromede.libs.standard import (
     DEMAND_MODEL,
@@ -128,17 +129,17 @@ def test_hydro_heuristic() -> None:
                 HYDRO_MODEL, "daily"
             ).get_model(),
         )
-        reservoir_data.initial_level = daily_output.level
+        update_initial_level(reservoir_data, daily_output)
 
         assert solving_output.status == pywraplp.Solver.OPTIMAL
 
-        all_daily_generation = update_generation_target(
+        all_daily_generation = save_generation_target(
             all_daily_generation, daily_output.generating
         )
         day_in_year += number_day_month
 
     # Calcul des cibles hebdomadaires
-    weekly_target = calculate_weekly_target(
+    weekly_target = compute_weekly_target(
         all_daily_generation,
     )
 

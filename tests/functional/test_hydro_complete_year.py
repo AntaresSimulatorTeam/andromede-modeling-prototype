@@ -37,117 +37,13 @@ from tests.functional.libs.lib_hydro_heuristic import (
 
 from typing import Tuple
 
-weekly_generation = np.array(
-    [
-        1146984.0,
-        1326912.0,
-        1322812.0,
-        1456577.0,
-        1273755.0,
-        1357279.0,
-        1433275.0,
-        1253238.99999999,
-        881095.0,
-        907328.0,
-        842615.0,
-        1125173.0,
-        1177329.0,
-        1413747.0,
-        1454544.0,
-        1657992.0,
-        1925616.0,
-        2210712.0,
-        2513112.0,
-        2944032.0,
-        3540096.0,
-        4211928.0,
-        4882584.0,
-        5425392.0,
-        5689992.0,
-        5731364.0,
-        5715685.0,
-        5783535.0,
-        5556520.0,
-        5230256.0,
-        4856544.0,
-        4485600.0,
-        4125744.0,
-        3782016.0,
-        3447696.0,
-        3113880.0,
-        2801736.0,
-        2549568.0,
-        2350656.0,
-        2162160.0,
-        1981224.0,
-        1839096.0,
-        906893.99999983,
-        564588.0,
-        337915.0,
-        508152.0,
-        678530.0,
-        898910.0,
-        796024.0,
-        1126580.0,
-        1102748.0,
-        1106144.0,
-    ]
-)
+weekly_generation = open(
+    "tests/functional/data/hydro_with_rulecurves/optimal_weekly_generation.txt", "r"
+).readlines()
 
-weekly_cost = [
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    724183000.0,
-    830477200.0,
-    820700000.0,
-    798688600.0,
-    746353200.0,
-    712827000.0,
-    675922900.0,
-    648795900.0,
-    621487200.0,
-    602586700.0,
-    552946500.0,
-    521539800.0,
-    466889400.0,
-    398966900.0,
-    325126200.0,
-    262730100.0,
-    201368500.0,
-    137151300.0,
-    135568200.0,
-    133974500.0,
-    98764000.0,
-    142983800.0,
-    147213300.0,
-    191970400.0,
-    237278400.0,
-    281956800.0,
-    320273700.0,
-    351775900.0,
-    386884500.0,
-    417305400.0,
-    442685300.0,
-    480717100.0,
-    502683700.0,
-    524359800.0,
-    541248700.0,
-    664201200.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-    714000000.0,
-]
+weekly_cost = open(
+    "tests/functional/data/hydro_with_rulecurves/optimal_weekly_cost.txt", "r"
+).readlines()
 
 
 def test_complete_year_as_one_block() -> None:
@@ -187,7 +83,7 @@ def test_complete_year_as_one_block() -> None:
                 + 3000 * unsupplied[t]  # type:ignore
                 for t in range(168 * week, 168 * (week + 1))
             ]
-        ) == pytest.approx(weekly_cost[week])
+        ) == pytest.approx(float(weekly_cost[week]))
 
 
 def test_complete_year_as_weekly_blocks() -> None:
@@ -202,7 +98,9 @@ def test_complete_year_as_weekly_blocks() -> None:
     scenarios = 1
 
     for week in range(52):
-        database.add_data("H", "overall_target", ConstantData(weekly_generation[week]))
+        database.add_data(
+            "H", "overall_target", ConstantData(float(weekly_generation[week]))
+        )
         database.add_data("H", "initial_level", ConstantData(initial_level))
         problem = build_problem(
             network,

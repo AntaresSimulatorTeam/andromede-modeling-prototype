@@ -200,3 +200,9 @@ def optimize_target(
     solving_output, heuristic_output = heuristic_problem.solve_hydro_problem()
 
     return solving_output, heuristic_output
+
+
+def update_initial_level(
+    reservoir_data: ReservoirParameters, daily_output: OutputHeuristic
+) -> None:
+    reservoir_data.initial_level = daily_output.level
