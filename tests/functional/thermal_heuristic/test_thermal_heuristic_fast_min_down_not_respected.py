@@ -32,8 +32,6 @@ from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     get_database,
-    get_heuristic_components,
-    get_input_components,
     get_network,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
@@ -41,22 +39,10 @@ from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MI
 
 @pytest.fixture
 def data_path() -> Path:
-    return Path(__file__).parent / "data/thermal_heuristic_fast_min_down_not_respected"
-
-
-@pytest.fixture
-def input_components(data_path: Path) -> InputComponents:
-    return get_input_components(data_path / "components.yml")
-
-
-@pytest.fixture
-def heuristic_components(input_components: InputComponents) -> List[str]:
-    return get_heuristic_components(input_components, THERMAL_CLUSTER_MODEL_MILP.id)
-
-
-@pytest.fixture
-def time_scenario_parameters() -> TimeScenarioHourParameter:
-    return TimeScenarioHourParameter(1, 1, 168)
+    return (
+        Path(__file__).parent.parent
+        / "data/thermal_heuristic_fast_min_down_not_respected"
+    )
 
 
 def test_fast_heuristic(
@@ -64,12 +50,12 @@ def test_fast_heuristic(
     input_components: InputComponents,
     heuristic_components: List[str],
     time_scenario_parameters: TimeScenarioHourParameter,
+    week_scenario_index: BlockScenarioIndex,
 ) -> None:
     """
     Solve a weekly problem with fast heuristic. The thermal cluster has long d_min_up and d_min_down. The fast heuristic doesn't respect the d_min constraints.
     """
     number_hours = 168
-    week_scenario_index = BlockScenarioIndex(0, 0)
 
     network = get_network(
         input_components,

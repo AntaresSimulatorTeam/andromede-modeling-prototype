@@ -14,11 +14,27 @@ from pathlib import Path
 from typing import List, Tuple
 
 import pytest
+import ortools.linear_solver.pywraplp as pywraplp
 
+from andromede.libs.standard import (
+    DEMAND_MODEL,
+    NODE_BALANCE_MODEL,
+    SPILLAGE_MODEL,
+    UNSUPPLIED_ENERGY_MODEL,
+)
+from andromede.model import Model
+from andromede.study.parsing import InputComponents
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import OutputValues
 from andromede.thermal_heuristic.time_scenario_parameter import BlockScenarioIndex
+from andromede.thermal_heuristic.problem import (
+    BlockScenarioIndex,
+    TimeScenarioHourParameter,
+    get_heuristic_components,
+    get_input_components,
+)
+from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 @pytest.fixture(scope="session")
@@ -132,3 +148,37 @@ class ExpectedOutput:
                 ]
             ],
         )
+
+
+@pytest.fixture
+def models() -> list[Model]:
+    return [DEMAND_MODEL, NODE_BALANCE_MODEL, SPILLAGE_MODEL, UNSUPPLIED_ENERGY_MODEL]
+
+
+@pytest.fixture
+def input_components(data_path: Path) -> InputComponents:
+    return get_input_components(data_path / "components.yml")
+
+
+@pytest.fixture
+def heuristic_components(input_components: InputComponents) -> List[str]:
+    return get_heuristic_components(input_components, THERMAL_CLUSTER_MODEL_MILP.id)
+
+
+@pytest.fixture
+def solver_parameters() -> pywraplp.MPSolverParameters:
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 1e-5)
+    return parameters
+
+
+@pytest.fixture
+def time_scenario_parameters() -> TimeScenarioHourParameter:
+    return TimeScenarioHourParameter(1, 1, 168)
+
+
+@pytest.fixture
+def week_scenario_index() -> BlockScenarioIndex:
+    return BlockScenarioIndex(0, 0)

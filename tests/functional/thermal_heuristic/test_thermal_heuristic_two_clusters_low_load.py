@@ -19,10 +19,6 @@ import pytest
 
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
-    DEMAND_MODEL,
-    NODE_BALANCE_MODEL,
-    SPILLAGE_MODEL,
-    UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.simulation import OutputValues
 from andromede.study.parsing import InputComponents
@@ -39,8 +35,6 @@ from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     get_database,
-    get_heuristic_components,
-    get_input_components,
     get_network,
 )
 from tests.functional.conftest import ExpectedOutput, ExpectedOutputIndexes
@@ -48,36 +42,8 @@ from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MI
 
 
 @pytest.fixture
-def solver_parameters() -> pywraplp.MPSolverParameters:
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
-    return parameters
-
-
-@pytest.fixture
 def data_path() -> Path:
-    return Path(__file__).parent / "data/thermal_heuristic_two_clusters_low_load"
-
-
-@pytest.fixture
-def models() -> list[Model]:
-    return [DEMAND_MODEL, NODE_BALANCE_MODEL, SPILLAGE_MODEL, UNSUPPLIED_ENERGY_MODEL]
-
-
-@pytest.fixture
-def input_components(data_path: Path) -> InputComponents:
-    return get_input_components(data_path / "components.yml")
-
-
-@pytest.fixture
-def heuristic_components(input_components: InputComponents) -> List[str]:
-    return get_heuristic_components(input_components, THERMAL_CLUSTER_MODEL_MILP.id)
-
-
-@pytest.fixture
-def time_scenario_parameters() -> TimeScenarioHourParameter:
-    return TimeScenarioHourParameter(1, 1, 168)
+    return Path(__file__).parent.parent / "data/thermal_heuristic_two_clusters_low_load"
 
 
 def test_milp_version(

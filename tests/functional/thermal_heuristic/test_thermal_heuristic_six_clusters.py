@@ -34,44 +34,14 @@ from andromede.thermal_heuristic.problem import (
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
     get_database,
-    get_heuristic_components,
-    get_input_components,
     get_network,
 )
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 @pytest.fixture
-def solver_parameters() -> pywraplp.MPSolverParameters:
-    parameters = pywraplp.MPSolverParameters()
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-    parameters.SetIntegerParam(parameters.SCALING, 0)
-    return parameters
-
-
-@pytest.fixture
 def data_path() -> Path:
-    return Path(__file__).parent / "data/thermal_heuristic_six_clusters"
-
-
-@pytest.fixture
-def week_scenario_index() -> BlockScenarioIndex:
-    return BlockScenarioIndex(0, 0)
-
-
-@pytest.fixture
-def input_components(data_path: Path) -> InputComponents:
-    return get_input_components(data_path / "components.yml")
-
-
-@pytest.fixture
-def heuristic_components(input_components: InputComponents) -> List[str]:
-    return get_heuristic_components(input_components, THERMAL_CLUSTER_MODEL_MILP.id)
-
-
-@pytest.fixture
-def time_scenario_parameters() -> TimeScenarioHourParameter:
-    return TimeScenarioHourParameter(1, 1, 168)
+    return Path(__file__).parent.parent / "data/thermal_heuristic_six_clusters"
 
 
 def test_accurate_heuristic(
