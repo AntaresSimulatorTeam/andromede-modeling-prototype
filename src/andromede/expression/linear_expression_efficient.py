@@ -29,14 +29,10 @@ from typing import (
     overload,
 )
 
-import ortools.linear_solver.pywraplp as lp
-
 from andromede.expression.context_adder import add_component_context
 from andromede.expression.equality import expressions_equal
-from andromede.expression.evaluate import evaluate
 from andromede.expression.evaluate_parameters_efficient import (
     check_resolved_expr,
-    get_time_ids_from_instances_index,
     resolve_coefficient,
 )
 from andromede.expression.expression_efficient import (
@@ -61,10 +57,6 @@ from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure, RowIndex
 from andromede.expression.port_operator import PortAggregator, PortSum
 from andromede.expression.print import print_expr
-from andromede.expression.resolved_linear_expression import (
-    ResolvedLinearExpression,
-    ResolvedTerm,
-)
 from andromede.expression.scenario_operator import Expectation, ScenarioAggregator
 from andromede.expression.time_operator import (
     TimeAggregator,
@@ -91,6 +83,17 @@ class TermKeyEfficient:
     time_operator: Optional[TimeOperator]
     time_aggregator: Optional[TimeAggregator]
     scenario_aggregator: Optional[ScenarioAggregator]
+
+    # Used for test_expression_parsing
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, TermKeyEfficient)
+            and self.component_id == other.component_id
+            and self.variable_name == other.variable_name
+            and self.time_operator == other.time_operator
+            and self.time_aggregator == other.time_aggregator
+            and self.scenario_aggregator == other.scenario_aggregator
+        )
 
 
 @dataclass(frozen=True)
@@ -1064,6 +1067,14 @@ class StandaloneConstraint:
 
     def __str__(self) -> str:
         return f"{str(self.lower_bound)} <= {str(self.expression)} <= {str(self.upper_bound)}"
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, StandaloneConstraint)
+            and linear_expressions_equal_if_present(self.expression, other.expression)
+            and linear_expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and linear_expressions_equal_if_present(self.upper_bound, other.upper_bound)
+        )
 
 
 def wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:

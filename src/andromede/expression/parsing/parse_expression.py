@@ -168,7 +168,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         # specifics for x[t] ...
         if len(time_shifts) == 1 and expressions_equal(time_shifts[0], literal(0)):
             return shifted_expr
-        return shifted_expr.shift(time_shifts)
+        return shifted_expr.sum(shift=time_shifts)
 
     def visitTimeShiftRange(
         self, ctx: ExprParser.TimeShiftRangeContext
@@ -176,7 +176,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
         shift1 = ctx.shift1.accept(self)  # type: ignore
         shift2 = ctx.shift2.accept(self)  # type: ignore
-        return shifted_expr.shift(ExpressionRange(shift1, shift2))
+        return shifted_expr.sum(shift=ExpressionRange(shift1, shift2))
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(

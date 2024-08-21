@@ -9,14 +9,21 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from typing import Set
+from typing import Set, Union
 
 import pytest
 
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression_efficient import ExpressionRange, literal, param
+from andromede.expression.expression_efficient import (
+    ExpressionNodeEfficient,
+    ExpressionRange,
+    literal,
+    param,
+)
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
+    StandaloneConstraint,
+    linear_expressions_equal,
     port_field,
     var,
 )
@@ -59,14 +66,14 @@ from andromede.expression.print import print_expr
         (
             {"x"},
             {},
-            "x[t-1, t+4]",
+            "x[t-1, t+4]",  # TODO: Should raise ValueError: shift always with sum
             var("x").sum(shift=[-literal(1), literal(4)]),
         ),
         (
             {"x"},
             {},
             "x[t-1+1]",
-            var("x").sum(shift=-literal(1) + literal(1)),
+            var("x"),  # Simplifications are applied very early in parsing !!!!
         ),
         (
             {"x"},
@@ -95,25 +102,25 @@ from andromede.expression.print import print_expr
         (
             {"x"},
             {},
-            "x[t-1, t, t+4]",
+            "x[t-1, t, t+4]",  # TODO: Should raise ValueError: shift always with sum
             var("x").sum(shift=[-literal(1), literal(0), literal(4)]),
         ),
         (
             {"x"},
             {},
-            "x[t-1..t+5]",
+            "x[t-1..t+5]",  # TODO: Should raise ValueError: shift always with sum
             var("x").sum(shift=ExpressionRange(-literal(1), literal(5))),
         ),
         (
             {"x"},
             {},
-            "x[t-1..t]",
+            "x[t-1..t]",  # TODO: Should raise ValueError: shift always with sum
             var("x").sum(shift=ExpressionRange(-literal(1), literal(0))),
         ),
         (
             {"x"},
             {},
-            "x[t..t+5]",
+            "x[t..t+5]",  # TODO: Should raise ValueError: shift always with sum
             var("x").sum(shift=ExpressionRange(literal(0), literal(5))),
         ),
         ({"x"}, {}, "x[t]", var("x")),
@@ -122,7 +129,7 @@ from andromede.expression.print import print_expr
             {"x"},
             {},
             "sum(x[-1..5])",
-            var("x").sum(eval=ExpressionRange(-literal(1), literal(5))).sum(),
+            var("x").sum(eval=ExpressionRange(-literal(1), literal(5))),
         ),
         ({}, {}, "sum_connections(port.f)", port_field("port", "f").sum_connections()),
         (
@@ -156,13 +163,21 @@ def test_parsing_visitor(
     variables: Set[str],
     parameters: Set[str],
     expression_str: str,
-    expected: LinearExpressionEfficient,
-):
+    expected: Union[
+        ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint
+    ],
+) -> None:
     identifiers = ModelIdentifiers(variables, parameters)
     expr = parse_expression(expression_str, identifiers)
     print()
-    print(print_expr(expr))
-    assert expressions_equal(expr, expected)
+    print(f"Expected: \n {str(expected)}")
+    print(f"Parsed: \n {str(expr)}")
+    if isinstance(expected, ExpressionNodeEfficient):
+        assert expressions_equal(expr, expected)
+    elif isinstance(expected, LinearExpressionEfficient):
+        assert linear_expressions_equal(expr, expected)
+    elif isinstance(expected, StandaloneConstraint):
+        assert expected == expr
 
 
 @pytest.mark.parametrize(

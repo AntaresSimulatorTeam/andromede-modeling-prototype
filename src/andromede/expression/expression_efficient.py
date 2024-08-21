@@ -444,7 +444,7 @@ class DivisionNode(BinaryOperatorNode):
     pass
 
 
-@dataclass(frozen=True, eq=False)
+@dataclass(frozen=True)
 class ExpressionRange:
     start: ExpressionNodeEfficient
     stop: ExpressionNodeEfficient
@@ -456,6 +456,14 @@ class ExpressionRange:
             object.__setattr__(
                 self, attribute, wrap_in_node(value) if value is not None else value
             )
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, ExpressionRange)
+            and expressions_equal(self.start, other.start)
+            and expressions_equal(self.stop, other.stop)
+            and expressions_equal_if_present(self.step, other.step)
+        )
 
 
 IntOrExpr = Union[int, ExpressionNodeEfficient]
@@ -514,6 +522,29 @@ class InstancesTimeIndex:
             return hash(tuple(self.expressions))
         else:
             return hash(self.expressions)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, InstancesTimeIndex):
+            if isinstance(self.expressions, list) and all(
+                isinstance(x, ExpressionNodeEfficient) for x in self.expressions
+            ):
+                return (
+                    isinstance(other.expressions, list)
+                    and all(
+                        isinstance(x, ExpressionNodeEfficient)
+                        for x in other.expressions
+                    )
+                    and all(
+                        expressions_equal(left_expr, right_expr)
+                        for left_expr, right_expr in zip(
+                            self.expressions, other.expressions
+                        )
+                    )
+                )
+            elif isinstance(self.expressions, ExpressionRange):
+                return self.expressions == other.expressions
+        else:
+            return False
 
     def is_simple(self) -> bool:
         if isinstance(self.expressions, list):
