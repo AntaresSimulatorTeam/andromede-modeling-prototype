@@ -13,7 +13,7 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-from andromede.expression.expression_efficient import (
+from .expression_efficient import (
     ComparisonNode,
     ComponentParameterNode,
     ExpressionNodeEfficient,
@@ -25,12 +25,7 @@ from andromede.expression.expression_efficient import (
     TimeAggregatorNode,
     TimeOperatorNode,
 )
-from andromede.expression.value_provider import (
-    TimeScenarioIndex,
-    TimeScenarioIndices,
-    ValueProvider,
-)
-
+from .value_provider import TimeScenarioIndex, TimeScenarioIndices, ValueProvider
 from .visitor import ExpressionVisitorOperations, visit
 
 

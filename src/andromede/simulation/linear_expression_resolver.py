@@ -24,7 +24,7 @@ from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     TermEfficient,
 )
-from andromede.expression.resolved_linear_expression import (
+from .resolved_linear_expression import (
     ResolvedLinearExpression,
     ResolvedTerm,
 )
@@ -35,7 +35,7 @@ from andromede.expression.value_provider import (
     TimeScenarioIndices,
     ValueProvider,
 )
-from andromede.simulation.optimization_context import OptimizationContext
+from .optimization_context import OptimizationContext
 
 
 @dataclass

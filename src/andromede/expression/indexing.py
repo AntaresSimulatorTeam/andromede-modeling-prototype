@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 
-from andromede.expression.indexing_structure import IndexingStructure
+from .indexing_structure import IndexingStructure
 
 
 class IndexingStructureProvider(ABC):

@@ -20,7 +20,6 @@ from typing import Callable, Dict, List, Optional, TypeVar, Union
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.scenario_operator import ScenarioAggregator
 from andromede.expression.time_operator import TimeAggregator, TimeOperator
-from andromede.model.model import PortFieldId
 
 T = TypeVar("T")
 

@@ -26,20 +26,20 @@ from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     RowIndex,
 )
-from andromede.expression.resolved_linear_expression import ResolvedLinearExpression
+from .resolved_linear_expression import ResolvedLinearExpression
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
-from andromede.simulation.linear_expression_resolver import LinearExpressionResolver
-from andromede.simulation.optimization_context import (
+from .linear_expression_resolver import LinearExpressionResolver
+from .optimization_context import (
     BlockBorderManagement,
     ComponentContext,
     OptimizationContext,
     make_data_structure_provider,
     make_value_provider,
 )
-from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
-from andromede.simulation.time_block import TimeBlock
+from .strategy import MergedProblemStrategy, ModelSelectionStrategy
+from .time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
 

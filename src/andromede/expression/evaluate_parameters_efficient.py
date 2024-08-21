@@ -14,7 +14,7 @@ import operator
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List
 
-from andromede.expression.expression_efficient import (
+from .expression_efficient import (
     AdditionNode,
     ComparisonNode,
     ComponentParameterNode,
@@ -36,13 +36,8 @@ from andromede.expression.expression_efficient import (
     TimeOperatorName,
     TimeOperatorNode,
 )
-from andromede.expression.indexing_structure import RowIndex
-from andromede.expression.value_provider import (
-    TimeScenarioIndex,
-    TimeScenarioIndices,
-    ValueProvider,
-)
-
+from .indexing_structure import RowIndex
+from .value_provider import TimeScenarioIndex, TimeScenarioIndices, ValueProvider
 from .visitor import ExpressionVisitor, visit
 
 

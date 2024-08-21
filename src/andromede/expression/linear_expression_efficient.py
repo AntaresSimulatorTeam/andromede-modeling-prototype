@@ -29,13 +29,13 @@ from typing import (
     overload,
 )
 
-from andromede.expression.context_adder import add_component_context
-from andromede.expression.equality import expressions_equal
-from andromede.expression.evaluate_parameters_efficient import (
+from .context_adder import add_component_context
+from .equality import expressions_equal
+from .evaluate_parameters_efficient import (
     check_resolved_expr,
     resolve_coefficient,
 )
-from andromede.expression.expression_efficient import (
+from .expression_efficient import (
     ExpressionNodeEfficient,
     ExpressionRange,
     InstancesTimeIndex,
@@ -53,19 +53,19 @@ from andromede.expression.expression_efficient import (
     literal,
     wrap_in_node,
 )
-from andromede.expression.indexing import IndexingStructureProvider
-from andromede.expression.indexing_structure import IndexingStructure, RowIndex
-from andromede.expression.port_operator import PortAggregator, PortSum
-from andromede.expression.print import print_expr
-from andromede.expression.scenario_operator import Expectation, ScenarioAggregator
-from andromede.expression.time_operator import (
+from .indexing import IndexingStructureProvider
+from .indexing_structure import IndexingStructure, RowIndex
+from .port_operator import PortAggregator, PortSum
+from .print import print_expr
+from .scenario_operator import Expectation, ScenarioAggregator
+from .time_operator import (
     TimeAggregator,
     TimeEvaluation,
     TimeOperator,
     TimeShift,
     TimeSum,
 )
-from andromede.expression.value_provider import (
+from .value_provider import (
     TimeScenarioIndex,
     TimeScenarioIndices,
     ValueProvider,

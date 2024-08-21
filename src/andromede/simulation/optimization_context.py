@@ -26,7 +26,7 @@ from andromede.expression.linear_expression_efficient import (
     PortFieldKey,
 )
 from andromede.expression.value_provider import TimeScenarioIndex, TimeScenarioIndices
-from andromede.simulation.time_block import TimeBlock
+from .time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
 from andromede.utils import get_or_add

@@ -11,7 +11,8 @@
 # This file is part of the Antares project.
 
 import andromede.expression.scenario_operator
-from andromede.expression.expression_efficient import (
+
+from .expression_efficient import (
     AdditionNode,
     ComparisonNode,
     ComponentParameterNode,
@@ -30,7 +31,6 @@ from andromede.expression.expression_efficient import (
     TimeOperatorName,
     TimeOperatorNode,
 )
-
 from .visitor import ExpressionVisitor, T, visit
 
 
