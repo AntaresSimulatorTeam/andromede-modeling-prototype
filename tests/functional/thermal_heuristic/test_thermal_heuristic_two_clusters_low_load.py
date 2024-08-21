@@ -102,6 +102,12 @@ def test_milp_version(
             assert resolution_step.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
+            assert sum(
+                OutputValues(resolution_step)
+                .component("S")
+                .var("spillage")
+                .value[0]  # type:ignore
+            ) == pytest.approx(15884)
 
 
 def test_accurate_heuristic(
@@ -207,6 +213,12 @@ def test_accurate_heuristic(
             assert resolution_step_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
+            assert sum(
+                OutputValues(resolution_step_2)
+                .component("S")
+                .var("spillage")
+                .value[0]  # type:ignore
+            ) == pytest.approx(22191)
 
 
 def test_fast_heuristic(
@@ -314,3 +326,9 @@ def test_fast_heuristic(
             assert resolution_step_2.solver.Objective().Value() == pytest.approx(
                 expected_cost[scenario][week]
             )
+            assert sum(
+                OutputValues(resolution_step_2)
+                .component("S")
+                .var("spillage")
+                .value[0]  # type:ignore
+            ) == pytest.approx(255873)

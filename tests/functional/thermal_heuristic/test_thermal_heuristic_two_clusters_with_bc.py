@@ -74,7 +74,7 @@ def test_milp_version(
     time_scenario_parameters: TimeScenarioHourParameter,
 ) -> None:
     """Solve weekly problem with two clusters and a binding constraint between these two clusters.
-    The optimal solution consists in turning on the first unit all the and the second unit which is more expensive but more flexible when the load increases at the 13th timestep.
+    The optimal solution consists in turning on the first unit all the time and in turning on the second unit, which is more expensive but more flexible, when the load increases at the 13th timestep.
     """
     network = get_network(
         input_components,
@@ -111,7 +111,7 @@ def test_milp_version(
         output_idx=ExpectedOutputIndexes(
             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
         ),
-    )
+    )  # On/off values of clusters are checked in expected_output
     expected_output.check_output_values(OutputValues(main_resolution_step))
 
 
@@ -172,7 +172,7 @@ def test_accurate_heuristic(
     time_scenario_parameters: TimeScenarioHourParameter,
 ) -> None:
     """
-    Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem become infeasible.
+    Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem becomes infeasible.
     """
 
     number_hours = 168
@@ -261,7 +261,7 @@ def test_fast_heuristic(
     heuristic_components: List[str],
     time_scenario_parameters: TimeScenarioHourParameter,
 ) -> None:
-    """Solve the same problem as before with the heuristic fast of Antares. The fast heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem become infeasible."""
+    """Solve the same problem as before with the heuristic fast of Antares. The fast heuristic decides to turn on 3 units of the first cluster but due to the binding constraint and p_min, the problem becomes infeasible."""
 
     number_hours = 168
 
