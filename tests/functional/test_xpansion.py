@@ -375,10 +375,10 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    # assert problem.solver.NumVariables() == 2 * scenarios * horizon + 1
-    # assert (
-    #     problem.solver.NumConstraints() == 3 * scenarios * horizon
-    # )  # Flow balance, Max generation for each cluster
+    assert problem.solver.NumVariables() == 2 * scenarios * horizon + 1
+    assert (
+        problem.solver.NumConstraints() == 3 * scenarios * horizon
+    )  # Flow balance, Max generation for each cluster
     assert problem.solver.Objective().Value() == pytest.approx(
         490 * 300
         + 0.5 * (10 * 300 + 10 * 300 + 40 * 200)

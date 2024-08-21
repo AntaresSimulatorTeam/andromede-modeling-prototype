@@ -28,6 +28,7 @@ from andromede.expression.resolved_linear_expression import (
     ResolvedLinearExpression,
     ResolvedTerm,
 )
+from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeShift
 from andromede.expression.value_provider import (
     TimeScenarioIndex,
@@ -50,11 +51,10 @@ class LinearExpressionResolver:
             # Here, the value provide is used only to evaluate possible time operator args if the term has one
             resolved_variables = self.resolve_variables(term, row_id)
 
-            # TODO: For now all coefficients are the same for a given "variable_name", we are not able to represent things like sum(a_t * x_t)... but everything else is ok:
-            # sum(a_t') * x_t
-            # a_t * sum(x_t')
-            # a_t * x_t
-            # TODO: Next line is to be moved inside the for loop once we have figured out how to represent sum(a_t * x_t)
+            # TODO: Contrary to the time aggregator that does a sum which is the default behaviour when append resolved terms, expectation performs an averaging, so weights must be included in coefficients. We feel here that we could generalize time and scenario aggregation over variables with more general operators, the following lines are very specific to expectation with same weights over all scenarios
+            weight = 1
+            if isinstance(term.scenario_aggregator, Expectation):
+                weight = 1 / self.value_provider.scenarios()
 
             for ts_id, lp_variable in resolved_variables.items():
                 # TODO: Could we check in which case coeff resolution leads to the same result for each element in the for loop ? When there is only a literal, etc, etc ?
@@ -63,7 +63,9 @@ class LinearExpressionResolver:
                     self.value_provider,
                     RowIndex(ts_id.time, ts_id.scenario),
                 )
-                resolved_terms.append(ResolvedTerm(resolved_coeff, lp_variable))
+                resolved_terms.append(
+                    ResolvedTerm(weight * resolved_coeff, lp_variable)
+                )
 
         resolved_constant = resolve_coefficient(
             expression.constant, self.value_provider, row_id
@@ -84,17 +86,17 @@ class LinearExpressionResolver:
         operator_ts_ids = self._row_id_to_term_time_scenario_id(term, row_id)
         for time in operator_ts_ids.time_indices:
             for scenario in operator_ts_ids.scenario_indices:
-                solver_vars[TimeScenarioIndex(time, scenario)] = (
-                    self.context.get_component_variable(
-                        time,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        # At term build time, no information on the variable structure is known, we use it now
-                        self.context.network.get_component(term.component_id)
-                        .model.variables[term.variable_name]
-                        .structure,
-                    )
+                solver_vars[
+                    TimeScenarioIndex(time, scenario)
+                ] = self.context.get_component_variable(
+                    time,
+                    scenario,
+                    term.component_id,
+                    term.variable_name,
+                    # At term build time, no information on the variable structure is known, we use it now
+                    self.context.network.get_component(term.component_id)
+                    .model.variables[term.variable_name]
+                    .structure,
                 )
         return solver_vars
 

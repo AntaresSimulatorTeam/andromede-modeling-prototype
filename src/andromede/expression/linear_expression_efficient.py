@@ -380,7 +380,8 @@ def _merge_dicts(
     rhs: Dict[TermKeyEfficient, TermEfficient],
     merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
     neutral: float,
-) -> Dict[TermKeyEfficient, TermEfficient]: ...
+) -> Dict[TermKeyEfficient, TermEfficient]:
+    ...
 
 
 @overload
@@ -389,7 +390,8 @@ def _merge_dicts(
     rhs: Dict[PortFieldId, PortFieldTerm],
     merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
     neutral: float,
-) -> Dict[PortFieldId, PortFieldTerm]: ...
+) -> Dict[PortFieldId, PortFieldTerm]:
+    ...
 
 
 def _get_neutral_term(term: T_val, neutral: float) -> T_val:
