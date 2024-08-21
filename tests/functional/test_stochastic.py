@@ -20,7 +20,7 @@ from andromede.libs.standard import (
     THERMAL_CLUSTER_MODEL_DHD,
     THERMAL_CLUSTER_MODEL_HD,
 )
-from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation import TimeBlock, build_problem, scenario_playlist
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -123,7 +123,7 @@ def test_stochastic_model_with_HD_for_thermal_startup(
     network.connect(PortRef(peak, "balance_port"), PortRef(node, "balance_port"))
 
     for block in time_blocks:  # TODO : To manage blocks simply for now
-        problem = build_problem(network, database, block, scenarios)
+        problem = build_problem(network, database, block, scenario_playlist(scenarios))
         status = problem.solver.Solve()
 
         assert (
@@ -189,7 +189,7 @@ def test_stochastic_model_with_DH_for_thermal_startup(
     network.connect(PortRef(peak, "balance_port"), PortRef(node, "balance_port"))
 
     for block in time_blocks:  # TODO : To manage blocks simply for now
-        problem = build_problem(network, database, block, scenarios)
+        problem = build_problem(network, database, block, scenario_playlist(scenarios))
         status = problem.solver.Solve()
 
         assert (

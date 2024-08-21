@@ -20,7 +20,12 @@ from andromede.libs.standard_sc import (
     NODE_BALANCE_MODEL_MOD,
     TWO_INPUTS_CONVERTOR_MODEL,
 )
-from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation import (
+    OutputValues,
+    TimeBlock,
+    build_problem,
+    scenario_playlist,
+)
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -122,7 +127,9 @@ def test_electrolyzer_n_inputs_1() -> None:
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
@@ -211,7 +218,9 @@ def test_electrolyzer_n_inputs_2() -> None:
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
@@ -309,7 +318,9 @@ def test_electrolyzer_n_inputs_3() -> None:
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
@@ -395,7 +406,9 @@ def test_electrolyzer_n_inputs_4() -> None:
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

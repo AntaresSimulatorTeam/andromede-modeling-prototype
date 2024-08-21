@@ -5,7 +5,12 @@ import pytest
 
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
+from andromede.simulation import (
+    BlockBorderManagement,
+    TimeBlock,
+    build_problem,
+    scenario_playlist,
+)
 from andromede.study import TimeScenarioIndex, TimeScenarioSeriesData
 from andromede.study.parsing import InputComponents, parse_yaml_components
 from andromede.study.resolve_components import (
@@ -82,7 +87,9 @@ def test_basic_balance_using_yaml(
     network = build_network(components_input)
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 3000
@@ -126,7 +133,7 @@ def test_short_term_storage_base_with_yaml(data_dir: Path) -> None:
         network,
         database,
         time_blocks[0],
-        scenarios,
+        scenario_playlist(scenarios),
         border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()

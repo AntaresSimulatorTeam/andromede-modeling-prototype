@@ -14,7 +14,12 @@ import math
 
 from andromede.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
 from andromede.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
-from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation import (
+    OutputValues,
+    TimeBlock,
+    build_problem,
+    scenario_playlist,
+)
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -79,7 +84,9 @@ def test_quota_co2() -> None:
     database.add_data("QuotaCO2", "quota", ConstantData(150))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)

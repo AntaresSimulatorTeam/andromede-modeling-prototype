@@ -14,7 +14,12 @@ import math
 from pathlib import Path
 
 from andromede.model.library import Library
-from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation import (
+    OutputValues,
+    TimeBlock,
+    build_problem,
+    scenario_playlist,
+)
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -128,7 +133,9 @@ def test_electrolyzer_n_inputs_1(data_dir: Path, lib: Library, lib_sc: Library) 
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
@@ -226,7 +233,9 @@ def test_electrolyzer_n_inputs_2(data_dir: Path, lib: Library, lib_sc: Library) 
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
@@ -334,7 +343,9 @@ def test_electrolyzer_n_inputs_3(data_dir: Path, lib: Library, lib_sc: Library) 
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)
@@ -431,7 +442,9 @@ def test_electrolyzer_n_inputs_4(data_dir: Path, lib: Library, lib_sc: Library) 
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

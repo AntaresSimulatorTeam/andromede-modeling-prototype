@@ -11,6 +11,7 @@ from andromede.simulation import (
     OutputValues,
     TimeBlock,
     build_problem,
+    scenario_playlist,
 )
 from andromede.study import (
     ConstantData,
@@ -82,7 +83,9 @@ def test_basic_balance(lib: Library) -> None:
     network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -134,7 +137,9 @@ def test_link(lib: Library) -> None:
     network.connect(PortRef(link, "out_port"), PortRef(node2, "balance_port"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -192,7 +197,9 @@ def test_stacking_generation(lib: Library) -> None:
     network.connect(PortRef(gen2, "balance_port"), PortRef(node1, "balance_port"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -232,7 +239,7 @@ def test_spillage(lib: Library) -> None:
     network.connect(PortRef(gen1, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
 
-    problem = build_problem(network, database, TimeBlock(0, [1]), 1)
+    problem = build_problem(network, database, TimeBlock(0, [1]), scenario_playlist(1))
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -322,7 +329,7 @@ def test_min_up_down_times(lib: Library) -> None:
         network,
         database,
         time_block,
-        scenarios,
+        scenario_playlist(scenarios),
         border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()
@@ -380,7 +387,7 @@ def test_changing_demand(lib: Library) -> None:
         network,
         database,
         time_block,
-        scenarios,
+        scenario_playlist(scenarios),
         border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()
@@ -472,7 +479,7 @@ def test_min_up_down_times_2(lib: Library) -> None:
         network,
         database,
         time_block,
-        scenarios,
+        scenario_playlist(scenarios),
         border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()

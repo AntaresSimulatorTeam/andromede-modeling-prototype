@@ -40,6 +40,7 @@ from andromede.simulation import (
     TimeBlock,
     build_benders_decomposed_problem,
     build_problem,
+    scenario_playlist,
 )
 from andromede.study import (
     Component,
@@ -220,7 +221,7 @@ def test_generation_xpansion_single_time_step_single_scenario(
         network,
         database,
         TimeBlock(1, [0]),
-        scenarios,
+        scenario_playlist(scenarios),
         problem_strategy=MergedProblemStrategy(),
     )
     status = problem.solver.Solve()
@@ -295,7 +296,9 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
     )
     scenarios = 1
 
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
 
     status = problem.solver.Solve()
 
@@ -372,7 +375,7 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
     network.connect(PortRef(generator, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
 
-    problem = build_problem(network, database, time_block, scenarios)
+    problem = build_problem(network, database, time_block, scenario_playlist(scenarios))
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
