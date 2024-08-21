@@ -38,38 +38,43 @@ from andromede.study.data import AbstractDataStructure
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
+def set_solver_parameters_to_antares_config() -> pywraplp.MPSolverParameters:
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
+    parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
+    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.0001)
+    return parameters
+
+
+number_hours = 168
+weeks = 2
+scenarios = [0, 1]
+expected_cost = [[78933742, 102109698], [17472101, 17424769]]
+expected_cost_more_restrictive_parameters = [
+    [78933742, 102103588],
+    [17472101, 17424769],
+]
+
+""" This test compares the POC and Antares with MILP solver and we expect to have the same result. 
+Weekly problems are solved scenario per scenario and for all scnearios at the same time."""
+
+
 def test_one_problem_per_scenario() -> None:
     """Resolve a simple problem with milp solver and with the same parameters as Antares. If the problem is solved scenario per scenario the result is the same as Antares."""
-    number_hours = 168
-    scenarios = 2
 
     solver = pywraplp.Solver.CreateSolver("XPRESS")
     if solver:
-        for scenario in range(scenarios):
-            for week in range(2):
-                problem = create_complex_problem(
-                    {
-                        "G1": ConstantData(0),
-                        "G2": ConstantData(0),
-                        "G3": ConstantData(0),
-                    },
-                    number_hours,
-                    week=week,
-                    scenarios=[scenario],
-                )
+        for scenario in scenarios:
+            for week in range(weeks):
+                problem = create_complex_problem(week=week, scenarios=[scenario])
 
-                parameters = pywraplp.MPSolverParameters()
-                parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-                parameters.SetIntegerParam(parameters.SCALING, 0)
-                parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
-                parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
-                parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.0001)
+                parameters = set_solver_parameters_to_antares_config()
 
                 status = problem.solver.Solve(parameters)
-
                 assert status == problem.solver.OPTIMAL
 
-                expected_cost = [[78933841, 102109698], [17472101, 17424769]]
                 assert problem.solver.Objective().Value() == pytest.approx(
                     expected_cost[scenario][week]
                 )
@@ -77,118 +82,72 @@ def test_one_problem_per_scenario() -> None:
 
 def test_one_problem_per_scenario_with_different_parameters() -> None:
     """Resolve the same problem as above with more restrictive parameters. If the problem is solved scenario per scenario the result is better than above."""
-    number_hours = 168
-    scenarios = 2
 
     solver = pywraplp.Solver.CreateSolver("XPRESS")
     if solver:
-        for scenario in range(scenarios):
-            for week in range(2):
-                problem = create_complex_problem(
-                    {
-                        "G1": ConstantData(0),
-                        "G2": ConstantData(0),
-                        "G3": ConstantData(0),
-                    },
-                    number_hours,
-                    week=week,
-                    scenarios=[scenario],
-                )
+        for scenario in scenarios:
+            for week in range(weeks):
+                problem = create_complex_problem(week=week, scenarios=[scenario])
 
-                parameters = pywraplp.MPSolverParameters()
-                parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-                parameters.SetIntegerParam(parameters.SCALING, 0)
-                parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
-                parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
+                parameters = set_solver_parameters_to_antares_config()
                 parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.000001)
 
-                problem.solver.EnableOutput()
-
                 status = problem.solver.Solve(parameters)
-
                 assert status == problem.solver.OPTIMAL
 
-                expected_cost = [[78933742, 102103588], [17472101, 17424769]]
                 assert problem.solver.Objective().Value() == pytest.approx(
-                    expected_cost[scenario][week]
+                    expected_cost_more_restrictive_parameters[scenario][week]
                 )
 
 
 def test_one_problem_for_all_scenarios() -> None:
-    """Resolve the same problem as above with same parameters as Antares. If the problem is solved for all scenarios at the same time, the result is worse than solving the problem one by one."""
-    number_hours = 168
-    scenarios = [0, 1]
+    """Resolve the same problem as above with same parameters as Antares. If the problem is solved for all scenarios at the same time, the result is the same as solving the problem one by one."""
 
     solver = pywraplp.Solver.CreateSolver("XPRESS")
     if solver:
-        for week in range(2):
-            problem = create_complex_problem(
-                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-                number_hours,
-                week=week,
-                scenarios=scenarios,
-            )
+        for week in range(weeks):
+            problem = create_complex_problem(week=week, scenarios=scenarios)
 
-            parameters = pywraplp.MPSolverParameters()
-            parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-            parameters.SetIntegerParam(parameters.SCALING, 0)
-            parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
-            parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
-            parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.0001)
+            parameters = set_solver_parameters_to_antares_config()
 
             status = problem.solver.Solve(parameters)
-
             assert status == problem.solver.OPTIMAL
 
-            expected_cost = [[78933841, 102109698], [17472101, 17424769]]
-            # assert problem.solver.Objective().Value() == pytest.approx(
-            #     sum([expected_cost[s][week] for s in scenarios]) / len(scenarios)
-            # )
-
-
-def test_one_problem_for_all_scenarios_with_different_parameters() -> None:
-    """Resolve the same problem as above with more restrictive parameters. If the problem is solved for all scenarios at the same time, the result is the same than solving the problem one by one. All those tests show that solver parameters and solving scenario at one or one by one are important factors to take into account."""
-    number_hours = 168
-    scenarios = [0, 1]
-
-    solver = pywraplp.Solver.CreateSolver("XPRESS")
-    if solver:
-        for week in range(2):
-            problem = create_complex_problem(
-                {"G1": ConstantData(0), "G2": ConstantData(0), "G3": ConstantData(0)},
-                number_hours,
-                week=week,
-                scenarios=scenarios,
-            )
-
-            parameters = pywraplp.MPSolverParameters()
-            parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-            parameters.SetIntegerParam(parameters.SCALING, 0)
-            parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
-            parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
-            parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.000001)
-
-            problem.solver.EnableOutput()
-
-            status = problem.solver.Solve(parameters)
-
-            assert status == problem.solver.OPTIMAL
-
-            expected_cost = [[78933742, 102103588], [17472101, 17424769]]
             assert problem.solver.Objective().Value() == pytest.approx(
                 sum([expected_cost[s][week] for s in scenarios]) / len(scenarios)
             )
 
 
+def test_one_problem_for_all_scenarios_with_different_parameters() -> None:
+    """Resolve the same problem as above with more restrictive parameters. If the problem is solved for all scenarios at the same time, the result is the same than solving the problem one by one. All those tests show that solver parameters and solving scenario at one or one by one are important factors to take into account."""
+
+    solver = pywraplp.Solver.CreateSolver("XPRESS")
+    if solver:
+        for week in range(weeks):
+            problem = create_complex_problem(week=week, scenarios=scenarios)
+
+            parameters = set_solver_parameters_to_antares_config()
+            parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.000001)
+
+            status = problem.solver.Solve(parameters)
+            assert status == problem.solver.OPTIMAL
+
+            assert problem.solver.Objective().Value() == pytest.approx(
+                sum(
+                    [
+                        expected_cost_more_restrictive_parameters[s][week]
+                        for s in scenarios
+                    ]
+                )
+                / len(scenarios)
+            )
+
+
 def create_complex_problem(
-    lower_bound: Dict[str, AbstractDataStructure],
-    number_hours: int,
     week: int,
     scenarios: List[int],
 ) -> OptimizationProblem:
-    database = generate_database(
-        lower_bound, number_hours, week=week, scenarios=scenarios
-    )
+    database = generate_database(week=week, scenarios=scenarios)
 
     time_block = TimeBlock(1, [i for i in range(number_hours)])
 
@@ -233,8 +192,6 @@ def create_complex_problem(
 
 
 def generate_database(
-    lower_bound: Dict[str, AbstractDataStructure],
-    number_hours: int,
     week: int,
     scenarios: List[int],
 ) -> DataBase:
@@ -258,10 +215,11 @@ def generate_database(
     database.add_data("G1", "fixed_cost", ConstantData(1))
     database.add_data("G1", "d_min_up", ConstantData(8))
     database.add_data("G1", "d_min_down", ConstantData(8))
-    database.add_data("G1", "nb_units_min", lower_bound["G1"])
+    database.add_data("G1", "nb_units_min", ConstantData(0))
     database.add_data("G1", "nb_units_max", ConstantData(1))
-    database.add_data("G1", "failures", TimeScenarioSeriesData(failures_1))
-    database.add_data("G1", "mingen", lower_bound["G1"])
+    database.add_data("G1", "nb_units_max_min_down_time", ConstantData(1))
+    database.add_data("G1", "max_generating", TimeScenarioSeriesData(failures_1))
+    database.add_data("G1", "min_generating", ConstantData(0))
 
     database.add_data("G2", "p_max", ConstantData(90))
     database.add_data("G2", "p_min", ConstantData(60))
@@ -270,10 +228,11 @@ def generate_database(
     database.add_data("G2", "fixed_cost", ConstantData(1))
     database.add_data("G2", "d_min_up", ConstantData(11))
     database.add_data("G2", "d_min_down", ConstantData(11))
-    database.add_data("G2", "nb_units_min", lower_bound["G2"])
+    database.add_data("G2", "nb_units_min", ConstantData(0))
     database.add_data("G2", "nb_units_max", ConstantData(3))
-    database.add_data("G2", "failures", ConstantData(270))
-    database.add_data("G2", "mingen", lower_bound["G2"])
+    database.add_data("G2", "nb_units_max_min_down_time", ConstantData(3))
+    database.add_data("G2", "max_generating", ConstantData(270))
+    database.add_data("G2", "min_generating", ConstantData(0))
 
     failures_3 = pd.DataFrame(
         np.transpose(
@@ -293,13 +252,17 @@ def generate_database(
     database.add_data("G3", "fixed_cost", ConstantData(1))
     database.add_data("G3", "d_min_up", ConstantData(9))
     database.add_data("G3", "d_min_down", ConstantData(9))
-    database.add_data("G3", "nb_units_min", lower_bound["G3"])
+    database.add_data("G3", "nb_units_min", ConstantData(0))
     database.add_data("G3", "nb_units_max", ConstantData(4))
-    database.add_data("G3", "failures", TimeScenarioSeriesData(failures_3))
-    database.add_data("G3", "mingen", lower_bound["G3"])
+    database.add_data("G3", "nb_units_max_min_down_time", ConstantData(4))
+    database.add_data("G3", "max_generating", TimeScenarioSeriesData(failures_3))
+    database.add_data("G3", "min_generating", ConstantData(0))
 
     database.add_data("U", "cost", ConstantData(10000))
     database.add_data("S", "cost", ConstantData(1))
+
+    for g in ["G1", "G2", "G3"]:
+        database.add_data(g, "max_failure", ConstantData(0))
 
     output = {}
     for scenario in scenarios:
