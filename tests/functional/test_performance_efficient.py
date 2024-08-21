@@ -21,6 +21,17 @@ from andromede.expression.linear_expression_efficient import (
     var,
     wrap_in_linear_expr,
 )
+from andromede.libs.standard import (
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+    GENERATOR_MODEL_WITH_STORAGE,
+    NODE_BALANCE_MODEL,
+)
+from andromede.simulation.optimization import build_problem
+from andromede.simulation.time_block import TimeBlock
+from andromede.study.data import ConstantData, DataBase
+from andromede.study.network import Network, Node, PortRef, create_component
+from tests.unittests.test_utils import generate_scalar_matrix_data
 
 
 def test_large_number_of_parameters_sum() -> None:
@@ -84,3 +95,124 @@ def test_large_number_of_variables_sum() -> None:
     assert expr.evaluate(
         EvaluationContext(variables=variables_value), RowIndex(0, 0)
     ) == sum(1 / i for i in range(1, nb_terms))
+
+
+def test_large_sum_of_port_connections() -> None:
+    """
+    Test performance when the problem involves a model where several generators are connected to a node.
+
+    This test pass with 470 terms but fails with 471 locally due to recursion depth,
+    and possibly even less terms are possible with Jenkins...
+    """
+    nb_generators = 500
+
+    time_block = TimeBlock(0, [0])
+    scenarios = 1
+
+    database = DataBase()
+    database.add_data("D", "demand", ConstantData(nb_generators))
+
+    for gen_id in range(nb_generators):
+        database.add_data(f"G_{gen_id}", "p_max", ConstantData(1))
+        database.add_data(f"G_{gen_id}", "cost", ConstantData(5))
+
+    node = Node(model=NODE_BALANCE_MODEL, id="N")
+    demand = create_component(model=DEMAND_MODEL, id="D")
+    generators = [
+        create_component(model=GENERATOR_MODEL, id=f"G_{gen_id}")
+        for gen_id in range(nb_generators)
+    ]
+
+    network = Network("test")
+    network.add_node(node)
+
+    network.add_component(demand)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+
+    for gen_id in range(nb_generators):
+        network.add_component(generators[gen_id])
+        network.connect(
+            PortRef(generators[gen_id], "balance_port"), PortRef(node, "balance_port")
+        )
+
+    # Raised recursion error with previous implementation
+    problem = build_problem(network, database, time_block, scenarios)
+
+    status = problem.solver.Solve()
+
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 5 * nb_generators
+
+
+def test_basic_balance_on_whole_year() -> None:
+    """
+    Balance on one node with one fixed demand and one generation, on 8760 timestep.
+    """
+
+    scenarios = 1
+    horizon = 8760
+    time_block = TimeBlock(1, list(range(horizon)))
+
+    database = DataBase()
+    database.add_data(
+        "D", "demand", generate_scalar_matrix_data(100, horizon, scenarios)
+    )
+
+    database.add_data("G", "p_max", ConstantData(100))
+    database.add_data("G", "cost", ConstantData(30))
+
+    node = Node(model=NODE_BALANCE_MODEL, id="N")
+    demand = create_component(model=DEMAND_MODEL, id="D")
+
+    gen = create_component(model=GENERATOR_MODEL, id="G")
+
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(gen)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
+
+    problem = build_problem(network, database, time_block, scenarios)
+    status = problem.solver.Solve()
+
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 30 * 100 * horizon
+
+
+def test_basic_balance_on_whole_year_with_large_sum() -> None:
+    """
+    Balance on one node with one fixed demand and one generation with storage, on 8760 timestep.
+    """
+
+    scenarios = 1
+    horizon = 8760
+    time_block = TimeBlock(1, list(range(horizon)))
+
+    database = DataBase()
+    database.add_data(
+        "D", "demand", generate_scalar_matrix_data(100, horizon, scenarios)
+    )
+
+    database.add_data("G", "p_max", ConstantData(100))
+    database.add_data("G", "cost", ConstantData(30))
+    database.add_data("G", "full_storage", ConstantData(100 * horizon))
+
+    node = Node(model=NODE_BALANCE_MODEL, id="N")
+    demand = create_component(model=DEMAND_MODEL, id="D")
+    gen = create_component(
+        model=GENERATOR_MODEL_WITH_STORAGE, id="G"
+    )  # Limits the total generation inside a TimeBlock
+
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(gen)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
+
+    problem = build_problem(network, database, time_block, scenarios)
+    status = problem.solver.Solve()
+
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 30 * 100 * horizon

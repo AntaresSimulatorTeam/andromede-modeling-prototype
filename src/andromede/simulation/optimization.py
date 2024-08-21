@@ -17,7 +17,6 @@ into a mathematical optimization problem.
 
 import math
 from dataclasses import dataclass
-from typing import List, Optional
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -28,19 +27,16 @@ from andromede.expression.linear_expression_efficient import (
     RowIndex,
 )
 from andromede.expression.resolved_linear_expression import ResolvedLinearExpression
-from andromede.expression.scenario_operator import Expectation
-from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
-from andromede.simulation.linear_expression import Term
 from andromede.simulation.linear_expression_resolver import LinearExpressionResolver
 from andromede.simulation.optimization_context import (
     BlockBorderManagement,
     ComponentContext,
     OptimizationContext,
-    _make_data_structure_provider,
-    _make_value_provider,
+    make_data_structure_provider,
+    make_value_provider,
 )
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
@@ -61,7 +57,7 @@ def _get_indexing(
 def _compute_indexing_structure(
     context: ComponentContext, constraint: Constraint
 ) -> IndexingStructure:
-    data_structure_provider = _make_data_structure_provider(
+    data_structure_provider = make_data_structure_provider(
         context.opt_context.network, context.component
     )
     constraint_indexing = _get_indexing(constraint, data_structure_provider)
@@ -101,7 +97,7 @@ def _create_constraint(
     # instances_per_time_step = linear_expr.number_of_instances()
     # instances_per_time_step = 1
 
-    value_provider = _make_value_provider(context.opt_context, context.component)
+    value_provider = make_value_provider(context.opt_context, context.component)
     expression_resolver = LinearExpressionResolver(context.opt_context, value_provider)
 
     for block_timestep in context.opt_context.get_time_indices(constraint_indexing):
@@ -140,7 +136,7 @@ def _create_objective(
     )
     # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
 
-    value_provider = _make_value_provider(opt_context, component)
+    value_provider = make_value_provider(opt_context, component)
     expression_resolver = LinearExpressionResolver(opt_context, value_provider)
     resolved_expr = expression_resolver.resolve(instantiated_expr, RowIndex(0, 0))
 
@@ -255,7 +251,7 @@ class OptimizationProblem:
             component_context = self.context.get_component_context(component)
             model = component.model
 
-            value_provider = _make_value_provider(self.context, component)
+            value_provider = make_value_provider(self.context, component)
             expression_resolver = LinearExpressionResolver(self.context, value_provider)
 
             for model_var in self.strategy.get_variables(model):

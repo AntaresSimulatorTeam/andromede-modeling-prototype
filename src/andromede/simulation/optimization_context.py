@@ -17,7 +17,6 @@ from typing import Dict, Iterable, List, Optional
 
 import ortools.linear_solver.pywraplp as lp
 
-from andromede.expression import ParameterValueProvider, resolve_parameters
 from andromede.expression.evaluate_parameters_efficient import ValueProvider
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
@@ -27,8 +26,6 @@ from andromede.expression.linear_expression_efficient import (
     PortFieldKey,
 )
 from andromede.expression.value_provider import TimeScenarioIndex, TimeScenarioIndices
-from andromede.simulation.linear_expression import LinearExpression
-from andromede.simulation.linearize import linearize_expression
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
@@ -218,7 +215,7 @@ def _get_parameter_value(
     return data.get_value(absolute_timestep, scenario)
 
 
-def _make_value_provider(
+def make_value_provider(
     context: "OptimizationContext",
     component: Component,
 ) -> ValueProvider:
@@ -306,39 +303,13 @@ class ExpressionTimestepValueProvider(TimestepValueProvider):
     # OptimizationContext has knowledge of the block, so that get_value only needs block_timestep and scenario to get the correct data value
 
     def get_value(self, block_timestep: int, scenario: int) -> float:
-        param_value_provider = _make_value_provider(
+        param_value_provider = make_value_provider(
             self.context, block_timestep, scenario, self.component
         )
         return self.expression.evaluate(param_value_provider)
 
 
-def _make_parameter_value_provider(
-    context: "OptimizationContext",
-    block_timestep: int,
-    scenario: int,
-) -> ParameterValueProvider:
-    """
-    A value provider which takes its values from
-    the parameter values as defined in the network data.
-
-    Cannot evaluate expressions which contain variables.
-    """
-
-    class Provider(ParameterValueProvider):
-        def get_component_parameter_value(self, component_id: str, name: str) -> float:
-            return _get_parameter_value(
-                context, block_timestep, scenario, component_id, name
-            )
-
-        def get_parameter_value(self, name: str) -> float:
-            raise ValueError(
-                "Parameters should have been associated with their component before resolution."
-            )
-
-    return Provider()
-
-
-def _make_data_structure_provider(
+def make_data_structure_provider(
     network: Network, component: Component
 ) -> IndexingStructureProvider:
     """
@@ -405,26 +376,6 @@ class ComponentContext:
             variable_name,
             self.component.model.variables[variable_name].structure,
         )
-
-    def linearize_expression(
-        self,
-        block_timestep: int,
-        scenario: int,
-        expression: LinearExpressionEfficient,
-    ) -> LinearExpression:
-        parameters_valued_provider = _make_parameter_value_provider(
-            self.opt_context, block_timestep, scenario
-        )
-        evaluated_expr = resolve_parameters(expression, parameters_valued_provider)
-
-        value_provider = _make_value_provider(
-            self.opt_context, block_timestep, scenario, self.component
-        )
-        structure_provider = _make_data_structure_provider(
-            self.opt_context.network, self.component
-        )
-
-        return linearize_expression(evaluated_expr, structure_provider, value_provider)
 
 
 def _get_data_time_key(block_timestep: int, data_indexing: IndexingStructure) -> int:

@@ -12,41 +12,28 @@
 
 from .copy import CopyVisitor, copy_expression
 from .degree import ExpressionDegreeVisitor, compute_degree
-from .evaluate import EvaluationContext, EvaluationVisitor, ValueProvider, evaluate
-from .evaluate_parameters import (
-    ParameterResolver,
-    ParameterValueProvider,
-    resolve_parameters,
-)
-
-from .expression import (
-    #     AdditionNode,
-    #     Comparator,
-    #     ComparisonNode,
-    #     DivisionNode,
-    ExpressionNode,
-    #     LiteralNode,
-    #     MultiplicationNode,
-    #     NegationNode,
-    #     ParameterNode,
-    #     SubstractionNode,
-    VariableNode,
-    literal,
-    param,
-    sum_expressions,
-    var,
-)
+from .evaluate_parameters_efficient import ValueProvider
 from .expression_efficient import (
     AdditionNode,
-    Comparator,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
     ExpressionNodeEfficient,
+    ExpressionRange,
+    InstancesTimeIndex,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
+    ScenarioOperatorName,
+    ScenarioOperatorNode,
     SubstractionNode,
+    TimeAggregatorName,
+    TimeAggregatorNode,
+    TimeOperatorName,
+    TimeOperatorNode,
 )
 from .print import PrinterVisitor, print_expr
 from .visitor import ExpressionVisitor, visit
