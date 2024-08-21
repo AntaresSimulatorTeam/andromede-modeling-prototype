@@ -1022,6 +1022,17 @@ def linear_expressions_equal(
     )
 
 
+def linear_expressions_equal_if_present(
+    lhs: Optional[LinearExpressionEfficient], rhs: Optional[LinearExpressionEfficient]
+) -> bool:
+    if lhs is None and rhs is None:
+        return True
+    elif lhs is None or rhs is None:
+        return False
+    else:
+        return linear_expressions_equal(lhs, rhs)
+
+
 # TODO: Is this function useful ? Could we just rely on the sum operator overloading ? Only the case with an empty list may make the function useful
 def sum_expressions(
     expressions: Sequence[LinearExpressionEfficient],

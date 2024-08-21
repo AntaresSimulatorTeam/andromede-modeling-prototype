@@ -13,7 +13,10 @@ from typing import Dict, List, Optional
 
 # from andromede.expression import ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
+from andromede.expression.linear_expression_efficient import (
+    LinearExpressionEfficient,
+    wrap_in_linear_expr_if_present,
+)
 from andromede.expression.parsing.parse_expression import (
     ModelIdentifiers,
     parse_expression,
@@ -137,8 +140,12 @@ def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
             var.variable_type
         ],
         structure=IndexingStructure(var.time_dependent, var.scenario_dependent),
-        lower_bound=_to_expression_if_present(var.lower_bound, identifiers),
-        upper_bound=_to_expression_if_present(var.upper_bound, identifiers),
+        lower_bound=wrap_in_linear_expr_if_present(
+            _to_expression_if_present(var.lower_bound, identifiers)
+        ),
+        upper_bound=wrap_in_linear_expr_if_present(
+            _to_expression_if_present(var.upper_bound, identifiers)
+        ),
         context=ProblemContext.OPERATIONAL,
     )
 
@@ -146,9 +153,18 @@ def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
 def _to_constraint(
     constraint: InputConstraint, identifiers: ModelIdentifiers
 ) -> Constraint:
-    return Constraint(
-        name=constraint.name,
-        expression=parse_expression(constraint.expression, identifiers),
-        lower_bound=_to_expression_if_present(constraint.lower_bound, identifiers),
-        upper_bound=_to_expression_if_present(constraint.upper_bound, identifiers),
+    kwargs = {
+        "name": constraint.name,
+        "expression": parse_expression(constraint.expression, identifiers),
+    }
+    lb = wrap_in_linear_expr_if_present(
+        _to_expression_if_present(constraint.lower_bound, identifiers)
     )
+    ub = wrap_in_linear_expr_if_present(
+        _to_expression_if_present(constraint.upper_bound, identifiers)
+    )
+    if lb is not None:
+        kwargs["lower_bound"] = lb
+    if ub is not None:
+        kwargs["upper_bound"] = ub
+    return Constraint(**kwargs)
