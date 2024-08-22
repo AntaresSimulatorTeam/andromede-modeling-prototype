@@ -23,6 +23,7 @@ from andromede.expression.expression import (
     LiteralNode,
     MultiplicationNode,
     NegationNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -104,6 +105,12 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
         return scenario_operator_cls.degree() * visit(node.operand, self)
 
     def port_field(self, node: PortFieldNode) -> int:
+        return 1
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> int:
+        # TODO Can be zero if port_field not present but must wait
+        # for port resolution to know. Since the worst case is 1,
+        # we'll keep it as it is for now
         return 1
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> int:

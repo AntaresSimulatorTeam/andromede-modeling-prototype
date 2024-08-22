@@ -28,6 +28,7 @@ from .expression import (
     LiteralNode,
     MultiplicationNode,
     NegationNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -134,6 +135,11 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
         return IndexingStructure(visit(node.operand, self).time, False)
 
     def port_field(self, node: PortFieldNode) -> IndexingStructure:
+        raise ValueError(
+            "Port fields must be resolved before computing indexing structure."
+        )
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> IndexingStructure:
         raise ValueError(
             "Port fields must be resolved before computing indexing structure."
         )

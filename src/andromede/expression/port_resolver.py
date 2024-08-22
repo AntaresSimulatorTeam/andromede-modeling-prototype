@@ -14,11 +14,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List
 
-from andromede.expression import CopyVisitor, sum_expressions, visit
+from andromede.expression import CopyVisitor, literal, sum_expressions, visit
 from andromede.expression.expression import (
-    AdditionNode,
     ExpressionNode,
-    LiteralNode,
+    OptionalPortFieldNode,
     PortFieldAggregatorNode,
     PortFieldNode,
 )
@@ -46,17 +45,31 @@ class PortResolver(CopyVisitor):
     ports_expressions: Dict[PortFieldKey, List[ExpressionNode]]
 
     def port_field(self, node: PortFieldNode) -> ExpressionNode:
-        expressions = self.ports_expressions[
-            PortFieldKey(
-                self.component_id, PortFieldId(node.port_name, node.field_name)
-            )
-        ]
+        key = PortFieldKey(
+            self.component_id, PortFieldId(node.port_name, node.field_name)
+        )
+
+        try:
+            expressions = self.ports_expressions[key]
+        except KeyError as err:
+            raise KeyError(f"Key {key} not in registered port expressions") from err
+
         if len(expressions) != 1:
             raise ValueError(
                 f"Invalid number of expression for port : {node.port_name}"
             )
         else:
             return expressions[0]
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> ExpressionNode:
+        optional_key = PortFieldKey(
+            self.component_id, PortFieldId(node.port_name, node.field_name)
+        )
+
+        if optional_key in self.ports_expressions:
+            return visit(PortFieldNode(node.port_name, node.field_name), self)
+        else:
+            return literal(node.value)
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> ExpressionNode:
         if node.aggregator != "PortSum":

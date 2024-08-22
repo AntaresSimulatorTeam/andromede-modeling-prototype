@@ -23,6 +23,7 @@ from .expression import (
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -108,6 +109,9 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
 
     def port_field(self, node: PortFieldNode) -> ExpressionNode:
         return PortFieldNode(node.port_name, node.field_name)
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> ExpressionNode:
+        return OptionalPortFieldNode(node.port_name, node.field_name, node.value)
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> ExpressionNode:
         return PortFieldAggregatorNode(visit(node.operand, self), node.aggregator)

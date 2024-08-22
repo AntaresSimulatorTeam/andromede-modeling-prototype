@@ -265,6 +265,27 @@ def is_non_negative(expr: ExpressionNode) -> bool:
 
 
 @dataclass(frozen=True, eq=False)
+class OptionalPortFieldNode(ExpressionNode):
+    """
+    References an optional PortFieldNode
+    If it is connected to another port, it behaves as a PortFieldNode
+    Otherwise it behaves as as Literal node with a default value
+
+    Note: did not used polymorphism to avoid breaking visitors design
+    """
+
+    port_name: str
+    field_name: str
+    value: float
+
+
+def optional_port_field(
+    port_name: str, field_name: str, default_value: float = 0.0
+) -> OptionalPortFieldNode:
+    return OptionalPortFieldNode(port_name, field_name, default_value)
+
+
+@dataclass(frozen=True, eq=False)
 class UnaryOperatorNode(ExpressionNode):
     operand: ExpressionNode
 

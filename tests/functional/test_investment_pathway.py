@@ -13,7 +13,7 @@
 import pytest
 
 from andromede.expression import literal, param, var
-from andromede.expression.expression import port_field
+from andromede.expression.expression import optional_port_field, port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
     DEMAND_MODEL,
@@ -107,7 +107,7 @@ def candidate() -> Component:
             binding_constraints=[
                 Constraint(
                     name="Pathway",
-                    expression=port_field("pathway_port_receive", "invest")
+                    expression=optional_port_field("pathway_port_receive", "invest", 0)
                     == var("invested_capa") - var("delta_invest"),
                     context=ProblemContext.INVESTMENT,
                 )
@@ -227,28 +227,6 @@ def test_investment_pathway_on_sequential_nodes(
     )
     network_par.connect(
         PortRef(candidate_par, "balance_port"), PortRef(node, "balance_port")
-    )
-
-    stub_model = create_component(
-        model=model(
-            id="Toto",
-            ports=[
-                ModelPort(port_type=PATHWAY_PORT_TYPE, port_name="pathway_port_stub")
-            ],
-            port_fields_definitions=[
-                PortFieldDefinition(
-                    port_field=PortFieldId("pathway_port_stub", "invest"),
-                    definition=literal(1),
-                )
-            ],
-        ),
-        id="Tata",
-    )
-
-    network_par.connect2(
-        PortRef(candidate_par, "pathway_port_receive"),
-        network_par,
-        PortRef(stub_model, "pathway_port_stub"),
     )
 
     demand_chd = demand.replicate()

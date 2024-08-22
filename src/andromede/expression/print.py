@@ -26,6 +26,7 @@ from andromede.expression.expression import (
     LiteralNode,
     MultiplicationNode,
     NegationNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -115,6 +116,9 @@ class PrinterVisitor(ExpressionVisitor[str]):
 
     def port_field(self, node: PortFieldNode) -> str:
         return f"{node.port_name}.{node.field_name}"
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> str:
+        return f"({node.port_name}.{node.field_name}|{node.value})"
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> str:
         return f"({visit(node.operand, self)}.{node.aggregator})"

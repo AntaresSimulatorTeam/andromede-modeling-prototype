@@ -29,6 +29,7 @@ from andromede.expression.expression import (
     LiteralNode,
     MultiplicationNode,
     NegationNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -120,6 +121,10 @@ class ExpressionVisitor(ABC, Generic[T]):
         ...
 
     @abstractmethod
+    def optional_port_field(self, node: OptionalPortFieldNode) -> T:
+        ...
+
+    @abstractmethod
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> T:
         ...
 
@@ -162,6 +167,8 @@ def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
         return visitor.scenario_operator(root)
     elif isinstance(root, PortFieldNode):
         return visitor.port_field(root)
+    elif isinstance(root, OptionalPortFieldNode):
+        return visitor.optional_port_field(root)
     elif isinstance(root, PortFieldAggregatorNode):
         return visitor.port_field_aggregator(root)
     raise ValueError(f"Unknown expression node type {root.__class__}")

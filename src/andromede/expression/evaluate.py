@@ -22,6 +22,7 @@ from andromede.expression.expression import (
     DecisionTreeVariableNode,
     ExpressionNode,
     LiteralNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -135,6 +136,9 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
         raise NotImplementedError()
 
     def port_field(self, node: PortFieldNode) -> float:
+        raise NotImplementedError()
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> float:
         raise NotImplementedError()
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> float:

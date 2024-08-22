@@ -26,6 +26,7 @@ from andromede.expression.expression import (
     DecisionTreeVariableNode,
     ExpressionNode,
     LiteralNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -147,6 +148,9 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
 
     def port_field(self, node: PortFieldNode) -> LinearExpression:
         raise ValueError("Port fields must be replaced before linearization.")
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> LinearExpression:
+        raise ValueError("Optional port fields must be replaced before linearization.")
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> LinearExpression:
         raise ValueError(

@@ -27,6 +27,7 @@ from andromede.expression.expression import (
     LiteralNode,
     MultiplicationNode,
     NegationNode,
+    OptionalPortFieldNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
@@ -153,6 +154,11 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
 
     def port_field(self, node: PortFieldNode) -> None:
         raise ValueError("Port definition cannot reference another port field.")
+
+    def optional_port_field(self, node: OptionalPortFieldNode) -> None:
+        raise ValueError(
+            "Optional port definition cannot reference another port field."
+        )
 
     def port_field_aggregator(self, node: PortFieldAggregatorNode) -> None:
         raise ValueError("Port definition cannot contain port field aggregation.")
