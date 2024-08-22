@@ -81,11 +81,11 @@ LINK_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port_from", "flow"),
-            definition=-var("flow"),
+            definition_init=-var("flow"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port_to", "flow"),
-            definition=var("flow"),
+            definition_init=var("flow"),
         ),
     ],
 )
@@ -102,7 +102,7 @@ DEMAND_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=-param("demand"),
+            definition_init=-param("demand"),
         )
     ],
 )
@@ -121,7 +121,7 @@ GENERATOR_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
@@ -146,7 +146,7 @@ GENERATOR_MODEL_WITH_PMIN = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
@@ -180,7 +180,7 @@ GENERATOR_MODEL_WITH_STORAGE = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
@@ -237,7 +237,7 @@ THERMAL_CLUSTER_MODEL_HD = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
@@ -315,7 +315,7 @@ THERMAL_CLUSTER_MODEL_DHD = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
@@ -359,7 +359,7 @@ SPILLAGE_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=-var("spillage"),
+            definition_init=-var("spillage"),
         )
     ],
     objective_operational_contribution=(param("cost") * var("spillage")).sum().expec(),
@@ -373,7 +373,7 @@ UNSUPPLIED_ENERGY_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("unsupplied_energy"),
+            definition_init=var("unsupplied_energy"),
         )
     ],
     objective_operational_contribution=(param("cost") * var("unsupplied_energy"))
@@ -412,7 +412,7 @@ SHORT_TERM_STORAGE_SIMPLE = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("withdrawal") - var("injection"),
+            definition_init=var("withdrawal") - var("injection"),
         )
     ],
     constraints=[

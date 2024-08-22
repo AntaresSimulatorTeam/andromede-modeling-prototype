@@ -81,7 +81,7 @@ def mock_generator_with_fixed_scenario_time_varying_param() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
@@ -109,7 +109,7 @@ def mock_generator_with_scenario_varying_fixed_time_param() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[

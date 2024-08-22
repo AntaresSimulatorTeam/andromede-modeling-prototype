@@ -41,11 +41,11 @@ CONVERTOR_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("FlowDI", "flow"),
-            definition=-var("input"),
+            definition_init=-var("input"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("FlowDO", "flow"),
-            definition=var("input") * param("alpha"),
+            definition_init=var("input") * param("alpha"),
         ),
     ],
 )
@@ -68,15 +68,15 @@ TWO_INPUTS_CONVERTOR_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("FlowDI1", "flow"),
-            definition=-var("input1"),
+            definition_init=-var("input1"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("FlowDI2", "flow"),
-            definition=-var("input2"),
+            definition_init=-var("input2"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("FlowDO", "flow"),
-            definition=var("input1") * param("alpha1")
+            definition_init=var("input1") * param("alpha1")
             + var("input2") * param("alpha2"),
         ),
     ],
@@ -96,11 +96,11 @@ DECOMPOSE_1_FLOW_INTO_2_FLOW = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("FlowDI1", "flow"),
-            definition=var("input1"),
+            definition_init=var("input1"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("FlowDI2", "flow"),
-            definition=var("input2"),
+            definition_init=var("input2"),
         ),
     ],
     binding_constraints=[
@@ -125,7 +125,7 @@ CONVERTOR_RECEIVE_IN = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("FlowDO", "flow"),
-            definition=var("input") * param("alpha"),
+            definition_init=var("input") * param("alpha"),
         ),
     ],
     binding_constraints=[
@@ -164,11 +164,11 @@ C02_POWER_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("FlowP", "flow"),
-            definition=var("p"),
+            definition_init=var("p"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("OutCO2", "Q"),
-            definition=var("p") * param("emission_rate"),
+            definition_init=var("p") * param("emission_rate"),
         ),
     ],
     objective_operational_contribution=(param("cost") * var("p")).sum().expec(),
@@ -201,7 +201,7 @@ NODE_BALANCE_MODEL_MOD = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port_e", "flow"),
-            definition=var("p"),
+            definition_init=var("p"),
         )
     ],
     binding_constraints=[
@@ -250,7 +250,7 @@ SHORT_TERM_STORAGE_COMPLEX = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("withdrawal") - var("injection"),
+            definition_init=var("withdrawal") - var("injection"),
         )
     ],
     constraints=[

@@ -60,7 +60,7 @@ ELECTRICAL_GENERATOR_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("electrical_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -90,7 +90,7 @@ H2_DEMAND = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("h2_port", "flow"),
-            definition=-param("demand"),
+            definition_init=-param("demand"),
         )
     ],
 )
@@ -111,11 +111,11 @@ ELECTROLYZER = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("electrical_port", "flow"),
-            definition=-var("electrical_input"),
+            definition_init=-var("electrical_input"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("h2_port", "flow"),
-            definition=var("h2_output"),
+            definition_init=var("h2_output"),
         ),
     ],
     constraints=[

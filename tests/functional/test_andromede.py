@@ -145,7 +145,7 @@ def test_variable_bound() -> None:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))

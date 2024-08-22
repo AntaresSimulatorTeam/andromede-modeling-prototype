@@ -61,7 +61,7 @@ def test_library_parsing(data_dir: Path) -> None:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId(port_name="injection_port", field_name="flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
@@ -100,7 +100,7 @@ def test_library_parsing(data_dir: Path) -> None:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId(port_name="injection_port", field_name="flow"),
-                definition=var("injection") - var("withdrawal"),
+                definition_init=var("injection") - var("withdrawal"),
             )
         ],
         constraints=[

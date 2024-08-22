@@ -16,8 +16,8 @@ A model allows to define the behaviour for components, by
 defining parameters, variables, and equations.
 """
 import itertools
-from dataclasses import dataclass, field
-from typing import Dict, Iterable, Optional
+from dataclasses import InitVar, dataclass, field
+from typing import Dict, Iterable, Optional, Union
 
 from andromede.expression.expression_efficient import (
     AdditionNode,
@@ -25,6 +25,7 @@ from andromede.expression.expression_efficient import (
     ComparisonNode,
     ComponentParameterNode,
     DivisionNode,
+    ExpressionNodeEfficient,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
@@ -121,15 +122,21 @@ class PortFieldDefinition:
     """
 
     port_field: PortFieldId
-    definition: LinearExpressionEfficient
+    # Used only for type checking...
+    definition_init: InitVar[Union[ExpressionNodeEfficient, LinearExpressionEfficient]]
+    definition: LinearExpressionEfficient = field(init=False)
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "definition", wrap_in_linear_expr(self.definition))
+    def __post_init__(
+        self, definition_init: Union[ExpressionNodeEfficient, LinearExpressionEfficient]
+    ) -> None:
+        object.__setattr__(self, "definition", wrap_in_linear_expr(definition_init))
         _validate_port_field_expression(self)
 
 
 def port_field_def(
-    port_name: str, field_name: str, definition: LinearExpressionEfficient
+    port_name: str,
+    field_name: str,
+    definition: Union[ExpressionNodeEfficient, LinearExpressionEfficient],
 ) -> PortFieldDefinition:
     return PortFieldDefinition(PortFieldId(port_name, field_name), definition)
 

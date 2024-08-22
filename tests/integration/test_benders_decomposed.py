@@ -83,7 +83,7 @@ def thermal_candidate() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
@@ -129,7 +129,7 @@ def discrete_candidate() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
