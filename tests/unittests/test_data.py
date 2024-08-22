@@ -86,7 +86,8 @@ def mock_generator_with_fixed_scenario_time_varying_param() -> Model:
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression_init=var("generation") <= param("p_max")
+                name="Max generation",
+                expression_init=var("generation") <= param("p_max"),
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
@@ -114,7 +115,8 @@ def mock_generator_with_scenario_varying_fixed_time_param() -> Model:
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression_init=var("generation") <= param("p_max")
+                name="Max generation",
+                expression_init=var("generation") <= param("p_max"),
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))

@@ -162,7 +162,8 @@ def test_library_port_model_ok_parsing(data_dir: Path) -> None:
         constraints=[
             Constraint(
                 name="Level equation",
-                expression_init=port_field("injection_port", "flow") == var("withdrawal"),
+                expression_init=port_field("injection_port", "flow")
+                == var("withdrawal"),
             )
         ],
     )

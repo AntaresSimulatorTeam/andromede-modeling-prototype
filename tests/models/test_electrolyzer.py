@@ -76,7 +76,8 @@ H2_NODE_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression_init=port_field("h2_port", "flow").sum_connections() == literal(0),
+            expression_init=port_field("h2_port", "flow").sum_connections()
+            == literal(0),
         )
     ],
 )

@@ -131,7 +131,8 @@ CONVERTOR_RECEIVE_IN = model(
     binding_constraints=[
         Constraint(
             name="Conversion",
-            expression_init=var("input") == port_field("FlowDI", "flow").sum_connections(),
+            expression_init=var("input")
+            == port_field("FlowDI", "flow").sum_connections(),
         )
     ],
 )

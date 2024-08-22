@@ -16,7 +16,11 @@ The standard module contains the definition of standard models.
 
 from andromede.expression.expression_efficient import ExpressionRange, literal, param
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import port_field, var
+from andromede.expression.linear_expression_efficient import (
+    port_field,
+    var,
+    wrap_in_linear_expr,
+)
 from andromede.model.constraint import Constraint
 from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
 from andromede.model.parameter import float_parameter, int_parameter
@@ -156,7 +160,9 @@ GENERATOR_MODEL_WITH_PMIN = model(
         Constraint(
             name="Min generation",
             expression_init=var("generation") - param("p_min"),
-            lower_bound=literal(0),
+            lower_bound=wrap_in_linear_expr(
+                literal(0)
+            ),  # wrap_in_linear_expr is not needed as done in __post_init__, it is used here only for type checking...
         ),  # To test both ways of setting constraints
     ],
     objective_operational_contribution=(param("cost") * var("generation"))

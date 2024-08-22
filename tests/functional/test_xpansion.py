@@ -135,7 +135,8 @@ def discrete_candidate() -> Model:
             ),
             Constraint(
                 name="Max investment",
-                expression_init=var("p_max") == param("p_max_per_unit") * var("nb_units"),
+                expression_init=var("p_max")
+                == param("p_max_per_unit") * var("nb_units"),
                 context=INVESTMENT,
             ),
         ],
