@@ -16,7 +16,7 @@ including nodes, links, and components (model instantations).
 """
 import itertools
 from dataclasses import dataclass, field, replace
-from typing import Any, Dict, Iterable, List, cast
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 from andromede.model import PortField, PortType
 from andromede.model.model import Model
@@ -72,7 +72,9 @@ class PortRef:
 
 @dataclass()
 class PortsConnection:
+    context1: Optional[str]
     port1: PortRef
+    context2: Optional[str]
     port2: PortRef
     master_port: Dict[PortField, PortRef] = field(
         init=False, default_factory=dict, repr=False
@@ -83,18 +85,20 @@ class PortsConnection:
 
     def __validate_ports(self) -> None:
         model1 = self.port1.component.model
-        model2 = self.port2.component.model
         port_1 = model1.ports.get(self.port1.port_id)
+
+        model2 = self.port2.component.model
         port_2 = model2.ports.get(self.port2.port_id)
 
         if port_1 is None or port_2 is None:
             raise ValueError(f"Missing port: {port_1} or {port_2} ")
+
         if port_1.port_type != port_2.port_type:
             raise ValueError(
                 f"Incompatible portTypes {port_1.port_type} != {port_2.port_type}"
             )
 
-        for field_name in [f.name for f in port_1.port_type.fields]:
+        for field_name in (f.name for f in port_1.port_type.fields):
             def1: bool = (
                 PortFieldId(port_name=port_1.port_name, field_name=field_name)
                 in model1.port_fields_definitions
@@ -103,10 +107,12 @@ class PortsConnection:
                 PortFieldId(port_name=port_2.port_name, field_name=field_name)
                 in model2.port_fields_definitions
             )
+
             if not def1 and not def2:
                 raise ValueError(
                     f"No definition for port field {field_name} on {port_1.port_name}."
                 )
+
             if def1 and def2:
                 raise ValueError(
                     f"Port field {field_name} on {port_1.port_name} has 2 definitions."
@@ -180,12 +186,7 @@ class Network:
         return itertools.chain(self.nodes, self.components)
 
     def connect(self, port1: PortRef, port2: PortRef) -> None:
-        ports_connection = PortsConnection(port1, port2)
-        self._connections.append(ports_connection)
-
-    def connect2(self, port1: PortRef, parent: "Network", port2: PortRef) -> None:
-        ports_connection = PortsConnection(port1, port2)
-        self._connections.append(ports_connection)
+        self._connections.append(build_ports_connection(port1, port2))
 
     @property
     def connections(self) -> Iterable[PortsConnection]:
@@ -210,3 +211,12 @@ class Network:
             replica._connections.append(connection.replicate())
 
         return replica
+
+
+def build_ports_connection(
+    port1: PortRef,
+    port2: PortRef,
+    dt_node1: Optional[str] = None,
+    dt_node2: Optional[str] = None,
+) -> PortsConnection:
+    return PortsConnection(dt_node1, port1, dt_node2, port2)

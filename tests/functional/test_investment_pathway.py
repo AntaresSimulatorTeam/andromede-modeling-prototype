@@ -243,12 +243,6 @@ def test_investment_pathway_on_sequential_nodes(
         PortRef(candidate_chd, "balance_port"), PortRef(node, "balance_port")
     )
 
-    network_chd.connect2(
-        PortRef(candidate_chd, "pathway_port_receive"),
-        network_par,
-        PortRef(candidate_par, "pathway_port_send"),
-    )
-
     # === Decision tree creation ===
     config = InterDecisionTimeScenarioConfig([TimeBlock(0, [0])], 1)
 
@@ -259,6 +253,10 @@ def test_investment_pathway_on_sequential_nodes(
 
     # === Coupling model ===
     # decision_tree_par.add_coupling_component(candidate, "invested_capa", "delta_invest")
+    decision_tree_chd.connect_from_parent(
+        PortRef(candidate_chd, "pathway_port_receive"),
+        PortRef(candidate_par, "pathway_port_send"),
+    )
 
     # === Build problem ===
     xpansion = build_benders_decomposed_problem(decision_tree_par, database)

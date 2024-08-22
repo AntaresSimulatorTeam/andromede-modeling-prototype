@@ -23,7 +23,13 @@ from andromede.model.constraint import Constraint
 from andromede.model.model import model
 from andromede.model.variable import Variable, float_variable
 from andromede.simulation.time_block import TimeBlock
-from andromede.study.network import Component, Network, create_component
+from andromede.study.network import (
+    Component,
+    Network,
+    PortRef,
+    build_ports_connection,
+    create_component,
+)
 
 
 @dataclass(frozen=True)
@@ -80,6 +86,25 @@ class DecisionTreeNode(NodeMixin):
         # Recursively check if child nodes have their children's
         # probability sum equal to one
         return all(child.is_leaves_prob_sum_one() for child in self.children)
+
+    def connect_from_parent(self, port: PortRef, parent_port: PortRef) -> None:
+        if self.parent is None:
+            raise RuntimeError("Cannot connect upwards because no parent is defined")
+
+        ports_connection = build_ports_connection(
+            port, parent_port, self.id, self.parent.id
+        )
+        self.network._connections.append(ports_connection)
+
+    def connect_to_children(self, port: PortRef, children_port: PortRef) -> None:
+        if not self.children:
+            raise RuntimeError("Cannot connect downwards because no child is defined")
+
+        for child in self.children:
+            ports_connection = build_ports_connection(
+                port, children_port, self.id, child.id
+            )
+            child.network._connections.append(ports_connection)
 
     def add_coupling_component(
         self,

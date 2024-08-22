@@ -725,6 +725,16 @@ class OptimizationProblem:
                     master_port.component.id, port_definition.definition
                 )
 
+                if cnx.context2:
+                    instantiated_expression = add_decision_tree_context(
+                        cnx.context2, instantiated_expression
+                    )
+
+                elif self.context.tree_node:
+                    instantiated_expression = add_decision_tree_context(
+                        self.context.tree_node, instantiated_expression
+                    )
+
                 self.context.register_connection_fields_expressions(
                     component_id=cnx.port1.component.id,
                     port_name=cnx.port1.port_id,
