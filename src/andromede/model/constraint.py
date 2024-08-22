@@ -9,10 +9,10 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import InitVar, dataclass, field
+from typing import Any, Union
 
-from andromede.expression.expression_efficient import literal
+from andromede.expression.expression_efficient import ExpressionNodeEfficient, literal
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
     StandaloneConstraint,
@@ -31,7 +31,11 @@ class Constraint:
     """
 
     name: str
-    expression: LinearExpressionEfficient
+    # Used only for mypy type checking, we could have done the same by using only the attribute expression
+    expression_init: InitVar[
+        Union[ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint]
+    ]
+    expression: LinearExpressionEfficient = field(init=False)
     lower_bound: LinearExpressionEfficient = field(
         default=wrap_in_linear_expr(literal(-float("inf")))
     )
@@ -42,23 +46,26 @@ class Constraint:
 
     def __post_init__(
         self,
+        expression_init: Union[
+            ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint
+        ],
     ) -> None:
         self.lower_bound = wrap_in_linear_expr(self.lower_bound)
         self.upper_bound = wrap_in_linear_expr(self.upper_bound)
 
-        if isinstance(self.expression, StandaloneConstraint):
+        if isinstance(expression_init, StandaloneConstraint):
             # Case where constraint is initialized with something like Constraint(var("x") <= var("y"))
             if not self.lower_bound.is_unbound() or not self.upper_bound.is_unbound():
                 raise ValueError(
                     "Both comparison between two expressions and a bound are specfied, set either only a comparison between expressions or a single linear expression with bounds."
                 )
 
-            self.lower_bound = self.expression.lower_bound
-            self.upper_bound = self.expression.upper_bound
-            self.expression = self.expression.expression
+            self.lower_bound = expression_init.lower_bound
+            self.upper_bound = expression_init.upper_bound
+            self.expression = expression_init.expression
 
         else:
-            self.expression = wrap_in_linear_expr(self.expression)
+            self.expression = wrap_in_linear_expr(expression_init)
             for bound in [self.lower_bound, self.upper_bound]:
                 if not bound.is_constant():
                     raise ValueError(

@@ -41,7 +41,7 @@ ELECTRICAL_NODE_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("electrical_port", "flow").sum_connections()
+            expression_init=port_field("electrical_port", "flow").sum_connections()
             == literal(0),
         )
     ],
@@ -76,7 +76,7 @@ H2_NODE_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("h2_port", "flow").sum_connections() == literal(0),
+            expression_init=port_field("h2_port", "flow").sum_connections() == literal(0),
         )
     ],
 )
@@ -121,7 +121,7 @@ ELECTROLYZER = model(
     constraints=[
         Constraint(
             name="Conversion",
-            expression=var("h2_output")
+            expression_init=var("h2_output")
             == var("electrical_input") * param("efficiency"),
         )
     ],

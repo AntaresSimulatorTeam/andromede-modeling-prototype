@@ -31,7 +31,7 @@ def test_port_type_compatibility_ko() -> None:
         constraints=[
             Constraint(
                 name="Balance",
-                expression=port_field("balance_port", "flow").sum_connections()
+                expression_init=port_field("balance_port", "flow").sum_connections()
                 == literal(0),
             )
         ],

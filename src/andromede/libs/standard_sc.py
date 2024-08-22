@@ -106,7 +106,7 @@ DECOMPOSE_1_FLOW_INTO_2_FLOW = model(
     binding_constraints=[
         Constraint(
             name="Conversion",
-            expression=var("input1") + var("input2")
+            expression_init=var("input1") + var("input2")
             == port_field("FlowDO", "flow").sum_connections(),
         )
     ],
@@ -131,7 +131,7 @@ CONVERTOR_RECEIVE_IN = model(
     binding_constraints=[
         Constraint(
             name="Conversion",
-            expression=var("input") == port_field("FlowDI", "flow").sum_connections(),
+            expression_init=var("input") == port_field("FlowDI", "flow").sum_connections(),
         )
     ],
 )
@@ -185,7 +185,7 @@ QUOTA_CO2_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Bound CO2",
-            expression=port_field("emissionCO2", "Q").sum_connections()
+            expression_init=port_field("emissionCO2", "Q").sum_connections()
             <= param("quota"),
         )
     ],
@@ -207,7 +207,7 @@ NODE_BALANCE_MODEL_MOD = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=var("p")
+            expression_init=var("p")
             == port_field("balance_port_n", "flow").sum_connections(),
         )
     ],
@@ -256,7 +256,7 @@ SHORT_TERM_STORAGE_COMPLEX = model(
     constraints=[
         Constraint(
             name="Level",
-            expression=var("level")
+            expression_init=var("level")
             - var("level").shift(-1)
             - param("efficiency") * var("injection")
             + var("withdrawal")

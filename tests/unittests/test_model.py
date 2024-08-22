@@ -262,9 +262,9 @@ def test_invalid_port_field_definition_should_raise(
 
 def test_constraint_equals() -> None:
     # checks in particular that expressions are correctly compared
-    assert Constraint(name="c", expression=var("x") <= param("p")) == Constraint(
-        name="c", expression=var("x") <= param("p")
+    assert Constraint(name="c", expression_init=var("x") <= param("p")) == Constraint(
+        name="c", expression_init=var("x") <= param("p")
     )
-    assert Constraint(name="c", expression=var("x") <= param("p")) != Constraint(
-        name="c", expression=var("y") <= param("p")
+    assert Constraint(name="c", expression_init=var("x") <= param("p")) != Constraint(
+        name="c", expression_init=var("y") <= param("p")
     )

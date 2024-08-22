@@ -155,7 +155,7 @@ def _to_constraint(
 ) -> Constraint:
     kwargs = {
         "name": constraint.name,
-        "expression": parse_expression(constraint.expression, identifiers),
+        "expression_init": parse_expression(constraint.expression, identifiers),
     }
     lb = wrap_in_linear_expr_if_present(
         _to_expression_if_present(constraint.lower_bound, identifiers)

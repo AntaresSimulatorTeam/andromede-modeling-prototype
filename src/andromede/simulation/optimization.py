@@ -336,7 +336,7 @@ class OptimizationProblem:
 
                 instantiated_constraint = Constraint(
                     name=f"{component.id}_{constraint.name}",
-                    expression=instantiated_expr,
+                    expression_init=instantiated_expr,
                     lower_bound=instantiated_lb,
                     upper_bound=instantiated_ub,
                 )

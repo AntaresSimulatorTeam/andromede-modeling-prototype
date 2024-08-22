@@ -88,7 +88,7 @@ def thermal_candidate() -> Model:
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= var("p_max")
+                name="Max generation", expression_init=var("generation") <= var("p_max")
             )
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
@@ -134,11 +134,11 @@ def discrete_candidate() -> Model:
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= var("p_max")
+                name="Max generation", expression_init=var("generation") <= var("p_max")
             ),
             Constraint(
                 name="Max investment",
-                expression=var("p_max") == param("p_max_per_unit") * var("nb_units"),
+                expression_init=var("p_max") == param("p_max_per_unit") * var("nb_units"),
                 context=INVESTMENT,
             ),
         ],

@@ -36,7 +36,7 @@ NODE_BALANCE_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("balance_port", "flow").sum_connections()
+            expression_init=port_field("balance_port", "flow").sum_connections()
             == literal(0),
         )
     ],
@@ -53,7 +53,7 @@ NODE_WITH_SPILL_AND_ENS_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("balance_port", "flow").sum_connections()
+            expression_init=port_field("balance_port", "flow").sum_connections()
             == var("spillage") - var("unsupplied_energy"),
         )
     ],
@@ -126,7 +126,7 @@ GENERATOR_MODEL = model(
     ],
     constraints=[
         Constraint(
-            name="Max generation", expression=var("generation") <= param("p_max")
+            name="Max generation", expression_init=var("generation") <= param("p_max")
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -151,11 +151,11 @@ GENERATOR_MODEL_WITH_PMIN = model(
     ],
     constraints=[
         Constraint(
-            name="Max generation", expression=var("generation") <= param("p_max")
+            name="Max generation", expression_init=var("generation") <= param("p_max")
         ),
         Constraint(
             name="Min generation",
-            expression=var("generation") - param("p_min"),
+            expression_init=var("generation") - param("p_min"),
             lower_bound=literal(0),
         ),  # To test both ways of setting constraints
     ],
@@ -185,11 +185,11 @@ GENERATOR_MODEL_WITH_STORAGE = model(
     ],
     constraints=[
         Constraint(
-            name="Max generation", expression=var("generation") <= param("p_max")
+            name="Max generation", expression_init=var("generation") <= param("p_max")
         ),
         Constraint(
             name="Total storage",
-            expression=var("generation").sum() <= param("full_storage"),
+            expression_init=var("generation").sum() <= param("full_storage"),
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -418,7 +418,7 @@ SHORT_TERM_STORAGE_SIMPLE = model(
     constraints=[
         Constraint(
             name="Level",
-            expression=var("level")
+            expression_init=var("level")
             - var("level").shift(-1)
             - param("efficiency") * var("injection")
             + var("withdrawal")
