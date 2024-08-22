@@ -31,7 +31,10 @@ from andromede.expression import (
     resolve_parameters,
     visit,
 )
-from andromede.expression.context_adder import add_component_context
+from andromede.expression.context_adder import (
+    add_component_context,
+    add_decision_tree_context,
+)
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
@@ -450,14 +453,23 @@ def _instantiate_model_expression(
 ) -> ExpressionNode:
     """
     Performs common operations that are necessary on model expressions before their actual use:
+     0. if in a context of pathway investment, add decision tree' ID
      1. add component ID for variables and parameters of THIS component
      2. replace port fields by their definition
     """
-    with_component = add_component_context(component_id, model_expression)
-    with_component_and_ports = resolve_port(
-        with_component, component_id, optimization_context.connection_fields_expressions
+    instantiated_expression = add_component_context(component_id, model_expression)
+
+    if optimization_context.tree_node:
+        instantiated_expression = add_decision_tree_context(
+            optimization_context.tree_node, instantiated_expression
+        )
+
+    instantiated_expression = resolve_port(
+        instantiated_expression,
+        component_id,
+        optimization_context.connection_fields_expressions,
     )
-    return with_component_and_ports
+    return instantiated_expression
 
 
 def _create_constraint(
@@ -704,10 +716,15 @@ class OptimizationProblem:
                         )
                     )
                 )
-                expression_node = port_definition.definition  # type: ignore
+                if port_definition is None:
+                    raise KeyError(
+                        f"PortFieldId({master_port.port_id}, {field_name.name}) is not a port definition!"
+                    )
+
                 instantiated_expression = add_component_context(
-                    master_port.component.id, expression_node
+                    master_port.component.id, port_definition.definition
                 )
+
                 self.context.register_connection_fields_expressions(
                     component_id=cnx.port1.component.id,
                     port_name=cnx.port1.port_id,
