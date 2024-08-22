@@ -9,12 +9,14 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypedDict, Union
 
 # from andromede.expression import ExpressionNode
+from andromede.expression.expression_efficient import ExpressionNodeEfficient
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression_efficient import (
     LinearExpressionEfficient,
+    StandaloneConstraint,
     wrap_in_linear_expr_if_present,
 )
 from andromede.expression.parsing.parse_expression import (
@@ -150,10 +152,20 @@ def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
     )
 
 
+# Used only for mypy
+class ConstraintKwargs(TypedDict, total=False):
+    name: str
+    expression_init: Union[
+        ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint
+    ]
+    lower_bound: LinearExpressionEfficient
+    upper_bound: LinearExpressionEfficient
+
+
 def _to_constraint(
     constraint: InputConstraint, identifiers: ModelIdentifiers
 ) -> Constraint:
-    kwargs = {
+    kwargs: ConstraintKwargs = {
         "name": constraint.name,
         "expression_init": parse_expression(constraint.expression, identifiers),
     }
