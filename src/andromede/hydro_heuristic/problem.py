@@ -11,34 +11,26 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-
 from typing import List, Tuple
 
 import ortools.linear_solver.pywraplp as pywraplp
-import pandas as pd
 
 from andromede.hydro_heuristic.data import (
     DataAggregatorParameters,
     HydroHeuristicData,
     HydroHeuristicParameters,
     ReservoirParameters,
+    get_database,
 )
 from andromede.model import Model
 from andromede.simulation import (
     BlockBorderManagement,
+    OptimizationProblem,
     OutputValues,
     TimeBlock,
     build_problem,
 )
-from andromede.study import (
-    ConstantData,
-    DataBase,
-    Network,
-    TimeIndex,
-    TimeScenarioSeriesData,
-    TimeSeriesData,
-    create_component,
-)
+from andromede.study import DataBase, Network, create_component
 
 
 @dataclass(frozen=True)
@@ -53,153 +45,43 @@ class OutputHeuristic:
     level: float
 
 
-class HydroHeuristicProblem:
-    def __init__(self, hydro_data: HydroHeuristicData, heuristic_model: Model) -> None:
-        self.hydro_data = hydro_data
-        self.id = "H"
-        database = self.generate_database()
+def build_hydro_heuristic_problem(
+    database: DataBase, heuristic_model: Model, timesteps: List[int], id: str = "H"
+) -> OptimizationProblem:
+    hydro = create_component(model=heuristic_model, id=id)
+    network = Network("test")
+    network.add_component(hydro)
 
-        hydro = create_component(
-            model=heuristic_model,
-            id=self.id,
-        )
-
-        network = Network("test")
-        network.add_component(hydro)
-
-        problem = build_problem(
-            network,
-            database,
-            TimeBlock(1, [i for i in range(len(hydro_data.target))]),
-            1,
-            border_management=(BlockBorderManagement.CYCLE),
-        )
-
-        self.problem = problem
-
-    def solve_hydro_problem(self) -> Tuple[SolvingOutput, OutputHeuristic]:
-        parameters = pywraplp.MPSolverParameters()
-        parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
-        parameters.SetIntegerParam(parameters.SCALING, 0)
-
-        status = self.problem.solver.Solve(parameters)
-
-        output = OutputValues(self.problem)
-
-        return (
-            SolvingOutput(status, self.problem.solver.Objective().Value()),
-            OutputHeuristic(
-                output.component(self.id).var("generating").value[0],  # type:ignore
-                output.component(self.id).var("level").value[0][-1],  # type:ignore
-            ),
-        )
-
-    def generate_database(
-        self,
-    ) -> DataBase:
-        database = DataBase()
-
-        database.add_data(
-            self.id, "capacity", ConstantData(self.hydro_data.reservoir_data.capacity)
-        )
-        database.add_data(
-            self.id,
-            "initial_level",
-            ConstantData(self.hydro_data.reservoir_data.initial_level),
-        )
-
-        inflow_data = pd.DataFrame(
-            self.hydro_data.inflow,
-            index=[i for i in range(len(self.hydro_data.inflow))],
-            columns=[0],
-        )
-        database.add_data(self.id, "inflow", TimeScenarioSeriesData(inflow_data))
-
-        target_data = pd.DataFrame(
-            self.hydro_data.target,
-            index=[i for i in range(len(self.hydro_data.target))],
-            columns=[0],
-        )
-        database.add_data(
-            self.id, "generating_target", TimeScenarioSeriesData(target_data)
-        )
-        database.add_data(
-            self.id, "overall_target", ConstantData(sum(self.hydro_data.target))
-        )
-
-        database.add_data(
-            self.id,
-            "lower_rule_curve",
-            TimeSeriesData(
-                {
-                    TimeIndex(i): self.hydro_data.lower_rule_curve[i]
-                    * self.hydro_data.reservoir_data.capacity
-                    for i in range(len(self.hydro_data.lower_rule_curve))
-                }
-            ),
-        )
-        database.add_data(
-            self.id,
-            "upper_rule_curve",
-            TimeSeriesData(
-                {
-                    TimeIndex(i): self.hydro_data.upper_rule_curve[i]
-                    * self.hydro_data.reservoir_data.capacity
-                    for i in range(len(self.hydro_data.lower_rule_curve))
-                }
-            ),
-        )
-        database.add_data(self.id, "min_generating", ConstantData(0))
-
-        database.add_data(
-            self.id,
-            "max_generating",
-            TimeSeriesData(
-                {
-                    TimeIndex(i): self.hydro_data.max_generating[i]
-                    for i in range(len(self.hydro_data.max_generating))
-                }
-            ),
-        )
-
-        database.add_data(
-            self.id,
-            "max_epsilon",
-            TimeSeriesData(
-                {
-                    TimeIndex(i): (
-                        self.hydro_data.reservoir_data.capacity if i == 0 else 0
-                    )
-                    for i in range(len(self.hydro_data.max_generating))
-                }
-            ),
-        )
-
-        return database
-
-
-def optimize_target(
-    heuristic_parameters: HydroHeuristicParameters,
-    data_aggregator_parameters: DataAggregatorParameters,
-    reservoir_data: ReservoirParameters,
-    heuristic_model: Model,
-) -> Tuple[SolvingOutput, OutputHeuristic]:
-    # Récupération des données
-    data = HydroHeuristicData(
-        data_aggregator_parameters,
-        reservoir_data,
-    )
-    # Calcul de la préallocation
-    data.compute_target(heuristic_parameters)
-
-    # Ajustement de la réapartition
-    heuristic_problem = HydroHeuristicProblem(
-        hydro_data=data, heuristic_model=heuristic_model
+    problem = build_problem(
+        network,
+        database,
+        TimeBlock(1, timesteps),
+        1,
+        border_management=(BlockBorderManagement.CYCLE),
     )
 
-    solving_output, heuristic_output = heuristic_problem.solve_hydro_problem()
+    return problem
 
-    return solving_output, heuristic_output
+
+def get_default_solver_parameters() -> pywraplp.MPSolverParameters:
+    parameters = pywraplp.MPSolverParameters()
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.SCALING, 0)
+    return parameters
+
+
+def retrieve_important_heuristic_output(
+    heuristic_problem: OptimizationProblem,
+    id: str = "H",
+) -> OutputHeuristic:
+    output = OutputValues(heuristic_problem)
+
+    heuristic_output = OutputHeuristic(
+        output.component(id).var("generating").value[0],  # type:ignore
+        output.component(id).var("level").value[0][-1],  # type:ignore
+    )
+
+    return heuristic_output
 
 
 def update_initial_level(

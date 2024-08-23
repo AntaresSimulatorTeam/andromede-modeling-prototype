@@ -17,17 +17,10 @@ import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
-from andromede.hydro_heuristic.data import (
-    compute_weekly_target,
-    get_number_of_days_in_month,
-    save_generation_target,
-)
-from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
+from andromede.hydro_heuristic.data import compute_weekly_target, save_generation_target
 from andromede.hydro_heuristic.problem import (
     DataAggregatorParameters,
-    HydroHeuristicParameters,
     ReservoirParameters,
-    optimize_target,
     update_initial_level,
 )
 from andromede.libs.standard import (
@@ -47,8 +40,8 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
+from tests.functional.conftest import antares_hydro_heuristic_step
 from tests.functional.libs.lib_hydro_heuristic import (
-    HYDRO_MODEL,
     HYDRO_MODEL_RULE_CURVES,
     HYDRO_MODEL_WITH_TARGET,
 )
@@ -65,6 +58,11 @@ expected_weekly_target = open(
     Path(__file__).parent / "/data/hydro_with_large_load/expected_weekly_target.txt",
     "r",
 ).readlines()
+
+
+@pytest.fixture
+def data_path() -> str:
+    return str(Path(__file__).parent) + "/data/hydro_with_large_load"
 
 
 def test_complete_year_as_one_block() -> None:
@@ -96,24 +94,26 @@ def test_complete_year_as_one_block() -> None:
         ) == pytest.approx(float(optimal_generation[week]))
 
 
-def test_hydro_heuristic() -> None:
+def test_hydro_heuristic(
+    data_path: str,
+    monthly_aggregator_parameters: DataAggregatorParameters,
+    monthly_hydro_heuristic_model: Model,
+    daily_aggregator_parameters: List[DataAggregatorParameters],
+    daily_hydro_heuristic_model: Model,
+) -> None:
     """Check that weekly targets are the same in the POC and in Antares."""
 
     reservoir_data = ReservoirParameters(
-        capacity=1e7,
-        initial_level=0.445 * 1e7,
-        folder_name=str(Path(__file__).parent) + "/data/hydro_with_large_load",
-        scenario=0,
+        capacity=1e7, initial_level=0.445 * 1e7, folder_name=data_path, scenario=0
     )
+    intermonthly = 5
+    interdaily = 5
 
-    solving_output, monthly_output = optimize_target(
-        heuristic_parameters=HydroHeuristicParameters(5),
-        data_aggregator_parameters=DataAggregatorParameters(
-            [24 * get_number_of_days_in_month(m) for m in range(12)],
-            list(range(12)),
-        ),
-        reservoir_data=reservoir_data,
-        heuristic_model=HeuristicHydroModelBuilder(HYDRO_MODEL, "monthly").get_model(),
+    solving_output, monthly_output = antares_hydro_heuristic_step(
+        monthly_aggregator_parameters,
+        monthly_hydro_heuristic_model,
+        intermonthly,
+        reservoir_data,
     )
 
     assert solving_output.status == pywraplp.Solver.OPTIMAL
@@ -122,23 +122,14 @@ def test_hydro_heuristic() -> None:
     )
 
     all_daily_generation: List[float] = []
-    day_in_year = 0
 
     for month in range(12):
-        number_day_month = get_number_of_days_in_month(month)
-
-        solving_output, daily_output = optimize_target(
-            heuristic_parameters=HydroHeuristicParameters(
-                5, monthly_output.generating[month]
-            ),
-            data_aggregator_parameters=DataAggregatorParameters(
-                [24] * 365,
-                list(range(day_in_year, day_in_year + number_day_month)),
-            ),
-            reservoir_data=reservoir_data,
-            heuristic_model=HeuristicHydroModelBuilder(
-                HYDRO_MODEL, "daily"
-            ).get_model(),
+        solving_output, daily_output = antares_hydro_heuristic_step(
+            daily_aggregator_parameters[month],
+            daily_hydro_heuristic_model,
+            interdaily,
+            reservoir_data,
+            monthly_output.generating[month],
         )
 
         update_initial_level(reservoir_data, daily_output)
@@ -148,7 +139,6 @@ def test_hydro_heuristic() -> None:
         all_daily_generation = save_generation_target(
             all_daily_generation, daily_output.generating
         )
-        day_in_year += number_day_month
 
     # Calcul des cibles hebdomadaires
     weekly_target = compute_weekly_target(

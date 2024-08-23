@@ -11,6 +11,8 @@
 # This file is part of the Antares project.
 
 
+from pathlib import Path
+
 import pytest
 
 from andromede.hydro_heuristic.data import (
@@ -22,8 +24,6 @@ from andromede.hydro_heuristic.data import (
     compute_weekly_target,
     get_number_of_days_in_month,
 )
-
-from pathlib import Path
 
 
 def test_calculate_weekly_target() -> None:

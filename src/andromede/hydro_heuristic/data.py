@@ -11,10 +11,18 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
+import pandas as pd
+
+from andromede.study import (
+    ConstantData,
+    DataBase,
+    TimeIndex,
+    TimeScenarioSeriesData,
+    TimeSeriesData,
+)
 
 
 @dataclass(frozen=False)
@@ -164,3 +172,77 @@ def compute_weekly_target(all_daily_generation: List[float]) -> List[float]:
     ]
 
     return weekly_target
+
+
+def get_database(hydro_data: HydroHeuristicData, id: str = "H") -> DataBase:
+    database = DataBase()
+
+    database.add_data(id, "capacity", ConstantData(hydro_data.reservoir_data.capacity))
+    database.add_data(
+        id,
+        "initial_level",
+        ConstantData(hydro_data.reservoir_data.initial_level),
+    )
+
+    inflow_data = pd.DataFrame(
+        hydro_data.inflow,
+        index=[i for i in range(len(hydro_data.inflow))],
+        columns=[0],
+    )
+    database.add_data(id, "inflow", TimeScenarioSeriesData(inflow_data))
+
+    target_data = pd.DataFrame(
+        hydro_data.target,
+        index=[i for i in range(len(hydro_data.target))],
+        columns=[0],
+    )
+    database.add_data(id, "generating_target", TimeScenarioSeriesData(target_data))
+    database.add_data(id, "overall_target", ConstantData(sum(hydro_data.target)))
+
+    database.add_data(
+        id,
+        "lower_rule_curve",
+        TimeSeriesData(
+            {
+                TimeIndex(i): hydro_data.lower_rule_curve[i]
+                * hydro_data.reservoir_data.capacity
+                for i in range(len(hydro_data.lower_rule_curve))
+            }
+        ),
+    )
+    database.add_data(
+        id,
+        "upper_rule_curve",
+        TimeSeriesData(
+            {
+                TimeIndex(i): hydro_data.upper_rule_curve[i]
+                * hydro_data.reservoir_data.capacity
+                for i in range(len(hydro_data.lower_rule_curve))
+            }
+        ),
+    )
+    database.add_data(id, "min_generating", ConstantData(0))
+
+    database.add_data(
+        id,
+        "max_generating",
+        TimeSeriesData(
+            {
+                TimeIndex(i): hydro_data.max_generating[i]
+                for i in range(len(hydro_data.max_generating))
+            }
+        ),
+    )
+
+    database.add_data(
+        id,
+        "max_epsilon",
+        TimeSeriesData(
+            {
+                TimeIndex(i): (hydro_data.reservoir_data.capacity if i == 0 else 0)
+                for i in range(len(hydro_data.max_generating))
+            }
+        ),
+    )
+
+    return database

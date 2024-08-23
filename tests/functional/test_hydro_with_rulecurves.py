@@ -17,17 +17,10 @@ import numpy as np
 import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
-from andromede.hydro_heuristic.data import (
-    compute_weekly_target,
-    get_number_of_days_in_month,
-    save_generation_target,
-)
-from andromede.hydro_heuristic.heuristic_model import HeuristicHydroModelBuilder
+from andromede.hydro_heuristic.data import compute_weekly_target, save_generation_target
 from andromede.hydro_heuristic.problem import (
     DataAggregatorParameters,
-    HydroHeuristicParameters,
     ReservoirParameters,
-    optimize_target,
     update_initial_level,
 )
 from andromede.libs.standard import (
@@ -47,10 +40,8 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from tests.functional.libs.lib_hydro_heuristic import (
-    HYDRO_MODEL,
-    HYDRO_MODEL_WITH_TARGET,
-)
+from tests.functional.conftest import antares_hydro_heuristic_step
+from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL_WITH_TARGET
 
 expected_weekly_target = open(
     Path(__file__).parent / "/data/hydro_with_rulecurves/expected_weekly_target.txt",
@@ -58,41 +49,32 @@ expected_weekly_target = open(
 ).readlines()
 
 
-def test_hydro_heuristic_monthly_part() -> None:
-    """Check that the cost of the monthly problem is the same in the POC and in Antares."""
+@pytest.fixture
+def data_path() -> str:
+    return str(Path(__file__).parent) + "/data/hydro_with_rulecurves"
+
+
+@pytest.fixture
+def capacity() -> float:
     capacity = 1e07
-
-    solving_output, monthly_output = optimize_target(
-        heuristic_parameters=HydroHeuristicParameters(1),
-        data_aggregator_parameters=DataAggregatorParameters(
-            [24 * get_number_of_days_in_month(m) for m in range(12)],
-            list(range(12)),
-        ),
-        reservoir_data=ReservoirParameters(
-            capacity,
-            initial_level=0.445 * capacity,
-            folder_name=str(Path(__file__).parent) + "/data/hydro_with_rulecurves",
-            scenario=0,
-        ),
-        heuristic_model=HeuristicHydroModelBuilder(HYDRO_MODEL, "monthly").get_model(),
-    )
-
-    assert solving_output.status == pywraplp.Solver.OPTIMAL
-    assert solving_output.objective / capacity == pytest.approx(10.1423117689793)
+    return capacity
 
 
-def test_hydro_heuristic_daily_part() -> None:
-    """Check that the costs of the daily problems are the same in the POC and in Antares."""
-    capacity = 1e07
-
+@pytest.fixture
+def reservoir_data(data_path: str, capacity: float) -> ReservoirParameters:
     reservoir_data = ReservoirParameters(
         capacity,
         initial_level=0.445 * capacity,
-        folder_name=str(Path(__file__).parent) + "/data/hydro_with_rulecurves",
+        folder_name=data_path,
         scenario=0,
     )
 
-    monthly_generation = [
+    return reservoir_data
+
+
+@pytest.fixture
+def monthly_generation(capacity: float) -> List[float]:
+    return [
         capacity * target
         for target in [
             0.0495627,
@@ -110,23 +92,48 @@ def test_hydro_heuristic_daily_part() -> None:
         ]
     ]  # equivalent solution found by Antares that is taken to be consistent
 
+
+def test_hydro_heuristic_monthly_part(
+    reservoir_data: ReservoirParameters,
+    capacity: float,
+    monthly_aggregator_parameters: DataAggregatorParameters,
+    monthly_hydro_heuristic_model: Model,
+) -> None:
+    """Check that the cost of the monthly problem is the same in the POC and in Antares."""
+    intermonthly = 1
+
+    solving_output, _ = antares_hydro_heuristic_step(
+        monthly_aggregator_parameters,
+        monthly_hydro_heuristic_model,
+        intermonthly,
+        reservoir_data,
+    )
+
+    assert solving_output.status == pywraplp.Solver.OPTIMAL
+    assert solving_output.objective / capacity == pytest.approx(10.1423117689793)
+
+
+def test_hydro_heuristic_daily_part(
+    capacity: float,
+    reservoir_data: ReservoirParameters,
+    daily_aggregator_parameters: List[DataAggregatorParameters],
+    daily_hydro_heuristic_model: Model,
+    monthly_generation: List[float],
+    data_path: str,
+) -> None:
+    """Check that the costs of the daily problems are the same in the POC and in Antares."""
+    interdaily = 1
     all_daily_generation: List[float] = []
-    day_in_year = 0
 
     for month in range(12):
-        number_day_month = get_number_of_days_in_month(month)
-
-        solving_output, daily_output = optimize_target(
-            heuristic_parameters=HydroHeuristicParameters(1, monthly_generation[month]),
-            data_aggregator_parameters=DataAggregatorParameters(
-                [24 for d in range(365)],
-                list(range(day_in_year, day_in_year + number_day_month)),
-            ),
-            reservoir_data=reservoir_data,
-            heuristic_model=HeuristicHydroModelBuilder(
-                HYDRO_MODEL, "daily"
-            ).get_model(),
+        solving_output, daily_output = antares_hydro_heuristic_step(
+            daily_aggregator_parameters[month],
+            daily_hydro_heuristic_model,
+            interdaily,
+            reservoir_data,
+            monthly_generation[month],
         )
+
         update_initial_level(reservoir_data, daily_output)
 
         assert solving_output.status == pywraplp.Solver.OPTIMAL
@@ -151,19 +158,12 @@ def test_hydro_heuristic_daily_part() -> None:
         all_daily_generation = save_generation_target(
             all_daily_generation, daily_output.generating
         )
-        day_in_year += number_day_month
 
     weekly_target = compute_weekly_target(
         all_daily_generation,
     )
     assert all_daily_generation == pytest.approx(
-        list(
-            np.loadtxt(
-                Path(__file__).parent / "/data/hydro_with_rulecurves/daily_target.txt"
-            )
-            * capacity
-            / 100
-        ),
+        list(np.loadtxt(data_path) * capacity / 100),
         abs=0.5,
     )
     assert weekly_target == pytest.approx(expected_weekly_target)

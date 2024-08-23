@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+from typing import Tuple
+
 import numpy as np
 import pytest
 
@@ -34,8 +36,6 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL,
     HYDRO_MODEL_WITH_TARGET,
 )
-
-from typing import Tuple
 
 weekly_generation = open(
     "tests/functional/data/hydro_with_rulecurves/optimal_weekly_generation.txt", "r"

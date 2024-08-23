@@ -46,7 +46,7 @@ class HeuristicHydroModelBuilder:
             "gamma_s": 0 if horizon == "monthly" else -1 / 32,
         }
 
-    def get_model(
+    def build_model(
         self,
     ) -> Model:
         if "level" not in self.hydro_model.variables.keys():

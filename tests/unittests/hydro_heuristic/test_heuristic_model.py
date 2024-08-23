@@ -85,13 +85,13 @@ def test_empty_model() -> None:
     model_builder = HeuristicHydroModelBuilder(Model(id="empty"), "monthly")
 
     with pytest.raises(ValueError):
-        heuristic_model = model_builder.get_model()
+        heuristic_model = model_builder.build_model()
 
 
 def test_minimal_model() -> None:
     model_builder = HeuristicHydroModelBuilder(MINIMAL_HYDRO_MODEL, "monthly")
 
-    heuristic_model = model_builder.get_model()
+    heuristic_model = model_builder.build_model()
 
     assert len(heuristic_model.constraints) == 11
     assert len(heuristic_model.variables) == 10
