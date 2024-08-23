@@ -348,7 +348,6 @@ class OptimizationProblem:
 
     def _create_objectives(self) -> None:
         for component in self.context.network.all_components:
-            component_context = self.context.get_component_context(component)
             model = component.model
 
             for objective in self.strategy.get_objectives(model):
