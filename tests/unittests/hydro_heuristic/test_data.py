@@ -34,11 +34,16 @@ def test_calculate_weekly_target() -> None:
     assert output[1] == 21
 
 
-def test_hydro_heuristic_data_building() -> None:
-    capacity = 1e07
-    folder_name = (
-        str(Path(__file__).parent) + "../../tests/functional/data/hydro_with_rulecurves"
+@pytest.fixture
+def data_path() -> str:
+    return (
+        str(Path(__file__).parent.parent.parent)
+        + "/functional/data/hydro_with_rulecurves"
     )
+
+
+def test_hydro_heuristic_data_building(data_path: str) -> None:
+    capacity = 1e07
     initial_level = 0.445 * capacity
 
     data = HydroHeuristicData(
@@ -48,7 +53,7 @@ def test_hydro_heuristic_data_building() -> None:
             ],
             timesteps=list(range(12)),
         ),
-        reservoir_data=ReservoirParameters(capacity, initial_level, folder_name, 0),
+        reservoir_data=ReservoirParameters(capacity, initial_level, data_path, 0),
     )
 
     assert len(data.demand) == 12
@@ -63,11 +68,8 @@ def test_hydro_heuristic_data_building() -> None:
     assert data.max_generating[0] == 37200000
 
 
-def test_compute_target() -> None:
+def test_compute_target(data_path: str) -> None:
     capacity = 1e07
-    folder_name = (
-        str(Path(__file__).parent) + "../../tests/functional/data/hydro_with_rulecurves"
-    )
     initial_level = 0.445 * capacity
 
     data = HydroHeuristicData(
@@ -77,7 +79,7 @@ def test_compute_target() -> None:
             ],
             timesteps=list(range(12)),
         ),
-        reservoir_data=ReservoirParameters(capacity, initial_level, folder_name, 0),
+        reservoir_data=ReservoirParameters(capacity, initial_level, data_path, 0),
     )
 
     data.compute_target(HydroHeuristicParameters())

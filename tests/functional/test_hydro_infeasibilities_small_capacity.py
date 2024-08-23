@@ -79,7 +79,7 @@ def test_hydro_heuristic(
     )
 
     # Vérification des valeurs trouvées
-    expected_output_file = open(data_path, "r")
+    expected_output_file = open(data_path + "/values-weekly.txt", "r")
     expected_output = expected_output_file.readlines()
     for week in range(52):
         assert float(expected_output[week + 7].strip().split("\t")[42]) - 0.75 * float(
@@ -87,18 +87,15 @@ def test_hydro_heuristic(
         ) == pytest.approx(weekly_target[week], abs=1)
 
 
-def test_complete_year_as_weekly_blocks() -> None:
+def test_complete_year_as_weekly_blocks(data_path: str) -> None:
     """Solve weekly problems with heuristic weekly targets for the stock."""
     network = get_network(HYDRO_MODEL_WITH_TARGET, bc=False)
-    database = get_database(return_to_initial_level=False)
+    database = get_database(data_path, return_to_initial_level=False)
 
     capacity = 2945
     initial_level = 0.5 * capacity
 
-    expected_output_file = open(
-        "tests/functional/data/hydro_small_capacity/values-weekly.txt",
-        "r",
-    )
+    expected_output_file = open(data_path + "/values-weekly.txt", "r")
     expected_output = expected_output_file.readlines()
 
     for week in range(52):
@@ -124,18 +121,15 @@ def test_complete_year_as_weekly_blocks() -> None:
         initial_level = output.component("H").var("level").value[0][-1]  # type:ignore
 
 
-def test_complete_year_as_weekly_blocks_with_binding_constraint() -> None:
+def test_complete_year_as_weekly_blocks_with_binding_constraint(data_path: str) -> None:
     """Solve weekly problems with heuristic weekly targets for the stock with a binding constraint that implements a minimum generation for the stock. As this constraint is not seen by the heuristic, the problem is infeasible."""
     network = get_network(HYDRO_MODEL_WITH_TARGET, bc=True)
-    database = get_database(return_to_initial_level=False)
+    database = get_database(data_path, return_to_initial_level=False)
 
     capacity = 2945
     initial_level = 0.5 * capacity
 
-    expected_output_file = open(
-        "tests/functional/data/hydro_small_capacity/values-weekly.txt",
-        "r",
-    )
+    expected_output_file = open(data_path + "/values-weekly.txt", "r")
     expected_output = expected_output_file.readlines()
 
     week = 0
@@ -158,27 +152,25 @@ def test_complete_year_as_weekly_blocks_with_binding_constraint() -> None:
     assert status == problem.solver.INFEASIBLE
 
 
-def test_complete_year_as_weekly_blocks_with_hourly_infeasibilities() -> None:
+def test_complete_year_as_weekly_blocks_with_hourly_infeasibilities(
+    data_path: str,
+) -> None:
     """Solve weekly problems with heuristic weekly targets for the stock with modified inflow. Daily inflows remain the same. Inflows at the first hour of each day are large and there is oveflow that the heuristic didn't see due to agregation of data."""
-    inflow_data = (
-        np.loadtxt(
-            Path(__file__).parent / "/data/hydro_small_capacity/mod.txt",
-            usecols=0,
-        ).repeat(24)
-        / 24
-    )
+    inflow_data = np.loadtxt(data_path + "/mod.txt", usecols=0).repeat(24) / 24
     variation_inflow = np.tile(np.array([2300] + [-100] * 23), 365)
 
     network = get_network(HYDRO_MODEL_WITH_TARGET, bc=False)
     database = get_database(
-        return_to_initial_level=False, inflow_data=list(inflow_data + variation_inflow)
+        data_path,
+        return_to_initial_level=False,
+        inflow_data=list(inflow_data + variation_inflow),
     )
 
     capacity = 2945
     initial_level = 0.5 * capacity
 
     expected_output_file = open(
-        "tests/functional/data/hydro_small_capacity/values-weekly.txt",
+        data_path + "/values-weekly.txt",
         "r",
     )
     expected_output = expected_output_file.readlines()
@@ -237,6 +229,7 @@ def get_network(
 
 
 def get_database(
+    data_path: str,
     return_to_initial_level: bool,
     inflow_data: Optional[list[float]] = None,
 ) -> DataBase:
@@ -245,12 +238,7 @@ def get_database(
 
     data = HydroHeuristicData(
         DataAggregatorParameters(list(range(8760)), list(range(8760))),
-        ReservoirParameters(
-            capacity,
-            initial_level,
-            str(Path(__file__).parent) + "/data/hydro_small_capacity/load.txt",
-            0,
-        ),
+        ReservoirParameters(capacity, initial_level, data_path, 0),
     )
     if inflow_data is None:
         inflow_data = data.inflow

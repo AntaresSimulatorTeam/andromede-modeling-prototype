@@ -46,7 +46,7 @@ class OutputHeuristic:
 
 
 def build_hydro_heuristic_problem(
-    database: DataBase, heuristic_model: Model, timesteps: List[int], id: str = "H"
+    database: DataBase, heuristic_model: Model, timesteps: int, id: str = "H"
 ) -> OptimizationProblem:
     hydro = create_component(model=heuristic_model, id=id)
     network = Network("test")
@@ -55,7 +55,7 @@ def build_hydro_heuristic_problem(
     problem = build_problem(
         network,
         database,
-        TimeBlock(1, timesteps),
+        TimeBlock(1, list(range(timesteps))),
         1,
         border_management=(BlockBorderManagement.CYCLE),
     )

@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pytest
@@ -32,21 +32,31 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
+from pathlib import Path
 from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL,
     HYDRO_MODEL_WITH_TARGET,
 )
 
-weekly_generation = open(
-    "tests/functional/data/hydro_with_rulecurves/optimal_weekly_generation.txt", "r"
-).readlines()
 
-weekly_cost = open(
-    "tests/functional/data/hydro_with_rulecurves/optimal_weekly_cost.txt", "r"
-).readlines()
+@pytest.fixture
+def weekly_generation(data_path: str) -> List[float]:
+    return list(np.loadtxt(data_path + "/optimal_weekly_generation.txt"))
 
 
-def test_complete_year_as_one_block() -> None:
+@pytest.fixture
+def weekly_cost(data_path: str) -> List[float]:
+    return list(np.loadtxt(data_path + "/optimal_weekly_cost.txt"))
+
+
+@pytest.fixture
+def data_path() -> str:
+    return str(Path(__file__).parent) + "/data/hydro_with_rulecurves"
+
+
+def test_complete_year_as_one_block(
+    weekly_generation: List[float], weekly_cost: List[float]
+) -> None:
     """Solve yearly problem as one block to compute optimal weekly targets."""
     database, network = create_database_and_network(
         HYDRO_MODEL, return_to_initial_level=True
@@ -83,10 +93,12 @@ def test_complete_year_as_one_block() -> None:
                 + 3000 * unsupplied[t]  # type:ignore
                 for t in range(168 * week, 168 * (week + 1))
             ]
-        ) == pytest.approx(float(weekly_cost[week]))
+        ) == pytest.approx(weekly_cost[week])
 
 
-def test_complete_year_as_weekly_blocks() -> None:
+def test_complete_year_as_weekly_blocks(
+    weekly_generation: List[float], weekly_cost: List[float]
+) -> None:
     """Solve weekly problems with optimal weekly targets for the stock and check that weekly solution costs are the same."""
     database, network = create_database_and_network(
         HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
@@ -98,9 +110,7 @@ def test_complete_year_as_weekly_blocks() -> None:
     scenarios = 1
 
     for week in range(52):
-        database.add_data(
-            "H", "overall_target", ConstantData(float(weekly_generation[week]))
-        )
+        database.add_data("H", "overall_target", ConstantData(weekly_generation[week]))
         database.add_data("H", "initial_level", ConstantData(initial_level))
         problem = build_problem(
             network,

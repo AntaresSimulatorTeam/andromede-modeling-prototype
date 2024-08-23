@@ -43,15 +43,15 @@ from andromede.study import (
 from tests.functional.conftest import antares_hydro_heuristic_step
 from tests.functional.libs.lib_hydro_heuristic import HYDRO_MODEL_WITH_TARGET
 
-expected_weekly_target = open(
-    Path(__file__).parent / "/data/hydro_with_rulecurves/expected_weekly_target.txt",
-    "r",
-).readlines()
-
 
 @pytest.fixture
 def data_path() -> str:
     return str(Path(__file__).parent) + "/data/hydro_with_rulecurves"
+
+
+@pytest.fixture
+def expected_weekly_target(data_path: str) -> List[float]:
+    return list(np.loadtxt(data_path + "/expected_weekly_target.txt"))
 
 
 @pytest.fixture
@@ -114,6 +114,7 @@ def test_hydro_heuristic_monthly_part(
 
 
 def test_hydro_heuristic_daily_part(
+    expected_weekly_target: List[float],
     capacity: float,
     reservoir_data: ReservoirParameters,
     daily_aggregator_parameters: List[DataAggregatorParameters],
@@ -159,20 +160,21 @@ def test_hydro_heuristic_daily_part(
             all_daily_generation, daily_output.generating
         )
 
-    weekly_target = compute_weekly_target(
-        all_daily_generation,
-    )
+    weekly_target = compute_weekly_target(all_daily_generation)
     assert all_daily_generation == pytest.approx(
-        list(np.loadtxt(data_path) * capacity / 100),
+        list(np.loadtxt(data_path + "/daily_target.txt") * capacity / 100),
         abs=0.5,
     )
     assert weekly_target == pytest.approx(expected_weekly_target)
 
 
-def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
+def test_complete_year_as_weekly_blocks_with_hydro_heuristic(
+    expected_weekly_target: List[float],
+    data_path:str
+) -> None:
     """Solve weekly problems with heuristic weekly targets for the stock."""
     database, network = create_database_and_network(
-        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
+        data_path,HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
     )
 
     capacity = 1e07
@@ -184,7 +186,7 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
 
     for week in range(52):
         database.add_data(
-            "H", "overall_target", ConstantData(float(expected_weekly_target[week]))
+            "H", "overall_target", ConstantData(expected_weekly_target[week])
         )
         database.add_data("H", "initial_level", ConstantData(initial_level))
         problem = build_problem(
@@ -204,25 +206,15 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
 
 
 def create_database_and_network(
+    data_path: str,
     hydro_model: Model,
     return_to_initial_level: bool,
 ) -> Tuple[DataBase, Network]:
     capacity = 1e07
     initial_level = 0.445 * capacity
-    demand_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_with_rulecurves/load.txt",
-        usecols=0,
-    )
-    inflow_data = (
-        np.loadtxt(
-            Path(__file__).parent / "/data/hydro_with_rulecurves/mod.txt",
-            usecols=0,
-        ).repeat(24)
-        / 24
-    )
-    rule_curve_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_with_rulecurves/reservoir.txt"
-    ).repeat(24, axis=0)
+    demand_data = np.loadtxt(data_path + "/load.txt", usecols=0)
+    inflow_data = np.loadtxt(data_path + "/mod.txt", usecols=0).repeat(24) / 24
+    rule_curve_data = np.loadtxt(data_path + "/reservoir.txt").repeat(24, axis=0)
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="1")
 

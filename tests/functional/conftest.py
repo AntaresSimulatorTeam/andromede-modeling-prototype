@@ -130,7 +130,7 @@ def antares_hydro_heuristic_step(
     heuristic_problem = build_hydro_heuristic_problem(
         database=get_database(data),
         heuristic_model=hydro_heuristic_model,
-        timesteps=aggregator_parameters.timesteps,
+        timesteps=len(aggregator_parameters.timesteps),
     )
     status = heuristic_problem.solver.Solve(get_default_solver_parameters())
     solving_output = SolvingOutput(status, heuristic_problem.solver.Objective().Value())

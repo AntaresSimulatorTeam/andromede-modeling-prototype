@@ -46,29 +46,33 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL_WITH_TARGET,
 )
 
-optimal_generation = open(
-    Path(__file__).parent / "/data/hydro_with_large_load/optimal_generation.txt", "r"
-).readlines()
-expected_monthly_generation = open(
-    Path(__file__).parent
-    / "/data/hydro_with_large_load/expected_monthly_generation.txt",
-    "r",
-).readlines()
-expected_weekly_target = open(
-    Path(__file__).parent / "/data/hydro_with_large_load/expected_weekly_target.txt",
-    "r",
-).readlines()
-
 
 @pytest.fixture
 def data_path() -> str:
     return str(Path(__file__).parent) + "/data/hydro_with_large_load"
 
 
-def test_complete_year_as_one_block() -> None:
+@pytest.fixture
+def optimal_generation(data_path: str) -> List[float]:
+    return list(np.loadtxt(data_path + "/optimal_generation.txt"))
+
+
+@pytest.fixture
+def expected_monthly_generation(data_path: str) -> List[float]:
+    return list(np.loadtxt(data_path + "/expected_monthly_generation.txt"))
+
+
+@pytest.fixture
+def expected_weekly_target(data_path: str) -> List[float]:
+    return list(np.loadtxt(data_path + "/expected_weekly_target.txt"))
+
+
+def test_complete_year_as_one_block(
+    data_path: str, optimal_generation: List[float]
+) -> None:
     """Solve yearly problem as one block to see the difference between this optimal solution and the solution found by the heuristic."""
     database, network = create_database_and_network(
-        HYDRO_MODEL_RULE_CURVES, return_to_initial_level=True
+        data_path, HYDRO_MODEL_RULE_CURVES, return_to_initial_level=True
     )
 
     scenarios = 1
@@ -91,7 +95,7 @@ def test_complete_year_as_one_block() -> None:
                 generating[t] + overflow[t]  # type:ignore
                 for t in range(168 * week, 168 * (week + 1))
             ]
-        ) == pytest.approx(float(optimal_generation[week]))
+        ) == pytest.approx(optimal_generation[week])
 
 
 def test_hydro_heuristic(
@@ -100,6 +104,8 @@ def test_hydro_heuristic(
     monthly_hydro_heuristic_model: Model,
     daily_aggregator_parameters: List[DataAggregatorParameters],
     daily_hydro_heuristic_model: Model,
+    expected_monthly_generation: List[float],
+    expected_weekly_target: List[float],
 ) -> None:
     """Check that weekly targets are the same in the POC and in Antares."""
 
@@ -117,9 +123,7 @@ def test_hydro_heuristic(
     )
 
     assert solving_output.status == pywraplp.Solver.OPTIMAL
-    assert monthly_output.generating == pytest.approx(
-        [float(x) for x in expected_monthly_generation]
-    )
+    assert monthly_output.generating == pytest.approx(expected_monthly_generation)
 
     all_daily_generation: List[float] = []
 
@@ -146,13 +150,16 @@ def test_hydro_heuristic(
     )
 
     # Vérification des valeurs trouvées
-    assert weekly_target == pytest.approx([float(x) for x in expected_weekly_target])
+    assert weekly_target == pytest.approx(expected_weekly_target)
 
 
-def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
+def test_complete_year_as_weekly_blocks_with_hydro_heuristic(
+    data_path: str,
+    expected_weekly_target: List[float],
+) -> None:
     """Solve weekly problems with heuristic weekly targets for the stock. Heuristic targets are larger at the end of the year due to an larger residual load. This isn't realistic because at the beginning of the year, in reality one cannot know that the residual will be larger."""
     database, network = create_database_and_network(
-        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
+        data_path, HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
     )
 
     capacity = 1e07
@@ -164,7 +171,7 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
 
     for week in range(52):
         database.add_data(
-            "H", "overall_target", ConstantData(float(expected_weekly_target[week]))
+            "H", "overall_target", ConstantData(expected_weekly_target[week])
         )
         database.add_data("H", "initial_level", ConstantData(initial_level))
         problem = build_problem(
@@ -184,25 +191,15 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
 
 
 def create_database_and_network(
+    data_path: str,
     hydro_model: Model,
     return_to_initial_level: bool,
 ) -> Tuple[DataBase, Network]:
     capacity = 1e07
     initial_level = 0.445 * capacity
-    demand_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_with_large_load/load.txt",
-        usecols=0,
-    )
-    inflow_data = (
-        np.loadtxt(
-            Path(__file__).parent / "/data/hydro_with_large_load/mod.txt",
-            usecols=0,
-        ).repeat(24)
-        / 24
-    )
-    rule_curve_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_with_large_load/reservoir.txt"
-    ).repeat(24, axis=0)
+    demand_data = np.loadtxt(data_path + "/load.txt", usecols=0)
+    inflow_data = np.loadtxt(data_path + "/mod.txt", usecols=0).repeat(24) / 24
+    rule_curve_data = np.loadtxt(data_path + "/reservoir.txt").repeat(24, axis=0)
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="1")
 

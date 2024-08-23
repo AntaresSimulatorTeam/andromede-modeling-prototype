@@ -46,21 +46,23 @@ from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL_WITH_TARGET,
 )
 
-weekly_generation = open(
-    Path(__file__).parent / "/data/hydro_without_inflow/weekly_generation.txt",
-    "r",
-).readlines()
-
 
 @pytest.fixture
 def data_path() -> str:
     return str(Path(__file__).parent) + "/data/hydro_without_inflow"
 
 
-def test_complete_year_as_one_block() -> None:
+@pytest.fixture
+def weekly_generation(data_path: str) -> List[float]:
+    return list(np.loadtxt(data_path + "/weekly_generation.txt"))
+
+
+def test_complete_year_as_one_block(
+    weekly_generation: List[float], data_path: str
+) -> None:
     """Solve yearly problem as one block to see the difference between this optimal solution and the solution found by the heuristic. The optimal solution is quite different from the solution found by the heuristic."""
     database, network = create_database_and_network(
-        HYDRO_MODEL, return_to_initial_level=True
+        data_path, HYDRO_MODEL, return_to_initial_level=True
     )
 
     scenarios = 1
@@ -83,7 +85,7 @@ def test_complete_year_as_one_block() -> None:
                 generating[t] + overflow[t]  # type:ignore
                 for t in range(168 * week, 168 * (week + 1))
             ]
-        ) == pytest.approx(float(weekly_generation[week]), rel=1e-6, abs=1e-11)
+        ) == pytest.approx(weekly_generation[week], rel=1e-6, abs=1e-11)
 
 
 def test_hydro_heuristic(
@@ -123,7 +125,9 @@ def test_hydro_heuristic(
             monthly_output.generating[month],
         )
         assert solving_output.status == pywraplp.Solver.OPTIMAL
-        assert daily_output == [0] * len(daily_aggregator_parameters[month].timesteps)
+        assert daily_output.generating == [0] * len(
+            daily_aggregator_parameters[month].timesteps
+        )
 
         update_initial_level(reservoir_data, daily_output)
         all_daily_generation = save_generation_target(
@@ -137,10 +141,10 @@ def test_hydro_heuristic(
     assert weekly_target == [0 for w in range(52)]
 
 
-def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
+def test_complete_year_as_weekly_blocks_with_hydro_heuristic(data_path: str) -> None:
     """Solve weekly problems with heuristic weekly targets for the stock."""
     database, network = create_database_and_network(
-        HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
+        data_path, HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
     )
 
     capacity = 1e07
@@ -170,18 +174,14 @@ def test_complete_year_as_weekly_blocks_with_hydro_heuristic() -> None:
 
 
 def create_database_and_network(
+    data_path: str,
     hydro_model: Model,
     return_to_initial_level: bool,
 ) -> Tuple[DataBase, Network]:
     capacity = 1e07
     initial_level = 0.445 * capacity
-    demand_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_without_inflow/load.txt",
-        usecols=0,
-    )
-    rule_curve_data = np.loadtxt(
-        Path(__file__).parent / "/data/hydro_without_inflow/reservoir.txt"
-    ).repeat(24, axis=0)
+    demand_data = np.loadtxt(data_path + "/load.txt", usecols=0)
+    rule_curve_data = np.loadtxt(data_path + "/reservoir.txt").repeat(24, axis=0)
 
     node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="1")
 
