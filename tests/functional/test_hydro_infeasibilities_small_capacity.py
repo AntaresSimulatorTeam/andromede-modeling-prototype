@@ -237,7 +237,7 @@ def get_database(
     initial_level = 0.5 * capacity
 
     data = HydroHeuristicData(
-        DataAggregatorParameters(list(range(8760)), list(range(8760))),
+        DataAggregatorParameters([1] * 8760, list(range(8760))),
         ReservoirParameters(capacity, initial_level, data_path, 0),
     )
     if inflow_data is None:

@@ -169,12 +169,11 @@ def test_hydro_heuristic_daily_part(
 
 
 def test_complete_year_as_weekly_blocks_with_hydro_heuristic(
-    expected_weekly_target: List[float],
-    data_path:str
+    expected_weekly_target: List[float], data_path: str
 ) -> None:
     """Solve weekly problems with heuristic weekly targets for the stock."""
     database, network = create_database_and_network(
-        data_path,HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
+        data_path, HYDRO_MODEL_WITH_TARGET, return_to_initial_level=False
     )
 
     capacity = 1e07

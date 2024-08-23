@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
@@ -32,7 +33,6 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from pathlib import Path
 from tests.functional.libs.lib_hydro_heuristic import (
     HYDRO_MODEL,
     HYDRO_MODEL_WITH_TARGET,
