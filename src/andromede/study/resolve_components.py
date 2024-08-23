@@ -100,7 +100,7 @@ def _resolve_connections(
     port_ref_1 = PortRef(component_1, port1)
     port_ref_2 = PortRef(component_2, port2)
 
-    return PortsConnection(port_ref_1, port_ref_2)
+    return PortsConnection(None, port_ref_1, None, port_ref_2)
 
 
 def _get_component_by_id(
