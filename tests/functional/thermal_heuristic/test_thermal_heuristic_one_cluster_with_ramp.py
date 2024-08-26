@@ -17,9 +17,7 @@ from typing import List
 import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-)
+from andromede.libs.standard import BALANCE_PORT_TYPE
 from andromede.simulation import OutputValues
 from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import InputComponents

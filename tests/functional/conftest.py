@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
-import pytest
 import ortools.linear_solver.pywraplp as pywraplp
+import pytest
 
 from andromede.libs.standard import (
     DEMAND_MODEL,
@@ -23,17 +23,17 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.model import Model
-from andromede.study.parsing import InputComponents
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import OutputValues
-from andromede.thermal_heuristic.time_scenario_parameter import BlockScenarioIndex
+from andromede.study.parsing import InputComponents
 from andromede.thermal_heuristic.problem import (
     BlockScenarioIndex,
     TimeScenarioHourParameter,
     get_heuristic_components,
     get_input_components,
 )
+from andromede.thermal_heuristic.time_scenario_parameter import BlockScenarioIndex
 from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
