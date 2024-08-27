@@ -134,31 +134,26 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     # Visit a parse tree produced by ExprParser#timeShift.
     def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext) -> LinearExpression:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.eval(time_shifts)
-
-    # Visit a parse tree produced by ExprParser#rangeTimeShift.
-    def visitTimeRange(self, ctx: ExprParser.TimeRangeContext) -> LinearExpression:
-        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        # TODO: Is there a visitSum somewhere that is not needed ? Are the correct symbol parsed (sum(...) ?) ?
-        return shifted_expr.sum(eval=ExpressionRange(expressions[0], expressions[1]))
+        time_shift = ctx.expr().accept(self)  # type: ignore
+        return shifted_expr.eval(time_shift)
 
     def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> LinearExpression:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        time_shifts = [s.accept(self) for s in ctx.shift()]  # type: ignore
-        # specifics for x[t] ...
-        if len(time_shifts) == 1 and expressions_equal(time_shifts[0], literal(0)):
-            return shifted_expr
-        return shifted_expr.sum(shift=time_shifts)
+        time_shift = ctx.shift().accept(self)  # type: ignore
+        return shifted_expr.sum(shift=time_shift)
+    
+    # Visit a parse tree produced by ExprParser#timeSum.
+    def visitTimeSum(self, ctx:ExprParser.TimeSumContext):
+        return self.visitChildren(ctx)
+    
+    # Visit a parse tree produced by ExprParser#timeShiftRange.
+    def visitTimeShiftRange(self, ctx:ExprParser.TimeShiftRangeContext):
+        return ExpressionRange(ctx.shift, ctx.shift2)
 
-    def visitTimeShiftRange(
-        self, ctx: ExprParser.TimeShiftRangeContext
-    ) -> LinearExpression:
-        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        shift1 = ctx.shift1.accept(self)  # type: ignore
-        shift2 = ctx.shift2.accept(self)  # type: ignore
-        return shifted_expr.sum(shift=ExpressionRange(shift1, shift2))
+
+    # Visit a parse tree produced by ExprParser#timeRange.
+    def visitTimeRange(self, ctx:ExprParser.TimeRangeContext):
+        return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> LinearExpression:
