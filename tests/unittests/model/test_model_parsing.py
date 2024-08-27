@@ -27,8 +27,8 @@ from andromede.model import (
     float_variable,
     model,
 )
-from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.model.resolve_library import resolve_library
 
 

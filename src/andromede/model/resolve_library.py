@@ -30,7 +30,7 @@ from andromede.model import (
     model,
 )
 from andromede.model.library import Library, library
-from andromede.model.model import PortFieldDefinition, port_field_def
+from andromede.model.port import PortFieldDefinition, port_field_def
 from andromede.model.parsing import (
     InputConstraint,
     InputField,

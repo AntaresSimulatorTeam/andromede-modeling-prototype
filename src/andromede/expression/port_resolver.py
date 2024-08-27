@@ -22,7 +22,7 @@ from andromede.expression.expression import (
     PortFieldAggregatorNode,
     PortFieldNode,
 )
-from andromede.model.model import PortFieldId
+from andromede.model.port import PortFieldId
 
 
 @dataclass(eq=True, frozen=True)

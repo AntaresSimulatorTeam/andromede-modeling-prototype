@@ -28,7 +28,7 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
     BlockBorderManagement,
     OutputValues,
