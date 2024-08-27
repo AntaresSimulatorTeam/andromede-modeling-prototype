@@ -238,6 +238,8 @@ def build_benders_decomposed_problem(
     )  # Not necessary for master, but list must be non-empty
     null_scenario = 0  # Not necessary for master
 
+    decision_tree_root._add_coupling_component()
+
     coupler = build_problem(
         decision_tree_root.coupling_network,
         database,
@@ -247,6 +249,7 @@ def build_benders_decomposed_problem(
         solver_id=solver_id,
         build_strategy=InvestmentProblemStrategy(),
         risk_strategy=ExpectedValue(0.0),
+        use_full_var_name=False,
     )
 
     masters = []  # Benders Decomposed Master Problem

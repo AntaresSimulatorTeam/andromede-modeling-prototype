@@ -234,7 +234,16 @@ def test_investment_pathway_on_sequential_nodes(
     )
 
     # === Coupling model ===
-    decision_tree_par.add_coupling_component(candidate, "invested_capa", "delta_invest")
+    decision_tree_par.connect_to_children(
+        candidate_par,
+        candidate_chd,
+        var("invested_capa") - var("delta_invest") == literal(0),
+    )
+    decision_tree_chd.connect_from_parent(
+        candidate_par,
+        candidate_chd,
+        var("invested_capa") == var("invested_capa") - var("delta_invest"),
+    )
 
     # === Build problem ===
     xpansion = build_benders_decomposed_problem(decision_tree_par, database)
@@ -426,7 +435,19 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
 
     # === Coupling model ===
-    dt_root.add_coupling_component(candidate, "invested_capa", "delta_invest")
+    dt_root.connect_to_children(
+        candidate, candidate, var("invested_capa") - var("delta_invest") == literal(0)
+    )
+    dt_child_A.connect_from_parent(
+        candidate,
+        candidate,
+        var("invested_capa") == var("invested_capa") - var("delta_invest"),
+    )
+    dt_child_B.connect_from_parent(
+        candidate,
+        candidate,
+        var("invested_capa") == var("invested_capa") - var("delta_invest"),
+    )
 
     # === Build problem ===
     xpansion = build_benders_decomposed_problem(dt_root, database)

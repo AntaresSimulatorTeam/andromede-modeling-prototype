@@ -11,12 +11,22 @@
 # This file is part of the Antares project.
 
 import math
-from dataclasses import dataclass
-from typing import Generator, Iterable, List, Optional
+from dataclasses import dataclass, field
+from typing import Dict, Generator, Iterable, List, Optional, Set
 
 from anytree import LevelOrderIter, NodeMixin
 
-from andromede.expression import literal, var
+from andromede.expression import (
+    Comparator,
+    ComparisonNode,
+    ExpressionNode,
+    literal,
+    visit,
+)
+from andromede.expression.attributes import (
+    VariableGetterVisitor,
+    VariableNamePrependerVisitor,
+)
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
@@ -32,12 +42,20 @@ class InterDecisionTimeScenarioConfig:
     scenarios: int
 
 
+@dataclass
+class CouplingInfo:
+    variables: Set[str] = field(default_factory=set)
+    constraints: Dict[str, ExpressionNode] = field(default_factory=dict)
+
+
 class DecisionTreeNode(NodeMixin):
     id: str
     config: InterDecisionTimeScenarioConfig
     network: Network
-    coupling_network: Network
     prob: float
+
+    coupling_network: Network
+    coupling_info: CouplingInfo
 
     def __init__(
         self,
@@ -48,11 +66,13 @@ class DecisionTreeNode(NodeMixin):
         children: Optional[Iterable["DecisionTreeNode"]] = None,
         prob: float = 1.0,
         coupling_network: Network = Network("_Coupler"),
+        coupling_info: CouplingInfo = CouplingInfo(),
     ) -> None:
         self.id = id
         self.config = config
         self.network = network
         self.coupling_network = coupling_network
+        self.coupling_info = coupling_info
         self.parent = parent
 
         if prob < 0 or 1 < prob:
@@ -81,66 +101,101 @@ class DecisionTreeNode(NodeMixin):
         # probability sum equal to one
         return all(child.is_leaves_prob_sum_one() for child in self.children)
 
-    def add_coupling_component(
-        self,
-        component: Component,
-        cumulative_var_id: str,
-        delta_var_id: str,
+    def connect_from_parent(
+        self, component_par: Component, component_chd: Component, expr: ExpressionNode
     ) -> None:
-        if not component.is_variable_in_model(cumulative_var_id):
-            raise ValueError(
-                f"Cumulative variable {cumulative_var_id} not present in {component.id}"
+        if self.parent and (component_par not in self.parent.network.all_components):
+            raise RuntimeError(
+                f"Component {component_par.id} not present in parent's network!"
             )
 
-        if not component.is_variable_in_model(delta_var_id):
-            raise ValueError(
-                f"Incremental variable {delta_var_id} not present in {component.id}"
+        if component_chd not in self.network.all_components:
+            raise RuntimeError(
+                f"Component {component_chd.id} not present in child's network!"
             )
 
+        if not isinstance(expr, ComparisonNode):
+            raise ValueError(
+                f"Expression must be a comparison node (lhs for parent, rhs for child)."
+            )
+
+        expr_par = expr.left
+        expr_chd = expr.right
+
+        prefix_par = f"{self.parent.id}_{component_par.id}" if self.parent else ""
+        prefix_chd = f"{self.id}_{component_chd.id}"
+
+        for var in visit(expr_par, VariableGetterVisitor()):
+            if not component_par.is_variable_in_model(var):
+                raise ValueError(
+                    f"Variable {var} not present in parent's {component_par.id}"
+                )
+
+            self.coupling_info.variables.add(f"{prefix_par}_{var}")
+
+        for var in visit(expr_chd, VariableGetterVisitor()):
+            if not component_chd.is_variable_in_model(var):
+                raise ValueError(
+                    f"Variable {var} not present in child's {component_chd.id}"
+                )
+
+            self.coupling_info.variables.add(f"{prefix_chd}_{var}")
+
+        new_expr_par = visit(expr_par, VariableNamePrependerVisitor(prefix_par))
+        new_expr_chd = visit(expr_chd, VariableNamePrependerVisitor(prefix_chd))
+
+        if expr.comparator == Comparator.EQUAL:
+            new_expr = new_expr_par == new_expr_chd
+        elif expr.comparator == Comparator.LESS_THAN:
+            new_expr = new_expr_par <= new_expr_chd
+        else:
+            new_expr = new_expr_par >= new_expr_chd
+
+        self.coupling_info.constraints[
+            f"{prefix_par}_{prefix_chd}_{len(self.coupling_info.constraints)}"
+        ] = new_expr
+
+    def connect_to_children(
+        self, component_par: Component, component_chd: Component, expr: ExpressionNode
+    ) -> None:
+        if not self.children:
+            raise RuntimeError("Cannot connect downwards because no child is defined!")
+
+        for child in self.children:
+            child.connect_from_parent(component_par, component_chd, expr)
+
+    def _add_coupling_component(self) -> None:
         variables: List[Variable] = []
         constraints: List[Constraint] = []
 
-        for tree_node in self.traverse():
-            parent_cumulative_var_id = (
-                f"{tree_node.parent.id}_{component.id}_{cumulative_var_id}"
-                if tree_node.parent is not None
-                else ""
-            )
-            node_cumulative_var_id = (
-                f"{tree_node.id}_{component.id}_{cumulative_var_id}"
-            )
-            node_delta_var_id = f"{tree_node.id}_{component.id}_{delta_var_id}"
+        """
+        Here and below, we use (and mostly abuse!) of the fact that
+        both coupling_network and coupling_info attributes are initialized,
+        or bound, at the function definition since they are default arguments!
+        It allows us to not iterate over the tree, since all nodes share the same
+        coupling_network and coupling_info objects.
 
-            variables.extend(
-                (
-                    # TODO For now, unbounded positive float variable for both
-                    # Eventually should allow more flexibility
-                    float_variable(
-                        node_cumulative_var_id,
-                        lower_bound=literal(0),
-                        structure=IndexingStructure(False, False),
-                        context=ProblemContext.INVESTMENT,
-                    ),
-                    float_variable(
-                        node_delta_var_id,
-                        lower_bound=literal(0),
-                        structure=IndexingStructure(False, False),
-                        context=ProblemContext.INVESTMENT,
-                    ),
-                )
+        However, IT IS BAD DESIGN!
+        But for now it will suffice since the inner workings will change once
+        Thomas has changed the AST instantiation
+        TODO Update this once the new AST is merged
+        """
+        for var_name in self.coupling_info.variables:
+            variables.append(
+                # TODO For now, unbounded positive float variable
+                float_variable(
+                    var_name,
+                    lower_bound=literal(0),
+                    structure=IndexingStructure(False, False),
+                    context=ProblemContext.INVESTMENT,
+                ),
             )
 
-            # TODO For now, only kind of relationship allowed between nodes
-            # Eventually should give the user the possibility to define the expression
+        for cst_name, expr in self.coupling_info.constraints.items():
             constraints.append(
                 Constraint(
-                    name=f"Cumulative max investment on {tree_node.id}",
-                    expression=var(node_cumulative_var_id) - var(node_delta_var_id)
-                    == (
-                        var(parent_cumulative_var_id)
-                        if parent_cumulative_var_id
-                        else literal(0)
-                    ),
+                    name=cst_name,
+                    expression=expr,
                     context=ProblemContext.INVESTMENT,
                 ),
             )
@@ -148,12 +203,10 @@ class DecisionTreeNode(NodeMixin):
         self.coupling_network.add_component(
             create_component(
                 model(
-                    id="coupling_decision_tree_model",
+                    id="",
                     variables=variables,
                     constraints=constraints,
                 ),
-                id="",
+                id="coupling",
             )
         )
-
-        return

@@ -299,6 +299,7 @@ class OptimizationContext:
         build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
         risk_strategy: RiskManagementStrategy = UniformRisk(),
         decision_tree_node: str = "",
+        use_full_var_name: bool = True,
     ):
         self._network = network
         self._database = database
@@ -308,6 +309,7 @@ class OptimizationContext:
         self._build_strategy = build_strategy
         self._risk_strategy = risk_strategy
         self._tree_node = decision_tree_node
+        self._full_var_name = use_full_var_name
 
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
         self._solver_variables: Dict[str, SolverVariableInfo] = {}
@@ -334,6 +336,10 @@ class OptimizationContext:
     @property
     def risk_strategy(self) -> RiskManagementStrategy:
         return self._risk_strategy
+
+    @property
+    def full_var_name(self) -> bool:
+        return self._full_var_name
 
     def block_length(self) -> int:
         return len(self._block.timesteps)
@@ -742,9 +748,15 @@ class OptimizationProblem:
                     )
 
                 var_name: str = f"{model_var.name}"
-                component_prefix = f"{component.id}_" if component.id else ""
+                component_prefix = (
+                    f"{component.id}_"
+                    if (self.context.full_var_name and component.id)
+                    else ""
+                )
                 tree_prefix = (
-                    f"{self.context.tree_node}_" if self.context.tree_node else ""
+                    f"{self.context.tree_node}_"
+                    if (self.context.full_var_name and self.context.tree_node)
+                    else ""
                 )
 
                 for block_timestep in self.context.get_time_indices(var_indexing):
@@ -872,6 +884,7 @@ def build_problem(
     build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
     risk_strategy: RiskManagementStrategy = UniformRisk(),
     decision_tree_node: str = "",
+    use_full_var_name: bool = True,
 ) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.
@@ -889,6 +902,7 @@ def build_problem(
         build_strategy,
         risk_strategy,
         decision_tree_node,
+        use_full_var_name,
     )
 
     return OptimizationProblem(problem_name, solver, opt_context)
