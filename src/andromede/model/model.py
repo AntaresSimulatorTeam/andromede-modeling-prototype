@@ -19,7 +19,7 @@ import itertools
 from dataclasses import InitVar, dataclass, field
 from typing import Dict, Iterable, Optional, Union
 
-from andromede.expression.expression_efficient import (
+from andromede.expression.expression import (
     AdditionNode,
     BinaryOperatorNode,
     ComparisonNode,
@@ -39,7 +39,7 @@ from andromede.expression.expression_efficient import (
 )
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     is_linear,
     wrap_in_linear_expr,

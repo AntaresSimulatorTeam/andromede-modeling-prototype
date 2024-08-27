@@ -22,7 +22,7 @@ import ortools.linear_solver.pywraplp as lp
 
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     RowIndex,
 )

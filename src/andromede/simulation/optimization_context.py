@@ -17,10 +17,10 @@ from typing import Dict, Iterable, List, Optional
 
 import ortools.linear_solver.pywraplp as lp
 
-from andromede.expression.evaluate_parameters_efficient import ValueProvider
+from andromede.expression.evaluate_parameters import ValueProvider
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     PortFieldId,
     PortFieldKey,

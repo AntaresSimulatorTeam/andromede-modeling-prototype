@@ -14,7 +14,7 @@ import operator
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List
 
-from .expression_efficient import (
+from .expression import (
     AdditionNode,
     ComparisonNode,
     ComponentParameterNode,

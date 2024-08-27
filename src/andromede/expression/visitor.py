@@ -16,7 +16,7 @@ Defines abstract base class for visitors of expressions.
 from abc import ABC, abstractmethod
 from typing import Generic, Protocol, TypeVar
 
-from .expression_efficient import (
+from .expression import (
     AdditionNode,
     ComparisonNode,
     ComponentParameterNode,

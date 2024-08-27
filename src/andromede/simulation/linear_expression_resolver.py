@@ -15,12 +15,12 @@ from typing import Dict, List
 
 import ortools.linear_solver.pywraplp as lp
 
-from andromede.expression.evaluate_parameters_efficient import (
+from andromede.expression.evaluate_parameters import (
     get_time_ids_from_instances_index,
     resolve_coefficient,
 )
 from andromede.expression.indexing_structure import RowIndex
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     TermEfficient,
 )

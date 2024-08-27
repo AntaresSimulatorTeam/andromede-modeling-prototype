@@ -13,7 +13,7 @@
 from abc import ABC, abstractmethod
 from typing import Generator, Optional
 
-from andromede.expression.linear_expression_efficient import LinearExpressionEfficient
+from andromede.expression.linear_expression import LinearExpressionEfficient
 from andromede.model import Constraint, Model, ProblemContext, Variable
 
 

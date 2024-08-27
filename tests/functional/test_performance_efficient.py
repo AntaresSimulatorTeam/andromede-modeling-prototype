@@ -14,9 +14,9 @@
 import pytest
 
 from andromede.expression.evaluate import EvaluationContext
-from andromede.expression.expression_efficient import param
+from andromede.expression.expression import param
 from andromede.expression.indexing_structure import RowIndex
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     literal,
     var,
     wrap_in_linear_expr,

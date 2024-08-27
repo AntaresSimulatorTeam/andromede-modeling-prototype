@@ -11,8 +11,8 @@
 # This file is part of the Antares project.
 
 from .copy import CopyVisitor, copy_expression
-from .evaluate_parameters_efficient import ValueProvider
-from .expression_efficient import (
+from .evaluate_parameters import ValueProvider
+from .expression import (
     AdditionNode,
     ComparisonNode,
     ComponentParameterNode,

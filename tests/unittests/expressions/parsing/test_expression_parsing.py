@@ -14,13 +14,13 @@ from typing import Set, Union
 import pytest
 
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression_efficient import (
+from andromede.expression.expression import (
     ExpressionNodeEfficient,
     ExpressionRange,
     literal,
     param,
 )
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     StandaloneConstraint,
     linear_expressions_equal,

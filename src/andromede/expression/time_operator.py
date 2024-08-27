@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, List, Tuple
 
-from andromede.expression.expression_efficient import InstancesTimeIndex
+from andromede.expression.expression import InstancesTimeIndex
 
 
 @dataclass(frozen=True)

@@ -16,8 +16,8 @@ from typing import Dict
 
 import pytest
 
-from andromede.expression.evaluate_parameters_efficient import resolve_coefficient
-from andromede.expression.expression_efficient import (
+from andromede.expression.evaluate_parameters import resolve_coefficient
+from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
     ExpressionNodeEfficient,

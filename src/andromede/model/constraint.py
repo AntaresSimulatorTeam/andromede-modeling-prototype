@@ -12,8 +12,8 @@
 from dataclasses import InitVar, dataclass, field
 from typing import Any, Union
 
-from andromede.expression.expression_efficient import ExpressionNodeEfficient, literal
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.expression import ExpressionNodeEfficient, literal
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     StandaloneConstraint,
     linear_expressions_equal,

@@ -15,7 +15,7 @@ from typing import Dict, List
 import pytest
 
 from andromede.expression.equality import expressions_equal
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     PortFieldId,
     PortFieldKey,

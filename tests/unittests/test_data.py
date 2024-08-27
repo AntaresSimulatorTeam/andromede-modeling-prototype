@@ -15,9 +15,9 @@ from typing import Union
 import pandas as pd
 import pytest
 
-from andromede.expression.expression_efficient import param
+from andromede.expression.expression import param
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import var
+from andromede.expression.linear_expression import var
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,

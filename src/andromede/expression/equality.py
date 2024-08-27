@@ -14,7 +14,7 @@ import math
 from dataclasses import dataclass
 from typing import Optional
 
-from andromede.expression.expression_efficient import (
+from andromede.expression.expression import (
     AdditionNode,
     BinaryOperatorNode,
     ComparisonNode,

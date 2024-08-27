@@ -14,12 +14,12 @@ from typing import Dict
 
 import pytest
 
-from andromede.expression.expression_efficient import (
+from andromede.expression.expression import (
     TimeAggregatorNode,
     expression_range,
     param,
 )
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     PortFieldId,
     PortFieldTerm,

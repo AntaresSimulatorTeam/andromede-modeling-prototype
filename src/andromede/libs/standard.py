@@ -14,9 +14,9 @@
 The standard module contains the definition of standard models.
 """
 
-from andromede.expression.expression_efficient import ExpressionRange, literal, param
+from andromede.expression.expression import ExpressionRange, literal, param
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     port_field,
     var,
     wrap_in_linear_expr,

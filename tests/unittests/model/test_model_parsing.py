@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from andromede.expression.expression_efficient import literal, param
-from andromede.expression.linear_expression_efficient import port_field, var
+from andromede.expression.expression import literal, param
+from andromede.expression.linear_expression import port_field, var
 from andromede.expression.parsing.parse_expression import AntaresParseException
 from andromede.libs.standard import CONSTANT
 from andromede.model import (

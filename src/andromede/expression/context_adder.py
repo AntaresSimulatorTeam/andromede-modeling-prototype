@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 
 from . import CopyVisitor
-from .expression_efficient import (
+from .expression import (
     ComponentParameterNode,
     ExpressionNodeEfficient,
     ParameterNode,

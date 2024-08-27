@@ -12,9 +12,9 @@
 from typing import Dict, List, Optional, TypedDict, Union
 
 # from andromede.expression import ExpressionNode
-from andromede.expression.expression_efficient import ExpressionNodeEfficient
+from andromede.expression.expression import ExpressionNodeEfficient
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     StandaloneConstraint,
     wrap_in_linear_expr_if_present,

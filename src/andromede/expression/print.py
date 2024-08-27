@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from .expression_efficient import (
+from .expression import (
     AdditionNode,
     Comparator,
     ComparisonNode,

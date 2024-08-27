@@ -15,8 +15,8 @@ from typing import Optional, Type
 
 import pytest
 
-from andromede.expression.expression_efficient import ExpressionRange, comp_param, param
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.expression import ExpressionRange, comp_param, param
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     comp_var,
     linear_expressions_equal,

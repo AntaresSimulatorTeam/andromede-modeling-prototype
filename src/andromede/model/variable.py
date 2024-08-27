@@ -13,9 +13,9 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from andromede.expression.expression_efficient import literal
+from andromede.expression.expression import literal
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     linear_expressions_equal_if_present,
     wrap_in_linear_expr,

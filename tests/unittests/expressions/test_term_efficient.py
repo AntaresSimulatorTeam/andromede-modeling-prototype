@@ -12,8 +12,8 @@
 
 import pytest
 
-from andromede.expression.expression_efficient import LiteralNode
-from andromede.expression.linear_expression_efficient import TermEfficient
+from andromede.expression.expression import LiteralNode
+from andromede.expression.linear_expression import TermEfficient
 from andromede.expression.scenario_operator import Expectation, Variance
 from andromede.expression.time_operator import TimeShift, TimeSum
 

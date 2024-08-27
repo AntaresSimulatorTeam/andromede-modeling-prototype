@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from typing import List, cast
 
-from .expression_efficient import (
+from .expression import (
     ComparisonNode,
     ComponentParameterNode,
     ExpressionNodeEfficient,

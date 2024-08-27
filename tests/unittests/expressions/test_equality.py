@@ -15,7 +15,7 @@ import pytest
 
 from andromede.expression.copy import copy_expression
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression_efficient import (
+from andromede.expression.expression import (
     ExpressionNodeEfficient,
     InstancesTimeIndex,
     TimeAggregatorName,

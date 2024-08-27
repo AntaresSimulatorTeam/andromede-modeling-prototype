@@ -18,7 +18,7 @@ import pytest
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.evaluate import EvaluationContext, ValueProvider
-from andromede.expression.expression_efficient import (
+from andromede.expression.expression import (
     ComponentParameterNode,
     ExpressionNodeEfficient,
     ExpressionRange,
@@ -35,7 +35,7 @@ from andromede.expression.expression_efficient import (
 )
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure, RowIndex
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     StandaloneConstraint,
     TermEfficient,

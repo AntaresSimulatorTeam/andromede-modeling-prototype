@@ -33,8 +33,8 @@ from typing import (
 
 from .context_adder import add_component_context
 from .equality import expressions_equal
-from .evaluate_parameters_efficient import check_resolved_expr, resolve_coefficient
-from .expression_efficient import (
+from .evaluate_parameters import check_resolved_expr, resolve_coefficient
+from .expression import (
     ExpressionNodeEfficient,
     ExpressionRange,
     InstancesTimeIndex,

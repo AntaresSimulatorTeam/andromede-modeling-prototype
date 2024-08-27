@@ -16,14 +16,14 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression_efficient import (
+from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
     ExpressionRange,
     literal,
     param,
 )
-from andromede.expression.linear_expression_efficient import (
+from andromede.expression.linear_expression import (
     LinearExpressionEfficient,
     port_field,
     var,
