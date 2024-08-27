@@ -9,13 +9,12 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-import io
 from pathlib import Path
 
 import pytest
 
-from andromede.expression import literal, param, var
-from andromede.expression.expression import port_field
+from andromede.expression.expression import literal, param
+from andromede.expression.linear_expression import port_field, var
 from andromede.expression.parsing.parse_expression import AntaresParseException
 from andromede.libs.standard import CONSTANT
 from andromede.model import (
@@ -62,7 +61,7 @@ def test_library_parsing(data_dir: Path) -> None:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId(port_name="injection_port", field_name="flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
@@ -101,13 +100,13 @@ def test_library_parsing(data_dir: Path) -> None:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId(port_name="injection_port", field_name="flow"),
-                definition=var("injection") - var("withdrawal"),
+                definition_init=var("injection") - var("withdrawal"),
             )
         ],
         constraints=[
             Constraint(
                 name="Level equation",
-                expression=var("level")
+                expression_init=var("level")
                 - var("level").shift(-literal(1))
                 - param("efficiency") * var("injection")
                 + var("withdrawal")
@@ -163,7 +162,8 @@ def test_library_port_model_ok_parsing(data_dir: Path) -> None:
         constraints=[
             Constraint(
                 name="Level equation",
-                expression=port_field("injection_port", "flow") == var("withdrawal"),
+                expression_init=port_field("injection_port", "flow")
+                == var("withdrawal"),
             )
         ],
     )

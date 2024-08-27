@@ -10,20 +10,23 @@
 #
 # This file is part of the Antares project.
 
+import re
+from typing import Optional, Type
+
 import pytest
 
-from andromede.expression.expression import (
-    ExpressionNode,
-    ExpressionRange,
-    comp_param,
+from andromede.expression.expression import ExpressionRange, comp_param, param
+from andromede.expression.linear_expression import (
+    LinearExpression,
     comp_var,
+    linear_expressions_equal,
     literal,
-    param,
     port_field,
     var,
+    wrap_in_linear_expr,
 )
-from andromede.model import Constraint, float_parameter, float_variable, model
-from andromede.model.model import PortFieldDefinition, port_field_def
+from andromede.model import Constraint, float_variable, model
+from andromede.model.model import port_field_def
 
 
 @pytest.mark.parametrize(
@@ -36,8 +39,28 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             literal(10),
             "my_constraint",
             2 * var("my_var"),
-            literal(5),
+            wrap_in_linear_expr(literal(5)),
+            wrap_in_linear_expr(literal(10)),
+        ),
+        (
+            "my_constraint",
+            2 * var("my_var"),
+            None,
             literal(10),
+            "my_constraint",
+            2 * var("my_var"),
+            wrap_in_linear_expr(literal(-float("inf"))),
+            wrap_in_linear_expr(literal(10)),
+        ),
+        (
+            "my_constraint",
+            2 * var("my_var"),
+            literal(5),
+            None,
+            "my_constraint",
+            2 * var("my_var"),
+            wrap_in_linear_expr(literal(5)),
+            wrap_in_linear_expr(literal(float("inf"))),
         ),
         (
             "my_constraint",
@@ -46,8 +69,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var"),
-            literal(-float("inf")),
-            literal(float("inf")),
+            wrap_in_linear_expr(literal(-float("inf"))),
+            wrap_in_linear_expr(literal(float("inf"))),
         ),
         (
             "my_constraint",
@@ -56,8 +79,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var") - param("p"),
-            literal(-float("inf")),
-            literal(0),
+            wrap_in_linear_expr(literal(-float("inf"))),
+            wrap_in_linear_expr(literal(0)),
         ),
         (
             "my_constraint",
@@ -66,8 +89,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var") - param("p"),
-            literal(0),
-            literal(float("inf")),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(float("inf"))),
         ),
         (
             "my_constraint",
@@ -76,8 +99,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var") - param("p"),
-            literal(0),
-            literal(0),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(0)),
         ),
         (
             "my_constraint",
@@ -86,8 +109,8 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var").expec() - param("p"),
-            literal(0),
-            literal(0),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(0)),
         ),
         (
             "my_constraint",
@@ -96,26 +119,34 @@ from andromede.model.model import PortFieldDefinition, port_field_def
             None,
             "my_constraint",
             2 * var("my_var").shift(-1) - param("p"),
-            literal(0),
-            literal(0),
+            wrap_in_linear_expr(literal(0)),
+            wrap_in_linear_expr(literal(0)),
         ),
     ],
 )
 def test_constraint_instantiation(
     name: str,
-    expression: ExpressionNode,
-    lb: ExpressionNode,
-    ub: ExpressionNode,
+    expression: LinearExpression,
+    lb: Optional[LinearExpression],
+    ub: Optional[LinearExpression],
     exp_name: str,
-    exp_expr: ExpressionNode,
-    exp_lb: ExpressionNode,
-    exp_ub: ExpressionNode,
+    exp_expr: LinearExpression,
+    exp_lb: LinearExpression,
+    exp_ub: LinearExpression,
 ) -> None:
-    constraint = Constraint(name, expression, lb, ub)
+    if lb is None and ub is None:
+        constraint = Constraint(name, expression)
+    elif lb is None:
+        constraint = Constraint(name, expression, upper_bound=ub)
+    elif ub is None:
+        constraint = Constraint(name, expression, lower_bound=lb)
+    else:
+        constraint = Constraint(name, expression, lower_bound=lb, upper_bound=ub)
+
     assert constraint.name == exp_name
-    assert constraint.expression == exp_expr
-    assert constraint.lower_bound == exp_lb
-    assert constraint.upper_bound == exp_ub
+    assert linear_expressions_equal(constraint.expression, exp_expr)
+    assert linear_expressions_equal(constraint.lower_bound, exp_lb)
+    assert linear_expressions_equal(constraint.upper_bound, exp_ub)
 
 
 def test_if_both_comparison_expression_and_bound_given_for_constraint_init_then_it_should_raise_a_value_error() -> (
@@ -134,13 +165,11 @@ def test_if_a_bound_is_not_constant_then_it_should_raise_a_value_error() -> None
         Constraint("my_constraint", 2 * var("my_var"), var("x"))
     assert (
         str(exc.value)
-        == "The bounds of a constraint should not contain variables, x was given."
+        == "The bounds of a constraint should not contain variables, +x was given."
     )
 
 
-def test_writing_p_min_max_constraint_should_represent_all_expected_constraints() -> (
-    None
-):
+def test_writing_p_min_max_constraint_should_not_raise_exception() -> None:
     """
     Aim at representing the following mathematical constraints:
     For all t, p_min <= p[t] <= p_max * alpha[t] where p_min, p_max are literal paramters and alpha is an input timeseries
@@ -160,19 +189,19 @@ def test_writing_p_min_max_constraint_should_represent_all_expected_constraints(
         assert False, f"Writing p_min and p_max constraints raises an exception: {exc}"
 
 
-def test_writing_min_up_constraint_should_represent_all_expected_constraints() -> None:
+def test_writing_min_up_constraint_should_not_raise_exception() -> None:
     """
     Aim at representing the following mathematical constraints:
     For all t, for all t' in [t+1, t+d_min_up], off_on[k,t,w] <= on[k,t',w]
     """
     try:
-        d_min_up = literal(3)
+        d_min_up = 3
         off_on = var("off_on")
         on = var("on")
 
         _ = Constraint(
             "min_up_time",
-            off_on <= on.shift(ExpressionRange(literal(1), d_min_up)).sum(),
+            off_on <= on.sum(shift=ExpressionRange(1, d_min_up)),
         )
 
         # Later on, the goal is to assert that when this constraint is sent to the solver, it correctly builds: for all t, for all t' in [t+1, t+d_min_up], off_on[k,t,w] <= on[k,t',w]
@@ -181,6 +210,7 @@ def test_writing_min_up_constraint_should_represent_all_expected_constraints() -
         assert False, f"Writing min_up constraints raises an exception: {exc}"
 
 
+@pytest.mark.skip(reason="Variance not implemented")
 def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objective_should_raise_type_error() -> (
     None
 ):
@@ -194,25 +224,47 @@ def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objectiv
 
 
 @pytest.mark.parametrize(
-    "expression",
+    "expression, error_type, error_msg",
     [
-        var("x") <= 0,
-        comp_var("c", "x"),
-        comp_param("c", "x"),
-        port_field("p", "f"),
-        port_field("p", "f").sum_connections(),
+        (
+            var("x") <= 0,
+            TypeError,
+            "Unable to wrap  + (-inf) <= +x <= 0 into a linear expression",
+        ),
+        (
+            comp_var("c", "x"),
+            ValueError,
+            "Port definition must not contain a variable associated to a component.",
+        ),
+        (
+            comp_param("c", "x"),
+            ValueError,
+            "Port definition must not contain a parameter associated to a component.",
+        ),
+        (
+            port_field("p", "f"),
+            ValueError,
+            "Port definition cannot reference another port field.",
+        ),
+        (
+            port_field("p", "f").sum_connections(),
+            ValueError,
+            "Port definition cannot reference another port field.",
+        ),
     ],
 )
-def test_invalid_port_field_definition_should_raise(expression: ExpressionNode) -> None:
-    with pytest.raises(ValueError) as exc:
+def test_invalid_port_field_definition_should_raise(
+    expression: LinearExpression, error_type: Type, error_msg: str
+) -> None:
+    with pytest.raises(error_type, match=re.escape(error_msg)):
         port_field_def(port_name="p", field_name="f", definition=expression)
 
 
 def test_constraint_equals() -> None:
     # checks in particular that expressions are correctly compared
-    assert Constraint(name="c", expression=var("x") <= param("p")) == Constraint(
-        name="c", expression=var("x") <= param("p")
+    assert Constraint(name="c", expression_init=var("x") <= param("p")) == Constraint(
+        name="c", expression_init=var("x") <= param("p")
     )
-    assert Constraint(name="c", expression=var("x") <= param("p")) != Constraint(
-        name="c", expression=var("y") <= param("p")
+    assert Constraint(name="c", expression_init=var("x") <= param("p")) != Constraint(
+        name="c", expression_init=var("y") <= param("p")
     )

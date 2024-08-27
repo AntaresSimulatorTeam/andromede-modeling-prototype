@@ -14,18 +14,11 @@
 Defines the model for generic expressions.
 """
 import enum
-import inspect
-from dataclasses import dataclass, field
-from typing import Any, Callable, List, Optional, Sequence, Union
+import math
+from dataclasses import dataclass
+from typing import Any, Callable, List, Optional, Union
 
-import andromede.expression.port_operator
-import andromede.expression.scenario_operator
-import andromede.expression.time_operator
-
-
-class Instances(enum.Enum):
-    SIMPLE = "SIMPLE"
-    MULTIPLE = "MULTIPLE"
+EPS = 10 ** (-16)
 
 
 @dataclass(frozen=True)
@@ -40,34 +33,32 @@ class ExpressionNode:
         >>> expr = -var('x') + 5 / param('p')
     """
 
-    instances: Instances = field(init=False, default=Instances.SIMPLE)
-
     def __neg__(self) -> "ExpressionNode":
-        return NegationNode(self)
+        return _negate_node(self)
 
     def __add__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: AdditionNode(self, x))
+        return _apply_if_node(rhs, lambda x: _add_node(self, x))
 
     def __radd__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: AdditionNode(x, self))
+        return _apply_if_node(lhs, lambda x: _add_node(x, self))
 
     def __sub__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: SubstractionNode(self, x))
+        return _apply_if_node(rhs, lambda x: _substract_node(self, x))
 
     def __rsub__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: SubstractionNode(x, self))
+        return _apply_if_node(lhs, lambda x: _substract_node(x, self))
 
     def __mul__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: MultiplicationNode(self, x))
+        return _apply_if_node(rhs, lambda x: _multiply_node(self, x))
 
     def __rmul__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: MultiplicationNode(x, self))
+        return _apply_if_node(lhs, lambda x: _multiply_node(x, self))
 
     def __truediv__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: DivisionNode(self, x))
+        return _apply_if_node(rhs, lambda x: _divide_node(self, x))
 
     def __rtruediv__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: DivisionNode(x, self))
+        return _apply_if_node(lhs, lambda x: _divide_node(x, self))
 
     def __le__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(
@@ -84,15 +75,20 @@ class ExpressionNode:
 
     def sum(self) -> "ExpressionNode":
         if isinstance(self, TimeOperatorNode):
-            return TimeAggregatorNode(self, "TimeSum", stay_roll=True)
+            return TimeAggregatorNode(self, TimeAggregatorName.TIME_SUM, stay_roll=True)
         else:
             return _apply_if_node(
-                self, lambda x: TimeAggregatorNode(x, "TimeSum", stay_roll=False)
+                self,
+                lambda x: TimeAggregatorNode(
+                    x, TimeAggregatorName.TIME_SUM, stay_roll=False
+                ),
             )
 
     def sum_connections(self) -> "ExpressionNode":
         if isinstance(self, PortFieldNode):
-            return PortFieldAggregatorNode(self, aggregator="PortSum")
+            return PortFieldAggregatorNode(
+                self, aggregator=PortFieldAggregatorName.PORT_SUM
+            )
         raise ValueError(
             f"sum_connections() applies only for PortFieldNode, whereas the current node is of type {type(self)}."
         )
@@ -100,58 +96,224 @@ class ExpressionNode:
     def shift(
         self,
         expressions: Union[
-            int, "ExpressionNode", List["ExpressionNode"], "ExpressionRange"
-        ],
-    ) -> "ExpressionNode":
-        return _apply_if_node(
-            self,
-            lambda x: TimeOperatorNode(x, "TimeShift", InstancesTimeIndex(expressions)),
-        )
-
-    def eval(
-        self,
-        expressions: Union[
-            int, "ExpressionNode", List["ExpressionNode"], "ExpressionRange"
+            int,
+            "ExpressionNode",
+            List["ExpressionNode"],
+            "ExpressionRange",
         ],
     ) -> "ExpressionNode":
         return _apply_if_node(
             self,
             lambda x: TimeOperatorNode(
-                x, "TimeEvaluation", InstancesTimeIndex(expressions)
+                x, TimeOperatorName.SHIFT, InstancesTimeIndex(expressions)
+            ),
+        )
+
+    def eval(
+        self,
+        expressions: Union[
+            int,
+            "ExpressionNode",
+            List["ExpressionNode"],
+            "ExpressionRange",
+        ],
+    ) -> "ExpressionNode":
+        return _apply_if_node(
+            self,
+            lambda x: TimeOperatorNode(
+                x, TimeOperatorName.EVALUATION, InstancesTimeIndex(expressions)
             ),
         )
 
     def expec(self) -> "ExpressionNode":
-        return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Expectation"))
+        return _apply_if_node(
+            self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.EXPECTATION)
+        )
 
     def variance(self) -> "ExpressionNode":
-        return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Variance"))
+        return _apply_if_node(
+            self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.VARIANCE)
+        )
 
 
-def _wrap_in_node(obj: Any) -> ExpressionNode:
+def wrap_in_node(obj: Any) -> ExpressionNode:
     if isinstance(obj, ExpressionNode):
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
         return LiteralNode(float(obj))
-    raise TypeError(f"Unable to wrap {obj} into an expression node")
+    # Do not raise excpetion so that we can return NotImplemented in _apply_if_node
+    # raise TypeError(f"Unable to wrap {obj} into an expression node")
 
 
 def _apply_if_node(
     obj: Any, func: Callable[["ExpressionNode"], "ExpressionNode"]
 ) -> "ExpressionNode":
-    if as_node := _wrap_in_node(obj):
+    if as_node := wrap_in_node(obj):
         return func(as_node)
     else:
         return NotImplemented
 
 
-@dataclass(frozen=True, eq=False)
-class VariableNode(ExpressionNode):
-    name: str
+def is_zero(node: ExpressionNode) -> bool:
+    # Faster implementation than expressions equal for this particular cases
+    return isinstance(node, LiteralNode) and math.isclose(node.value, 0, abs_tol=EPS)
 
 
-def var(name: str) -> VariableNode:
-    return VariableNode(name)
+def is_one(node: ExpressionNode) -> bool:
+    # Faster implementation than expressions equal for this particular cases
+    return isinstance(node, LiteralNode) and math.isclose(node.value, 1)
+
+
+def is_minus_one(node: ExpressionNode) -> bool:
+    # Faster implementation than expressions equal for this particular cases
+    return isinstance(node, LiteralNode) and math.isclose(node.value, -1)
+
+
+def _negate_node(node: ExpressionNode) -> ExpressionNode:
+    if isinstance(node, LiteralNode):
+        return LiteralNode(-node.value)
+    elif isinstance(node, NegationNode):
+        return node.operand
+    else:
+        return NegationNode(node)
+
+
+def _add_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
+    if is_zero(lhs):
+        return rhs
+    if is_zero(rhs):
+        return lhs
+    # TODO: How can we use the equality visitor here (simple import -> circular import) -> equality visitor code is placed at the bottom of this file...
+    if expressions_equal(lhs, -rhs):
+        return LiteralNode(0)
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        return LiteralNode(lhs.value + rhs.value)
+    if _are_parameter_nodes_equal(lhs, rhs):
+        return MultiplicationNode(LiteralNode(2), lhs)
+    if (lhs_is_param := isinstance(lhs, ParameterNode)) or (
+        rhs_is_param := isinstance(rhs, ParameterNode)
+    ):
+        if lhs_is_param:
+            param_node = lhs
+            other = rhs
+        elif rhs_is_param:
+            param_node = rhs
+            other = lhs
+
+        if isinstance(other, MultiplicationNode):
+            if _are_parameter_nodes_equal(param_node, other.left):
+                return MultiplicationNode(
+                    _add_node(LiteralNode(1), other.right), param_node
+                )
+            elif _are_parameter_nodes_equal(param_node, other.right):
+                return MultiplicationNode(
+                    _add_node(LiteralNode(1), other.left), param_node
+                )
+
+    if isinstance(lhs, MultiplicationNode) and isinstance(rhs, MultiplicationNode):
+        if _are_parameter_nodes_equal(lhs.left, rhs.left):
+            return MultiplicationNode(_add_node(lhs.right, rhs.right), lhs.left)
+        elif _are_parameter_nodes_equal(lhs.left, rhs.right):
+            return MultiplicationNode(_add_node(lhs.right, rhs.left), lhs.left)
+        elif _are_parameter_nodes_equal(lhs.right, rhs.left):
+            return MultiplicationNode(_add_node(lhs.left, rhs.right), lhs.right)
+        elif _are_parameter_nodes_equal(lhs.right, rhs.right):
+            return MultiplicationNode(_add_node(lhs.left, rhs.left), lhs.right)
+    else:
+        return AdditionNode(lhs, rhs)
+
+
+# Better if we could use equality visitor
+def _are_parameter_nodes_equal(lhs: ExpressionNode, rhs: ExpressionNode) -> bool:
+    return (
+        isinstance(lhs, ParameterNode)
+        and isinstance(rhs, ParameterNode)
+        and lhs.name == rhs.name
+    )
+
+
+def _substract_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
+    if is_zero(lhs):
+        return -rhs
+    if is_zero(rhs):
+        return lhs
+    if expressions_equal(lhs, rhs):
+        return LiteralNode(0)
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        return LiteralNode(lhs.value - rhs.value)
+    if _are_parameter_nodes_equal(lhs, -rhs):
+        return MultiplicationNode(LiteralNode(2), lhs)
+    if (lhs_is_param := isinstance(lhs, ParameterNode)) or (
+        rhs_is_param := isinstance(rhs, ParameterNode)
+    ):
+        if lhs_is_param:
+            param_node = lhs
+            other = rhs
+        elif rhs_is_param:
+            param_node = rhs
+            other = lhs
+
+        if isinstance(other, MultiplicationNode):
+            if _are_parameter_nodes_equal(param_node, other.left):
+                if lhs_is_param:
+                    return MultiplicationNode(
+                        _substract_node(LiteralNode(1), other.right), param_node
+                    )
+                elif rhs_is_param:
+                    return MultiplicationNode(
+                        _substract_node(other.right, LiteralNode(1)), param_node
+                    )
+            elif _are_parameter_nodes_equal(param_node, other.right):
+                if lhs_is_param:
+                    return MultiplicationNode(
+                        _substract_node(LiteralNode(1), other.left), param_node
+                    )
+                elif rhs_is_param:
+                    return MultiplicationNode(
+                        _substract_node(other.left, LiteralNode(1)), param_node
+                    )
+
+    if isinstance(lhs, MultiplicationNode) and isinstance(rhs, MultiplicationNode):
+        if _are_parameter_nodes_equal(lhs.left, rhs.left):
+            return MultiplicationNode(_substract_node(lhs.right, rhs.right), lhs.left)
+        elif _are_parameter_nodes_equal(lhs.left, rhs.right):
+            return MultiplicationNode(_substract_node(lhs.right, rhs.left), lhs.left)
+        elif _are_parameter_nodes_equal(lhs.right, rhs.left):
+            return MultiplicationNode(_substract_node(lhs.left, rhs.right), lhs.right)
+        elif _are_parameter_nodes_equal(lhs.right, rhs.right):
+            return MultiplicationNode(_substract_node(lhs.left, rhs.left), lhs.right)
+    else:
+        return SubstractionNode(lhs, rhs)
+
+
+def _multiply_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
+    if is_zero(lhs) or is_zero(rhs):
+        return LiteralNode(0)
+    if is_one(lhs):
+        return rhs
+    if is_one(rhs):
+        return lhs
+    if is_minus_one(lhs):
+        return -rhs
+    if is_minus_one(rhs):
+        return -lhs
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        return LiteralNode(lhs.value * rhs.value)
+    else:
+        return MultiplicationNode(lhs, rhs)
+
+
+def _divide_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
+    if is_one(rhs):
+        return lhs
+    if is_minus_one(rhs):
+        return -lhs
+    if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
+        # This could raise division by 0 error
+        return LiteralNode(lhs.value / rhs.value)
+
+    else:
+        return DivisionNode(lhs, rhs)
 
 
 @dataclass(frozen=True, eq=False)
@@ -164,17 +326,9 @@ class PortFieldNode(ExpressionNode):
     field_name: str
 
 
-def port_field(port_name: str, field_name: str) -> PortFieldNode:
-    return PortFieldNode(port_name, field_name)
-
-
 @dataclass(frozen=True, eq=False)
 class ParameterNode(ExpressionNode):
     name: str
-
-
-def param(name: str) -> ParameterNode:
-    return ParameterNode(name)
 
 
 @dataclass(frozen=True, eq=False)
@@ -191,26 +345,12 @@ class ComponentParameterNode(ExpressionNode):
     name: str
 
 
-def comp_param(component_id: str, name: str) -> ComponentParameterNode:
+def param(name: str) -> ExpressionNode:
+    return ParameterNode(name)
+
+
+def comp_param(component_id: str, name: str) -> ExpressionNode:
     return ComponentParameterNode(component_id, name)
-
-
-@dataclass(frozen=True, eq=False)
-class ComponentVariableNode(ExpressionNode):
-    """
-    Represents one variable of one component.
-
-    When building actual equations for a system,
-    we need to associated each variable to its
-    actual component, at some point.
-    """
-
-    component_id: str
-    name: str
-
-
-def comp_var(component_id: str, name: str) -> ComponentVariableNode:
-    return ComponentVariableNode(component_id, name)
 
 
 @dataclass(frozen=True, eq=False)
@@ -218,33 +358,32 @@ class LiteralNode(ExpressionNode):
     value: float
 
 
-def literal(value: float) -> LiteralNode:
+def literal(value: float) -> ExpressionNode:
     return LiteralNode(value)
+
+
+def is_unbound(expr: ExpressionNode) -> bool:
+    return isinstance(expr, LiteralNode) and (abs(expr.value) == float("inf"))
 
 
 @dataclass(frozen=True, eq=False)
 class UnaryOperatorNode(ExpressionNode):
     operand: ExpressionNode
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "instances", self.operand.instances)
+
+class PortFieldAggregatorName(enum.Enum):
+    # String value of enum must match the name of the PortAggregator class in port_operator.py
+    PORT_SUM = "PortSum"
 
 
 @dataclass(frozen=True, eq=False)
 class PortFieldAggregatorNode(UnaryOperatorNode):
-    aggregator: str
+    aggregator: PortFieldAggregatorName
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.port_operator, inspect.isclass
-            )
-            if issubclass(cls, andromede.expression.port_operator.PortAggregator)
-        ]
-        if self.aggregator not in valid_names:
-            raise NotImplementedError(
-                f"{self.aggregator} is not a valid port aggregator, valid port aggregators are {valid_names}"
+        if not isinstance(self.aggregator, PortFieldAggregatorName):
+            raise TypeError(
+                f"PortFieldAggregatorNode.name should of class PortFieldAggregatorName, but {self.aggregator} of type {type(self.aggregator)} was given"
             )
 
 
@@ -258,18 +397,6 @@ class BinaryOperatorNode(ExpressionNode):
     left: ExpressionNode
     right: ExpressionNode
 
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "apply binary operation with")
-
-
-def binary_operator_post_init(node: BinaryOperatorNode, operation: str) -> None:
-    if node.left.instances != node.right.instances:
-        raise ValueError(
-            f"Cannot {operation} {node.left} and {node.right} as they do not have the same number of instances."
-        )
-    else:
-        object.__setattr__(node, "instances", node.left.instances)
-
 
 class Comparator(enum.Enum):
     LESS_THAN = "LESS_THAN"
@@ -281,35 +408,28 @@ class Comparator(enum.Enum):
 class ComparisonNode(BinaryOperatorNode):
     comparator: Comparator
 
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "compare")
-
 
 @dataclass(frozen=True, eq=False)
 class AdditionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "add")
+    pass
 
 
 @dataclass(frozen=True, eq=False)
 class SubstractionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "substract")
+    pass
 
 
 @dataclass(frozen=True, eq=False)
 class MultiplicationNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "multiply")
+    pass
 
 
 @dataclass(frozen=True, eq=False)
 class DivisionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "divide")
+    pass
 
 
-@dataclass(frozen=True, eq=False)
+@dataclass(frozen=True)
 class ExpressionRange:
     start: ExpressionNode
     stop: ExpressionNode
@@ -319,8 +439,16 @@ class ExpressionRange:
         for attribute in self.__dict__:
             value = getattr(self, attribute)
             object.__setattr__(
-                self, attribute, _wrap_in_node(value) if value is not None else value
+                self, attribute, wrap_in_node(value) if value is not None else value
             )
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, ExpressionRange)
+            and expressions_equal(self.start, other.start)
+            and expressions_equal(self.stop, other.stop)
+            and expressions_equal_if_present(self.step, other.step)
+        )
 
 
 IntOrExpr = Union[int, ExpressionNode]
@@ -330,13 +458,13 @@ def expression_range(
     start: IntOrExpr, stop: IntOrExpr, step: Optional[IntOrExpr] = None
 ) -> ExpressionRange:
     return ExpressionRange(
-        start=_wrap_in_node(start),
-        stop=_wrap_in_node(stop),
-        step=None if step is None else _wrap_in_node(step),
+        start=wrap_in_node(start),
+        stop=wrap_in_node(stop),
+        step=None if step is None else wrap_in_node(step),
     )
 
 
-@dataclass
+@dataclass(frozen=True)
 class InstancesTimeIndex:
     """
     Defines a set of time indices on which a time operator operates.
@@ -365,9 +493,36 @@ class InstancesTimeIndex:
             )
 
         if isinstance(expressions, (int, ExpressionNode)):
-            self.expressions = [_wrap_in_node(expressions)]
+            object.__setattr__(self, "expressions", [wrap_in_node(expressions)])
         else:
-            self.expressions = expressions
+            object.__setattr__(self, "expressions", expressions)
+
+    def __hash__(self) -> int:
+        # Maybe if/else not needed and always using the tuple works ?
+        if isinstance(self.expressions, list):
+            return hash(tuple(self.expressions))
+        else:
+            return hash(self.expressions)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, InstancesTimeIndex):
+            if isinstance(self.expressions, list) and all(
+                isinstance(x, ExpressionNode) for x in self.expressions
+            ):
+                return (
+                    isinstance(other.expressions, list)
+                    and all(isinstance(x, ExpressionNode) for x in other.expressions)
+                    and all(
+                        expressions_equal(left_expr, right_expr)
+                        for left_expr, right_expr in zip(
+                            self.expressions, other.expressions
+                        )
+                    )
+                )
+            elif isinstance(self.expressions, ExpressionRange):
+                return self.expressions == other.expressions
+        else:
+            return False
 
     def is_simple(self) -> bool:
         if isinstance(self.expressions, list):
@@ -377,76 +532,225 @@ class InstancesTimeIndex:
             return False
 
 
+class TimeOperatorName(enum.Enum):
+    # String value of enum must match the name of the TimeOperator class in time_operator.py
+    SHIFT = "TimeShift"
+    EVALUATION = "TimeEvaluation"
+
+
+class TimeAggregatorName(enum.Enum):
+    # String value of enum must match the name of the TimeAggregator class in time_operator.py
+    TIME_SUM = "TimeSum"
+
+
 @dataclass(frozen=True, eq=False)
 class TimeOperatorNode(UnaryOperatorNode):
-    name: str
+    name: TimeOperatorName
     instances_index: InstancesTimeIndex
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.time_operator, inspect.isclass
-            )
-            if issubclass(cls, andromede.expression.time_operator.TimeOperator)
-        ]
-        if self.name not in valid_names:
-            raise ValueError(
-                f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
-            )
-        if self.operand.instances == Instances.SIMPLE:
-            if self.instances_index.is_simple():
-                object.__setattr__(self, "instances", Instances.SIMPLE)
-            else:
-                object.__setattr__(self, "instances", Instances.MULTIPLE)
-        else:
-            raise ValueError(
-                "Cannot apply time operator on an expression that already represents multiple instances"
+        if not isinstance(self.name, TimeOperatorName):
+            raise TypeError(
+                f"TimeOperatorNode.name should of class TimeOperatorName, but {self.name} of type {type(self.name)} was given"
             )
 
 
 @dataclass(frozen=True, eq=False)
 class TimeAggregatorNode(UnaryOperatorNode):
-    name: str
-    stay_roll: bool
+    name: TimeAggregatorName
+    stay_roll: bool  # TODO: Is it still useful ?
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.time_operator, inspect.isclass
+        if not isinstance(self.name, TimeAggregatorName):
+            raise TypeError(
+                f"TimeAggregatorNode.name should of class TimeAggregatorName, but {self.name} of type {type(self.name)} was given"
             )
-            if issubclass(cls, andromede.expression.time_operator.TimeAggregator)
-        ]
-        if self.name not in valid_names:
-            raise ValueError(
-                f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
-            )
-        object.__setattr__(self, "instances", Instances.SIMPLE)
+
+
+class ScenarioOperatorName(enum.Enum):
+    # String value of enum must match the name of the ScenarioOperator class in scenario_operator.py
+    EXPECTATION = "Expectation"
+    VARIANCE = "Variance"
 
 
 @dataclass(frozen=True, eq=False)
 class ScenarioOperatorNode(UnaryOperatorNode):
-    name: str
+    name: ScenarioOperatorName
 
     def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.scenario_operator, inspect.isclass
+        if not isinstance(self.name, ScenarioOperatorName):
+            raise TypeError(
+                f"ScenarioOperatorNode.name should of class ScenarioOperatorName, but {self.name} of type {type(self.name)} was given"
             )
-            if issubclass(cls, andromede.expression.scenario_operator.ScenarioOperator)
-        ]
-        if self.name not in valid_names:
+
+
+@dataclass(frozen=True)
+class EqualityVisitor:
+    abs_tol: float = 0
+    rel_tol: float = 0
+
+    def __post_init__(self) -> None:
+        if self.abs_tol < 0:
             raise ValueError(
-                f"{self.name} is not a valid scenario operator, valid scenario operators are {valid_names}"
+                f"Absolute comparison tolerance must be >= 0, got {self.abs_tol}"
             )
-        object.__setattr__(self, "instances", Instances.SIMPLE)
+        if self.rel_tol < 0:
+            raise ValueError(
+                f"Relative comparison tolerance must be >= 0, got {self.rel_tol}"
+            )
+
+    def visit(self, left: ExpressionNode, right: ExpressionNode) -> bool:
+        if left.__class__ != right.__class__:
+            return False
+        if isinstance(left, LiteralNode) and isinstance(right, LiteralNode):
+            return self.literal(left, right)
+        if isinstance(left, NegationNode) and isinstance(right, NegationNode):
+            return self.negation(left, right)
+        if isinstance(left, AdditionNode) and isinstance(right, AdditionNode):
+            return self.addition(left, right)
+        if isinstance(left, SubstractionNode) and isinstance(right, SubstractionNode):
+            return self.substraction(left, right)
+        if isinstance(left, DivisionNode) and isinstance(right, DivisionNode):
+            return self.division(left, right)
+        if isinstance(left, MultiplicationNode) and isinstance(
+            right, MultiplicationNode
+        ):
+            return self.multiplication(left, right)
+        if isinstance(left, ComparisonNode) and isinstance(right, ComparisonNode):
+            return self.comparison(left, right)
+        if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
+            return self.parameter(left, right)
+        if isinstance(left, ComponentParameterNode) and isinstance(
+            right, ComponentParameterNode
+        ):
+            return self.comp_parameter(left, right)
+        if isinstance(left, TimeOperatorNode) and isinstance(right, TimeOperatorNode):
+            return self.time_operator(left, right)
+        if isinstance(left, TimeAggregatorNode) and isinstance(
+            right, TimeAggregatorNode
+        ):
+            return self.time_aggregator(left, right)
+        if isinstance(left, ScenarioOperatorNode) and isinstance(
+            right, ScenarioOperatorNode
+        ):
+            return self.scenario_operator(left, right)
+        if isinstance(left, PortFieldNode) and isinstance(right, PortFieldNode):
+            return self.port_field(left, right)
+        if isinstance(left, PortFieldAggregatorNode) and isinstance(
+            right, PortFieldAggregatorNode
+        ):
+            return self.port_field_aggregator(left, right)
+        raise NotImplementedError(f"Equality not implemented for {left.__class__}")
+
+    def literal(self, left: LiteralNode, right: LiteralNode) -> bool:
+        return math.isclose(
+            left.value, right.value, abs_tol=self.abs_tol, rel_tol=self.rel_tol
+        )
+
+    def _visit_operands(
+        self, left: BinaryOperatorNode, right: BinaryOperatorNode
+    ) -> bool:
+        return self.visit(left.left, right.left) and self.visit(left.right, right.right)
+
+    def negation(self, left: NegationNode, right: NegationNode) -> bool:
+        return self.visit(left.operand, right.operand)
+
+    def addition(self, left: AdditionNode, right: AdditionNode) -> bool:
+        # TODO: Commutativty ??? Cannot detect that a+b == b+a ? Do we want to do this ?
+        return self._visit_operands(left, right)
+
+    def substraction(self, left: SubstractionNode, right: SubstractionNode) -> bool:
+        return self._visit_operands(left, right)
+
+    def multiplication(
+        self, left: MultiplicationNode, right: MultiplicationNode
+    ) -> bool:
+        return self._visit_operands(left, right)
+
+    def division(self, left: DivisionNode, right: DivisionNode) -> bool:
+        return self._visit_operands(left, right)
+
+    def comparison(self, left: ComparisonNode, right: ComparisonNode) -> bool:
+        return left.comparator == right.comparator and self._visit_operands(left, right)
+
+    def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
+        return left.name == right.name
+
+    def comp_parameter(
+        self, left: ComponentParameterNode, right: ComponentParameterNode
+    ) -> bool:
+        return left.component_id == right.component_id and left.name == right.name
+
+    def expression_range(self, left: ExpressionRange, right: ExpressionRange) -> bool:
+        if not self.visit(left.start, right.start):
+            return False
+        if not self.visit(left.stop, right.stop):
+            return False
+        if left.step is not None and right.step is not None:
+            return self.visit(left.step, right.step)
+        return left.step is None and right.step is None
+
+    def instances_index(self, lhs: InstancesTimeIndex, rhs: InstancesTimeIndex) -> bool:
+        if isinstance(lhs.expressions, ExpressionRange) and isinstance(
+            rhs.expressions, ExpressionRange
+        ):
+            return self.expression_range(lhs.expressions, rhs.expressions)
+        if isinstance(lhs.expressions, list) and isinstance(rhs.expressions, list):
+            return len(lhs.expressions) == len(rhs.expressions) and all(
+                self.visit(l, r) for l, r in zip(lhs.expressions, rhs.expressions)
+            )
+        return False
+
+    def time_operator(self, left: TimeOperatorNode, right: TimeOperatorNode) -> bool:
+        return (
+            left.name == right.name
+            and self.instances_index(left.instances_index, right.instances_index)
+            and self.visit(left.operand, right.operand)
+        )
+
+    def time_aggregator(
+        self, left: TimeAggregatorNode, right: TimeAggregatorNode
+    ) -> bool:
+        return (
+            left.name == right.name
+            and left.stay_roll == right.stay_roll
+            and self.visit(left.operand, right.operand)
+        )
+
+    def scenario_operator(
+        self, left: ScenarioOperatorNode, right: ScenarioOperatorNode
+    ) -> bool:
+        return left.name == right.name and self.visit(left.operand, right.operand)
+
+    def port_field(self, left: PortFieldNode, right: PortFieldNode) -> bool:
+        return left.port_name == right.port_name and left.field_name == right.field_name
+
+    def port_field_aggregator(
+        self, left: PortFieldAggregatorNode, right: PortFieldAggregatorNode
+    ) -> bool:
+        return left.aggregator == right.aggregator and self.visit(
+            left.operand, right.operand
+        )
 
 
-def sum_expressions(expressions: Sequence[ExpressionNode]) -> ExpressionNode:
-    if len(expressions) == 0:
-        return LiteralNode(0)
-    if len(expressions) == 1:
-        return expressions[0]
-    return expressions[0] + sum_expressions(expressions[1:])
+def expressions_equal(
+    left: ExpressionNode,
+    right: ExpressionNode,
+    abs_tol: float = 0,
+    rel_tol: float = 0,
+) -> bool:
+    """
+    True if both expression nodes are equal. Literal values may be compared with absolute or relative tolerance.
+    """
+    return EqualityVisitor(abs_tol, rel_tol).visit(left, right)
+
+
+def expressions_equal_if_present(
+    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
+) -> bool:
+    if lhs is None and rhs is None:
+        return True
+    elif lhs is None or rhs is None:
+        return False
+    else:
+        return expressions_equal(lhs, rhs)

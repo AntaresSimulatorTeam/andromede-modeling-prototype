@@ -13,13 +13,7 @@
 from dataclasses import dataclass
 
 from . import CopyVisitor
-from .expression import (
-    ComponentParameterNode,
-    ComponentVariableNode,
-    ExpressionNode,
-    ParameterNode,
-    VariableNode,
-)
+from .expression import ComponentParameterNode, ExpressionNode, ParameterNode
 from .visitor import visit
 
 
@@ -32,21 +26,10 @@ class ContextAdder(CopyVisitor):
 
     component_id: str
 
-    def variable(self, node: VariableNode) -> ExpressionNode:
-        return ComponentVariableNode(self.component_id, node.name)
-
     def parameter(self, node: ParameterNode) -> ExpressionNode:
         return ComponentParameterNode(self.component_id, node.name)
 
-    def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
-        raise ValueError(
-            "This expression has already been associated to another component."
-        )
-
-    def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
-        raise ValueError(
-            "This expression has already been associated to another component."
-        )
+    # Nothing is done is a component parameter node is encountered as it may have been generated from port resolution
 
 
 def add_component_context(id: str, expression: ExpressionNode) -> ExpressionNode:

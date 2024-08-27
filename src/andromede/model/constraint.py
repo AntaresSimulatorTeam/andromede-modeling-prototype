@@ -9,21 +9,16 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from dataclasses import dataclass
-from typing import Any, Optional
+from dataclasses import InitVar, dataclass, field
+from typing import Any, Union
 
-from andromede.expression.degree import is_constant
-from andromede.expression.equality import (
-    expressions_equal,
-    expressions_equal_if_present,
+from andromede.expression.expression import ExpressionNode, literal
+from andromede.expression.linear_expression import (
+    LinearExpression,
+    StandaloneConstraint,
+    linear_expressions_equal,
+    wrap_in_linear_expr,
 )
-from andromede.expression.expression import (
-    Comparator,
-    ComparisonNode,
-    ExpressionNode,
-    literal,
-)
-from andromede.expression.print import print_expr
 from andromede.model.common import ProblemContext
 
 
@@ -36,66 +31,54 @@ class Constraint:
     """
 
     name: str
-    expression: ExpressionNode
-    lower_bound: ExpressionNode
-    upper_bound: ExpressionNode
-    context: ProblemContext
+    # Used only for mypy type checking, we could have done the same by using only the attribute expression
+    expression_init: InitVar[
+        Union[ExpressionNode, LinearExpression, StandaloneConstraint]
+    ]
+    expression: LinearExpression = field(init=False)
+    lower_bound: LinearExpression = field(
+        default=wrap_in_linear_expr(literal(-float("inf")))
+    )
+    upper_bound: LinearExpression = field(
+        default=wrap_in_linear_expr(literal(float("inf")))
+    )
+    context: ProblemContext = field(default=ProblemContext.OPERATIONAL)
 
-    def __init__(
+    def __post_init__(
         self,
-        name: str,
-        expression: ExpressionNode,
-        lower_bound: Optional[ExpressionNode] = None,
-        upper_bound: Optional[ExpressionNode] = None,
-        context: ProblemContext = ProblemContext.OPERATIONAL,
+        expression_init: Union[ExpressionNode, LinearExpression, StandaloneConstraint],
     ) -> None:
-        self.name = name
-        self.context = context
+        self.lower_bound = wrap_in_linear_expr(self.lower_bound)
+        self.upper_bound = wrap_in_linear_expr(self.upper_bound)
 
-        if isinstance(expression, ComparisonNode):
-            if lower_bound is not None or upper_bound is not None:
+        if isinstance(expression_init, StandaloneConstraint):
+            # Case where constraint is initialized with something like Constraint(var("x") <= var("y"))
+            if not self.lower_bound.is_unbound() or not self.upper_bound.is_unbound():
                 raise ValueError(
                     "Both comparison between two expressions and a bound are specfied, set either only a comparison between expressions or a single linear expression with bounds."
                 )
 
-            merged_expr = expression.left - expression.right
-            self.expression = merged_expr
+            self.lower_bound = expression_init.lower_bound
+            self.upper_bound = expression_init.upper_bound
+            self.expression = expression_init.expression
 
-            if expression.comparator == Comparator.LESS_THAN:
-                # lhs - rhs <= 0
-                self.upper_bound = literal(0)
-                self.lower_bound = literal(-float("inf"))
-            elif expression.comparator == Comparator.GREATER_THAN:
-                # lhs - rhs >= 0
-                self.lower_bound = literal(0)
-                self.upper_bound = literal(float("inf"))
-            else:  # lhs - rhs == 0
-                self.lower_bound = literal(0)
-                self.upper_bound = literal(0)
         else:
-            for bound in [lower_bound, upper_bound]:
-                if bound is not None and not is_constant(bound):
+            self.expression = wrap_in_linear_expr(expression_init)
+            for bound in [self.lower_bound, self.upper_bound]:
+                if not bound.is_constant():
                     raise ValueError(
-                        f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
+                        f"The bounds of a constraint should not contain variables, {str(bound)} was given."
                     )
-
-            self.expression = expression
-            if lower_bound is not None:
-                self.lower_bound = lower_bound
-            else:
-                self.lower_bound = literal(-float("inf"))
-
-            if upper_bound is not None:
-                self.upper_bound = upper_bound
-            else:
-                self.upper_bound = literal(float("inf"))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Constraint):
             return False
         return (
             self.name == other.name
-            and expressions_equal(self.expression, other.expression)
-            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
-            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and linear_expressions_equal(self.expression, other.expression)
+            and linear_expressions_equal(self.lower_bound, other.lower_bound)
+            and linear_expressions_equal(self.upper_bound, other.upper_bound)
         )
+
+    def __str__(self) -> str:
+        return f"{str(self.lower_bound)} <= {str(self.expression)} <= {str(self.upper_bound)}"

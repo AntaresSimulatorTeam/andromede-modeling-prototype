@@ -15,8 +15,9 @@ from typing import Union
 import pandas as pd
 import pytest
 
-from andromede.expression import param, var
+from andromede.expression.expression import param
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression import var
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
@@ -80,12 +81,13 @@ def mock_generator_with_fixed_scenario_time_varying_param() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= param("p_max")
+                name="Max generation",
+                expression_init=var("generation") <= param("p_max"),
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
@@ -108,12 +110,13 @@ def mock_generator_with_scenario_varying_fixed_time_param() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= param("p_max")
+                name="Max generation",
+                expression_init=var("generation") <= param("p_max"),
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))

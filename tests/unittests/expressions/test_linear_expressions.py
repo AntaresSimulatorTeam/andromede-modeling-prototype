@@ -14,45 +14,19 @@ from typing import Dict
 
 import pytest
 
+from andromede.expression.expression import expression_range, param
+from andromede.expression.linear_expression import (
+    LinearExpression,
+    PortFieldId,
+    PortFieldTerm,
+    Term,
+    _copy_expression,
+    linear_expressions_equal,
+    var,
+    wrap_in_linear_expr,
+)
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeShift, TimeSum
-from andromede.simulation.linear_expression import LinearExpression, Term, TermKey
-
-
-@pytest.mark.parametrize(
-    "term, expected",
-    [
-        (Term(1, "c", "x"), "+x"),
-        (Term(-1, "c", "x"), "-x"),
-        (Term(2.50, "c", "x"), "+2.5x"),
-        (Term(-3, "c", "x"), "-3x"),
-        (Term(-3, "c", "x", time_operator=TimeShift([-1])), "-3x.shift([-1])"),
-        (Term(-3, "c", "x", time_aggregator=TimeSum(True)), "-3x.sum(True)"),
-        (
-            Term(
-                -3,
-                "c",
-                "x",
-                time_operator=TimeShift([2, 3]),
-                time_aggregator=TimeSum(False),
-            ),
-            "-3x.shift([2, 3]).sum(False)",
-        ),
-        (Term(-3, "c", "x", scenario_operator=Expectation()), "-3x.expec()"),
-        (
-            Term(
-                -3,
-                "c",
-                "x",
-                time_aggregator=TimeSum(True),
-                scenario_operator=Expectation(),
-            ),
-            "-3x.sum(True).expec()",
-        ),
-    ],
-)
-def test_printing_term(term: Term, expected: str) -> None:
-    assert str(term) == expected
 
 
 @pytest.mark.parametrize(
@@ -60,9 +34,9 @@ def test_printing_term(term: Term, expected: str) -> None:
     [
         (0, "x", 0, "0"),
         (1, "x", 0, "+x"),
-        (1, "x", 1, "+x+1"),
-        (3.7, "x", 1, "+3.7x+1"),
-        (0, "x", 1, "+1"),
+        (1, "x", 1, "+x + 1.0"),
+        (3.7, "x", 1, "3.7x + 1.0"),
+        (0, "x", 1, " + 1.0"),
     ],
 )
 def test_affine_expression_printing_should_reflect_required_formatting(
@@ -73,16 +47,48 @@ def test_affine_expression_printing_should_reflect_required_formatting(
 
 
 @pytest.mark.parametrize(
+    "expr",
+    [
+        var("x"),
+        wrap_in_linear_expr(param("p")),
+        var("x") + 1,
+        var("x") - 1,
+        var("x") / 2,
+        var("x") * 3,
+        var("x").sum(shift=expression_range(1, 10, 2)),
+        var("x").sum(shift=expression_range(1, param("p"))),
+        var("x").expec(),
+    ],
+)
+def test_linear_expressions_equal(expr: LinearExpression) -> None:
+    copy = LinearExpression()
+    _copy_expression(expr, copy)
+    assert linear_expressions_equal(expr, copy)
+
+
+@pytest.mark.parametrize(
     "lhs, rhs",
     [
-        (LinearExpression([], 1) + LinearExpression([], 3), LinearExpression([], 4)),
-        (LinearExpression([], 4) / LinearExpression([], 2), LinearExpression([], 2)),
-        (LinearExpression([], 4) * LinearExpression([], 2), LinearExpression([], 8)),
-        (LinearExpression([], 4) - LinearExpression([], 2), LinearExpression([], 2)),
+        (
+            LinearExpression([], 1) + LinearExpression([], 3),
+            LinearExpression([], 4),
+        ),
+        (
+            LinearExpression([], 4) / LinearExpression([], 2),
+            LinearExpression([], 2),
+        ),
+        (
+            LinearExpression([], 4) * LinearExpression([], 2),
+            LinearExpression([], 8),
+        ),
+        (
+            LinearExpression([], 4) - LinearExpression([], 2),
+            LinearExpression([], 2),
+        ),
     ],
 )
 def test_constant_expressions(lhs: LinearExpression, rhs: LinearExpression) -> None:
-    assert lhs == rhs
+    assert linear_expressions_equal(lhs, rhs)
 
 
 @pytest.mark.parametrize(
@@ -93,7 +99,7 @@ def test_constant_expressions(lhs: LinearExpression, rhs: LinearExpression) -> N
     ],
 )
 def test_instantiate_linear_expression_from_dict(
-    terms_dict: Dict[TermKey, Term],
+    terms_dict: Dict[str, Term],
     constant: float,
     exp_terms: Dict[str, Term],
     exp_constant: float,
@@ -101,6 +107,26 @@ def test_instantiate_linear_expression_from_dict(
     expr = LinearExpression(terms_dict, constant)
     assert expr.terms == exp_terms
     assert expr.constant == exp_constant
+
+
+@pytest.mark.parametrize(
+    "expr, expected",
+    [
+        (LinearExpression(), True),
+        (LinearExpression([]), True),
+        (LinearExpression([], 0, {}), True),
+        (LinearExpression([Term(1, "c", "x")], 0, {}), False),
+        (LinearExpression([], 1, {}), False),
+        (
+            LinearExpression(
+                [], 1, {PortFieldId("p", "f"): PortFieldTerm(1, "p", "f")}
+            ),
+            False,
+        ),
+    ],
+)
+def test_is_zero(expr: LinearExpression, expected: bool) -> None:
+    assert expr.is_zero() == expected
 
 
 @pytest.mark.parametrize(
@@ -123,8 +149,8 @@ def test_instantiate_linear_expression_from_dict(
         ),
         (
             LinearExpression(),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
+            LinearExpression([Term(10, "c", "x", TimeShift(-1))]),
+            LinearExpression([Term(10, "c", "x", TimeShift(-1))]),
         ),
         (
             LinearExpression(),
@@ -137,9 +163,12 @@ def test_instantiate_linear_expression_from_dict(
         ),
         (
             LinearExpression([Term(10, "c", "x")]),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift(-1))]),
             LinearExpression(
-                [Term(10, "c", "x"), Term(10, "c", "x", time_operator=TimeShift([-1]))]
+                [
+                    Term(10, "c", "x"),
+                    Term(10, "c", "x", time_operator=TimeShift(-1)),
+                ]
             ),
         ),
         (
@@ -150,8 +179,8 @@ def test_instantiate_linear_expression_from_dict(
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
-                        scenario_operator=Expectation(),
+                        time_operator=TimeShift(-1),
+                        scenario_aggregator=Expectation(),
                     )
                 ]
             ),
@@ -162,8 +191,8 @@ def test_instantiate_linear_expression_from_dict(
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
-                        scenario_operator=Expectation(),
+                        time_operator=TimeShift(-1),
+                        scenario_aggregator=Expectation(),
                     ),
                 ]
             ),
@@ -171,15 +200,11 @@ def test_instantiate_linear_expression_from_dict(
     ],
 )
 def test_addition(
-    e1: LinearExpression, e2: LinearExpression, expected: LinearExpression
+    e1: LinearExpression,
+    e2: LinearExpression,
+    expected: LinearExpression,
 ) -> None:
-    assert e1 + e2 == expected
-
-
-def test_addition_of_linear_expressions_with_different_number_of_instances_should_raise_value_error() -> (
-    None
-):
-    pass
+    assert linear_expressions_equal(e1 + e2, expected)
 
 
 def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_from_terms() -> (
@@ -216,8 +241,8 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
-                        scenario_operator=Expectation(),
+                        time_operator=TimeShift(-1),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 3,
@@ -229,8 +254,8 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         20,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
-                        scenario_operator=Expectation(),
+                        time_operator=TimeShift(-1),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 6,
@@ -239,10 +264,12 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
     ],
 )
 def test_multiplication(
-    e1: LinearExpression, e2: LinearExpression, expected: LinearExpression
+    e1: LinearExpression,
+    e2: LinearExpression,
+    expected: LinearExpression,
 ) -> None:
-    assert e1 * e2 == expected
-    assert e2 * e1 == expected
+    assert linear_expressions_equal(e1 * e2, expected)
+    assert linear_expressions_equal(e2 * e1, expected)
 
 
 def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> None:
@@ -267,9 +294,9 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
+                        time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 5,
@@ -280,9 +307,9 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         -10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
+                        time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 -5,
@@ -291,7 +318,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
     ],
 )
 def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
-    assert -e1 == expected
+    assert linear_expressions_equal(-e1, expected)
 
 
 @pytest.mark.parametrize(
@@ -314,8 +341,8 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
         ),
         (
             LinearExpression(),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
-            LinearExpression([Term(-10, "c", "x", time_operator=TimeShift([-1]))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift(-1))]),
+            LinearExpression([Term(-10, "c", "x", time_operator=TimeShift(-1))]),
         ),
         (
             LinearExpression(),
@@ -328,9 +355,12 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
         ),
         (
             LinearExpression([Term(10, "c", "x")]),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift(-1))]),
             LinearExpression(
-                [Term(10, "c", "x"), Term(-10, "c", "x", time_operator=TimeShift([-1]))]
+                [
+                    Term(10, "c", "x"),
+                    Term(-10, "c", "x", time_operator=TimeShift(-1)),
+                ]
             ),
         ),
         (
@@ -341,9 +371,9 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
+                        time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ]
             ),
@@ -354,9 +384,9 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
                         -10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
+                        time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     ),
                 ]
             ),
@@ -364,9 +394,11 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
     ],
 )
 def test_substraction(
-    e1: LinearExpression, e2: LinearExpression, expected: LinearExpression
+    e1: LinearExpression,
+    e2: LinearExpression,
+    expected: LinearExpression,
 ) -> None:
-    assert e1 - e2 == expected
+    assert linear_expressions_equal(e1 - e2, expected)
 
 
 @pytest.mark.parametrize(
@@ -389,9 +421,9 @@ def test_substraction(
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
+                        time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 15,
@@ -403,9 +435,9 @@ def test_substraction(
                         2,
                         "c",
                         "x",
-                        time_operator=TimeShift([-1]),
+                        time_operator=TimeShift(-1),
                         time_aggregator=TimeSum(False),
-                        scenario_operator=Expectation(),
+                        scenario_aggregator=Expectation(),
                     )
                 ],
                 3,
@@ -414,9 +446,11 @@ def test_substraction(
     ],
 )
 def test_division(
-    e1: LinearExpression, e2: LinearExpression, expected: LinearExpression
+    e1: LinearExpression,
+    e2: LinearExpression,
+    expected: LinearExpression,
 ) -> None:
-    assert e1 / e2 == expected
+    assert linear_expressions_equal(e1 / e2, expected)
 
 
 def test_division_by_zero_sould_raise_zero_division_error() -> None:
@@ -441,6 +475,6 @@ def test_imul_preserve_identity() -> None:
     e1 = LinearExpression([], 15)
     e2 = e1
     e1 *= LinearExpression([], 2)
-    assert e1 == LinearExpression([], 30)
-    assert e2 == e1
+    assert linear_expressions_equal(e1, LinearExpression([], 30))
+    assert linear_expressions_equal(e2, e1)
     assert e2 is e1

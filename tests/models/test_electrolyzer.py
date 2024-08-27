@@ -10,8 +10,8 @@
 #
 # This file is part of the Antares project.
 
-from andromede.expression import literal, param, var
-from andromede.expression.expression import port_field
+from andromede.expression.expression import literal, param
+from andromede.expression.linear_expression import port_field, var
 from andromede.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
 from andromede.model import (
     Constraint,
@@ -41,7 +41,7 @@ ELECTRICAL_NODE_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("electrical_port", "flow").sum_connections()
+            expression_init=port_field("electrical_port", "flow").sum_connections()
             == literal(0),
         )
     ],
@@ -60,7 +60,7 @@ ELECTRICAL_GENERATOR_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("electrical_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -76,7 +76,8 @@ H2_NODE_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("h2_port", "flow").sum_connections() == literal(0),
+            expression_init=port_field("h2_port", "flow").sum_connections()
+            == literal(0),
         )
     ],
 )
@@ -90,7 +91,7 @@ H2_DEMAND = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("h2_port", "flow"),
-            definition=-param("demand"),
+            definition_init=-param("demand"),
         )
     ],
 )
@@ -111,17 +112,17 @@ ELECTROLYZER = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("electrical_port", "flow"),
-            definition=-var("electrical_input"),
+            definition_init=-var("electrical_input"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("h2_port", "flow"),
-            definition=var("h2_output"),
+            definition_init=var("h2_output"),
         ),
     ],
     constraints=[
         Constraint(
             name="Conversion",
-            expression=var("h2_output")
+            expression_init=var("h2_output")
             == var("electrical_input") * param("efficiency"),
         )
     ],

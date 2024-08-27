@@ -1,24 +1,15 @@
 import pandas as pd
 import pytest
 
-from andromede.expression import literal, param, var
-from andromede.expression.indexing_structure import IndexingStructure
-from andromede.model import Model, ModelPort, float_parameter, float_variable, model
 from andromede.model.library import Library
-from andromede.model.model import PortFieldDefinition, PortFieldId
-from andromede.simulation import (
-    BlockBorderManagement,
-    OutputValues,
-    TimeBlock,
-    build_problem,
-)
+from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation.optimization_context import BlockBorderManagement
 from andromede.study import (
     ConstantData,
     DataBase,
     Network,
     Node,
     PortRef,
-    TimeScenarioIndex,
     TimeScenarioSeriesData,
     create_component,
 )

@@ -12,37 +12,57 @@
 
 from typing import Dict, List
 
-from andromede.expression import ExpressionNode, var
+import pytest
+
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression import port_field
-from andromede.expression.port_resolver import PortFieldKey, resolve_port
-from andromede.model.model import PortFieldId
+from andromede.expression.linear_expression import (
+    LinearExpression,
+    PortFieldId,
+    PortFieldKey,
+    linear_expressions_equal,
+    port_field,
+    var,
+)
 
 
-def test_port_field_resolution() -> None:
-    ports_expressions: Dict[PortFieldKey, List[ExpressionNode]] = {}
+@pytest.mark.parametrize(
+    "port_expr, expected",
+    [
+        (port_field("port", "field") + 2, var("flow") + 2),
+        (port_field("port", "field") - 2, var("flow") - 2),
+        (port_field("port", "field") * 2, 2 * var("flow")),
+        (port_field("port", "field") / 2, var("flow") / 2),
+        (port_field("port", "field") * 0, LinearExpression()),
+    ],
+)
+def test_port_field_resolution(
+    port_expr: LinearExpression, expected: LinearExpression
+) -> None:
+    ports_expressions: Dict[PortFieldKey, List[LinearExpression]] = {}
 
     key = PortFieldKey("com_id", PortFieldId(field_name="field", port_name="port"))
     expression = var("flow")
 
     ports_expressions[key] = [expression]
 
-    expression_2 = port_field("port", "field") + 2
+    print()
+    print(port_expr.resolve_port("com_id", ports_expressions))
+    print(expected)
 
-    assert expressions_equal(
-        resolve_port(expression_2, "com_id", ports_expressions), var("flow") + 2
+    assert linear_expressions_equal(
+        port_expr.resolve_port("com_id", ports_expressions), expected
     )
 
 
 def test_port_field_resolution_sum() -> None:
-    ports_expressions: Dict[PortFieldKey, List[ExpressionNode]] = {}
+    ports_expressions: Dict[PortFieldKey, List[LinearExpression]] = {}
 
     key = PortFieldKey("com_id", PortFieldId(field_name="field", port_name="port"))
 
     ports_expressions[key] = [var("flow1"), var("flow2")]
 
     expression_2 = port_field("port", "field").sum_connections()
-    assert expressions_equal(
-        resolve_port(expression_2, "com_id", ports_expressions),
+    assert linear_expressions_equal(
+        expression_2.resolve_port("com_id", ports_expressions),
         var("flow1") + var("flow2"),
     )

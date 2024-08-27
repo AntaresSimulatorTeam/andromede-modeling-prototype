@@ -17,7 +17,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from andromede.study.network import Network
+from .network import Network
 
 
 @dataclass(frozen=True)

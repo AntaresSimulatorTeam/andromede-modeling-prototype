@@ -16,43 +16,43 @@ A model allows to define the behaviour for components, by
 defining parameters, variables, and equations.
 """
 import itertools
-from dataclasses import dataclass, field
-from typing import Dict, Iterable, Optional
+from dataclasses import InitVar, dataclass, field
+from typing import Dict, Iterable, Optional, Union
 
-from andromede.expression import (
+from andromede.expression.expression import (
     AdditionNode,
+    BinaryOperatorNode,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
     ExpressionNode,
-    ExpressionVisitor,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
-    VariableNode,
-)
-from andromede.expression.degree import is_linear
-from andromede.expression.expression import (
-    BinaryOperatorNode,
-    ComponentParameterNode,
-    ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
+    SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
 )
-from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
+from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.visitor import T, visit
+from andromede.expression.linear_expression import (
+    LinearExpression,
+    is_linear,
+    wrap_in_linear_expr,
+    wrap_in_linear_expr_if_present,
+)
+from andromede.expression.visitor import ExpressionVisitor, visit
+from andromede.model.common import ValueOrExprNodeOrLinearExpr
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
 from andromede.model.variable import Variable
 
 
-# TODO: Introduce bool_variable ?
 def _make_structure_provider(model: "Model") -> IndexingStructureProvider:
     class Provider(IndexingStructureProvider):
         def get_parameter_structure(self, name: str) -> IndexingStructure:
@@ -79,19 +79,18 @@ def _make_structure_provider(model: "Model") -> IndexingStructureProvider:
 
 
 def _is_objective_contribution_valid(
-    model: "Model", objective_contribution: ExpressionNode
+    model: "Model", objective_contribution: LinearExpression
 ) -> bool:
     if not is_linear(objective_contribution):
         raise ValueError("Objective contribution must be a linear expression.")
 
     data_structure_provider = _make_structure_provider(model)
-    objective_structure = compute_indexation(
-        objective_contribution, data_structure_provider
+    objective_structure = objective_contribution.compute_indexation(
+        data_structure_provider
     )
 
     if objective_structure != IndexingStructure(time=False, scenario=False):
         raise ValueError("Objective contribution should be a real-valued expression.")
-    # TODO: We should also check that the number of instances is equal to 1, but this would require a linearization here, do not want to do that for now...
     return True
 
 
@@ -121,14 +120,21 @@ class PortFieldDefinition:
     """
 
     port_field: PortFieldId
-    definition: ExpressionNode
+    # Used only for type checking...
+    definition_init: InitVar[Union[ExpressionNode, LinearExpression]]
+    definition: LinearExpression = field(init=False)
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self, definition_init: Union[ExpressionNode, LinearExpression]
+    ) -> None:
+        object.__setattr__(self, "definition", wrap_in_linear_expr(definition_init))
         _validate_port_field_expression(self)
 
 
 def port_field_def(
-    port_name: str, field_name: str, definition: ExpressionNode
+    port_name: str,
+    field_name: str,
+    definition: Union[ExpressionNode, LinearExpression],
 ) -> PortFieldDefinition:
     return PortFieldDefinition(PortFieldId(port_name, field_name), definition)
 
@@ -146,8 +152,8 @@ class Model:
     inter_block_dyn: bool = False
     parameters: Dict[str, Parameter] = field(default_factory=dict)
     variables: Dict[str, Variable] = field(default_factory=dict)
-    objective_operational_contribution: Optional[ExpressionNode] = None
-    objective_investment_contribution: Optional[ExpressionNode] = None
+    objective_operational_contribution: Optional[LinearExpression] = None
+    objective_investment_contribution: Optional[LinearExpression] = None
     ports: Dict[str, ModelPort] = field(default_factory=dict)  # key = port name
     port_fields_definitions: Dict[PortFieldId, PortFieldDefinition] = field(
         default_factory=dict
@@ -190,8 +196,8 @@ def model(
     binding_constraints: Optional[Iterable[Constraint]] = None,
     parameters: Optional[Iterable[Parameter]] = None,
     variables: Optional[Iterable[Variable]] = None,
-    objective_operational_contribution: Optional[ExpressionNode] = None,
-    objective_investment_contribution: Optional[ExpressionNode] = None,
+    objective_operational_contribution: Optional[ValueOrExprNodeOrLinearExpr] = None,
+    objective_investment_contribution: Optional[ValueOrExprNodeOrLinearExpr] = None,
     inter_block_dyn: bool = False,
     ports: Optional[Iterable[ModelPort]] = None,
     port_fields_definitions: Optional[Iterable[PortFieldDefinition]] = None,
@@ -212,25 +218,31 @@ def model(
     return Model(
         id=id,
         constraints={c.name: c for c in constraints} if constraints else {},
-        binding_constraints={c.name: c for c in binding_constraints}
-        if binding_constraints
-        else {},
+        binding_constraints=(
+            {c.name: c for c in binding_constraints} if binding_constraints else {}
+        ),
         parameters={p.name: p for p in parameters} if parameters else {},
         variables={v.name: v for v in variables} if variables else {},
-        objective_operational_contribution=objective_operational_contribution,
-        objective_investment_contribution=objective_investment_contribution,
+        objective_operational_contribution=wrap_in_linear_expr_if_present(
+            objective_operational_contribution
+        ),
+        objective_investment_contribution=wrap_in_linear_expr_if_present(
+            objective_investment_contribution
+        ),
         inter_block_dyn=inter_block_dyn,
         ports=existing_port_names,
-        port_fields_definitions={d.port_field: d for d in port_fields_definitions}
-        if port_fields_definitions
-        else {},
+        port_fields_definitions=(
+            {d.port_field: d for d in port_fields_definitions}
+            if port_fields_definitions
+            else {}
+        ),
     )
 
 
 class _PortFieldExpressionChecker(ExpressionVisitor[None]):
     """
     Visits the whole expression to check there is no:
-    comparison, other port field, component-associated parametrs or variables...
+    comparison, other port field, component-associated parameters or variables...
     """
 
     def literal(self, node: LiteralNode) -> None:
@@ -258,20 +270,12 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
     def comparison(self, node: ComparisonNode) -> None:
         raise ValueError("Port definition cannot contain a comparison operator.")
 
-    def variable(self, node: VariableNode) -> None:
-        pass
-
     def parameter(self, node: ParameterNode) -> None:
         pass
 
     def comp_parameter(self, node: ComponentParameterNode) -> None:
         raise ValueError(
             "Port definition must not contain a parameter associated to a component."
-        )
-
-    def comp_variable(self, node: ComponentVariableNode) -> None:
-        raise ValueError(
-            "Port definition must not contain a variable associated to a component."
         )
 
     def time_operator(self, node: TimeOperatorNode) -> None:
@@ -291,4 +295,34 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
 
 
 def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
-    visit(definition.definition, _PortFieldExpressionChecker())
+    """
+    Check there is no:
+    comparison, other port field, component-associated parameters or variables...
+    """
+    _check_port_field_expression_type(definition)
+    _check_no_reference_to_other_port_field(definition)
+    _check_no_component_associated_variable_or_parameter(definition)
+
+
+def _check_port_field_expression_type(definition: PortFieldDefinition) -> None:
+    if not isinstance(definition.definition, LinearExpression):
+        raise TypeError(
+            f"Port field definition should be a LinearExpression, not a {type(definition.definition)}"
+        )
+
+
+def _check_no_reference_to_other_port_field(definition: PortFieldDefinition) -> None:
+    if definition.definition.port_field_terms:
+        raise ValueError("Port definition cannot reference another port field.")
+
+
+def _check_no_component_associated_variable_or_parameter(
+    definition: PortFieldDefinition,
+) -> None:
+    for term in definition.definition.terms.values():
+        if term.component_id:
+            raise ValueError(
+                "Port definition must not contain a variable associated to a component."
+            )
+        visit(term.coefficient, _PortFieldExpressionChecker())
+    visit(definition.definition.constant, _PortFieldExpressionChecker())

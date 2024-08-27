@@ -13,11 +13,19 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from andromede.expression import ExpressionNode, literal
-from andromede.expression.degree import is_constant
-from andromede.expression.equality import expressions_equal_if_present
+from andromede.expression.expression import literal
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.model.common import ProblemContext, ValueType
+from andromede.expression.linear_expression import (
+    LinearExpression,
+    linear_expressions_equal_if_present,
+    wrap_in_linear_expr,
+    wrap_in_linear_expr_if_present,
+)
+from andromede.model.common import (
+    ProblemContext,
+    ValueOrExprNodeOrLinearExpr,
+    ValueType,
+)
 
 
 @dataclass
@@ -28,15 +36,15 @@ class Variable:
 
     name: str
     data_type: ValueType
-    lower_bound: Optional[ExpressionNode]
-    upper_bound: Optional[ExpressionNode]
+    lower_bound: Optional[LinearExpression]
+    upper_bound: Optional[LinearExpression]
     structure: IndexingStructure
     context: ProblemContext
 
     def __post_init__(self) -> None:
-        if self.lower_bound and not is_constant(self.lower_bound):
+        if self.lower_bound and not self.lower_bound.is_constant():
             raise ValueError("Lower bounds of variables must be constant")
-        if self.upper_bound and not is_constant(self.upper_bound):
+        if self.upper_bound and not self.upper_bound.is_constant():
             raise ValueError("Upper bounds of variables must be constant")
 
     def __eq__(self, other: Any) -> bool:
@@ -45,21 +53,26 @@ class Variable:
         return (
             self.name == other.name
             and self.data_type == other.data_type
-            and expressions_equal_if_present(self.lower_bound, other.lower_bound)
-            and expressions_equal_if_present(self.upper_bound, other.upper_bound)
+            and linear_expressions_equal_if_present(self.lower_bound, other.lower_bound)
+            and linear_expressions_equal_if_present(self.upper_bound, other.upper_bound)
             and self.structure == other.structure
         )
 
 
 def int_variable(
     name: str,
-    lower_bound: Optional[ExpressionNode] = None,
-    upper_bound: Optional[ExpressionNode] = None,
+    lower_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
+    upper_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
     return Variable(
-        name, ValueType.INTEGER, lower_bound, upper_bound, structure, context
+        name,
+        ValueType.INTEGER,
+        wrap_in_linear_expr_if_present(lower_bound),
+        wrap_in_linear_expr_if_present(upper_bound),
+        structure,
+        context,
     )
 
 
@@ -68,14 +81,28 @@ def bool_var(
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    return Variable(name, ValueType.BOOL, literal(0), literal(1), structure, context)
+    return Variable(
+        name,
+        ValueType.BOOL,
+        wrap_in_linear_expr(literal(0)),
+        wrap_in_linear_expr(literal(1)),
+        structure,
+        context,
+    )
 
 
 def float_variable(
     name: str,
-    lower_bound: Optional[ExpressionNode] = None,
-    upper_bound: Optional[ExpressionNode] = None,
+    lower_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
+    upper_bound: Optional[ValueOrExprNodeOrLinearExpr] = None,
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    return Variable(name, ValueType.FLOAT, lower_bound, upper_bound, structure, context)
+    return Variable(
+        name,
+        ValueType.FLOAT,
+        wrap_in_linear_expr_if_present(lower_bound),
+        wrap_in_linear_expr_if_present(upper_bound),
+        structure,
+        context,
+    )

@@ -18,25 +18,20 @@ with Benders solver related functions
 import pathlib
 from typing import Any, Dict, List, Optional
 
-from andromede.simulation.optimization import (
-    BlockBorderManagement,
-    OptimizationProblem,
-    build_problem,
-)
-from andromede.simulation.output_values import (
+from andromede.study.data import DataBase
+from andromede.study.network import Network
+from andromede.utils import read_json, serialize, serialize_json
+
+from .optimization import OptimizationProblem, build_problem
+from .optimization_context import BlockBorderManagement
+from .output_values import (
     BendersDecomposedSolution,
     BendersMergedSolution,
     BendersSolution,
 )
-from andromede.simulation.runner import BendersRunner, MergeMPSRunner
-from andromede.simulation.strategy import (
-    InvestmentProblemStrategy,
-    OperationalProblemStrategy,
-)
-from andromede.simulation.time_block import TimeBlock
-from andromede.study.data import DataBase
-from andromede.study.network import Network
-from andromede.utils import read_json, serialize, serialize_json
+from .runner import BendersRunner, MergeMPSRunner
+from .strategy import InvestmentProblemStrategy, OperationalProblemStrategy
+from .time_block import TimeBlock
 
 
 class BendersDecomposedProblem:

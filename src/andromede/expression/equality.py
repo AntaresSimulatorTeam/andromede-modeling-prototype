@@ -14,25 +14,23 @@ import math
 from dataclasses import dataclass
 from typing import Optional
 
-from andromede.expression import (
+from andromede.expression.expression import (
     AdditionNode,
+    BinaryOperatorNode,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
     ExpressionNode,
+    ExpressionRange,
+    InstancesTimeIndex,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
-    VariableNode,
-)
-from andromede.expression.expression import (
-    BinaryOperatorNode,
-    ExpressionRange,
-    InstancesTimeIndex,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
+    SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
 )
@@ -72,10 +70,12 @@ class EqualityVisitor:
             return self.multiplication(left, right)
         if isinstance(left, ComparisonNode) and isinstance(right, ComparisonNode):
             return self.comparison(left, right)
-        if isinstance(left, VariableNode) and isinstance(right, VariableNode):
-            return self.variable(left, right)
         if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
             return self.parameter(left, right)
+        if isinstance(left, ComponentParameterNode) and isinstance(
+            right, ComponentParameterNode
+        ):
+            return self.comp_parameter(left, right)
         if isinstance(left, TimeOperatorNode) and isinstance(right, TimeOperatorNode):
             return self.time_operator(left, right)
         if isinstance(left, TimeAggregatorNode) and isinstance(
@@ -124,11 +124,13 @@ class EqualityVisitor:
     def comparison(self, left: ComparisonNode, right: ComparisonNode) -> bool:
         return left.comparator == right.comparator and self._visit_operands(left, right)
 
-    def variable(self, left: VariableNode, right: VariableNode) -> bool:
-        return left.name == right.name
-
     def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
         return left.name == right.name
+
+    def comp_parameter(
+        self, left: ComponentParameterNode, right: ComponentParameterNode
+    ) -> bool:
+        return left.component_id == right.component_id and left.name == right.name
 
     def expression_range(self, left: ExpressionRange, right: ExpressionRange) -> bool:
         if not self.visit(left.start, right.start):
@@ -183,7 +185,10 @@ class EqualityVisitor:
 
 
 def expressions_equal(
-    left: ExpressionNode, right: ExpressionNode, abs_tol: float = 0, rel_tol: float = 0
+    left: ExpressionNode,
+    right: ExpressionNode,
+    abs_tol: float = 0,
+    rel_tol: float = 0,
 ) -> bool:
     """
     True if both expression nodes are equal. Literal values may be compared with absolute or relative tolerance.

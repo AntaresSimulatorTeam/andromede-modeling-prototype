@@ -13,9 +13,10 @@
 """
 The standard module contains the definition of standard models.
 """
-from andromede.expression import literal, param, var
-from andromede.expression.expression import ExpressionRange, port_field
+
+from andromede.expression.expression import ExpressionRange, literal, param
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression import port_field, var, wrap_in_linear_expr
 from andromede.model.constraint import Constraint
 from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
 from andromede.model.parameter import float_parameter, int_parameter
@@ -35,7 +36,7 @@ NODE_BALANCE_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("balance_port", "flow").sum_connections()
+            expression_init=port_field("balance_port", "flow").sum_connections()
             == literal(0),
         )
     ],
@@ -52,7 +53,7 @@ NODE_WITH_SPILL_AND_ENS_MODEL = model(
     binding_constraints=[
         Constraint(
             name="Balance",
-            expression=port_field("balance_port", "flow").sum_connections()
+            expression_init=port_field("balance_port", "flow").sum_connections()
             == var("spillage") - var("unsupplied_energy"),
         )
     ],
@@ -80,11 +81,11 @@ LINK_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port_from", "flow"),
-            definition=-var("flow"),
+            definition_init=-var("flow"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port_to", "flow"),
-            definition=var("flow"),
+            definition_init=var("flow"),
         ),
     ],
 )
@@ -101,7 +102,7 @@ DEMAND_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=-param("demand"),
+            definition_init=-param("demand"),
         )
     ],
 )
@@ -120,12 +121,12 @@ GENERATOR_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
         Constraint(
-            name="Max generation", expression=var("generation") <= param("p_max")
+            name="Max generation", expression_init=var("generation") <= param("p_max")
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -145,17 +146,19 @@ GENERATOR_MODEL_WITH_PMIN = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
         Constraint(
-            name="Max generation", expression=var("generation") <= param("p_max")
+            name="Max generation", expression_init=var("generation") <= param("p_max")
         ),
         Constraint(
             name="Min generation",
-            expression=var("generation") - param("p_min"),
-            lower_bound=literal(0),
+            expression_init=var("generation") - param("p_min"),
+            lower_bound=wrap_in_linear_expr(
+                literal(0)
+            ),  # wrap_in_linear_expr is not needed as done in __post_init__, it is used here only for type checking...
         ),  # To test both ways of setting constraints
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -179,16 +182,16 @@ GENERATOR_MODEL_WITH_STORAGE = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
         Constraint(
-            name="Max generation", expression=var("generation") <= param("p_max")
+            name="Max generation", expression_init=var("generation") <= param("p_max")
         ),
         Constraint(
             name="Total storage",
-            expression=var("generation").sum() <= param("full_storage"),
+            expression_init=var("generation").sum() <= param("full_storage"),
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -236,7 +239,7 @@ THERMAL_CLUSTER_MODEL_HD = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
@@ -254,17 +257,18 @@ THERMAL_CLUSTER_MODEL_HD = model(
         ),
         Constraint(
             "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            var("nb_start").sum(
+                shift=ExpressionRange(-param("d_min_up") + 1, literal(0))
+            )
             <= var("nb_on"),
         ),
+        # TODO : Improve API so that we are not forced to use sum() on one shifted element for ExpressionNode
         Constraint(
             "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+            var("nb_stop").sum(
+                shift=ExpressionRange(-param("d_min_down") + 1, literal(0))
+            )
+            <= param("nb_units_max").shift(-param("d_min_down")).sum() - var("nb_on"),
         ),
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
@@ -313,7 +317,7 @@ THERMAL_CLUSTER_MODEL_DHD = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
+            definition_init=var("generation"),
         )
     ],
     constraints=[
@@ -331,17 +335,17 @@ THERMAL_CLUSTER_MODEL_DHD = model(
         ),
         Constraint(
             "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            var("nb_start").sum(
+                shift=ExpressionRange(-param("d_min_up") + 1, literal(0))
+            )
             <= var("nb_on"),
         ),
         Constraint(
             "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
+            var("nb_stop").sum(
+                shift=ExpressionRange(-param("d_min_down") + 1, literal(0))
+            )
+            <= param("nb_units_max").shift(-param("d_min_down")).sum() - var("nb_on"),
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
@@ -357,7 +361,7 @@ SPILLAGE_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=-var("spillage"),
+            definition_init=-var("spillage"),
         )
     ],
     objective_operational_contribution=(param("cost") * var("spillage")).sum().expec(),
@@ -371,7 +375,7 @@ UNSUPPLIED_ENERGY_MODEL = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("unsupplied_energy"),
+            definition_init=var("unsupplied_energy"),
         )
     ],
     objective_operational_contribution=(param("cost") * var("unsupplied_energy"))
@@ -410,13 +414,13 @@ SHORT_TERM_STORAGE_SIMPLE = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "flow"),
-            definition=var("withdrawal") - var("injection"),
+            definition_init=var("withdrawal") - var("injection"),
         )
     ],
     constraints=[
         Constraint(
             name="Level",
-            expression=var("level")
+            expression_init=var("level")
             - var("level").shift(-1)
             - param("efficiency") * var("injection")
             + var("withdrawal")

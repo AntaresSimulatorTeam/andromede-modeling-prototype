@@ -13,15 +13,15 @@
 import pandas as pd
 import pytest
 
-from andromede.expression.expression import literal, param, port_field, var
+from andromede.expression.expression import literal, param
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression import var
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
     DEMAND_MODEL,
     GENERATOR_MODEL,
     NODE_BALANCE_MODEL,
-    NODE_WITH_SPILL_AND_ENS_MODEL,
 )
 from andromede.model import (
     Constraint,
@@ -38,7 +38,6 @@ from andromede.simulation import (
     MergedProblemStrategy,
     OutputValues,
     TimeBlock,
-    build_benders_decomposed_problem,
     build_problem,
 )
 from andromede.study import (
@@ -82,12 +81,12 @@ def thermal_candidate() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= var("p_max")
+                name="Max generation", expression_init=var("generation") <= var("p_max")
             )
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
@@ -127,16 +126,17 @@ def discrete_candidate() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= var("p_max")
+                name="Max generation", expression_init=var("generation") <= var("p_max")
             ),
             Constraint(
                 name="Max investment",
-                expression=var("p_max") == param("p_max_per_unit") * var("nb_units"),
+                expression_init=var("p_max")
+                == param("p_max_per_unit") * var("nb_units"),
                 context=INVESTMENT,
             ),
         ],
@@ -376,10 +376,10 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    # assert problem.solver.NumVariables() == 2 * scenarios * horizon + 1
-    # assert (
-    #     problem.solver.NumConstraints() == 3 * scenarios * horizon
-    # )  # Flow balance, Max generation for each cluster
+    assert problem.solver.NumVariables() == 2 * scenarios * horizon + 1
+    assert (
+        problem.solver.NumConstraints() == 3 * scenarios * horizon
+    )  # Flow balance, Max generation for each cluster
     assert problem.solver.Objective().Value() == pytest.approx(
         490 * 300
         + 0.5 * (10 * 300 + 10 * 300 + 40 * 200)

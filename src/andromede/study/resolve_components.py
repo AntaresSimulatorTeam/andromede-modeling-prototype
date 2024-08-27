@@ -13,30 +13,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
-import pandas as pd
-
 from andromede.model import Model
 from andromede.model.library import Library
-from andromede.study import (
-    Component,
+
+from .data import (
+    AbstractDataStructure,
     ConstantData,
     DataBase,
-    Network,
-    Node,
-    PortRef,
-    PortsConnection,
-)
-from andromede.study.data import (
-    AbstractDataStructure,
-    TimeScenarioIndex,
     TimeScenarioSeriesData,
     load_ts_from_txt,
 )
-from andromede.study.parsing import (
-    InputComponent,
-    InputComponents,
-    InputPortConnections,
-)
+from .network import Component, Network, Node, PortRef, PortsConnection
+from .parsing import InputComponent, InputComponents, InputPortConnections
 
 
 @dataclass(frozen=True)

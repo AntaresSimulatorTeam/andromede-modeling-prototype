@@ -10,38 +10,65 @@
 #
 # This file is part of the Antares project.
 
-import math
 
 import pytest
 
-from andromede.expression import ExpressionNode, copy_expression, literal, param, var
+from andromede.expression.copy import copy_expression
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
-    ExpressionRange,
+    ExpressionNode,
+    InstancesTimeIndex,
+    TimeAggregatorName,
     TimeAggregatorNode,
+    TimeOperatorName,
+    TimeOperatorNode,
     expression_range,
+    literal,
+    param,
 )
 
 
-def shifted_x() -> ExpressionNode:
-    return var("x").shift(expression_range(0, 2))
+def shifted_param() -> ExpressionNode:
+    return TimeOperatorNode(
+        param("q"), TimeOperatorName.SHIFT, InstancesTimeIndex(expression_range(0, 2))
+    )
 
 
 @pytest.mark.parametrize(
     "expr",
     [
-        var("x"),
+        param("q"),
         param("p"),
-        var("x") + 1,
-        var("x") - 1,
-        var("x") / 2,
-        var("x") * 3,
-        var("x").shift(expression_range(1, 10, 2)).sum(),
-        var("x").shift(expression_range(1, param("p"))).sum(),
-        TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=True),
-        TimeAggregatorNode(shifted_x(), name="TimeAggregator", stay_roll=True),
-        var("x") + 5 <= 2,
-        var("x").expec(),
+        param("q") + 1,
+        param("q") - 1,
+        param("q") / 2,
+        param("q") * 3,
+        TimeAggregatorNode(
+            TimeOperatorNode(
+                param("q"),
+                TimeOperatorName.SHIFT,
+                InstancesTimeIndex(expression_range(1, 10, 2)),
+            ),
+            TimeAggregatorName.TIME_SUM,
+            stay_roll=True,
+        ),
+        TimeAggregatorNode(
+            TimeOperatorNode(
+                param("q"),
+                TimeOperatorName.SHIFT,
+                InstancesTimeIndex(expression_range(1, param("p"))),
+            ),
+            TimeAggregatorName.TIME_SUM,
+            stay_roll=True,
+        ),
+        TimeAggregatorNode(
+            shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=True
+        ),
+        TimeAggregatorNode(
+            shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=True
+        ),
+        param("q") + 5 <= 2,
+        param("q").expec(),
     ],
 )
 def test_equals(expr: ExpressionNode) -> None:
@@ -52,26 +79,58 @@ def test_equals(expr: ExpressionNode) -> None:
 @pytest.mark.parametrize(
     "rhs, lhs",
     [
-        (var("x"), var("y")),
+        (param("q"), param("y")),
         (literal(1), literal(2)),
-        (var("x") + 1, var("x")),
+        (param("q") + 1, param("q")),
         (
-            var("x").shift(expression_range(1, param("p"))).sum(),
-            var("x").shift(expression_range(1, param("q"))).sum(),
+            TimeAggregatorNode(
+                TimeOperatorNode(
+                    param("q"),
+                    TimeOperatorName.SHIFT,
+                    InstancesTimeIndex(expression_range(1, param("p"))),
+                ),
+                TimeAggregatorName.TIME_SUM,
+                stay_roll=True,
+            ),
+            TimeAggregatorNode(
+                TimeOperatorNode(
+                    param("q"),
+                    TimeOperatorName.SHIFT,
+                    InstancesTimeIndex(expression_range(1, param("q"))),
+                ),
+                TimeAggregatorName.TIME_SUM,
+                stay_roll=True,
+            ),
         ),
         (
-            var("x").shift(expression_range(1, 10, 2)).sum(),
-            var("x").shift(expression_range(1, 10, 3)).sum(),
+            TimeAggregatorNode(
+                TimeOperatorNode(
+                    param("q"),
+                    TimeOperatorName.SHIFT,
+                    InstancesTimeIndex(expression_range(1, 10, 2)),
+                ),
+                TimeAggregatorName.TIME_SUM,
+                stay_roll=True,
+            ),
+            TimeAggregatorNode(
+                TimeOperatorNode(
+                    param("q"),
+                    TimeOperatorName.SHIFT,
+                    InstancesTimeIndex(expression_range(1, 10, 3)),
+                ),
+                TimeAggregatorName.TIME_SUM,
+                stay_roll=True,
+            ),
         ),
         (
-            TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=True),
-            TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=False),
+            TimeAggregatorNode(
+                shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=True
+            ),
+            TimeAggregatorNode(
+                shifted_param(), name=TimeAggregatorName.TIME_SUM, stay_roll=False
+            ),
         ),
-        (
-            TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=True),
-            TimeAggregatorNode(shifted_x(), name="TimeAggregator", stay_roll=True),
-        ),
-        (var("x").expec(), var("y").expec()),
+        (param("q").expec(), param("y").expec()),
     ],
 )
 def test_not_equals(lhs: ExpressionNode, rhs: ExpressionNode) -> None:

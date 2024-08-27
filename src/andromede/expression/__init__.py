@@ -11,29 +11,28 @@
 # This file is part of the Antares project.
 
 from .copy import CopyVisitor, copy_expression
-from .degree import ExpressionDegreeVisitor, compute_degree
-from .evaluate import EvaluationContext, EvaluationVisitor, ValueProvider, evaluate
-from .evaluate_parameters import (
-    ParameterResolver,
-    ParameterValueProvider,
-    resolve_parameters,
-)
+from .evaluate_parameters import ValueProvider
 from .expression import (
     AdditionNode,
-    Comparator,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
     ExpressionNode,
+    ExpressionRange,
+    InstancesTimeIndex,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
+    ScenarioOperatorName,
+    ScenarioOperatorNode,
     SubstractionNode,
-    VariableNode,
-    literal,
-    param,
-    sum_expressions,
-    var,
+    TimeAggregatorName,
+    TimeAggregatorNode,
+    TimeOperatorName,
+    TimeOperatorNode,
 )
 from .print import PrinterVisitor, print_expr
 from .visitor import ExpressionVisitor, visit

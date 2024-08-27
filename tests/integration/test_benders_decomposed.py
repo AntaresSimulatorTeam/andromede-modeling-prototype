@@ -13,8 +13,9 @@
 import pandas as pd
 import pytest
 
-from andromede.expression.expression import literal, param, var
+from andromede.expression.expression import literal, param
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression import var
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
@@ -82,12 +83,12 @@ def thermal_candidate() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= var("p_max")
+                name="Max generation", expression_init=var("generation") <= var("p_max")
             )
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
@@ -128,16 +129,17 @@ def discrete_candidate() -> Model:
         port_fields_definitions=[
             PortFieldDefinition(
                 port_field=PortFieldId("balance_port", "flow"),
-                definition=var("generation"),
+                definition_init=var("generation"),
             )
         ],
         constraints=[
             Constraint(
-                name="Max generation", expression=var("generation") <= var("p_max")
+                name="Max generation", expression_init=var("generation") <= var("p_max")
             ),
             Constraint(
                 name="Max investment",
-                expression=var("p_max") == param("p_max_per_unit") * var("nb_units"),
+                expression_init=var("p_max")
+                == param("p_max_per_unit") * var("nb_units"),
                 context=INVESTMENT,
             ),
         ],

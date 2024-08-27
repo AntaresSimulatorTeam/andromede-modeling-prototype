@@ -18,6 +18,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, List, Tuple
 
+from andromede.expression.expression import InstancesTimeIndex
+
 
 @dataclass(frozen=True)
 class TimeOperator(ABC):
@@ -27,24 +29,15 @@ class TimeOperator(ABC):
         - is_rolling: bool, if true, this means that the time_ids are to be understood relatively to the current timestep of the context AND that the represented expression will have to be instanciated for all timesteps. Otherwise, the time_ids are "absolute" times and the expression only has to be instantiated once.
     """
 
-    time_ids: List[int]
+    time_ids: InstancesTimeIndex
 
     @classmethod
     @abstractmethod
     def rolling(cls) -> bool:
         raise NotImplementedError
 
-    def __post_init__(self) -> None:
-        if isinstance(self.time_ids, int):
-            object.__setattr__(self, "time_ids", [self.time_ids])
-        elif isinstance(self.time_ids, range):
-            object.__setattr__(self, "time_ids", list(self.time_ids))
-
-    def key(self) -> Tuple[int, ...]:
-        return tuple(self.time_ids)
-
-    def size(self) -> int:
-        return len(self.time_ids)
+    def key(self) -> InstancesTimeIndex:
+        return self.time_ids
 
 
 @dataclass(frozen=True)

@@ -15,11 +15,8 @@ from unittest.mock import Mock
 import ortools.linear_solver.pywraplp as lp
 
 from andromede.simulation import OutputValues
-from andromede.simulation.optimization import (
-    OptimizationContext,
-    OptimizationProblem,
-    TimestepComponentVariableKey,
-)
+from andromede.simulation.optimization import OptimizationContext, OptimizationProblem
+from andromede.simulation.optimization_context import TimestepComponentVariableKey
 
 
 def test_component_and_flow_output_object() -> None:

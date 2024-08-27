@@ -13,29 +13,23 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from andromede.expression.expression import (
-    ComponentParameterNode,
-    ComponentVariableNode,
-    ExpressionNode,
-    PortFieldAggregatorNode,
-    PortFieldNode,
-)
-from andromede.expression.visitor import T
-
 from .expression import (
     AdditionNode,
     Comparator,
     ComparisonNode,
+    ComponentParameterNode,
     DivisionNode,
+    ExpressionNode,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
     ParameterNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
     ScenarioOperatorNode,
     SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
-    VariableNode,
 )
 from .visitor import ExpressionVisitor, visit
 
@@ -86,14 +80,8 @@ class PrinterVisitor(ExpressionVisitor[str]):
         right_value = visit(node.right, self)
         return f"{left_value} {op} {right_value}"
 
-    def variable(self, node: VariableNode) -> str:
-        return node.name
-
     def parameter(self, node: ParameterNode) -> str:
         return node.name
-
-    def comp_variable(self, node: ComponentVariableNode) -> str:
-        return f"{node.component_id}.{node.name}"
 
     def comp_parameter(self, node: ComponentParameterNode) -> str:
         return f"{node.component_id}.{node.name}"

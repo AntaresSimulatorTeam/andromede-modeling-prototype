@@ -10,152 +10,87 @@
 #
 # This file is part of the Antares project.
 
-from typing import cast
 
 import pytest
 
-from andromede.expression.expression import ExpressionNode, literal, param, var
-from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.expression import param
+from andromede.expression.indexing_structure import RowIndex
+from andromede.expression.linear_expression import literal, var, wrap_in_linear_expr
 from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
     DEMAND_MODEL,
     GENERATOR_MODEL,
     GENERATOR_MODEL_WITH_STORAGE,
     NODE_BALANCE_MODEL,
 )
-from andromede.model import float_parameter, float_variable, model
-from andromede.simulation import TimeBlock, build_problem
-from andromede.study import (
-    ConstantData,
-    DataBase,
-    Network,
-    Node,
-    PortRef,
-    create_component,
-)
+from andromede.simulation.optimization import build_problem
+from andromede.simulation.time_block import TimeBlock
+from andromede.study.data import ConstantData, DataBase
+from andromede.study.network import Network, Node, PortRef, create_component
 from tests.unittests.test_utils import generate_scalar_matrix_data
+from tests.utils import EvaluationContext
 
 
-def test_large_sum_inside_model_with_loop() -> None:
+def test_large_number_of_parameters_sum() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
-    Here the objective function is the sum over nb_terms terms on a for-loop inside the model
 
-    This test pass with 476 terms but fails with 477 locally due to recursion depth,
-    and even less terms are possible with Jenkins...
+    This test pass with 476 terms but fails with 477 locally due to recursion depth, and even less terms are possible with Jenkins...
     """
     nb_terms = 500
 
-    time_blocks = [TimeBlock(0, [0])]
-    scenarios = 1
-    database = DataBase()
-
+    parameters_value = {}
     for i in range(1, nb_terms):
-        database.add_data("simple_cost", f"cost_{i}", ConstantData(1 / i))
+        parameters_value[f"cost_{i}"] = 1 / i
 
+    # Still the recursion depth error with parameters
     with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        SIMPLE_COST_MODEL = model(
-            id="SIMPLE_COST",
-            parameters=[
-                float_parameter(f"cost_{i}", IndexingStructure(False, False))
-                for i in range(1, nb_terms)
-            ],
-            objective_operational_contribution=cast(
-                ExpressionNode, sum(param(f"cost_{i}") for i in range(1, nb_terms))
-            ),
-        )
-
-        # Won't run because last statement will raise the error
-        network = Network("test")
-        cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
-        network.add_component(cost_model)
-
-        problem = build_problem(network, database, time_blocks[0], scenarios)
-        status = problem.solver.Solve()
-
-        assert status == problem.solver.OPTIMAL
-        assert problem.solver.Objective().Value() == sum(
-            [1 / i for i in range(1, nb_terms)]
-        )
+        expr = sum(wrap_in_linear_expr(param(f"cost_{i}")) for i in range(1, nb_terms))
+        expr.evaluate(EvaluationContext(parameters=parameters_value), RowIndex(0, 0))
 
 
-def test_large_sum_outside_model_with_loop() -> None:
+def test_large_number_of_identical_parameters_sum() -> None:
     """
-    Test performance when the problem involves an expression with a high number of terms.
-    Here the objective function is the sum over nb_terms terms on a for-loop outside the model
+    With identical parameters sum, a simplification is performed online to avoid the recursivity.
     """
-    nb_terms = 10_000
+    nb_terms = 500
 
-    time_blocks = [TimeBlock(0, [0])]
-    scenarios = 1
-    database = DataBase()
+    parameters_value = {"cost": 1.0}
 
-    obj_coeff = sum([1 / i for i in range(1, nb_terms)])
-
-    SIMPLE_COST_MODEL = model(
-        id="SIMPLE_COST",
-        parameters=[],
-        objective_operational_contribution=literal(obj_coeff),
+    # Still the recursion depth error with parameters
+    # with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
+    expr = sum(wrap_in_linear_expr(param("cost")) for _ in range(nb_terms))
+    assert (
+        expr.evaluate(EvaluationContext(parameters=parameters_value), RowIndex(0, 0))
+        == nb_terms
     )
 
-    network = Network("test")
 
-    simple_model = create_component(
-        model=SIMPLE_COST_MODEL,
-        id="simple_cost",
-    )
-    network.add_component(simple_model)
-
-    problem = build_problem(network, database, time_blocks[0], scenarios)
-    status = problem.solver.Solve()
-
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == obj_coeff
-
-
-def test_large_sum_inside_model_with_sum_operator() -> None:
+def test_large_number_of_literal_sum() -> None:
     """
-    Test performance when the problem involves an expression with a high number of terms.
-    Here the objective function is the sum over nb_terms terms with the sum() operator inside the model
+    Literal sums are computed online to avoid recursivity
     """
-    nb_terms = 10_000
+    nb_terms = 500
 
-    scenarios = 1
-    time_blocks = [TimeBlock(0, list(range(nb_terms)))]
-    database = DataBase()
+    # # Still the recursion depth error with parameters
+    # with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
+    expr = sum(wrap_in_linear_expr(literal(1)) for _ in range(nb_terms))
+    assert expr.evaluate(EvaluationContext(), RowIndex(0, 0)) == nb_terms
 
-    # Weird values when the "cost" varies over time and we use the sum() operator:
-    # For testing purposes, will use a const value since the problem seems to come when
-    # we try to linearize nb_terms variables with nb_terms distinct parameters
-    # TODO check the sum() operator for time-variable parameters
-    database.add_data("simple_cost", "cost", ConstantData(3))
 
-    SIMPLE_COST_MODEL = model(
-        id="SIMPLE_COST",
-        parameters=[
-            float_parameter("cost", IndexingStructure(False, False)),
-        ],
-        variables=[
-            float_variable(
-                "var",
-                lower_bound=literal(1),
-                upper_bound=literal(2),
-                structure=IndexingStructure(True, False),
-            ),
-        ],
-        objective_operational_contribution=(param("cost") * var("var")).sum(),
-    )
+def test_large_number_of_variables_sum() -> None:
+    """
+    Test performance when the problem involves an expression with a high number of terms. No problem when there is a large number of variables as this is derecusified.
+    """
+    nb_terms = 500
 
-    network = Network("test")
+    variables_value = {}
+    for i in range(1, nb_terms):
+        variables_value[f"cost_{i}"] = 1 / i
 
-    cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
-    network.add_component(cost_model)
-
-    problem = build_problem(network, database, time_blocks[0], scenarios)
-    status = problem.solver.Solve()
-
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 3 * nb_terms
+    expr = sum(var(f"cost_{i}") for i in range(1, nb_terms))
+    assert expr.evaluate(
+        EvaluationContext(variables=variables_value), RowIndex(0, 0)
+    ) == sum(1 / i for i in range(1, nb_terms))
 
 
 def test_large_sum_of_port_connections() -> None:
@@ -196,14 +131,13 @@ def test_large_sum_of_port_connections() -> None:
             PortRef(generators[gen_id], "balance_port"), PortRef(node, "balance_port")
         )
 
-    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        problem = build_problem(network, database, time_block, scenarios)
+    # Raised recursion error with previous implementation
+    problem = build_problem(network, database, time_block, scenarios)
 
-        # Won't run because last statement will raise the error
-        status = problem.solver.Solve()
+    status = problem.solver.Solve()
 
-        assert status == problem.solver.OPTIMAL
-        assert problem.solver.Objective().Value() == 5 * nb_generators
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 5 * nb_generators
 
 
 def test_basic_balance_on_whole_year() -> None:

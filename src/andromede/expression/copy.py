@@ -11,30 +11,23 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from typing import List, Union, cast
+from typing import List, cast
 
 from .expression import (
-    AdditionNode,
     ComparisonNode,
     ComponentParameterNode,
-    ComponentVariableNode,
-    DivisionNode,
     ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
-    MultiplicationNode,
-    NegationNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
-    SubstractionNode,
     TimeAggregatorNode,
     TimeOperatorNode,
-    VariableNode,
 )
-from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
+from .visitor import ExpressionVisitorOperations, visit
 
 
 @dataclass(frozen=True)
@@ -51,14 +44,8 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
             visit(node.left, self), visit(node.right, self), node.comparator
         )
 
-    def variable(self, node: VariableNode) -> ExpressionNode:
-        return VariableNode(node.name)
-
     def parameter(self, node: ParameterNode) -> ExpressionNode:
         return ParameterNode(node.name)
-
-    def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
-        return ComponentVariableNode(node.component_id, node.name)
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
         return ComponentParameterNode(node.component_id, node.name)
@@ -69,9 +56,11 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
         return ExpressionRange(
             start=visit(expression_range.start, self),
             stop=visit(expression_range.stop, self),
-            step=visit(expression_range.step, self)
-            if expression_range.step is not None
-            else None,
+            step=(
+                visit(expression_range.step, self)
+                if expression_range.step is not None
+                else None
+            ),
         )
 
     def copy_instances_index(

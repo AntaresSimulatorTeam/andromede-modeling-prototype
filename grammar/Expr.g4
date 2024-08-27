@@ -26,16 +26,18 @@ expr
     | expr op=('+' | '-') expr                 # addsub
     | expr COMPARISON expr                     # comparison
     | IDENTIFIER '(' expr ')'                  # function
-    | IDENTIFIER '[' shift (',' shift)* ']'    # timeShift
-    | IDENTIFIER '[' expr  (',' expr )* ']'    # timeIndex
-    | IDENTIFIER '[' shift1=shift '..' shift2=shift ']'     # timeShiftRange
-    | IDENTIFIER '[' expr '..' expr ']'        # timeRange
+    | IDENTIFIER '[' shift ']'    # timeShift
+    | IDENTIFIER '[' expr  ']'    # timeIndex
+    | TIME_SUM '(' (expr | shift | timeShiftRange | timeRange) ',' IDENTIFIER ')'  #timeSum
     ;
 
 atom
     : NUMBER                                   # number
     | IDENTIFIER                               # identifier
     ;
+
+timeShiftRange: shift1=shift '..' shift2=shift;
+timeRange: expr1=expr '..' expr2=expr;
 
 // a shift is required to be either "t" or "t + ..." or "t - ..."
 // Note: simply defining it as "shift: TIME ('+' | '-') expr" won't work
@@ -74,5 +76,6 @@ NUMBER        : DIGIT+ ('.' DIGIT+)?;
 TIME          : 't';
 IDENTIFIER    : CHAR CHAR_OR_DIGIT*;
 COMPARISON    : ( '=' | '>=' | '<=' );
+TIME_SUM      : 'sum';
 
 WS: (' ' | '\t' | '\r'| '\n') -> skip;

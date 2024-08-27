@@ -12,10 +12,13 @@
 
 import pytest
 
-from andromede.expression import literal
-from andromede.expression.expression import port_field
+from andromede.expression.expression import literal
+from andromede.expression.linear_expression import port_field
 from andromede.libs.standard import DEMAND_MODEL
 from andromede.model import Constraint, ModelPort, PortType, model
+from andromede.model.constraint import Constraint
+from andromede.model.model import ModelPort, model
+from andromede.model.port import PortType
 from andromede.study import Node, PortRef, PortsConnection, create_component
 
 
@@ -28,7 +31,8 @@ def test_port_type_compatibility_ko() -> None:
         constraints=[
             Constraint(
                 name="Balance",
-                expression=port_field("balance_port", "flow").sum() == literal(0),
+                expression_init=port_field("balance_port", "flow").sum_connections()
+                == literal(0),
             )
         ],
     )

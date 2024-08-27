@@ -12,16 +12,22 @@
 from dataclasses import dataclass
 from typing import Set
 
-from antlr4 import CommonTokenStream, DiagnosticErrorListener, InputStream
+from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
 
-from andromede.expression import ExpressionNode, literal, param, var
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
     ExpressionRange,
-    PortFieldNode,
+    literal,
+    param,
+)
+from andromede.expression.linear_expression import (
+    LinearExpression,
+    port_field,
+    var,
+    wrap_in_linear_expr,
 )
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
 from andromede.expression.parsing.antlr.ExprParser import ExprParser
@@ -52,19 +58,19 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     identifiers: ModelIdentifiers
 
-    def visitFullexpr(self, ctx: ExprParser.FullexprContext) -> ExpressionNode:
+    def visitFullexpr(self, ctx: ExprParser.FullexprContext) -> LinearExpression:
         return ctx.expr().accept(self)  # type: ignore
 
     # Visit a parse tree produced by ExprParser#number.
-    def visitNumber(self, ctx: ExprParser.NumberContext) -> ExpressionNode:
+    def visitNumber(self, ctx: ExprParser.NumberContext) -> LinearExpression:
         return literal(float(ctx.NUMBER().getText()))  # type: ignore
 
     # Visit a parse tree produced by ExprParser#identifier.
-    def visitIdentifier(self, ctx: ExprParser.IdentifierContext) -> ExpressionNode:
+    def visitIdentifier(self, ctx: ExprParser.IdentifierContext) -> LinearExpression:
         return self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
 
     # Visit a parse tree produced by ExprParser#division.
-    def visitMuldiv(self, ctx: ExprParser.MuldivContext) -> ExpressionNode:
+    def visitMuldiv(self, ctx: ExprParser.MuldivContext) -> LinearExpression:
         left = ctx.expr(0).accept(self)  # type: ignore
         right = ctx.expr(1).accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
@@ -75,7 +81,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         raise ValueError(f"Invalid operator {op}")
 
     # Visit a parse tree produced by ExprParser#subtraction.
-    def visitAddsub(self, ctx: ExprParser.AddsubContext) -> ExpressionNode:
+    def visitAddsub(self, ctx: ExprParser.AddsubContext) -> LinearExpression:
         left = ctx.expr(0).accept(self)  # type: ignore
         right = ctx.expr(1).accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
@@ -86,18 +92,20 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         raise ValueError(f"Invalid operator {op}")
 
     # Visit a parse tree produced by ExprParser#negation.
-    def visitNegation(self, ctx: ExprParser.NegationContext) -> ExpressionNode:
+    def visitNegation(self, ctx: ExprParser.NegationContext) -> LinearExpression:
         return -ctx.expr().accept(self)  # type: ignore
 
     # Visit a parse tree produced by ExprParser#expression.
-    def visitExpression(self, ctx: ExprParser.ExpressionContext) -> ExpressionNode:
+    def visitExpression(self, ctx: ExprParser.ExpressionContext) -> LinearExpression:
         return ctx.expr().accept(self)  # type: ignore
 
     # Visit a parse tree produced by ExprParser#unsignedAtom.
-    def visitUnsignedAtom(self, ctx: ExprParser.UnsignedAtomContext) -> ExpressionNode:
+    def visitUnsignedAtom(
+        self, ctx: ExprParser.UnsignedAtomContext
+    ) -> LinearExpression:
         return ctx.atom().accept(self)  # type: ignore
 
-    def _convert_identifier(self, identifier: str) -> ExpressionNode:
+    def _convert_identifier(self, identifier: str) -> LinearExpression:
         if self.identifiers.is_variable(identifier):
             return var(identifier)
         elif self.identifiers.is_parameter(identifier):
@@ -105,70 +113,66 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         raise ValueError(f"{identifier} is not a valid variable or parameter name.")
 
     # Visit a parse tree produced by ExprParser#portField.
-    def visitPortField(self, ctx: ExprParser.PortFieldContext) -> ExpressionNode:
-        return PortFieldNode(
+    def visitPortField(self, ctx: ExprParser.PortFieldContext) -> LinearExpression:
+        return port_field(
             port_name=ctx.IDENTIFIER(0).getText(),  # type: ignore
             field_name=ctx.IDENTIFIER(1).getText(),  # type: ignore
         )
 
     # Visit a parse tree produced by ExprParser#comparison.
-    def visitComparison(self, ctx: ExprParser.ComparisonContext) -> ExpressionNode:
+    def visitComparison(self, ctx: ExprParser.ComparisonContext) -> LinearExpression:
         op = ctx.COMPARISON().getText()  # type: ignore
         exp1 = ctx.expr(0).accept(self)  # type: ignore
         exp2 = ctx.expr(1).accept(self)  # type: ignore
         comp = {
-            "=": Comparator.EQUAL,
-            "<=": Comparator.LESS_THAN,
-            ">=": Comparator.GREATER_THAN,
+            "=": LinearExpression.__eq__,
+            "<=": LinearExpression.__le__,
+            ">=": LinearExpression.__ge__,
         }[op]
-        return ComparisonNode(exp1, exp2, comp)
+        return comp(exp1, exp2)
 
     # Visit a parse tree produced by ExprParser#timeShift.
-    def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext) -> ExpressionNode:
+    def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext) -> LinearExpression:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.eval(time_shifts)
+        time_shift = ctx.expr().accept(self)  # type: ignore
+        return shifted_expr.eval(time_shift)
 
-    # Visit a parse tree produced by ExprParser#rangeTimeShift.
-    def visitTimeRange(self, ctx: ExprParser.TimeRangeContext) -> ExpressionNode:
+    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> LinearExpression:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.eval(ExpressionRange(expressions[0], expressions[1]))
+        time_shift = ctx.shift().accept(self)  # type: ignore
+        return shifted_expr.sum(shift=time_shift)
+    
+    # Visit a parse tree produced by ExprParser#timeSum.
+    def visitTimeSum(self, ctx:ExprParser.TimeSumContext):
+        return self.visitChildren(ctx)
+    
+    # Visit a parse tree produced by ExprParser#timeShiftRange.
+    def visitTimeShiftRange(self, ctx:ExprParser.TimeShiftRangeContext):
+        return ExpressionRange(ctx.shift, ctx.shift2)
 
-    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> ExpressionNode:
-        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        time_shifts = [s.accept(self) for s in ctx.shift()]  # type: ignore
-        # specifics for x[t] ...
-        if len(time_shifts) == 1 and expressions_equal(time_shifts[0], literal(0)):
-            return shifted_expr
-        return shifted_expr.shift(time_shifts)
 
-    def visitTimeShiftRange(
-        self, ctx: ExprParser.TimeShiftRangeContext
-    ) -> ExpressionNode:
-        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        shift1 = ctx.shift1.accept(self)  # type: ignore
-        shift2 = ctx.shift2.accept(self)  # type: ignore
-        return shifted_expr.shift(ExpressionRange(shift1, shift2))
+    # Visit a parse tree produced by ExprParser#timeRange.
+    def visitTimeRange(self, ctx:ExprParser.TimeRangeContext):
+        return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#function.
-    def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:
+    def visitFunction(self, ctx: ExprParser.FunctionContext) -> LinearExpression:
         function_name: str = ctx.IDENTIFIER().getText()  # type: ignore
-        operand: ExpressionNode = ctx.expr().accept(self)  # type: ignore
+        operand: LinearExpression = ctx.expr().accept(self)  # type: ignore
         fn = _FUNCTIONS.get(function_name, None)
         if fn is None:
             raise ValueError(f"Encountered invalid function name {function_name}")
         return fn(operand)
 
     # Visit a parse tree produced by ExprParser#shift.
-    def visitShift(self, ctx: ExprParser.ShiftContext) -> ExpressionNode:
+    def visitShift(self, ctx: ExprParser.ShiftContext) -> LinearExpression:
         if ctx.shift_expr() is None:  # type: ignore
             return literal(0)
         shift = ctx.shift_expr().accept(self)  # type: ignore
         return shift
 
     # Visit a parse tree produced by ExprParser#shiftAddsub.
-    def visitShiftAddsub(self, ctx: ExprParser.ShiftAddsubContext) -> ExpressionNode:
+    def visitShiftAddsub(self, ctx: ExprParser.ShiftAddsubContext) -> LinearExpression:
         left = ctx.shift_expr().accept(self)  # type: ignore
         right = ctx.right_expr().accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
@@ -179,7 +183,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         raise ValueError(f"Invalid operator {op}")
 
     # Visit a parse tree produced by ExprParser#shiftMuldiv.
-    def visitShiftMuldiv(self, ctx: ExprParser.ShiftMuldivContext) -> ExpressionNode:
+    def visitShiftMuldiv(self, ctx: ExprParser.ShiftMuldivContext) -> LinearExpression:
         left = ctx.shift_expr().accept(self)  # type: ignore
         right = ctx.right_expr().accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
@@ -192,14 +196,14 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     # Visit a parse tree produced by ExprParser#signedExpression.
     def visitSignedExpression(
         self, ctx: ExprParser.SignedExpressionContext
-    ) -> ExpressionNode:
+    ) -> LinearExpression:
         if ctx.op.text == "-":  # type: ignore
             return -ctx.expr().accept(self)  # type: ignore
         else:
             return ctx.expr().accept(self)  # type: ignore
 
     # Visit a parse tree produced by ExprParser#signedAtom.
-    def visitSignedAtom(self, ctx: ExprParser.SignedAtomContext) -> ExpressionNode:
+    def visitSignedAtom(self, ctx: ExprParser.SignedAtomContext) -> LinearExpression:
         if ctx.op.text == "-":  # type: ignore
             return -ctx.atom().accept(self)  # type: ignore
         else:
@@ -208,11 +212,11 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     # Visit a parse tree produced by ExprParser#rightExpression.
     def visitRightExpression(
         self, ctx: ExprParser.RightExpressionContext
-    ) -> ExpressionNode:
+    ) -> LinearExpression:
         return ctx.expr().accept(self)  # type: ignore
 
     # Visit a parse tree produced by ExprParser#rightMuldiv.
-    def visitRightMuldiv(self, ctx: ExprParser.RightMuldivContext) -> ExpressionNode:
+    def visitRightMuldiv(self, ctx: ExprParser.RightMuldivContext) -> LinearExpression:
         left = ctx.right_expr(0).accept(self)  # type: ignore
         right = ctx.right_expr(1).accept(self)  # type: ignore
         op = ctx.op.text  # type: ignore
@@ -223,14 +227,14 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
         raise ValueError(f"Invalid operator {op}")
 
     # Visit a parse tree produced by ExprParser#rightAtom.
-    def visitRightAtom(self, ctx: ExprParser.RightAtomContext) -> ExpressionNode:
+    def visitRightAtom(self, ctx: ExprParser.RightAtomContext) -> LinearExpression:
         return ctx.atom().accept(self)  # type: ignore
 
 
 _FUNCTIONS = {
-    "sum": ExpressionNode.sum,
-    "sum_connections": ExpressionNode.sum_connections,
-    "expec": ExpressionNode.expec,
+    "sum": LinearExpression.sum,
+    "sum_connections": LinearExpression.sum_connections,
+    "expec": LinearExpression.expec,
 }
 
 
@@ -238,7 +242,9 @@ class AntaresParseException(Exception):
     pass
 
 
-def parse_expression(expression: str, identifiers: ModelIdentifiers) -> ExpressionNode:
+def parse_expression(
+    expression: str, identifiers: ModelIdentifiers
+) -> LinearExpression:
     """
     Parses a string expression to create the corresponding AST representation.
     """

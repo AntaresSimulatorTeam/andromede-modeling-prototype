@@ -9,10 +9,16 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypedDict, Union
 
-from andromede.expression import ExpressionNode
+# from andromede.expression import ExpressionNode
+from andromede.expression.expression import ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.linear_expression import (
+    LinearExpression,
+    StandaloneConstraint,
+    wrap_in_linear_expr_if_present,
+)
 from andromede.expression.parsing.parse_expression import (
     ModelIdentifiers,
     parse_expression,
@@ -123,7 +129,7 @@ def _to_parameter(param: InputParameter) -> Parameter:
 
 def _to_expression_if_present(
     expr: Optional[str], identifiers: ModelIdentifiers
-) -> Optional[ExpressionNode]:
+) -> Optional[LinearExpression]:
     if not expr:
         return None
     return parse_expression(expr, identifiers)
@@ -136,18 +142,39 @@ def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
             var.variable_type
         ],
         structure=IndexingStructure(var.time_dependent, var.scenario_dependent),
-        lower_bound=_to_expression_if_present(var.lower_bound, identifiers),
-        upper_bound=_to_expression_if_present(var.upper_bound, identifiers),
+        lower_bound=wrap_in_linear_expr_if_present(
+            _to_expression_if_present(var.lower_bound, identifiers)
+        ),
+        upper_bound=wrap_in_linear_expr_if_present(
+            _to_expression_if_present(var.upper_bound, identifiers)
+        ),
         context=ProblemContext.OPERATIONAL,
     )
+
+
+# Used only for mypy
+class ConstraintKwargs(TypedDict, total=False):
+    name: str
+    expression_init: Union[ExpressionNode, LinearExpression, StandaloneConstraint]
+    lower_bound: LinearExpression
+    upper_bound: LinearExpression
 
 
 def _to_constraint(
     constraint: InputConstraint, identifiers: ModelIdentifiers
 ) -> Constraint:
-    return Constraint(
-        name=constraint.name,
-        expression=parse_expression(constraint.expression, identifiers),
-        lower_bound=_to_expression_if_present(constraint.lower_bound, identifiers),
-        upper_bound=_to_expression_if_present(constraint.upper_bound, identifiers),
+    kwargs: ConstraintKwargs = {
+        "name": constraint.name,
+        "expression_init": parse_expression(constraint.expression, identifiers),
+    }
+    lb = wrap_in_linear_expr_if_present(
+        _to_expression_if_present(constraint.lower_bound, identifiers)
     )
+    ub = wrap_in_linear_expr_if_present(
+        _to_expression_if_present(constraint.upper_bound, identifiers)
+    )
+    if lb is not None:
+        kwargs["lower_bound"] = lb
+    if ub is not None:
+        kwargs["upper_bound"] = ub
+    return Constraint(**kwargs)
