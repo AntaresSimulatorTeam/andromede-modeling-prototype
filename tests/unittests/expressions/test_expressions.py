@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+# This test file should contain tests on ExpressionNode objects rather than on LinearExpression objects which are already tested in test_linear_expressions.py ...
+
 import re
 from dataclasses import dataclass, field
 from typing import Dict
@@ -102,7 +104,7 @@ class ComponentEvaluationContext(ValueProvider):
         raise NotImplementedError()
 
 
-# TODO: Redundant with add tests in test_linear_expressions_efficient ?
+# TODO: Redundant with tests in test_linear_expressions_efficient ?
 def test_comp_parameter() -> None:
     expr1 = LinearExpression([], 1) + LinearExpression([Term(1, "comp1", "x")])
     expr2 = expr1 / LinearExpression(constant=ComponentParameterNode("comp1", "p"))
@@ -139,18 +141,6 @@ def test_operators() -> None:
     assert -expr.evaluate(context, RowIndex(0, 0)) == pytest.approx(-2.5, 1e-16)
 
 
-# def test_degree() -> None:
-#     x = var("x")
-#     p = param("p")
-#     expr = (5 * x + 3) / p
-
-#     assert expr.compute_degree() == 1
-
-#     # TODO: Should this be allowed ? If so, how should we represent is ?
-#     expr = x * expr
-#     assert expr.compute_degree() == 2
-
-
 def test_degree_computation_should_take_into_account_simplifications() -> None:
     x = var("x")
     expr = x - x
@@ -159,21 +149,6 @@ def test_degree_computation_should_take_into_account_simplifications() -> None:
     expr = 0 * x
     assert expr.is_constant()
     assert expr.is_zero()
-
-
-# def test_parameters_resolution() -> None:
-#     class TestParamProvider(ParameterValueProvider):
-#         def get_component_parameter_value(self, component_id: str, name: str) -> float:
-#             raise NotImplementedError()
-
-#         def get_parameter_value(self, name: str) -> float:
-#             return 2
-
-#     x = var("x")
-#     p = param("p")
-#     expr = (5 * x + 3) / p
-#     # TODO: We do not want this in the API, but rather expr.get(t, w)
-#     assert expr.resolve_parameters(TestParamProvider()) == (5 * x + 3) / 2
 
 
 # TODO: Write tests on ExpressionNodes for tree simplification, do the same for multiplication, substraction, etc
@@ -354,20 +329,6 @@ def test_linear_expression_equality(
     lhs: LinearExpression, rhs: LinearExpression
 ) -> None:
     assert linear_expressions_equal(lhs, rhs)
-
-
-# TODO: What is the equivalent of this test ?
-# def test_linearization_of_non_linear_expressions_should_raise_value_error() -> None:
-#     x = var("x")
-#     expr = x.variance()
-
-#     provider = StructureProvider()
-#     with pytest.raises(ValueError) as exc:
-#         linearize_expression(expr, provider)
-#     assert (
-#         str(exc.value)
-#         == "Cannot linearize expression with a non-linear operator: Variance"
-#     )
 
 
 def test_standalone_constraint() -> None:

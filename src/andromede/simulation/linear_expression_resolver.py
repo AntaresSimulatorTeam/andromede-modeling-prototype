@@ -81,17 +81,17 @@ class LinearExpressionResolver:
         operator_ts_ids = self._row_id_to_term_time_scenario_id(term, row_id)
         for time in operator_ts_ids.time_indices:
             for scenario in operator_ts_ids.scenario_indices:
-                solver_vars[TimeScenarioIndex(time, scenario)] = (
-                    self.context.get_component_variable(
-                        time,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        # At term build time, no information on the variable structure is known, we use it now
-                        self.context.network.get_component(term.component_id)
-                        .model.variables[term.variable_name]
-                        .structure,
-                    )
+                solver_vars[
+                    TimeScenarioIndex(time, scenario)
+                ] = self.context.get_component_variable(
+                    time,
+                    scenario,
+                    term.component_id,
+                    term.variable_name,
+                    # At term build time, no information on the variable structure is known, we use it now
+                    self.context.network.get_component(term.component_id)
+                    .model.variables[term.variable_name]
+                    .structure,
                 )
         return solver_vars
 

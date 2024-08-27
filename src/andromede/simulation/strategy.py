@@ -37,12 +37,14 @@ class ModelSelectionStrategy(ABC):
                 yield constraint
 
     @abstractmethod
-    def _keep_from_context(self, context: ProblemContext) -> bool: ...
+    def _keep_from_context(self, context: ProblemContext) -> bool:
+        ...
 
     @abstractmethod
     def get_objectives(
         self, model: Model
-    ) -> Generator[Optional[LinearExpression], None, None]: ...
+    ) -> Generator[Optional[LinearExpression], None, None]:
+        ...
 
 
 class MergedProblemStrategy(ModelSelectionStrategy):

@@ -374,7 +374,8 @@ def _merge_dicts(
     rhs: Dict[TermKey, Term],
     merge_func: Callable[[Term, Term], Term],
     neutral: float,
-) -> Dict[TermKey, Term]: ...
+) -> Dict[TermKey, Term]:
+    ...
 
 
 @overload
@@ -383,7 +384,8 @@ def _merge_dicts(
     rhs: Dict[PortFieldId, PortFieldTerm],
     merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
     neutral: float,
-) -> Dict[PortFieldId, PortFieldTerm]: ...
+) -> Dict[PortFieldId, PortFieldTerm]:
+    ...
 
 
 def _merge_dicts(lhs, rhs, merge_func, neutral):
