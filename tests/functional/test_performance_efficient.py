@@ -13,14 +13,9 @@
 
 import pytest
 
-from andromede.expression.evaluate import EvaluationContext
 from andromede.expression.expression import param
 from andromede.expression.indexing_structure import RowIndex
-from andromede.expression.linear_expression import (
-    literal,
-    var,
-    wrap_in_linear_expr,
-)
+from andromede.expression.linear_expression import literal, var, wrap_in_linear_expr
 from andromede.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
@@ -32,6 +27,7 @@ from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import ConstantData, DataBase
 from andromede.study.network import Network, Node, PortRef, create_component
 from tests.unittests.test_utils import generate_scalar_matrix_data
+from tests.utils import EvaluationContext
 
 
 def test_large_number_of_parameters_sum() -> None:

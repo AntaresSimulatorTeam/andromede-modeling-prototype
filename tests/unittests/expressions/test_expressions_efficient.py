@@ -17,7 +17,6 @@ from typing import Dict
 import pytest
 
 from andromede.expression.equality import expressions_equal
-from andromede.expression.evaluate import EvaluationContext, ValueProvider
 from andromede.expression.expression import (
     ComponentParameterNode,
     ExpressionNodeEfficient,
@@ -48,6 +47,7 @@ from andromede.expression.linear_expression import (
 )
 from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.expression.value_provider import TimeScenarioIndex, TimeScenarioIndices
+from tests.utils import EvaluationContext, ValueProvider
 
 
 @dataclass(frozen=True)

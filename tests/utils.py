@@ -13,7 +13,11 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-from .value_provider import TimeScenarioIndex, TimeScenarioIndices, ValueProvider
+from andromede.expression.value_provider import (
+    TimeScenarioIndex,
+    TimeScenarioIndices,
+    ValueProvider,
+)
 
 
 # Used only for tests
