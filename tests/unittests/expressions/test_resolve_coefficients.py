@@ -20,7 +20,7 @@ from andromede.expression.evaluate_parameters import resolve_coefficient
 from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
-    ExpressionNodeEfficient,
+    ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
@@ -150,7 +150,7 @@ def provider() -> CustomValueProvider:
     ],
 )
 def test_resolve_coefficient_raises_value_error_on_port_field_node(
-    port_node: ExpressionNodeEfficient, provider: CustomValueProvider
+    port_node: ExpressionNode, provider: CustomValueProvider
 ) -> None:
     with pytest.raises(
         ValueError, match="Port fields must be resolved before evaluating parameters"
@@ -186,7 +186,7 @@ def test_resolve_coefficient_raises_value_error_on_comparison_node(
     ],
 )
 def test_resolve_coefficient_raises_value_error_on_expressions_that_are_not_aggregated_on_a_single_time_and_scenario(
-    expr: ExpressionNodeEfficient, provider: CustomValueProvider
+    expr: ExpressionNode, provider: CustomValueProvider
 ) -> None:
     with pytest.raises(
         ValueError, match="Evaluation of expression cannot be reduced to a float value"
@@ -203,7 +203,7 @@ def test_resolve_coefficient_raises_value_error_on_expressions_that_are_not_aggr
     ],
 )
 def test_resolve_coefficient_on_expression_with_shift_but_without_sum_raises_value_error(
-    expr: ExpressionNodeEfficient,
+    expr: ExpressionNode,
     provider: CustomValueProvider,
 ) -> None:
     with pytest.raises(
@@ -235,7 +235,7 @@ def test_resolve_coefficient_on_expression_with_shift_but_without_sum_raises_val
     ],
 )
 def test_resolve_coefficient_with_no_time_varying_parameter_in_time_operator_argument_raises_value_error(
-    expr: ExpressionNodeEfficient,
+    expr: ExpressionNode,
 ) -> None:
     class TimeVaryingParameterValueProvider(CustomValueProvider):
         def parameter_is_constant_over_time(self, name: str) -> bool:
@@ -263,7 +263,7 @@ def test_resolve_coefficient_with_no_time_varying_parameter_in_time_operator_arg
     ],
 )
 def test_resolve_coefficient_on_elementary_operations(
-    expr: ExpressionNodeEfficient,
+    expr: ExpressionNode,
     row_id: RowIndex,
     expected: float,
     provider: CustomValueProvider,
@@ -290,7 +290,7 @@ def test_resolve_coefficient_on_elementary_operations(
     ],
 )
 def test_resolve_coefficient_on_time_shift_and_sum(
-    expr: ExpressionNodeEfficient,
+    expr: ExpressionNode,
     row_id: RowIndex,
     expected: float,
     provider: CustomValueProvider,
@@ -307,7 +307,7 @@ def test_resolve_coefficient_on_time_shift_and_sum(
     ],
 )
 def test_resolve_coefficient_on_expectation(
-    expr: ExpressionNodeEfficient,
+    expr: ExpressionNode,
     row_id: RowIndex,
     expected: float,
     provider: CustomValueProvider,
@@ -326,7 +326,7 @@ def test_resolve_coefficient_on_expectation(
     ],
 )
 def test_resolve_coefficient_on_sum_and_expectation(
-    expr: ExpressionNodeEfficient,
+    expr: ExpressionNode,
     row_id: RowIndex,
     expected: float,
     provider: CustomValueProvider,

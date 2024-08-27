@@ -22,10 +22,7 @@ import ortools.linear_solver.pywraplp as lp
 
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
-    RowIndex,
-)
+from andromede.expression.linear_expression import LinearExpression, RowIndex
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
@@ -66,10 +63,10 @@ def _compute_indexing_structure(
 
 
 def _instantiate_model_expression(
-    model_expression: LinearExpressionEfficient,
+    model_expression: LinearExpression,
     component_id: str,
     optimization_context: OptimizationContext,
-) -> LinearExpressionEfficient:
+) -> LinearExpression:
     """
     Performs common operations that are necessary on model expressions before their actual use:
      1. add component ID for variables and parameters of THIS component
@@ -122,7 +119,7 @@ def _create_objective(
     solver: lp.Solver,
     opt_context: OptimizationContext,
     component: Component,
-    objective_contribution: LinearExpressionEfficient,
+    objective_contribution: LinearExpression,
 ) -> None:
     instantiated_expr = _instantiate_model_expression(
         objective_contribution, component.id, opt_context

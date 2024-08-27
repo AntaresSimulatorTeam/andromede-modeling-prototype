@@ -12,10 +12,10 @@
 from typing import Dict, List, Optional, TypedDict, Union
 
 # from andromede.expression import ExpressionNode
-from andromede.expression.expression import ExpressionNodeEfficient
+from andromede.expression.expression import ExpressionNode
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     StandaloneConstraint,
     wrap_in_linear_expr_if_present,
 )
@@ -129,7 +129,7 @@ def _to_parameter(param: InputParameter) -> Parameter:
 
 def _to_expression_if_present(
     expr: Optional[str], identifiers: ModelIdentifiers
-) -> Optional[LinearExpressionEfficient]:
+) -> Optional[LinearExpression]:
     if not expr:
         return None
     return parse_expression(expr, identifiers)
@@ -155,11 +155,9 @@ def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
 # Used only for mypy
 class ConstraintKwargs(TypedDict, total=False):
     name: str
-    expression_init: Union[
-        ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint
-    ]
-    lower_bound: LinearExpressionEfficient
-    upper_bound: LinearExpressionEfficient
+    expression_init: Union[ExpressionNode, LinearExpression, StandaloneConstraint]
+    lower_bound: LinearExpression
+    upper_bound: LinearExpression
 
 
 def _to_constraint(

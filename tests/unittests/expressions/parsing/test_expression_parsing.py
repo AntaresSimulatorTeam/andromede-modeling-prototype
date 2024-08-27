@@ -15,13 +15,13 @@ import pytest
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
-    ExpressionNodeEfficient,
+    ExpressionNode,
     ExpressionRange,
     literal,
     param,
 )
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     StandaloneConstraint,
     linear_expressions_equal,
     port_field,
@@ -163,18 +163,16 @@ def test_parsing_visitor(
     variables: Set[str],
     parameters: Set[str],
     expression_str: str,
-    expected: Union[
-        ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint
-    ],
+    expected: Union[ExpressionNode, LinearExpression, StandaloneConstraint],
 ) -> None:
     identifiers = ModelIdentifiers(variables, parameters)
     expr = parse_expression(expression_str, identifiers)
     print()
     print(f"Expected: \n {str(expected)}")
     print(f"Parsed: \n {str(expr)}")
-    if isinstance(expected, ExpressionNodeEfficient):
+    if isinstance(expected, ExpressionNode):
         assert expressions_equal(expr, expected)
-    elif isinstance(expected, LinearExpressionEfficient):
+    elif isinstance(expected, LinearExpression):
         assert linear_expressions_equal(expr, expected)
     elif isinstance(expected, StandaloneConstraint):
         assert expected == expr

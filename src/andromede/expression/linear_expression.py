@@ -35,7 +35,7 @@ from .context_adder import add_component_context
 from .equality import expressions_equal
 from .evaluate_parameters import check_resolved_expr, resolve_coefficient
 from .expression import (
-    ExpressionNodeEfficient,
+    ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
@@ -68,7 +68,7 @@ from .value_provider import TimeScenarioIndex, TimeScenarioIndices, ValueProvide
 
 
 @dataclass(frozen=True)
-class TermKeyEfficient:
+class TermKey:
     """
     Utility class to provide key for a term that contains all term information except coefficient
     """
@@ -82,7 +82,7 @@ class TermKeyEfficient:
     # Used for test_expression_parsing
     def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, TermKeyEfficient)
+            isinstance(other, TermKey)
             and self.component_id == other.component_id
             and self.variable_name == other.variable_name
             and self.time_operator == other.time_operator
@@ -92,7 +92,7 @@ class TermKeyEfficient:
 
 
 @dataclass(frozen=True)
-class TermEfficient:
+class Term:
     """
     One term in a linear expression: for example the "10x" par in "10x + 5y + 5"
 
@@ -101,7 +101,7 @@ class TermEfficient:
         variable_name: the name of the variable, for example "x" in "10x"
     """
 
-    coefficient: ExpressionNodeEfficient
+    coefficient: ExpressionNode
     component_id: str
     variable_name: str
     structure: IndexingStructure = field(
@@ -116,7 +116,7 @@ class TermEfficient:
 
     def __eq__(self, other: object) -> bool:
         return (
-            isinstance(other, TermEfficient)
+            isinstance(other, Term)
             and expressions_equal(self.coefficient, other.coefficient)
             and self.component_id == other.component_id
             and self.variable_name == other.variable_name
@@ -214,19 +214,19 @@ class TermEfficient:
         self,
         shift: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
             None,
         ] = None,
         eval: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
             None,
         ] = None,
-    ) -> "TermEfficient":
+    ) -> "Term":
         if shift is not None and eval is not None:
             raise ValueError("Only shift or eval arguments should specified, not both.")
 
@@ -251,11 +251,11 @@ class TermEfficient:
         self,
         expressions: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
         ],
-    ) -> "TermEfficient":
+    ) -> "Term":
         """
         Shorthand for shift on a single time step
 
@@ -283,11 +283,11 @@ class TermEfficient:
         self,
         expressions: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
         ],
-    ) -> "TermEfficient":
+    ) -> "Term":
         """
         Shorthand for eval on a single time step
 
@@ -311,13 +311,13 @@ class TermEfficient:
         else:
             return self.sum(eval=expressions)
 
-    def expec(self) -> "TermEfficient":
+    def expec(self) -> "Term":
         # TODO: Do we need checks, in case a scenario operator is already specified ?
         return dataclasses.replace(self, scenario_aggregator=Expectation())
 
 
-def generate_key(term: TermEfficient) -> TermKeyEfficient:
-    return TermKeyEfficient(
+def generate_key(term: Term) -> TermKey:
+    return TermKey(
         term.component_id,
         term.variable_name,
         term.time_operator,
@@ -344,7 +344,7 @@ class PortFieldKey:
 
 @dataclass(frozen=True)
 class PortFieldTerm:
-    coefficient: ExpressionNodeEfficient
+    coefficient: ExpressionNode
     port_name: str
     field_name: str
     aggregator: Optional[PortAggregator] = None
@@ -361,7 +361,7 @@ class PortFieldTerm:
         return dataclasses.replace(self, aggregator=PortSum())
 
 
-T_val = TypeVar("T_val", bound=Union[TermEfficient, PortFieldTerm])
+T_val = TypeVar("T_val", bound=Union[Term, PortFieldTerm])
 
 
 def _get_neutral_term(term: T_val, neutral: float) -> T_val:
@@ -370,12 +370,11 @@ def _get_neutral_term(term: T_val, neutral: float) -> T_val:
 
 @overload
 def _merge_dicts(
-    lhs: Dict[TermKeyEfficient, TermEfficient],
-    rhs: Dict[TermKeyEfficient, TermEfficient],
-    merge_func: Callable[[TermEfficient, TermEfficient], TermEfficient],
+    lhs: Dict[TermKey, Term],
+    rhs: Dict[TermKey, Term],
+    merge_func: Callable[[Term, Term], Term],
     neutral: float,
-) -> Dict[TermKeyEfficient, TermEfficient]:
-    ...
+) -> Dict[TermKey, Term]: ...
 
 
 @overload
@@ -384,8 +383,7 @@ def _merge_dicts(
     rhs: Dict[PortFieldId, PortFieldTerm],
     merge_func: Callable[[PortFieldTerm, PortFieldTerm], PortFieldTerm],
     neutral: float,
-) -> Dict[PortFieldId, PortFieldTerm]:
-    ...
+) -> Dict[PortFieldId, PortFieldTerm]: ...
 
 
 def _merge_dicts(lhs, rhs, merge_func, neutral):
@@ -399,7 +397,7 @@ def _merge_dicts(lhs, rhs, merge_func, neutral):
 
 
 def _merge_is_possible(lhs: T_val, rhs: T_val) -> None:
-    if isinstance(lhs, TermEfficient) and isinstance(rhs, TermEfficient):
+    if isinstance(lhs, Term) and isinstance(rhs, Term):
         _merge_term_is_possible(lhs, rhs)
     elif isinstance(lhs, PortFieldTerm) and isinstance(rhs, PortFieldTerm):
         _merge_port_terms_is_possible(lhs, rhs)
@@ -407,7 +405,7 @@ def _merge_is_possible(lhs: T_val, rhs: T_val) -> None:
         raise TypeError("Cannot merge terms of different types")
 
 
-def _merge_term_is_possible(lhs: TermEfficient, rhs: TermEfficient) -> None:
+def _merge_term_is_possible(lhs: Term, rhs: Term) -> None:
     if lhs.component_id != rhs.component_id or lhs.variable_name != rhs.variable_name:
         raise ValueError("Cannot merge terms for different variables")
     if (
@@ -437,7 +435,7 @@ def _substract_terms(lhs: T_val, rhs: T_val) -> T_val:
     return dataclasses.replace(lhs, coefficient=lhs.coefficient - rhs.coefficient)
 
 
-class LinearExpressionEfficient:
+class LinearExpression:
     """
     Represents a linear expression with respect to variable names, for example 10x + 5y + 2.
 
@@ -450,21 +448,19 @@ class LinearExpressionEfficient:
     Examples:
         Operators may be used for construction:
 
-        >>> LinearExpression([], 10) + LinearExpression([TermEfficient(10, "x")], 0)
-        LinearExpression([TermEfficient(10, "x")], 10)
+        >>> LinearExpression([], 10) + LinearExpression([Term
+        LinearExpression([Term
     """
 
-    terms: Dict[TermKeyEfficient, TermEfficient]
-    constant: ExpressionNodeEfficient
+    terms: Dict[TermKey, Term]
+    constant: ExpressionNode
     port_field_terms: Dict[PortFieldId, PortFieldTerm]
 
     # TODO: We need to check that terms.key is indeed a TermKey and change the tests that this will break
     def __init__(
         self,
-        terms: Optional[
-            Union[Dict[TermKeyEfficient, TermEfficient], List[TermEfficient]]
-        ] = None,
-        constant: Optional[Union[float, ExpressionNodeEfficient]] = None,
+        terms: Optional[Union[Dict[TermKey, Term], List[Term]]] = None,
+        constant: Optional[Union[float, ExpressionNode]] = None,
         port_field_terms: Optional[
             Union[Dict[PortFieldId, PortFieldTerm], List[PortFieldTerm]]
         ] = None,
@@ -477,8 +473,8 @@ class LinearExpressionEfficient:
         self.terms = {}
         if terms is not None:
             # Allows to give two different syntax in the constructor:
-            #   - List[TermEfficient] is natural
-            #   - Dict[str, TermEfficient] is useful when constructing a linear expression from the terms of another expression
+            #   - List[Term] is natural
+            #   - Dict[str, Term] is useful when constructing a linear expression from the terms of another expression
             if isinstance(terms, dict):
                 for term_key, term in terms.items():
                     if not term.is_zero():
@@ -489,7 +485,7 @@ class LinearExpressionEfficient:
                         self.terms[generate_key(term)] = term
             else:
                 raise TypeError(
-                    f"Terms must be either of type Dict[TermKeyEfficient, Term] or List[Term], whereas {terms} is of type {type(terms)}"
+                    f"Terms must be either of type Dict[TermKey, Term] or List[Term], whereas {terms} is of type {type(terms)}"
                 )
 
         self.port_field_terms = {}
@@ -560,8 +556,8 @@ class LinearExpressionEfficient:
         )
 
     def __iadd__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
+        self, rhs: Union["LinearExpression", int, float]
+    ) -> "LinearExpression":
         rhs = wrap_in_linear_expr(rhs)
         self.constant += rhs.constant
 
@@ -576,20 +572,18 @@ class LinearExpressionEfficient:
         self.remove_zeros_from_terms()
         return self
 
-    def __add__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
-        result = LinearExpressionEfficient()
+    def __add__(self, rhs: Union["LinearExpression", int, float]) -> "LinearExpression":
+        result = LinearExpression()
         result += self
         result += rhs
         return result
 
-    def __radd__(self, rhs: int) -> "LinearExpressionEfficient":
+    def __radd__(self, rhs: int) -> "LinearExpression":
         return self.__add__(rhs)
 
     def __isub__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
+        self, rhs: Union["LinearExpression", int, float]
+    ) -> "LinearExpression":
         rhs = wrap_in_linear_expr(rhs)
         self.constant -= rhs.constant
 
@@ -604,25 +598,23 @@ class LinearExpressionEfficient:
         self.remove_zeros_from_terms()
         return self
 
-    def __sub__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
-        result = LinearExpressionEfficient()
+    def __sub__(self, rhs: Union["LinearExpression", int, float]) -> "LinearExpression":
+        result = LinearExpression()
         result += self
         result -= rhs
         return result
 
-    def __rsub__(self, rhs: int) -> "LinearExpressionEfficient":
+    def __rsub__(self, rhs: int) -> "LinearExpression":
         return -self + rhs
 
-    def __neg__(self) -> "LinearExpressionEfficient":
-        result = LinearExpressionEfficient()
+    def __neg__(self) -> "LinearExpression":
+        result = LinearExpression()
         result -= self
         return result
 
     def __imul__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
+        self, rhs: Union["LinearExpression", int, float]
+    ) -> "LinearExpression":
         rhs = wrap_in_linear_expr(rhs)
 
         if not (self.is_constant() or rhs.is_constant()):
@@ -635,7 +627,7 @@ class LinearExpressionEfficient:
                 left_expr = rhs
                 const_expr = self
             if is_zero(const_expr.constant):
-                return LinearExpressionEfficient()
+                return LinearExpression()
             elif is_one(const_expr.constant):
                 _copy_expression(left_expr, self)
             else:
@@ -652,20 +644,18 @@ class LinearExpressionEfficient:
                 _copy_expression(left_expr, self)
         return self
 
-    def __mul__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
-        result = LinearExpressionEfficient()
+    def __mul__(self, rhs: Union["LinearExpression", int, float]) -> "LinearExpression":
+        result = LinearExpression()
         result += self
         result *= rhs
         return result
 
-    def __rmul__(self, rhs: int) -> "LinearExpressionEfficient":
+    def __rmul__(self, rhs: int) -> "LinearExpression":
         return self.__mul__(rhs)
 
     def __itruediv__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
+        self, rhs: Union["LinearExpression", int, float]
+    ) -> "LinearExpression":
         rhs = wrap_in_linear_expr(rhs)
 
         if not rhs.is_constant():
@@ -688,15 +678,15 @@ class LinearExpressionEfficient:
         return self
 
     def __truediv__(
-        self, rhs: Union["LinearExpressionEfficient", int, float]
-    ) -> "LinearExpressionEfficient":
-        result = LinearExpressionEfficient()
+        self, rhs: Union["LinearExpression", int, float]
+    ) -> "LinearExpression":
+        result = LinearExpression()
         result += self
         result /= rhs
 
         return result
 
-    def __rtruediv__(self, rhs: Union[int, float]) -> "LinearExpressionEfficient":
+    def __rtruediv__(self, rhs: Union[int, float]) -> "LinearExpression":
         return self.__truediv__(rhs)
 
     def remove_zeros_from_terms(self) -> None:
@@ -741,19 +731,19 @@ class LinearExpressionEfficient:
         self,
         shift: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
             None,
         ] = None,
         eval: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
             None,
         ] = None,
-    ) -> "LinearExpressionEfficient":
+    ) -> "LinearExpression":
         """
         Examples:
             >>> x.sum(shift=[1, 2, 4]) represents x[t+1] + x[t+2] + x[t+4]
@@ -802,9 +792,7 @@ class LinearExpressionEfficient:
                 stay_roll=False,
             )
 
-        return LinearExpressionEfficient(
-            self._apply_operator(sum_args), result_constant
-        )
+        return LinearExpression(self._apply_operator(sum_args), result_constant)
 
     def _apply_operator(
         self,
@@ -812,13 +800,13 @@ class LinearExpressionEfficient:
             str,
             Union[
                 int,
-                "ExpressionNodeEfficient",
-                List["ExpressionNodeEfficient"],
+                "ExpressionNode",
+                List["ExpressionNode"],
                 "ExpressionRange",
                 None,
             ],
         ],
-    ) -> Dict[TermKeyEfficient, TermEfficient]:
+    ) -> Dict[TermKey, Term]:
         result_terms = {}
         for term in self.terms.values():
             term_with_operator = term.sum(**sum_args)
@@ -830,11 +818,11 @@ class LinearExpressionEfficient:
         self,
         expressions: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
         ],
-    ) -> "LinearExpressionEfficient":
+    ) -> "LinearExpression":
         """
         Shorthand for shift on a single time step
 
@@ -856,11 +844,11 @@ class LinearExpressionEfficient:
         self,
         expressions: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
         ],
-    ) -> "LinearExpressionEfficient":
+    ) -> "LinearExpression":
         """
         Shorthand for eval on a single time step
 
@@ -878,7 +866,7 @@ class LinearExpressionEfficient:
         else:
             return self.sum(eval=expressions)
 
-    def expec(self) -> "LinearExpressionEfficient":
+    def expec(self) -> "LinearExpression":
         """
         Expectation of linear expression. As the operator is linear, it distributes over all terms and the constant
         """
@@ -891,10 +879,10 @@ class LinearExpressionEfficient:
         result_constant = ScenarioOperatorNode(
             self.constant, ScenarioOperatorName.EXPECTATION
         )
-        result_expr = LinearExpressionEfficient(result_terms, result_constant)
+        result_expr = LinearExpression(result_terms, result_constant)
         return result_expr
 
-    def sum_connections(self) -> "LinearExpressionEfficient":
+    def sum_connections(self) -> "LinearExpression":
         if not self.is_zero():
             raise ValueError(
                 "sum_connections only after an expression created with port_field"
@@ -902,14 +890,14 @@ class LinearExpressionEfficient:
         port_field_terms = {}
         for port_field_key, port_field_value in self.port_field_terms.items():
             port_field_terms[port_field_key] = port_field_value.sum_connections()
-        return LinearExpressionEfficient(port_field_terms=port_field_terms)
+        return LinearExpression(port_field_terms=port_field_terms)
 
     def resolve_port(
         self,
         component_id: str,
-        ports_expressions: Dict[PortFieldKey, List["LinearExpressionEfficient"]],
-    ) -> "LinearExpressionEfficient":
-        port_expr = LinearExpressionEfficient()
+        ports_expressions: Dict[PortFieldKey, List["LinearExpression"]],
+    ) -> "LinearExpression":
+        port_expr = LinearExpression()
         for port_term in self.port_field_terms.values():
             expressions = ports_expressions.get(
                 PortFieldKey(
@@ -930,10 +918,10 @@ class LinearExpressionEfficient:
             port_expr += sum_expressions(
                 [port_term.coefficient * expression for expression in expressions]
             )
-        self_without_ports = LinearExpressionEfficient(self.terms, self.constant)
+        self_without_ports = LinearExpression(self.terms, self.constant)
         return self_without_ports + port_expr
 
-    def add_component_context(self, component_id: str) -> "LinearExpressionEfficient":
+    def add_component_context(self, component_id: str) -> "LinearExpression":
         result_terms = {}
         for term in self.terms.values():
             # Some terms may involve variable from other component if they arise from previous port resolution
@@ -954,9 +942,7 @@ class LinearExpressionEfficient:
             )
             result_terms[generate_key(result_term)] = result_term
         result_constant = add_component_context(component_id, self.constant)
-        return LinearExpressionEfficient(
-            result_terms, result_constant, self.port_field_terms
-        )
+        return LinearExpression(result_terms, result_constant, self.port_field_terms)
 
 
 def _add_component_context_to_expression_range(
@@ -982,25 +968,23 @@ def _add_component_context_to_instances_index(
             _add_component_context_to_expression_range(component_id, expressions)
         )
     if isinstance(expressions, list):
-        expressions_list = cast(List[ExpressionNodeEfficient], expressions)
+        expressions_list = cast(List[ExpressionNode], expressions)
         copy = [add_component_context(component_id, e) for e in expressions_list]
         return InstancesTimeIndex(copy)
     raise ValueError("Unexpected type in instances index")
 
 
-def linear_expressions_equal(
-    lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
-) -> bool:
+def linear_expressions_equal(lhs: LinearExpression, rhs: LinearExpression) -> bool:
     return (
-        isinstance(lhs, LinearExpressionEfficient)
-        and isinstance(rhs, LinearExpressionEfficient)
+        isinstance(lhs, LinearExpression)
+        and isinstance(rhs, LinearExpression)
         and expressions_equal(lhs.constant, rhs.constant)
         and lhs.terms == rhs.terms
     )
 
 
 def linear_expressions_equal_if_present(
-    lhs: Optional[LinearExpressionEfficient], rhs: Optional[LinearExpressionEfficient]
+    lhs: Optional[LinearExpression], rhs: Optional[LinearExpression]
 ) -> bool:
     if lhs is None and rhs is None:
         return True
@@ -1012,8 +996,8 @@ def linear_expressions_equal_if_present(
 
 # TODO: Is this function useful ? Could we just rely on the sum operator overloading ? Only the case with an empty list may make the function useful
 def sum_expressions(
-    expressions: Sequence[LinearExpressionEfficient],
-) -> Union[LinearExpressionEfficient, Literal[0]]:
+    expressions: Sequence[LinearExpression],
+) -> Union[LinearExpression, Literal[0]]:
     if len(expressions) == 0:
         return wrap_in_linear_expr(literal(0))
     else:
@@ -1026,9 +1010,9 @@ class StandaloneConstraint:
     A standalone constraint, with rigid initialization.
     """
 
-    expression: LinearExpressionEfficient
-    lower_bound: LinearExpressionEfficient
-    upper_bound: LinearExpressionEfficient
+    expression: LinearExpression
+    lower_bound: LinearExpression
+    upper_bound: LinearExpression
 
     def __post_init__(
         self,
@@ -1051,47 +1035,41 @@ class StandaloneConstraint:
         )
 
 
-def wrap_in_linear_expr(obj: Any) -> LinearExpressionEfficient:
-    if isinstance(obj, LinearExpressionEfficient):
+def wrap_in_linear_expr(obj: Any) -> LinearExpression:
+    if isinstance(obj, LinearExpression):
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
-        return LinearExpressionEfficient([], LiteralNode(float(obj)))
-    elif isinstance(obj, ExpressionNodeEfficient):
-        return LinearExpressionEfficient([], obj)
+        return LinearExpression([], LiteralNode(float(obj)))
+    elif isinstance(obj, ExpressionNode):
+        return LinearExpression([], obj)
     raise TypeError(f"Unable to wrap {obj} into a linear expression")
 
 
-def wrap_in_linear_expr_if_present(obj: Any) -> Union[None, LinearExpressionEfficient]:
+def wrap_in_linear_expr_if_present(obj: Any) -> Union[None, LinearExpression]:
     if obj is None:
         return None
     else:
         return wrap_in_linear_expr(obj)
 
 
-def _copy_expression(
-    src: LinearExpressionEfficient, dst: LinearExpressionEfficient
-) -> None:
+def _copy_expression(src: LinearExpression, dst: LinearExpression) -> None:
     dst.terms = src.terms
     dst.constant = src.constant
 
 
 # TODO : Define shortcuts for "x", is_one etc ....
-def var(name: str) -> LinearExpressionEfficient:
+def var(name: str) -> LinearExpression:
     # TODO: At term build time, no information on the variable structure is known, we use a default time, scenario varying, maybe discard structure as term attribute ?
-    return LinearExpressionEfficient(
-        [
-            TermEfficient(
-                coefficient=LiteralNode(1), component_id="", variable_name=name
-            )
-        ],
+    return LinearExpression(
+        [Term(coefficient=LiteralNode(1), component_id="", variable_name=name)],
         LiteralNode(0),
     )
 
 
-def comp_var(component_id: str, name: str) -> LinearExpressionEfficient:
-    return LinearExpressionEfficient(
+def comp_var(component_id: str, name: str) -> LinearExpression:
+    return LinearExpression(
         [
-            TermEfficient(
+            Term(
                 coefficient=LiteralNode(1),
                 component_id=component_id,
                 variable_name=name,
@@ -1101,11 +1079,11 @@ def comp_var(component_id: str, name: str) -> LinearExpressionEfficient:
     )
 
 
-def port_field(port_name: str, field_name: str) -> LinearExpressionEfficient:
-    return LinearExpressionEfficient(
+def port_field(port_name: str, field_name: str) -> LinearExpression:
+    return LinearExpression(
         port_field_terms=[PortFieldTerm(literal(1), port_name, field_name)]
     )
 
 
-def is_linear(expr: LinearExpressionEfficient) -> bool:
+def is_linear(expr: LinearExpression) -> bool:
     return True

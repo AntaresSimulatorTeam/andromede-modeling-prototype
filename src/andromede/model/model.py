@@ -25,7 +25,7 @@ from andromede.expression.expression import (
     ComparisonNode,
     ComponentParameterNode,
     DivisionNode,
-    ExpressionNodeEfficient,
+    ExpressionNode,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
@@ -40,7 +40,7 @@ from andromede.expression.expression import (
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     is_linear,
     wrap_in_linear_expr,
     wrap_in_linear_expr_if_present,
@@ -80,7 +80,7 @@ def _make_structure_provider(model: "Model") -> IndexingStructureProvider:
 
 
 def _is_objective_contribution_valid(
-    model: "Model", objective_contribution: LinearExpressionEfficient
+    model: "Model", objective_contribution: LinearExpression
 ) -> bool:
     if not is_linear(objective_contribution):
         raise ValueError("Objective contribution must be a linear expression.")
@@ -123,11 +123,11 @@ class PortFieldDefinition:
 
     port_field: PortFieldId
     # Used only for type checking...
-    definition_init: InitVar[Union[ExpressionNodeEfficient, LinearExpressionEfficient]]
-    definition: LinearExpressionEfficient = field(init=False)
+    definition_init: InitVar[Union[ExpressionNode, LinearExpression]]
+    definition: LinearExpression = field(init=False)
 
     def __post_init__(
-        self, definition_init: Union[ExpressionNodeEfficient, LinearExpressionEfficient]
+        self, definition_init: Union[ExpressionNode, LinearExpression]
     ) -> None:
         object.__setattr__(self, "definition", wrap_in_linear_expr(definition_init))
         _validate_port_field_expression(self)
@@ -136,7 +136,7 @@ class PortFieldDefinition:
 def port_field_def(
     port_name: str,
     field_name: str,
-    definition: Union[ExpressionNodeEfficient, LinearExpressionEfficient],
+    definition: Union[ExpressionNode, LinearExpression],
 ) -> PortFieldDefinition:
     return PortFieldDefinition(PortFieldId(port_name, field_name), definition)
 
@@ -154,8 +154,8 @@ class Model:
     inter_block_dyn: bool = False
     parameters: Dict[str, Parameter] = field(default_factory=dict)
     variables: Dict[str, Variable] = field(default_factory=dict)
-    objective_operational_contribution: Optional[LinearExpressionEfficient] = None
-    objective_investment_contribution: Optional[LinearExpressionEfficient] = None
+    objective_operational_contribution: Optional[LinearExpression] = None
+    objective_investment_contribution: Optional[LinearExpression] = None
     ports: Dict[str, ModelPort] = field(default_factory=dict)  # key = port name
     port_fields_definitions: Dict[PortFieldId, PortFieldDefinition] = field(
         default_factory=dict
@@ -307,7 +307,7 @@ def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
 
 
 def _check_port_field_expression_type(definition: PortFieldDefinition) -> None:
-    if not isinstance(definition.definition, LinearExpressionEfficient):
+    if not isinstance(definition.definition, LinearExpression):
         raise TypeError(
             f"Port field definition should be a LinearExpression, not a {type(definition.definition)}"
         )

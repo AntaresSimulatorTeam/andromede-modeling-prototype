@@ -13,7 +13,7 @@
 from abc import ABC, abstractmethod
 from typing import Generator, Optional
 
-from andromede.expression.linear_expression import LinearExpressionEfficient
+from andromede.expression.linear_expression import LinearExpression
 from andromede.model import Constraint, Model, ProblemContext, Variable
 
 
@@ -37,14 +37,12 @@ class ModelSelectionStrategy(ABC):
                 yield constraint
 
     @abstractmethod
-    def _keep_from_context(self, context: ProblemContext) -> bool:
-        ...
+    def _keep_from_context(self, context: ProblemContext) -> bool: ...
 
     @abstractmethod
     def get_objectives(
         self, model: Model
-    ) -> Generator[Optional[LinearExpressionEfficient], None, None]:
-        ...
+    ) -> Generator[Optional[LinearExpression], None, None]: ...
 
 
 class MergedProblemStrategy(ModelSelectionStrategy):
@@ -53,7 +51,7 @@ class MergedProblemStrategy(ModelSelectionStrategy):
 
     def get_objectives(
         self, model: Model
-    ) -> Generator[Optional[LinearExpressionEfficient], None, None]:
+    ) -> Generator[Optional[LinearExpression], None, None]:
         yield model.objective_operational_contribution
         yield model.objective_investment_contribution
 
@@ -66,7 +64,7 @@ class InvestmentProblemStrategy(ModelSelectionStrategy):
 
     def get_objectives(
         self, model: Model
-    ) -> Generator[Optional[LinearExpressionEfficient], None, None]:
+    ) -> Generator[Optional[LinearExpression], None, None]:
         yield model.objective_investment_contribution
 
 
@@ -78,5 +76,5 @@ class OperationalProblemStrategy(ModelSelectionStrategy):
 
     def get_objectives(
         self, model: Model
-    ) -> Generator[Optional[LinearExpressionEfficient], None, None]:
+    ) -> Generator[Optional[LinearExpression], None, None]:
         yield model.objective_operational_contribution

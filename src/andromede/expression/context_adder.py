@@ -13,11 +13,7 @@
 from dataclasses import dataclass
 
 from . import CopyVisitor
-from .expression import (
-    ComponentParameterNode,
-    ExpressionNodeEfficient,
-    ParameterNode,
-)
+from .expression import ComponentParameterNode, ExpressionNode, ParameterNode
 from .visitor import visit
 
 
@@ -30,13 +26,11 @@ class ContextAdder(CopyVisitor):
 
     component_id: str
 
-    def parameter(self, node: ParameterNode) -> ExpressionNodeEfficient:
+    def parameter(self, node: ParameterNode) -> ExpressionNode:
         return ComponentParameterNode(self.component_id, node.name)
 
     # Nothing is done is a component parameter node is encountered as it may have been generated from port resolution
 
 
-def add_component_context(
-    id: str, expression: ExpressionNodeEfficient
-) -> ExpressionNodeEfficient:
+def add_component_context(id: str, expression: ExpressionNode) -> ExpressionNode:
     return visit(expression, ContextAdder(id))

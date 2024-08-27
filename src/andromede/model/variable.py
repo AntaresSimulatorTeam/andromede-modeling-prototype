@@ -16,7 +16,7 @@ from typing import Any, Optional
 from andromede.expression.expression import literal
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     linear_expressions_equal_if_present,
     wrap_in_linear_expr,
     wrap_in_linear_expr_if_present,
@@ -36,8 +36,8 @@ class Variable:
 
     name: str
     data_type: ValueType
-    lower_bound: Optional[LinearExpressionEfficient]
-    upper_bound: Optional[LinearExpressionEfficient]
+    lower_bound: Optional[LinearExpression]
+    upper_bound: Optional[LinearExpression]
     structure: IndexingStructure
     context: ProblemContext
 

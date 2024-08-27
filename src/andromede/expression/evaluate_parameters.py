@@ -19,7 +19,7 @@ from .expression import (
     ComparisonNode,
     ComponentParameterNode,
     DivisionNode,
-    ExpressionNodeEfficient,
+    ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
@@ -211,7 +211,7 @@ def check_resolved_expr(
 
 
 def resolve_coefficient(
-    expression: ExpressionNodeEfficient, value_provider: ValueProvider, row_id: RowIndex
+    expression: ExpressionNode, value_provider: ValueProvider, row_id: RowIndex
 ) -> float:
     result = visit(expression, ParameterEvaluationVisitor(value_provider, row_id))
     check_resolved_expr(result, row_id)
@@ -261,7 +261,7 @@ def float_to_int(value: float) -> int:
 
 
 def evaluate_time_id(
-    expr: ExpressionNodeEfficient, value_provider: ValueProvider, row_id: RowIndex
+    expr: ExpressionNode, value_provider: ValueProvider, row_id: RowIndex
 ) -> int:
     float_time_id_in_list = visit(expr, InstancesIndexVisitor(value_provider, row_id))
     check_resolved_expr(float_time_id_in_list, row_id)

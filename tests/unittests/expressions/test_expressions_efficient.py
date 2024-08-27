@@ -19,7 +19,7 @@ import pytest
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
     ComponentParameterNode,
-    ExpressionNodeEfficient,
+    ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
@@ -35,10 +35,10 @@ from andromede.expression.expression import (
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure, RowIndex
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     StandaloneConstraint,
-    TermEfficient,
-    TermKeyEfficient,
+    Term,
+    TermKey,
     comp_var,
     linear_expressions_equal,
     sum_expressions,
@@ -104,12 +104,8 @@ class ComponentEvaluationContext(ValueProvider):
 
 # TODO: Redundant with add tests in test_linear_expressions_efficient ?
 def test_comp_parameter() -> None:
-    expr1 = LinearExpressionEfficient([], 1) + LinearExpressionEfficient(
-        [TermEfficient(1, "comp1", "x")]
-    )
-    expr2 = expr1 / LinearExpressionEfficient(
-        constant=ComponentParameterNode("comp1", "p")
-    )
+    expr1 = LinearExpression([], 1) + LinearExpression([Term(1, "comp1", "x")])
+    expr2 = expr1 / LinearExpression(constant=ComponentParameterNode("comp1", "p"))
 
     assert str(expr2) == "(1.0 / comp1.p)x + (1.0 / comp1.p)"
     context = ComponentEvaluationContext(
@@ -121,10 +117,8 @@ def test_comp_parameter() -> None:
 
 # TODO: Find a better name
 def test_ast() -> None:
-    expr1 = LinearExpressionEfficient([], 1) + LinearExpressionEfficient(
-        [TermEfficient(1, "", "x")]
-    )
-    expr2 = expr1 / LinearExpressionEfficient(constant=ParameterNode("p"))
+    expr1 = LinearExpression([], 1) + LinearExpression([Term(1, "", "x")])
+    expr2 = expr1 / LinearExpression(constant=ParameterNode("p"))
 
     assert str(expr2) == "(1.0 / p)x + (1.0 / p)"
 
@@ -135,7 +129,7 @@ def test_ast() -> None:
 def test_operators() -> None:
     x = var("x")
     p = param("p")
-    expr: LinearExpressionEfficient = (5 * x + 3) / p - 2
+    expr: LinearExpression = (5 * x + 3) / p - 2
 
     assert str(expr) == "(5.0 / p)x + ((3.0 / p) - 2.0)"
 
@@ -182,19 +176,19 @@ def test_degree_computation_should_take_into_account_simplifications() -> None:
 #     assert expr.resolve_parameters(TestParamProvider()) == (5 * x + 3) / 2
 
 
-# TODO: Write tests on ExpressionEfficientNodes for tree simplification, do the same for multiplication, substraction, etc
+# TODO: Write tests on ExpressionNodes for tree simplification, do the same for multiplication, substraction, etc
 @pytest.mark.parametrize(
     "e1, e2, expected",
     [
         (
             var("x"),
             -var("x"),
-            LinearExpressionEfficient(),
+            LinearExpression(),
         ),
         (
             param("p"),
             -param("p"),
-            LinearExpressionEfficient(),
+            LinearExpression(),
         ),
         (
             var("x"),
@@ -250,9 +244,9 @@ def test_degree_computation_should_take_into_account_simplifications() -> None:
     ],
 )
 def test_addition(
-    e1: LinearExpressionEfficient,
-    e2: LinearExpressionEfficient,
-    expected: LinearExpressionEfficient,
+    e1: LinearExpression,
+    e2: LinearExpression,
+    expected: LinearExpression,
 ) -> None:
     assert linear_expressions_equal(
         wrap_in_linear_expr(e1) + wrap_in_linear_expr(e2), wrap_in_linear_expr(expected)
@@ -305,12 +299,12 @@ def test_addition(
         (
             var("x"),
             var("x"),
-            LinearExpressionEfficient(),
+            LinearExpression(),
         ),
         (
             param("p"),
             param("p"),
-            LinearExpressionEfficient(),
+            LinearExpression(),
         ),
         (
             literal(4) * param("p"),
@@ -326,9 +320,9 @@ def test_addition(
     ],
 )
 def test_substraction(
-    e1: LinearExpressionEfficient,
-    e2: LinearExpressionEfficient,
-    expected: LinearExpressionEfficient,
+    e1: LinearExpression,
+    e2: LinearExpression,
+    expected: LinearExpression,
 ) -> None:
     assert linear_expressions_equal(
         wrap_in_linear_expr(e1) - wrap_in_linear_expr(e2), wrap_in_linear_expr(expected)
@@ -340,24 +334,24 @@ def test_substraction(
     [
         (
             (5 * comp_var("c", "x") + 3) / 2,
-            LinearExpressionEfficient([TermEfficient(2.5, "c", "x")], 1.5),
+            LinearExpression([Term(2.5, "c", "x")], 1.5),
         ),
         (
             param("p") * comp_var("c", "x"),
-            LinearExpressionEfficient(
-                [TermEfficient(ParameterNode("p"), "c", "x")],
+            LinearExpression(
+                [Term(ParameterNode("p"), "c", "x")],
             ),
         ),
         (
             param("p") * comp_var("c", "x"),
-            LinearExpressionEfficient(
-                [TermEfficient(ParameterNode("p"), "c", "x")],
+            LinearExpression(
+                [Term(ParameterNode("p"), "c", "x")],
             ),
         ),
     ],
 )
 def test_linear_expression_equality(
-    lhs: LinearExpressionEfficient, rhs: LinearExpressionEfficient
+    lhs: LinearExpression, rhs: LinearExpression
 ) -> None:
     assert linear_expressions_equal(lhs, rhs)
 
@@ -404,7 +398,7 @@ def test_comparison() -> None:
         (
             (var("x") + var("y") + literal(1)).shift(1),
             {
-                TermKeyEfficient(
+                TermKey(
                     "",
                     "x",
                     TimeShift(InstancesTimeIndex(1)),
@@ -412,7 +406,7 @@ def test_comparison() -> None:
                         stay_roll=True
                     ),  # The internal representation of shift(1) is sum(shift=1)
                     scenario_aggregator=None,
-                ): TermEfficient(
+                ): Term(
                     LiteralNode(1),
                     "",
                     "x",
@@ -421,7 +415,7 @@ def test_comparison() -> None:
                     ),
                     time_aggregator=TimeSum(stay_roll=True),
                 ),
-                TermKeyEfficient(
+                TermKey(
                     "",
                     "y",
                     TimeShift(
@@ -429,7 +423,7 @@ def test_comparison() -> None:
                     ),
                     time_aggregator=TimeSum(stay_roll=True),
                     scenario_aggregator=None,
-                ): TermEfficient(
+                ): Term(
                     LiteralNode(1),
                     "",
                     "y",
@@ -448,7 +442,7 @@ def test_comparison() -> None:
         (
             (var("x") + var("y") + literal(1)).eval(1),
             {
-                TermKeyEfficient(
+                TermKey(
                     "",
                     "x",
                     TimeEvaluation(InstancesTimeIndex(1)),
@@ -456,7 +450,7 @@ def test_comparison() -> None:
                         stay_roll=True
                     ),  # The internal representation of eval(1) is sum(eval=1)
                     scenario_aggregator=None,
-                ): TermEfficient(
+                ): Term(
                     LiteralNode(1),
                     "",
                     "x",
@@ -465,7 +459,7 @@ def test_comparison() -> None:
                     ),
                     time_aggregator=TimeSum(stay_roll=True),
                 ),
-                TermKeyEfficient(
+                TermKey(
                     "",
                     "y",
                     TimeEvaluation(
@@ -473,7 +467,7 @@ def test_comparison() -> None:
                     ),
                     time_aggregator=TimeSum(stay_roll=True),
                     scenario_aggregator=None,
-                ): TermEfficient(
+                ): Term(
                     LiteralNode(1),
                     "",
                     "y",
@@ -492,26 +486,26 @@ def test_comparison() -> None:
         (
             (var("x") + var("y") + literal(1)).sum(),
             {
-                TermKeyEfficient(
+                TermKey(
                     "",
                     "x",
                     time_operator=None,
                     time_aggregator=TimeSum(stay_roll=False),
                     scenario_aggregator=None,
-                ): TermEfficient(
+                ): Term(
                     LiteralNode(1),  # Sum is not distributed to coeff
                     "",
                     "x",
                     time_operator=None,
                     time_aggregator=TimeSum(stay_roll=False),
                 ),
-                TermKeyEfficient(
+                TermKey(
                     "",
                     "y",
                     time_operator=None,
                     time_aggregator=TimeSum(stay_roll=False),
                     scenario_aggregator=None,
-                ): TermEfficient(
+                ): Term(
                     LiteralNode(1),  # Sum is not distributed to coeff
                     "",
                     "y",
@@ -526,9 +520,9 @@ def test_comparison() -> None:
     ],
 )
 def test_operators_are_correctly_distributed_over_terms(
-    expr: LinearExpressionEfficient,
-    expec_terms: Dict[TermKeyEfficient, TermEfficient],
-    expec_constant: ExpressionNodeEfficient,
+    expr: LinearExpression,
+    expec_terms: Dict[TermKey, Term],
+    expec_constant: ExpressionNode,
 ) -> None:
     assert expr.terms == expec_terms
     assert expressions_equal(expr.constant, expec_constant)
@@ -617,7 +611,7 @@ def test_eval_on_time_step_list_raises_value_error() -> None:
     ],
 )
 def test_compute_indexation(
-    linear_expr: LinearExpressionEfficient, expected_indexation: IndexingStructure
+    linear_expr: LinearExpression, expected_indexation: IndexingStructure
 ) -> None:
     provider = StructureProvider()
     assert linear_expr.compute_indexation(provider) == expected_indexation
@@ -681,7 +675,7 @@ def test_multiplication_of_differently_indexed_terms() -> None:
     ],
 )
 def test_sum_expressions(
-    sum_expr: LinearExpressionEfficient, expected: LinearExpressionEfficient
+    sum_expr: LinearExpression, expected: LinearExpression
 ) -> None:
     assert linear_expressions_equal(sum_expr, wrap_in_linear_expr(expected))
 
@@ -696,5 +690,5 @@ def test_sum_expressions(
         (var("x") + literal(4), False),
     ],
 )
-def test_is_unbound(expr: LinearExpressionEfficient, unbound: bool) -> None:
+def test_is_unbound(expr: LinearExpression, unbound: bool) -> None:
     assert wrap_in_linear_expr(expr).is_unbound() == unbound

@@ -19,7 +19,7 @@ from .expression import (
     ComparisonNode,
     ComponentParameterNode,
     DivisionNode,
-    ExpressionNodeEfficient,
+    ExpressionNode,
     LiteralNode,
     MultiplicationNode,
     NegationNode,
@@ -103,5 +103,5 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"({visit(node.operand, self)}.{node.aggregator})"
 
 
-def print_expr(expression: ExpressionNodeEfficient) -> str:
+def print_expr(expression: ExpressionNode) -> str:
     return visit(expression, PrinterVisitor())

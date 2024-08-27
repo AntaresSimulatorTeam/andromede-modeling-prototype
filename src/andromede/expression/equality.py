@@ -20,7 +20,7 @@ from andromede.expression.expression import (
     ComparisonNode,
     ComponentParameterNode,
     DivisionNode,
-    ExpressionNodeEfficient,
+    ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,
@@ -51,9 +51,7 @@ class EqualityVisitor:
                 f"Relative comparison tolerance must be >= 0, got {self.rel_tol}"
             )
 
-    def visit(
-        self, left: ExpressionNodeEfficient, right: ExpressionNodeEfficient
-    ) -> bool:
+    def visit(self, left: ExpressionNode, right: ExpressionNode) -> bool:
         if left.__class__ != right.__class__:
             return False
         if isinstance(left, LiteralNode) and isinstance(right, LiteralNode):
@@ -187,8 +185,8 @@ class EqualityVisitor:
 
 
 def expressions_equal(
-    left: ExpressionNodeEfficient,
-    right: ExpressionNodeEfficient,
+    left: ExpressionNode,
+    right: ExpressionNode,
     abs_tol: float = 0,
     rel_tol: float = 0,
 ) -> bool:
@@ -199,7 +197,7 @@ def expressions_equal(
 
 
 def expressions_equal_if_present(
-    lhs: Optional[ExpressionNodeEfficient], rhs: Optional[ExpressionNodeEfficient]
+    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
 ) -> bool:
     if lhs is None and rhs is None:
         return True

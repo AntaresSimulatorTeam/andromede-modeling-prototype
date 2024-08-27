@@ -16,7 +16,7 @@ import pytest
 from andromede.expression.copy import copy_expression
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
-    ExpressionNodeEfficient,
+    ExpressionNode,
     InstancesTimeIndex,
     TimeAggregatorName,
     TimeAggregatorNode,
@@ -28,7 +28,7 @@ from andromede.expression.expression import (
 )
 
 
-def shifted_param() -> ExpressionNodeEfficient:
+def shifted_param() -> ExpressionNode:
     return TimeOperatorNode(
         param("q"), TimeOperatorName.SHIFT, InstancesTimeIndex(expression_range(0, 2))
     )
@@ -71,7 +71,7 @@ def shifted_param() -> ExpressionNodeEfficient:
         param("q").expec(),
     ],
 )
-def test_equals(expr: ExpressionNodeEfficient) -> None:
+def test_equals(expr: ExpressionNode) -> None:
     copy = copy_expression(expr)
     assert expressions_equal(expr, copy)
 
@@ -133,7 +133,7 @@ def test_equals(expr: ExpressionNodeEfficient) -> None:
         (param("q").expec(), param("y").expec()),
     ],
 )
-def test_not_equals(lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient) -> None:
+def test_not_equals(lhs: ExpressionNode, rhs: ExpressionNode) -> None:
     assert not expressions_equal(lhs, rhs)
 
 

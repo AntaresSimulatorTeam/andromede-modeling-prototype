@@ -20,14 +20,7 @@ from andromede.expression.evaluate_parameters import (
     resolve_coefficient,
 )
 from andromede.expression.indexing_structure import RowIndex
-from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
-    TermEfficient,
-)
-from .resolved_linear_expression import (
-    ResolvedLinearExpression,
-    ResolvedTerm,
-)
+from andromede.expression.linear_expression import LinearExpression, Term
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeShift
 from andromede.expression.value_provider import (
@@ -35,7 +28,9 @@ from andromede.expression.value_provider import (
     TimeScenarioIndices,
     ValueProvider,
 )
+
 from .optimization_context import OptimizationContext
+from .resolved_linear_expression import ResolvedLinearExpression, ResolvedTerm
 
 
 @dataclass
@@ -44,7 +39,7 @@ class LinearExpressionResolver:
     value_provider: ValueProvider
 
     def resolve(
-        self, expression: LinearExpressionEfficient, row_id: RowIndex
+        self, expression: LinearExpression, row_id: RowIndex
     ) -> ResolvedLinearExpression:
         resolved_terms = []
         for term in expression.terms.values():
@@ -73,53 +68,49 @@ class LinearExpressionResolver:
         return ResolvedLinearExpression(resolved_terms, resolved_constant)
 
     def resolve_constant_expr(
-        self, expression: LinearExpressionEfficient, row_id: RowIndex
+        self, expression: LinearExpression, row_id: RowIndex
     ) -> float:
         if not expression.is_constant():
             raise ValueError(f"{str(self)} is not a constant expression")
         return resolve_coefficient(expression.constant, self.value_provider, row_id)
 
     def resolve_variables(
-        self, term: TermEfficient, row_id: RowIndex
+        self, term: Term, row_id: RowIndex
     ) -> Dict[TimeScenarioIndex, lp.Variable]:
         solver_vars = {}
         operator_ts_ids = self._row_id_to_term_time_scenario_id(term, row_id)
         for time in operator_ts_ids.time_indices:
             for scenario in operator_ts_ids.scenario_indices:
-                solver_vars[
-                    TimeScenarioIndex(time, scenario)
-                ] = self.context.get_component_variable(
-                    time,
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    # At term build time, no information on the variable structure is known, we use it now
-                    self.context.network.get_component(term.component_id)
-                    .model.variables[term.variable_name]
-                    .structure,
+                solver_vars[TimeScenarioIndex(time, scenario)] = (
+                    self.context.get_component_variable(
+                        time,
+                        scenario,
+                        term.component_id,
+                        term.variable_name,
+                        # At term build time, no information on the variable structure is known, we use it now
+                        self.context.network.get_component(term.component_id)
+                        .model.variables[term.variable_name]
+                        .structure,
+                    )
                 )
         return solver_vars
 
     def _row_id_to_term_time_scenario_id(
-        self, term: TermEfficient, row_id: RowIndex
+        self, term: Term, row_id: RowIndex
     ) -> TimeScenarioIndices:
         operator_time_ids = self._compute_operator_time_ids(term, row_id)
 
         operator_scenario_ids = self._compute_operator_scenario_ids(term, row_id)
         return TimeScenarioIndices(operator_time_ids, operator_scenario_ids)
 
-    def _compute_operator_scenario_ids(
-        self, term: TermEfficient, row_id: RowIndex
-    ) -> List[int]:
+    def _compute_operator_scenario_ids(self, term: Term, row_id: RowIndex) -> List[int]:
         if term.scenario_aggregator:
             operator_scenario_ids = list(range(self.context.scenarios))
         else:
             operator_scenario_ids = [row_id.scenario]
         return operator_scenario_ids
 
-    def _compute_operator_time_ids(
-        self, term: TermEfficient, row_id: RowIndex
-    ) -> List[int]:
+    def _compute_operator_time_ids(self, term: Term, row_id: RowIndex) -> List[int]:
         if not term.time_operator and not term.time_aggregator:
             operator_time_ids = [row_id.time]
         elif term.time_operator:

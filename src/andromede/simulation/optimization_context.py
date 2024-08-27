@@ -21,15 +21,16 @@ from andromede.expression.evaluate_parameters import ValueProvider
 from andromede.expression.indexing import IndexingStructureProvider
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     PortFieldId,
     PortFieldKey,
 )
 from andromede.expression.value_provider import TimeScenarioIndex, TimeScenarioIndices
-from .time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
 from andromede.utils import get_or_add
+
+from .time_block import TimeBlock
 
 
 @dataclass(eq=True, frozen=True)
@@ -92,7 +93,7 @@ class OptimizationContext:
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
         self._solver_variables: Dict[lp.Variable, SolverVariableInfo] = {}
         self._connection_fields_expressions: Dict[
-            PortFieldKey, List[LinearExpressionEfficient]
+            PortFieldKey, List[LinearExpression]
         ] = {}
 
     @property
@@ -109,7 +110,7 @@ class OptimizationContext:
     @property
     def connection_fields_expressions(
         self,
-    ) -> Dict[PortFieldKey, List[LinearExpressionEfficient]]:
+    ) -> Dict[PortFieldKey, List[LinearExpression]]:
         return self._connection_fields_expressions
 
     # TODO: Need to think about data processing when creating blocks with varying or inequal time steps length (aggregation, sum ?, mean of data ?)
@@ -185,7 +186,7 @@ class OptimizationContext:
         component_id: str,
         port_name: str,
         field_name: str,
-        expression: LinearExpressionEfficient,
+        expression: LinearExpression,
     ) -> None:
         key = PortFieldKey(component_id, PortFieldId(port_name, field_name))
         get_or_add(self._connection_fields_expressions, key, lambda: []).append(
@@ -241,14 +242,14 @@ def make_value_provider(
             )
             for block_timestep in time_scenarios_indices.time_indices:
                 for scenario in time_scenarios_indices.scenario_indices:
-                    result[
-                        TimeScenarioIndex(block_timestep, scenario)
-                    ] = _get_parameter_value(
-                        context,
-                        _get_data_time_key(block_timestep, param_index),
-                        _get_data_scenario_key(scenario, param_index),
-                        component_id,
-                        name,
+                    result[TimeScenarioIndex(block_timestep, scenario)] = (
+                        _get_parameter_value(
+                            context,
+                            _get_data_time_key(block_timestep, param_index),
+                            _get_data_scenario_key(scenario, param_index),
+                            component_id,
+                            name,
+                        )
                     )
             return result
 

@@ -17,7 +17,7 @@ import pytest
 
 from andromede.expression.expression import ExpressionRange, comp_param, param
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     comp_var,
     linear_expressions_equal,
     literal,
@@ -126,13 +126,13 @@ from andromede.model.model import port_field_def
 )
 def test_constraint_instantiation(
     name: str,
-    expression: LinearExpressionEfficient,
-    lb: Optional[LinearExpressionEfficient],
-    ub: Optional[LinearExpressionEfficient],
+    expression: LinearExpression,
+    lb: Optional[LinearExpression],
+    ub: Optional[LinearExpression],
     exp_name: str,
-    exp_expr: LinearExpressionEfficient,
-    exp_lb: LinearExpressionEfficient,
-    exp_ub: LinearExpressionEfficient,
+    exp_expr: LinearExpression,
+    exp_lb: LinearExpression,
+    exp_ub: LinearExpression,
 ) -> None:
     if lb is None and ub is None:
         constraint = Constraint(name, expression)
@@ -254,7 +254,7 @@ def test_instantiating_a_model_with_non_linear_scenario_operator_in_the_objectiv
     ],
 )
 def test_invalid_port_field_definition_should_raise(
-    expression: LinearExpressionEfficient, error_type: Type, error_msg: str
+    expression: LinearExpression, error_type: Type, error_msg: str
 ) -> None:
     with pytest.raises(error_type, match=re.escape(error_msg)):
         port_field_def(port_name="p", field_name="f", definition=expression)

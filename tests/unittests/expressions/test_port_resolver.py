@@ -16,7 +16,7 @@ import pytest
 
 from andromede.expression.equality import expressions_equal
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     PortFieldId,
     PortFieldKey,
     linear_expressions_equal,
@@ -32,13 +32,13 @@ from andromede.expression.linear_expression import (
         (port_field("port", "field") - 2, var("flow") - 2),
         (port_field("port", "field") * 2, 2 * var("flow")),
         (port_field("port", "field") / 2, var("flow") / 2),
-        (port_field("port", "field") * 0, LinearExpressionEfficient()),
+        (port_field("port", "field") * 0, LinearExpression()),
     ],
 )
 def test_port_field_resolution(
-    port_expr: LinearExpressionEfficient, expected: LinearExpressionEfficient
+    port_expr: LinearExpression, expected: LinearExpression
 ) -> None:
-    ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]] = {}
+    ports_expressions: Dict[PortFieldKey, List[LinearExpression]] = {}
 
     key = PortFieldKey("com_id", PortFieldId(field_name="field", port_name="port"))
     expression = var("flow")
@@ -55,7 +55,7 @@ def test_port_field_resolution(
 
 
 def test_port_field_resolution_sum() -> None:
-    ports_expressions: Dict[PortFieldKey, List[LinearExpressionEfficient]] = {}
+    ports_expressions: Dict[PortFieldKey, List[LinearExpression]] = {}
 
     key = PortFieldKey("com_id", PortFieldId(field_name="field", port_name="port"))
 

@@ -22,7 +22,7 @@ EPS = 10 ** (-16)
 
 
 @dataclass(frozen=True)
-class ExpressionNodeEfficient:
+class ExpressionNode:
     """
     Base class for all nodes of the expression AST.
 
@@ -33,47 +33,47 @@ class ExpressionNodeEfficient:
         >>> expr = -var('x') + 5 / param('p')
     """
 
-    def __neg__(self) -> "ExpressionNodeEfficient":
+    def __neg__(self) -> "ExpressionNode":
         return _negate_node(self)
 
-    def __add__(self, rhs: Any) -> "ExpressionNodeEfficient":
+    def __add__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(rhs, lambda x: _add_node(self, x))
 
-    def __radd__(self, lhs: Any) -> "ExpressionNodeEfficient":
+    def __radd__(self, lhs: Any) -> "ExpressionNode":
         return _apply_if_node(lhs, lambda x: _add_node(x, self))
 
-    def __sub__(self, rhs: Any) -> "ExpressionNodeEfficient":
+    def __sub__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(rhs, lambda x: _substract_node(self, x))
 
-    def __rsub__(self, lhs: Any) -> "ExpressionNodeEfficient":
+    def __rsub__(self, lhs: Any) -> "ExpressionNode":
         return _apply_if_node(lhs, lambda x: _substract_node(x, self))
 
-    def __mul__(self, rhs: Any) -> "ExpressionNodeEfficient":
+    def __mul__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(rhs, lambda x: _multiply_node(self, x))
 
-    def __rmul__(self, lhs: Any) -> "ExpressionNodeEfficient":
+    def __rmul__(self, lhs: Any) -> "ExpressionNode":
         return _apply_if_node(lhs, lambda x: _multiply_node(x, self))
 
-    def __truediv__(self, rhs: Any) -> "ExpressionNodeEfficient":
+    def __truediv__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(rhs, lambda x: _divide_node(self, x))
 
-    def __rtruediv__(self, lhs: Any) -> "ExpressionNodeEfficient":
+    def __rtruediv__(self, lhs: Any) -> "ExpressionNode":
         return _apply_if_node(lhs, lambda x: _divide_node(x, self))
 
-    def __le__(self, rhs: Any) -> "ExpressionNodeEfficient":
+    def __le__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(
             rhs, lambda x: ComparisonNode(self, x, Comparator.LESS_THAN)
         )
 
-    def __ge__(self, rhs: Any) -> "ExpressionNodeEfficient":
+    def __ge__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(
             rhs, lambda x: ComparisonNode(self, x, Comparator.GREATER_THAN)
         )
 
-    def __eq__(self, rhs: Any) -> "ExpressionNodeEfficient":  # type: ignore
+    def __eq__(self, rhs: Any) -> "ExpressionNode":  # type: ignore
         return _apply_if_node(rhs, lambda x: ComparisonNode(self, x, Comparator.EQUAL))
 
-    def sum(self) -> "ExpressionNodeEfficient":
+    def sum(self) -> "ExpressionNode":
         if isinstance(self, TimeOperatorNode):
             return TimeAggregatorNode(self, TimeAggregatorName.TIME_SUM, stay_roll=True)
         else:
@@ -84,7 +84,7 @@ class ExpressionNodeEfficient:
                 ),
             )
 
-    def sum_connections(self) -> "ExpressionNodeEfficient":
+    def sum_connections(self) -> "ExpressionNode":
         if isinstance(self, PortFieldNode):
             return PortFieldAggregatorNode(
                 self, aggregator=PortFieldAggregatorName.PORT_SUM
@@ -97,11 +97,11 @@ class ExpressionNodeEfficient:
         self,
         expressions: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
         ],
-    ) -> "ExpressionNodeEfficient":
+    ) -> "ExpressionNode":
         return _apply_if_node(
             self,
             lambda x: TimeOperatorNode(
@@ -113,11 +113,11 @@ class ExpressionNodeEfficient:
         self,
         expressions: Union[
             int,
-            "ExpressionNodeEfficient",
-            List["ExpressionNodeEfficient"],
+            "ExpressionNode",
+            List["ExpressionNode"],
             "ExpressionRange",
         ],
-    ) -> "ExpressionNodeEfficient":
+    ) -> "ExpressionNode":
         return _apply_if_node(
             self,
             lambda x: TimeOperatorNode(
@@ -125,19 +125,19 @@ class ExpressionNodeEfficient:
             ),
         )
 
-    def expec(self) -> "ExpressionNodeEfficient":
+    def expec(self) -> "ExpressionNode":
         return _apply_if_node(
             self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.EXPECTATION)
         )
 
-    def variance(self) -> "ExpressionNodeEfficient":
+    def variance(self) -> "ExpressionNode":
         return _apply_if_node(
             self, lambda x: ScenarioOperatorNode(x, ScenarioOperatorName.VARIANCE)
         )
 
 
-def wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
-    if isinstance(obj, ExpressionNodeEfficient):
+def wrap_in_node(obj: Any) -> ExpressionNode:
+    if isinstance(obj, ExpressionNode):
         return obj
     elif isinstance(obj, float) or isinstance(obj, int):
         return LiteralNode(float(obj))
@@ -146,30 +146,30 @@ def wrap_in_node(obj: Any) -> ExpressionNodeEfficient:
 
 
 def _apply_if_node(
-    obj: Any, func: Callable[["ExpressionNodeEfficient"], "ExpressionNodeEfficient"]
-) -> "ExpressionNodeEfficient":
+    obj: Any, func: Callable[["ExpressionNode"], "ExpressionNode"]
+) -> "ExpressionNode":
     if as_node := wrap_in_node(obj):
         return func(as_node)
     else:
         return NotImplemented
 
 
-def is_zero(node: ExpressionNodeEfficient) -> bool:
+def is_zero(node: ExpressionNode) -> bool:
     # Faster implementation than expressions equal for this particular cases
     return isinstance(node, LiteralNode) and math.isclose(node.value, 0, abs_tol=EPS)
 
 
-def is_one(node: ExpressionNodeEfficient) -> bool:
+def is_one(node: ExpressionNode) -> bool:
     # Faster implementation than expressions equal for this particular cases
     return isinstance(node, LiteralNode) and math.isclose(node.value, 1)
 
 
-def is_minus_one(node: ExpressionNodeEfficient) -> bool:
+def is_minus_one(node: ExpressionNode) -> bool:
     # Faster implementation than expressions equal for this particular cases
     return isinstance(node, LiteralNode) and math.isclose(node.value, -1)
 
 
-def _negate_node(node: ExpressionNodeEfficient) -> ExpressionNodeEfficient:
+def _negate_node(node: ExpressionNode) -> ExpressionNode:
     if isinstance(node, LiteralNode):
         return LiteralNode(-node.value)
     elif isinstance(node, NegationNode):
@@ -178,9 +178,7 @@ def _negate_node(node: ExpressionNodeEfficient) -> ExpressionNodeEfficient:
         return NegationNode(node)
 
 
-def _add_node(
-    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
-) -> ExpressionNodeEfficient:
+def _add_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
     if is_zero(lhs):
         return rhs
     if is_zero(rhs):
@@ -226,9 +224,7 @@ def _add_node(
 
 
 # Better if we could use equality visitor
-def _are_parameter_nodes_equal(
-    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
-) -> bool:
+def _are_parameter_nodes_equal(lhs: ExpressionNode, rhs: ExpressionNode) -> bool:
     return (
         isinstance(lhs, ParameterNode)
         and isinstance(rhs, ParameterNode)
@@ -236,9 +232,7 @@ def _are_parameter_nodes_equal(
     )
 
 
-def _substract_node(
-    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
-) -> ExpressionNodeEfficient:
+def _substract_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
     if is_zero(lhs):
         return -rhs
     if is_zero(rhs):
@@ -293,9 +287,7 @@ def _substract_node(
         return SubstractionNode(lhs, rhs)
 
 
-def _multiply_node(
-    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
-) -> ExpressionNodeEfficient:
+def _multiply_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
     if is_zero(lhs) or is_zero(rhs):
         return LiteralNode(0)
     if is_one(lhs):
@@ -312,9 +304,7 @@ def _multiply_node(
         return MultiplicationNode(lhs, rhs)
 
 
-def _divide_node(
-    lhs: ExpressionNodeEfficient, rhs: ExpressionNodeEfficient
-) -> ExpressionNodeEfficient:
+def _divide_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
     if is_one(rhs):
         return lhs
     if is_minus_one(rhs):
@@ -328,7 +318,7 @@ def _divide_node(
 
 
 @dataclass(frozen=True, eq=False)
-class PortFieldNode(ExpressionNodeEfficient):
+class PortFieldNode(ExpressionNode):
     """
     References a port field.
     """
@@ -338,12 +328,12 @@ class PortFieldNode(ExpressionNodeEfficient):
 
 
 @dataclass(frozen=True, eq=False)
-class ParameterNode(ExpressionNodeEfficient):
+class ParameterNode(ExpressionNode):
     name: str
 
 
 @dataclass(frozen=True, eq=False)
-class ComponentParameterNode(ExpressionNodeEfficient):
+class ComponentParameterNode(ExpressionNode):
     """
     Represents one parameter of one component.
 
@@ -356,30 +346,30 @@ class ComponentParameterNode(ExpressionNodeEfficient):
     name: str
 
 
-def param(name: str) -> ExpressionNodeEfficient:
+def param(name: str) -> ExpressionNode:
     return ParameterNode(name)
 
 
-def comp_param(component_id: str, name: str) -> ExpressionNodeEfficient:
+def comp_param(component_id: str, name: str) -> ExpressionNode:
     return ComponentParameterNode(component_id, name)
 
 
 @dataclass(frozen=True, eq=False)
-class LiteralNode(ExpressionNodeEfficient):
+class LiteralNode(ExpressionNode):
     value: float
 
 
-def literal(value: float) -> ExpressionNodeEfficient:
+def literal(value: float) -> ExpressionNode:
     return LiteralNode(value)
 
 
-def is_unbound(expr: ExpressionNodeEfficient) -> bool:
+def is_unbound(expr: ExpressionNode) -> bool:
     return isinstance(expr, LiteralNode) and (abs(expr.value) == float("inf"))
 
 
 @dataclass(frozen=True, eq=False)
-class UnaryOperatorNode(ExpressionNodeEfficient):
-    operand: ExpressionNodeEfficient
+class UnaryOperatorNode(ExpressionNode):
+    operand: ExpressionNode
 
 
 class PortFieldAggregatorName(enum.Enum):
@@ -404,9 +394,9 @@ class NegationNode(UnaryOperatorNode):
 
 
 @dataclass(frozen=True, eq=False)
-class BinaryOperatorNode(ExpressionNodeEfficient):
-    left: ExpressionNodeEfficient
-    right: ExpressionNodeEfficient
+class BinaryOperatorNode(ExpressionNode):
+    left: ExpressionNode
+    right: ExpressionNode
 
 
 class Comparator(enum.Enum):
@@ -442,9 +432,9 @@ class DivisionNode(BinaryOperatorNode):
 
 @dataclass(frozen=True)
 class ExpressionRange:
-    start: ExpressionNodeEfficient
-    stop: ExpressionNodeEfficient
-    step: Optional[ExpressionNodeEfficient] = None
+    start: ExpressionNode
+    stop: ExpressionNode
+    step: Optional[ExpressionNode] = None
 
     def __post_init__(self) -> None:
         for attribute in self.__dict__:
@@ -462,7 +452,7 @@ class ExpressionRange:
         )
 
 
-IntOrExpr = Union[int, ExpressionNodeEfficient]
+IntOrExpr = Union[int, ExpressionNode]
 
 
 def expression_range(
@@ -486,28 +476,24 @@ class InstancesTimeIndex:
     2 expression, or as a list of expressions.
     """
 
-    expressions: Union[List[ExpressionNodeEfficient], ExpressionRange]
+    expressions: Union[List[ExpressionNode], ExpressionRange]
 
     def __init__(
         self,
-        expressions: Union[
-            int, ExpressionNodeEfficient, List[ExpressionNodeEfficient], ExpressionRange
-        ],
+        expressions: Union[int, ExpressionNode, List[ExpressionNode], ExpressionRange],
     ) -> None:
-        if not isinstance(
-            expressions, (int, ExpressionNodeEfficient, list, ExpressionRange)
-        ):
+        if not isinstance(expressions, (int, ExpressionNode, list, ExpressionRange)):
             raise TypeError(
-                f"{expressions} must be of type among {{int, ExpressionNodeEfficient, List[ExpressionNodeEfficient], ExpressionRange}}"
+                f"{expressions} must be of type among {{int, ExpressionNode, List[ExpressionNode], ExpressionRange}}"
             )
         if isinstance(expressions, list) and not all(
-            isinstance(x, ExpressionNodeEfficient) for x in expressions
+            isinstance(x, ExpressionNode) for x in expressions
         ):
             raise TypeError(
-                f"All elements of {expressions} must be of type ExpressionNodeEfficient"
+                f"All elements of {expressions} must be of type ExpressionNode"
             )
 
-        if isinstance(expressions, (int, ExpressionNodeEfficient)):
+        if isinstance(expressions, (int, ExpressionNode)):
             object.__setattr__(self, "expressions", [wrap_in_node(expressions)])
         else:
             object.__setattr__(self, "expressions", expressions)
@@ -522,14 +508,11 @@ class InstancesTimeIndex:
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, InstancesTimeIndex):
             if isinstance(self.expressions, list) and all(
-                isinstance(x, ExpressionNodeEfficient) for x in self.expressions
+                isinstance(x, ExpressionNode) for x in self.expressions
             ):
                 return (
                     isinstance(other.expressions, list)
-                    and all(
-                        isinstance(x, ExpressionNodeEfficient)
-                        for x in other.expressions
-                    )
+                    and all(isinstance(x, ExpressionNode) for x in other.expressions)
                     and all(
                         expressions_equal(left_expr, right_expr)
                         for left_expr, right_expr in zip(
@@ -617,9 +600,7 @@ class EqualityVisitor:
                 f"Relative comparison tolerance must be >= 0, got {self.rel_tol}"
             )
 
-    def visit(
-        self, left: ExpressionNodeEfficient, right: ExpressionNodeEfficient
-    ) -> bool:
+    def visit(self, left: ExpressionNode, right: ExpressionNode) -> bool:
         if left.__class__ != right.__class__:
             return False
         if isinstance(left, LiteralNode) and isinstance(right, LiteralNode):
@@ -754,8 +735,8 @@ class EqualityVisitor:
 
 
 def expressions_equal(
-    left: ExpressionNodeEfficient,
-    right: ExpressionNodeEfficient,
+    left: ExpressionNode,
+    right: ExpressionNode,
     abs_tol: float = 0,
     rel_tol: float = 0,
 ) -> bool:
@@ -766,7 +747,7 @@ def expressions_equal(
 
 
 def expressions_equal_if_present(
-    lhs: Optional[ExpressionNodeEfficient], rhs: Optional[ExpressionNodeEfficient]
+    lhs: Optional[ExpressionNode], rhs: Optional[ExpressionNode]
 ) -> bool:
     if lhs is None and rhs is None:
         return True

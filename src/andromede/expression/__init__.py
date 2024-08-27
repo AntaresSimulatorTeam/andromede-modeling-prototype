@@ -17,7 +17,7 @@ from .expression import (
     ComparisonNode,
     ComponentParameterNode,
     DivisionNode,
-    ExpressionNodeEfficient,
+    ExpressionNode,
     ExpressionRange,
     InstancesTimeIndex,
     LiteralNode,

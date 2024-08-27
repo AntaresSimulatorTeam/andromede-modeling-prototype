@@ -16,11 +16,7 @@ The standard module contains the definition of standard models.
 
 from andromede.expression.expression import ExpressionRange, literal, param
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.linear_expression import (
-    port_field,
-    var,
-    wrap_in_linear_expr,
-)
+from andromede.expression.linear_expression import port_field, var, wrap_in_linear_expr
 from andromede.model.constraint import Constraint
 from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
 from andromede.model.parameter import float_parameter, int_parameter
@@ -266,7 +262,7 @@ THERMAL_CLUSTER_MODEL_HD = model(
             )
             <= var("nb_on"),
         ),
-        # TODO : Improve API so that we are not forced to use sum() on one shifted element for ExpressionNodeEfficient
+        # TODO : Improve API so that we are not forced to use sum() on one shifted element for ExpressionNode
         Constraint(
             "Min down time",
             var("nb_stop").sum(

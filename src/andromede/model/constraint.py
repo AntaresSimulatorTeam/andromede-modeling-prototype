@@ -12,9 +12,9 @@
 from dataclasses import InitVar, dataclass, field
 from typing import Any, Union
 
-from andromede.expression.expression import ExpressionNodeEfficient, literal
+from andromede.expression.expression import ExpressionNode, literal
 from andromede.expression.linear_expression import (
-    LinearExpressionEfficient,
+    LinearExpression,
     StandaloneConstraint,
     linear_expressions_equal,
     wrap_in_linear_expr,
@@ -33,22 +33,20 @@ class Constraint:
     name: str
     # Used only for mypy type checking, we could have done the same by using only the attribute expression
     expression_init: InitVar[
-        Union[ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint]
+        Union[ExpressionNode, LinearExpression, StandaloneConstraint]
     ]
-    expression: LinearExpressionEfficient = field(init=False)
-    lower_bound: LinearExpressionEfficient = field(
+    expression: LinearExpression = field(init=False)
+    lower_bound: LinearExpression = field(
         default=wrap_in_linear_expr(literal(-float("inf")))
     )
-    upper_bound: LinearExpressionEfficient = field(
+    upper_bound: LinearExpression = field(
         default=wrap_in_linear_expr(literal(float("inf")))
     )
     context: ProblemContext = field(default=ProblemContext.OPERATIONAL)
 
     def __post_init__(
         self,
-        expression_init: Union[
-            ExpressionNodeEfficient, LinearExpressionEfficient, StandaloneConstraint
-        ],
+        expression_init: Union[ExpressionNode, LinearExpression, StandaloneConstraint],
     ) -> None:
         self.lower_bound = wrap_in_linear_expr(self.lower_bound)
         self.upper_bound = wrap_in_linear_expr(self.upper_bound)
