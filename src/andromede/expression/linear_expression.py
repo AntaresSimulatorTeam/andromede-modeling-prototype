@@ -456,7 +456,6 @@ class LinearExpression:
     constant: ExpressionNode
     port_field_terms: Dict[PortFieldId, PortFieldTerm]
 
-    # TODO: We need to check that terms.key is indeed a TermKey and change the tests that this will break
     def __init__(
         self,
         terms: Optional[Union[Dict[TermKey, Term], List[Term]]] = None,
@@ -698,6 +697,7 @@ class LinearExpression:
             if is_zero(port_term.coefficient):
                 del self.port_field_terms[port_term_key]
 
+    # Function used only in tests...
     def evaluate(self, context: ValueProvider, time_scenario_index: RowIndex) -> float:
         return sum(
             [
@@ -1057,7 +1057,6 @@ def _copy_expression(src: LinearExpression, dst: LinearExpression) -> None:
     dst.constant = src.constant
 
 
-# TODO : Define shortcuts for "x", is_one etc ....
 def var(name: str) -> LinearExpression:
     # TODO: At term build time, no information on the variable structure is known, we use a default time, scenario varying, maybe discard structure as term attribute ?
     return LinearExpression(

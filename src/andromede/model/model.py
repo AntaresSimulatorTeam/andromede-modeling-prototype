@@ -53,7 +53,6 @@ from andromede.model.port import PortType
 from andromede.model.variable import Variable
 
 
-# TODO: Introduce bool_variable ?
 def _make_structure_provider(model: "Model") -> IndexingStructureProvider:
     class Provider(IndexingStructureProvider):
         def get_parameter_structure(self, name: str) -> IndexingStructure:
@@ -92,7 +91,6 @@ def _is_objective_contribution_valid(
 
     if objective_structure != IndexingStructure(time=False, scenario=False):
         raise ValueError("Objective contribution should be a real-valued expression.")
-    # TODO: We should also check that the number of instances is equal to 1, but this would require a linearization here, do not want to do that for now...
     return True
 
 

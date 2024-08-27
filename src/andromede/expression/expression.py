@@ -183,7 +183,7 @@ def _add_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
         return rhs
     if is_zero(rhs):
         return lhs
-    # TODO: How can we use the equality visitor here (simple import -> circular import), copy code here ?
+    # TODO: How can we use the equality visitor here (simple import -> circular import) -> equality visitor code is placed at the bottom of this file...
     if expressions_equal(lhs, -rhs):
         return LiteralNode(0)
     if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
@@ -237,7 +237,6 @@ def _substract_node(lhs: ExpressionNode, rhs: ExpressionNode) -> ExpressionNode:
         return -rhs
     if is_zero(rhs):
         return lhs
-    # TODO: How can we use the equality visitor here (simple import -> circular import), copy code here ?
     if expressions_equal(lhs, rhs):
         return LiteralNode(0)
     if isinstance(lhs, LiteralNode) and isinstance(rhs, LiteralNode):
@@ -657,7 +656,7 @@ class EqualityVisitor:
         return self.visit(left.operand, right.operand)
 
     def addition(self, left: AdditionNode, right: AdditionNode) -> bool:
-        # TODO: Commutativty ??? Cannot detect that a+b == b+a
+        # TODO: Commutativty ??? Cannot detect that a+b == b+a ? Do we want to do this ?
         return self._visit_operands(left, right)
 
     def substraction(self, left: SubstractionNode, right: SubstractionNode) -> bool:
