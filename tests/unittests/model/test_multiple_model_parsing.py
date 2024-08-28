@@ -115,7 +115,7 @@ def test_looping_dependency(lib_dir):
         with lib_file.open() as f:
             input_libs.append(parse_yaml_library(f))
 
-    with pytest.raises(Exception, match=r"importing loop in yaml libraries"):
+    with pytest.raises(Exception, match=r"Circular import in yaml libraries"):
         lib = resolve_library(input_libs)
 
 
@@ -138,7 +138,7 @@ def test_model_redefinition(lib_dir):
             input_libs.append(parse_yaml_library(f))
 
     with pytest.raises(
-        Exception, match=re.escape("model(s) : {'generator'} is(are) defined twice")
+        Exception, match=re.escape("Model(s) : {'generator'} is(are) defined twice")
     ):
         lib = resolve_library(input_libs)
 
@@ -156,6 +156,6 @@ def test_port_redefinition(lib_dir):
             input_libs.append(parse_yaml_library(f))
 
     with pytest.raises(
-        Exception, match=re.escape("port(s) : {'flow'} is(are) defined twice")
+        Exception, match=re.escape("Port(s) : {'flow'} is(are) defined twice")
     ):
         lib = resolve_library(input_libs)

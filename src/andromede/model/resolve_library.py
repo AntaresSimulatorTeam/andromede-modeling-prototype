@@ -29,7 +29,7 @@ from andromede.model import (
     Variable,
     model,
 )
-from andromede.model.library import Library, library
+from andromede.model.library import Library
 from andromede.model.model import PortFieldDefinition, port_field_def
 from andromede.model.parsing import (
     InputConstraint,
@@ -45,7 +45,7 @@ from andromede.model.parsing import (
 
 
 def resolve_library(
-    input_libs: List[InputLibrary], preloaded_libraries: Optional[List[Library]] = None
+    input_libs: List[InputLibrary], preloaded_libs: Optional[List[Library]] = None
 ) -> Library:
     """
     Converts parsed data into an actually usable library of models.
@@ -56,52 +56,57 @@ def resolve_library(
     yaml_lib_dict = dict((l.id, l) for l in input_libs)
 
     preloaded_port_types = {}
-    if preloaded_libraries:
-        for preloaded_lib in preloaded_libraries:
+    if preloaded_libs:
+        for preloaded_lib in preloaded_libs:
             preloaded_port_types.update(preloaded_lib.port_types)
 
     output_lib = Library(port_types=preloaded_port_types, models={})
 
     todo: List[str] = list(yaml_lib_dict)
-    did: Set[str] = set()
+    done: Set[str] = set()
     import_stack: List[str] = []
 
     while todo:
         next_lib_id = todo.pop()
-        if next_lib_id in did:
+
+        if next_lib_id in done:
             continue
         else:
             import_stack.append(next_lib_id)
 
         while import_stack:
             cur_lib = yaml_lib_dict[import_stack[-1]]
-            dependencies = set(cur_lib.dependencies) - did
+            dependencies = set(cur_lib.dependencies) - done
 
             if dependencies:
                 first_dependency = dependencies.pop()
+
                 if first_dependency in import_stack:
-                    raise Exception("importing loop in yaml libraries")
+                    raise Exception("Circular import in yaml libraries")
                 import_stack.append(first_dependency)
+
             else:
                 port_types = [_convert_port_type(p) for p in cur_lib.port_types]
                 port_types_dict = dict((p.id, p) for p in port_types)
+
                 if output_lib.port_types.keys() & port_types_dict.keys():
                     raise Exception(
-                        f"port(s) : {str(output_lib.port_types.keys() & port_types_dict.keys())} is(are) defined twice"
+                        f"Port(s) : {str(output_lib.port_types.keys() & port_types_dict.keys())} is(are) defined twice."
                     )
                 output_lib.port_types.update(port_types_dict)
 
                 models = [
                     _resolve_model(m, output_lib.port_types) for m in cur_lib.models
                 ]
+
                 models_dict = dict((m.id, m) for m in models)
                 if output_lib.models.keys() & models_dict.keys():
                     raise Exception(
-                        f"model(s) : {str(output_lib.models.keys() & models_dict.keys())} is(are) defined twice"
+                        f"Model(s) : {str(output_lib.models.keys() & models_dict.keys())} is(are) defined twice"
                     )
                 output_lib.models.update(models_dict)
 
-                did.add(import_stack.pop())
+                done.add(import_stack.pop())
 
     return output_lib
 
