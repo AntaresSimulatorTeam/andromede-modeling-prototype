@@ -40,7 +40,7 @@ def ac_lib(libs_dir: Path, std_lib: Library) -> Library:
     lib_file = libs_dir / "ac.yml"
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
-        return resolve_library(input_lib, preloaded_libraries=[std_lib])
+        return resolve_library([input_lib], preloaded_libs=[std_lib])
 
 
 def test_ac_network_no_links(ac_lib: Library) -> None:

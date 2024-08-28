@@ -10,6 +10,9 @@ dependencies = [
     "ortools"
 ]
 
+[project.scripts]
+andromede-simulator = "andromede.main.main:main_cli"
+
 [tool.setuptools.packages.find]
 # All the following settings are optional:
 where = ["src"]
