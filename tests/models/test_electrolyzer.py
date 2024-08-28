@@ -128,7 +128,7 @@ ELECTROLYZER = model(
 )
 
 
-def test_electrolyzer():
+def test_electrolyzer() -> None:
     elec_node = Node(model=ELECTRICAL_NODE_MODEL, id="1")
     h2_node = Node(model=H2_NODE_MODEL, id="2")
 

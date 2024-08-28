@@ -13,12 +13,9 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from andromede.expression import ExpressionNode
+from andromede.expression import ExpressionNode, literal
 from andromede.expression.degree import is_constant
-from andromede.expression.equality import (
-    expressions_equal,
-    expressions_equal_if_present,
-)
+from andromede.expression.equality import expressions_equal_if_present
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ProblemContext, ValueType
 
@@ -64,6 +61,14 @@ def int_variable(
     return Variable(
         name, ValueType.INTEGER, lower_bound, upper_bound, structure, context
     )
+
+
+def bool_var(
+    name: str,
+    structure: IndexingStructure = IndexingStructure(True, True),
+    context: ProblemContext = ProblemContext.OPERATIONAL,
+) -> Variable:
+    return Variable(name, ValueType.BOOL, literal(0), literal(1), structure, context)
 
 
 def float_variable(

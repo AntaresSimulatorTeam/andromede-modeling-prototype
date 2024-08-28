@@ -333,7 +333,7 @@ def test_requirements_consistency_scenario_varying_parameter_with_correct_data_p
     database.requirements_consistency(network)
 
 
-def test_load_data_from_txt(data_dir: Path):
+def test_load_data_from_txt(data_dir: Path) -> None:
     txt_file = "gen-costs"
 
     gen_costs = load_ts_from_txt(txt_file, data_dir)

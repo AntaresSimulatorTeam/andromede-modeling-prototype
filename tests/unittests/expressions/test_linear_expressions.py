@@ -16,7 +16,7 @@ import pytest
 
 from andromede.expression.scenario_operator import Expectation
 from andromede.expression.time_operator import TimeShift, TimeSum
-from andromede.simulation.linear_expression import LinearExpression, Term
+from andromede.simulation.linear_expression import LinearExpression, Term, TermKey
 
 
 @pytest.mark.parametrize(
@@ -26,7 +26,7 @@ from andromede.simulation.linear_expression import LinearExpression, Term
         (Term(-1, "c", "x"), "-x"),
         (Term(2.50, "c", "x"), "+2.5x"),
         (Term(-3, "c", "x"), "-3x"),
-        (Term(-3, "c", "x", time_operator=TimeShift(-1)), "-3x.shift([-1])"),
+        (Term(-3, "c", "x", time_operator=TimeShift([-1])), "-3x.shift([-1])"),
         (Term(-3, "c", "x", time_aggregator=TimeSum(True)), "-3x.sum(True)"),
         (
             Term(
@@ -93,7 +93,7 @@ def test_constant_expressions(lhs: LinearExpression, rhs: LinearExpression) -> N
     ],
 )
 def test_instantiate_linear_expression_from_dict(
-    terms_dict: Dict[str, Term],
+    terms_dict: Dict[TermKey, Term],
     constant: float,
     exp_terms: Dict[str, Term],
     exp_constant: float,
@@ -123,8 +123,8 @@ def test_instantiate_linear_expression_from_dict(
         ),
         (
             LinearExpression(),
-            LinearExpression([Term(10, "c", "x", TimeShift(-1))]),
-            LinearExpression([Term(10, "c", "x", TimeShift(-1))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
         ),
         (
             LinearExpression(),
@@ -137,9 +137,9 @@ def test_instantiate_linear_expression_from_dict(
         ),
         (
             LinearExpression([Term(10, "c", "x")]),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift(-1))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
             LinearExpression(
-                [Term(10, "c", "x"), Term(10, "c", "x", time_operator=TimeShift(-1))]
+                [Term(10, "c", "x"), Term(10, "c", "x", time_operator=TimeShift([-1]))]
             ),
         ),
         (
@@ -150,7 +150,7 @@ def test_instantiate_linear_expression_from_dict(
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         scenario_operator=Expectation(),
                     )
                 ]
@@ -162,7 +162,7 @@ def test_instantiate_linear_expression_from_dict(
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         scenario_operator=Expectation(),
                     ),
                 ]
@@ -216,7 +216,7 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         scenario_operator=Expectation(),
                     )
                 ],
@@ -229,7 +229,7 @@ def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_fr
                         20,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         scenario_operator=Expectation(),
                     )
                 ],
@@ -267,7 +267,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         time_aggregator=TimeSum(False),
                         scenario_operator=Expectation(),
                     )
@@ -280,7 +280,7 @@ def test_multiplication_of_two_non_constant_terms_should_raise_value_error() -> 
                         -10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         time_aggregator=TimeSum(False),
                         scenario_operator=Expectation(),
                     )
@@ -314,8 +314,8 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
         ),
         (
             LinearExpression(),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift(-1))]),
-            LinearExpression([Term(-10, "c", "x", time_operator=TimeShift(-1))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
+            LinearExpression([Term(-10, "c", "x", time_operator=TimeShift([-1]))]),
         ),
         (
             LinearExpression(),
@@ -328,9 +328,9 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
         ),
         (
             LinearExpression([Term(10, "c", "x")]),
-            LinearExpression([Term(10, "c", "x", time_operator=TimeShift(-1))]),
+            LinearExpression([Term(10, "c", "x", time_operator=TimeShift([-1]))]),
             LinearExpression(
-                [Term(10, "c", "x"), Term(-10, "c", "x", time_operator=TimeShift(-1))]
+                [Term(10, "c", "x"), Term(-10, "c", "x", time_operator=TimeShift([-1]))]
             ),
         ),
         (
@@ -341,7 +341,7 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         time_aggregator=TimeSum(False),
                         scenario_operator=Expectation(),
                     )
@@ -354,7 +354,7 @@ def test_negation(e1: LinearExpression, expected: LinearExpression) -> None:
                         -10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         time_aggregator=TimeSum(False),
                         scenario_operator=Expectation(),
                     ),
@@ -389,7 +389,7 @@ def test_substraction(
                         10,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         time_aggregator=TimeSum(False),
                         scenario_operator=Expectation(),
                     )
@@ -403,7 +403,7 @@ def test_substraction(
                         2,
                         "c",
                         "x",
-                        time_operator=TimeShift(-1),
+                        time_operator=TimeShift([-1]),
                         time_aggregator=TimeSum(False),
                         scenario_operator=Expectation(),
                     )

@@ -36,7 +36,9 @@ def input_library(
         return parse_yaml_library(lib)
 
 
-def test_parsing_components_ok(input_component, input_library):
+def test_parsing_components_ok(
+    input_component: InputComponents, input_library: InputLibrary
+) -> None:
     assert len(input_component.components) == 2
     assert len(input_component.nodes) == 1
     assert len(input_component.connections) == 2
@@ -48,13 +50,17 @@ def test_parsing_components_ok(input_component, input_library):
     assert len(result.connections) == 2
 
 
-def test_consistency_check_ok(input_component, input_library):
+def test_consistency_check_ok(
+    input_component: InputComponents, input_library: InputLibrary
+) -> None:
     result_lib = resolve_library([input_library])
     result_comp = resolve_components_and_cnx(input_component, result_lib)
     consistency_check(result_comp.components, result_lib.models)
 
 
-def test_consistency_check_ko(input_component, input_library):
+def test_consistency_check_ko(
+    input_component: InputComponents, input_library: InputLibrary
+) -> None:
     result_lib = resolve_library([input_library])
     result_comp = resolve_components_and_cnx(input_component, result_lib)
     result_lib.models.pop("generator")
@@ -65,7 +71,9 @@ def test_consistency_check_ko(input_component, input_library):
         consistency_check(result_comp.components, result_lib.models)
 
 
-def test_basic_balance_using_yaml(input_component, input_library) -> None:
+def test_basic_balance_using_yaml(
+    input_component: InputComponents, input_library: InputLibrary
+) -> None:
     result_lib = resolve_library([input_library])
     components_input = resolve_components_and_cnx(input_component, result_lib)
     consistency_check(components_input.components, result_lib.models)
@@ -87,7 +95,7 @@ def generate_data_for_short_term_storage_test(scenarios: int) -> TimeScenarioSer
     for scenario in range(scenarios):
         for absolute_timestep in range(10):
             if absolute_timestep == 0:
-                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18
+                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18.0
             else:
                 data[TimeScenarioIndex(absolute_timestep, scenario)] = 2 * efficiency
 

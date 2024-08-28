@@ -15,10 +15,11 @@ The optimization module contains the logic to translate the input model
 into a mathematical optimization problem.
 """
 
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Type
+from typing import Dict, Iterable, List, Optional
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -721,11 +722,10 @@ class OptimizationProblem:
             model = component.model
 
             for model_var in self.strategy.get_variables(model):
-                var_indexing = IndexingStructure(
-                    model_var.structure.time, model_var.structure.scenario
-                )
+                var_indexing = model_var.structure
                 instantiated_lb_expr = None
                 instantiated_ub_expr = None
+
                 if model_var.lower_bound:
                     instantiated_lb_expr = _instantiate_model_expression(
                         model_var.lower_bound, component.id, self.context
@@ -734,7 +734,18 @@ class OptimizationProblem:
                     instantiated_ub_expr = _instantiate_model_expression(
                         model_var.upper_bound, component.id, self.context
                     )
+
+                var_name: str = f"{model_var.name}"
+                component_prefix = f"{component.id}_" if component.id else ""
+
                 for block_timestep in self.context.get_time_indices(var_indexing):
+                    block_suffix = (
+                        f"_t{block_timestep}"
+                        if var_indexing.is_time_varying()
+                        and (self.context.block_length() > 1)
+                        else ""
+                    )
+
                     for scenario in self.context.get_scenario_indices(var_indexing):
                         lower_bound = -self.solver.infinity()
                         upper_bound = self.solver.infinity()
@@ -747,23 +758,46 @@ class OptimizationProblem:
                                 instantiated_ub_expr
                             ).get_value(block_timestep, scenario)
 
-                        # TODO: Add BoolVar or IntVar if the variable is specified to be integer or bool
+                        scenario_suffix = (
+                            f"_s{scenario}"
+                            if var_indexing.is_scenario_varying()
+                            and (self.context.scenarios > 1)
+                            else ""
+                        )
+
+                        # Set solver var name
                         # Externally, for the Solver, this variable will have a full name
                         # Internally, it will be indexed by a structure that into account
                         # the component id, variable name, timestep and scenario separately
                         solver_var = None
-                        if model_var.data_type == ValueType.FLOAT:
-                            solver_var = self.solver.NumVar(
-                                lower_bound,
-                                upper_bound,
-                                f"{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
+                        solver_var_name = f"{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
+
+                        if math.isclose(lower_bound, upper_bound):
+                            raise ValueError(
+                                f"Upper and lower bounds of variable {solver_var_name} have the same value: {lower_bound}"
+                            )
+                        elif lower_bound > upper_bound:
+                            raise ValueError(
+                                f"Upper bound ({upper_bound}) must be strictly greater than lower bound ({lower_bound}) for variable {solver_var_name}"
+                            )
+
+                        if model_var.data_type == ValueType.BOOL:
+                            solver_var = self.solver.BoolVar(
+                                solver_var_name,
                             )
                         elif model_var.data_type == ValueType.INTEGER:
                             solver_var = self.solver.IntVar(
                                 lower_bound,
                                 upper_bound,
-                                f"{component.id}_{model_var.name}_t{block_timestep}_s{scenario}",
+                                solver_var_name,
                             )
+                        else:
+                            solver_var = self.solver.NumVar(
+                                lower_bound,
+                                upper_bound,
+                                solver_var_name,
+                            )
+
                         component_context.add_variable(
                             block_timestep, scenario, model_var.name, solver_var
                         )
