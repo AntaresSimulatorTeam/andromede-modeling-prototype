@@ -60,7 +60,7 @@ def input_components(study_path: Path, model: Library) -> NetworkComponents:
         return resolve_components_and_cnx(parse_yaml_components(comp), model)
 
 
-def main() -> None:
+def main_cli() -> None:
     parsed_args = parse()
 
     models = input_models(parsed_args.models_path)
@@ -97,4 +97,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main_cli()
