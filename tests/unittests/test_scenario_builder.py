@@ -80,7 +80,7 @@ def test_solving(data_dir: Path, database: DataBase) -> None:
     library_path = data_dir / "lib.yml"
     with library_path.open("r") as file:
         yaml_lib = parse_yaml_library(file)
-        models = resolve_library(yaml_lib)
+        models = resolve_library([yaml_lib])
 
     components_path = data_dir / "components_for_scenarization_test.yml"
     with components_path.open("r") as file:
