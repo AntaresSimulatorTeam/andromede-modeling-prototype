@@ -111,7 +111,8 @@ def load_ts_from_txt(
         timeseries_with_extension = timeseries_name + ".txt"
         ts_path = path_to_file / timeseries_with_extension
     try:
-        return pd.read_csv(ts_path, header=None, sep="\s+")
+        return pd.read_csv(ts_path, header=None, sep=r"\s+")
+
     except FileNotFoundError:
         raise FileNotFoundError(f"File '{timeseries_name}' does not exist")
     except Exception:

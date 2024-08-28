@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def parse_scenario_builder(file: Path) -> pd.core.frame.DataFrame:
+def parse_scenario_builder(file: Path) -> pd.DataFrame:
     sb = pd.read_csv(file, names=("name", "year", "scenario"))
     sb.rename(columns={0: "name", 1: "year", 2: "scenario"})
     return sb

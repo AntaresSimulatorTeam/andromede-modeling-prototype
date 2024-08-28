@@ -31,13 +31,13 @@ from andromede.study.scenario_parsing import parse_scenario_builder
 
 
 @pytest.fixture
-def scenario_builder(data_dir: Path) -> pd.core.frame.DataFrame:
+def scenario_builder(data_dir: Path) -> pd.DataFrame:
     buider_path = data_dir / "scenario_builder.csv"
     return parse_scenario_builder(buider_path)
 
 
 @pytest.fixture
-def database(data_dir: Path, scenario_builder: pd.core.frame.DataFrame) -> DataBase:
+def database(data_dir: Path, scenario_builder: pd.DataFrame) -> DataBase:
     components_path = data_dir / "components_for_scenarization_test.yml"
     ts_path = data_dir
     with components_path.open() as components:
@@ -46,7 +46,7 @@ def database(data_dir: Path, scenario_builder: pd.core.frame.DataFrame) -> DataB
         )
 
 
-def test_parser(scenario_builder):
+def test_parser(scenario_builder: pd.DataFrame) -> None:
     builder = pd.DataFrame(
         {
             "name": [
