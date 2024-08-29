@@ -12,11 +12,15 @@
 
 from math import ceil
 from pathlib import Path
+from typing import List
 
+import ortools.linear_solver.pywraplp as pywraplp
 import pytest
 
 from andromede.libs.standard import BALANCE_PORT_TYPE
-from andromede.study.data import ComponentParameterIndex
+from andromede.simulation import OutputValues
+from andromede.study.data import ComponentParameterIndex, ConstantData, DataBase
+from andromede.study.parsing import InputComponents
 from andromede.thermal_heuristic.model import (
     AccurateModelBuilder,
     HeuristicAccurateModelBuilder,
@@ -26,8 +30,10 @@ from andromede.thermal_heuristic.problem import (
     BlockScenarioIndex,
     ThermalProblemBuilder,
     TimeScenarioHourParameter,
+    get_database,
+    get_network,
 )
-from tests.functional.conftest import ExpectedOutput, ExpectedOutputIndexes
+from andromede.thermal_heuristic.time_scenario_parameter import timesteps
 from tests.functional.libs.lib_thermal_heuristic import (
     DEMAND_WITH_RESERVE_MODEL,
     NODE_WITH_RESERVE_MODEL,
@@ -36,265 +42,353 @@ from tests.functional.libs.lib_thermal_heuristic import (
 
 
 @pytest.fixture
-def data_path() -> str:
-    return "data/thermal_heuristic_day_ahead_reserve"
+def data_path() -> Path:
+    return Path(__file__).parent.parent / "data/thermal_heuristic_day_ahead_reserve"
 
 
 @pytest.fixture
-def models() -> list[Model]:
+def models() -> List[Model]:
     return [NODE_WITH_RESERVE_MODEL, DEMAND_WITH_RESERVE_MODEL]
 
 
 @pytest.fixture
-def week_scenario_index() -> BlockScenarioIndex:
-    return BlockScenarioIndex(0, 0)
+def demand_day_ahead() -> float:
+    demand_day_ahead = 23.0
+    return demand_day_ahead
 
 
-# def test_milp_with_day_ahead_reserve(
-#     data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
-# ) -> None:
-#     """ """
-#     thermal_problem_builder = ThermalProblemBuilder(
-#         fast=False,
-#         data_dir=Path(__file__).parent / data_path,
-#         id_thermal_cluster_model=THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP.id,
-#         port_types=[BALANCE_PORT_TYPE],
-#         models=[THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP] + models,
-#         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
-#     )
-
-#     cluster = thermal_problem_builder.heuristic_components()[0]
-
-#     main_resolution_step = thermal_problem_builder.main_resolution_step(
-#         week_scenario_index
-#     )
-
-#     assert main_resolution_step.solver.Objective().Value() == 16805387
-
-#     expected_output = ExpectedOutput(
-#         mode="milp",
-#         index=week_scenario_index,
-#         dir_path=data_path,
-#         list_cluster=[cluster],
-#         output_idx=ExpectedOutputIndexes(
-#             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
-#         ),
-#     )
-#     expected_output.check_output_values(OutputValues(main_resolution_step))
+def shift_load(
+    week_scenario_index: BlockScenarioIndex,
+    time_scenario_parameters: TimeScenarioHourParameter,
+    demand_shift: float,
+    database: DataBase,
+) -> None:
+    for timestep in timesteps(week_scenario_index, time_scenario_parameters):
+        initial_data = database.get_value(
+            ComponentParameterIndex("D", "demand_energy"),
+            timestep,
+            week_scenario_index.scenario,
+        )
+        database.set_value(
+            ComponentParameterIndex("D", "demand_energy"),
+            initial_data + demand_shift,
+            timestep,
+            week_scenario_index.scenario,
+        )
 
 
-# def test_milp_without_day_ahead_reserve(
-#     data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
-# ) -> None:
-#     """ """
-#     thermal_problem_builder = ThermalProblemBuilder(
-#         fast=False,
-#         data_dir=Path(__file__).parent / data_path,
-#         id_thermal_cluster_model=THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP.id,
-#         port_types=[BALANCE_PORT_TYPE],
-#         models=[THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP] + models,
-#         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, 168),
-#     )
+def test_milp_with_day_ahead_reserve(
+    data_path: Path,
+    models: list[Model],
+    week_scenario_index: BlockScenarioIndex,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
+    demand_day_ahead: float,
+) -> None:
+    """ """
+    network = get_network(
+        input_components,
+        port_types=[BALANCE_PORT_TYPE],
+        models=[THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP] + models,
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=False,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
 
-#     cluster = thermal_problem_builder.heuristic_components()[0]
+    thermal_problem_builder = ThermalProblemBuilder(
+        network=network,
+        database=database,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
 
-#     main_resolution_step = thermal_problem_builder.main_resolution_step(
-#         week_scenario_index
-#     )
+    shift_load(
+        week_scenario_index,
+        time_scenario_parameters,
+        demand_day_ahead,
+        thermal_problem_builder.database,
+    )
 
-#     assert main_resolution_step.solver.Objective().Value() == 16805387
+    main_resolution_step_1 = thermal_problem_builder.main_resolution_step(
+        week_scenario_index
+    )
 
-#     expected_output = ExpectedOutput(
-#         mode="milp",
-#         index=week_scenario_index,
-#         dir_path=data_path,
-#         list_cluster=[cluster],
-#         output_idx=ExpectedOutputIndexes(
-#             idx_generation=4, idx_nodu=6, idx_spillage=29, idx_unsupplied=25
-#         ),
-#     )
-#     expected_output.check_output_values(OutputValues(main_resolution_step))
+    status = main_resolution_step_1.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
+    shift_load(
+        week_scenario_index,
+        time_scenario_parameters,
+        -demand_day_ahead,
+        thermal_problem_builder.database,
+    )
 
-# def test_accurate_heuristic_with_day_ahead_reserve(
-#     data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
-# ) -> None:
-#     """
-#     Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic is able to retrieve the milp optimal solution because when the number of on units found in the linear relaxation is ceiled, we found the optimal number of on units which is already feasible.
-#     """
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(main_resolution_step_1),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update="nb_units_min",
+        var_to_read="nb_on",
+        fn_to_apply=lambda x: ceil(round(x, 12)),
+    )
 
-#     number_hours = 168
-#     thermal_problem_builder = ThermalProblemBuilder(
-#         fast=False,
-#         data_dir=Path(__file__).parent / data_path,
-#         id_thermal_cluster_model=THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP.id,
-#         port_types=[BALANCE_PORT_TYPE],
-#         models=[AccurateModelBuilder(THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP).model]
-#         + models,
-#         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
-#     )
+    main_resolution_step_2 = thermal_problem_builder.main_resolution_step(
+        week_scenario_index
+    )
 
-#     cluster = thermal_problem_builder.heuristic_components()[0]
+    status = main_resolution_step_2.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
-#     # First optimization
-#     resolution_step_1 = thermal_problem_builder.main_resolution_step(
-#         week_scenario_index
-#     )
-
-#     # Get number of on units and round it to integer
-#     thermal_problem_builder.update_database_heuristic(
-#         OutputValues(resolution_step_1),
-#         week_scenario_index,
-#         None,
-#         param_to_update="nb_units_min",
-#         var_to_read="nb_on",
-#         fn_to_apply=lambda x: ceil(round(x, 12)),
-#     )
-#     for time_step in range(number_hours):
-#         assert (
-#             thermal_problem_builder.database.get_value(
-#                 ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
-#             )
-#             == 2
-#             if time_step != 12
-#             else 3
-#         )
-
-#     # Solve heuristic problem
-#     resolution_step_accurate_heuristic = (
-#         thermal_problem_builder.heuristic_resolution_step(
-#             week_scenario_index,
-#             id_component=cluster,
-#             model=HeuristicAccurateModelBuilder(
-#                 THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP
-#             ).model,
-#         )
-#     )
-
-#     thermal_problem_builder.update_database_heuristic(
-#         OutputValues(resolution_step_accurate_heuristic),
-#         week_scenario_index,
-#         None,
-#         param_to_update="nb_units_min",
-#         var_to_read="nb_on",
-#         fn_to_apply=lambda x: ceil(round(x, 12)),
-#     )
-
-#     for time_step in range(number_hours):
-#         assert (
-#             thermal_problem_builder.database.get_value(
-#                 ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
-#             )
-#             == 2
-#             if time_step != 12
-#             else 3
-#         )
-
-#     # Second optimization with lower bound modified
-#     resolution_step_2 = thermal_problem_builder.main_resolution_step(
-#         week_scenario_index
-#     )
-#     assert resolution_step_2.solver.Objective().Value() == 16805387
-
-#     expected_output = ExpectedOutput(
-#         mode="accurate",
-#         index=week_scenario_index,
-#         dir_path=data_path,
-#         list_cluster=[cluster],
-#         output_idx=ExpectedOutputIndexes(
-#             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
-#         ),
-#     )
-#     expected_output.check_output_values(OutputValues(resolution_step_2))
+    output = OutputValues(main_resolution_step_2)
+    assert sum(
+        output.component("N").var("spillage_energy").value[0]  # type:ignore
+    ) == pytest.approx(358)
+    assert main_resolution_step_2.solver.Objective().Value() == pytest.approx(7935769)
 
 
-# def test_accurate_heuristic_without_day_ahead_reserve(
-#     data_path: str, models: list[Model], week_scenario_index: BlockScenarioIndex
-# ) -> None:
-#     """
-#     Solve the same problem as before with the heuristic accurate of Antares. The accurate heuristic is able to retrieve the milp optimal solution because when the number of on units found in the linear relaxation is ceiled, we found the optimal number of on units which is already feasible.
-#     """
+def test_milp_without_day_ahead_reserve(
+    data_path: Path,
+    models: list[Model],
+    week_scenario_index: BlockScenarioIndex,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
+) -> None:
+    """ """
+    network = get_network(
+        input_components,
+        port_types=[BALANCE_PORT_TYPE],
+        models=[THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP] + models,
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=False,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
 
-#     number_hours = 168
-#     thermal_problem_builder = ThermalProblemBuilder(
-#         fast=False,
-#         data_dir=Path(__file__).parent / data_path,
-#         id_thermal_cluster_model=THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP.id,
-#         port_types=[BALANCE_PORT_TYPE],
-#         models=[AccurateModelBuilder(THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP).model]
-#         + models,
-#         time_scenario_hour_parameter=TimeScenarioHourParameter(1, 1, number_hours),
-#     )
+    thermal_problem_builder = ThermalProblemBuilder(
+        network=network,
+        database=database,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
 
-#     cluster = thermal_problem_builder.heuristic_components()[0]
+    main_resolution_step = thermal_problem_builder.main_resolution_step(
+        week_scenario_index
+    )
 
-#     # First optimization
-#     resolution_step_1 = thermal_problem_builder.main_resolution_step(
-#         week_scenario_index
-#     )
+    status = main_resolution_step.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
 
-#     # Get number of on units and round it to integer
-#     thermal_problem_builder.update_database_heuristic(
-#         OutputValues(resolution_step_1),
-#         week_scenario_index,
-#         None,
-#         param_to_update="nb_units_min",
-#         var_to_read="nb_on",
-#         fn_to_apply=lambda x: ceil(round(x, 12)),
-#     )
-#     for time_step in range(number_hours):
-#         assert (
-#             thermal_problem_builder.database.get_value(
-#                 ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
-#             )
-#             == 2
-#             if time_step != 12
-#             else 3
-#         )
+    output = OutputValues(main_resolution_step)
+    assert sum(
+        output.component("N").var("spillage_energy").value[0]  # type:ignore
+    ) == pytest.approx(0, abs=1e-10)
+    assert main_resolution_step.solver.Objective().Value() == pytest.approx(2512645)
 
-#     # Solve heuristic problem
-#     resolution_step_accurate_heuristic = (
-#         thermal_problem_builder.heuristic_resolution_step(
-#             week_scenario_index,
-#             id_component=cluster,
-#             model=HeuristicAccurateModelBuilder(
-#                 THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP
-#             ).model,
-#         )
-#     )
 
-#     thermal_problem_builder.update_database_heuristic(
-#         OutputValues(resolution_step_accurate_heuristic),
-#         week_scenario_index,
-#         None,
-#         param_to_update="nb_units_min",
-#         var_to_read="nb_on",
-#         fn_to_apply=lambda x: ceil(round(x, 12)),
-#     )
+def print_sum_output(output: OutputValues) -> None:
+    for var in [
+        "spillage_energy",
+        "unsupplied_energy",
+        "unsupplied_day_ahead",
+        "unsupplied_reserve",
+    ]:
+        x = sum(output.component("N").var(var).value[0])  # type:ignore
+        print(f"{var} : {round(x)}")
 
-#     for time_step in range(number_hours):
-#         assert (
-#             thermal_problem_builder.database.get_value(
-#                 ComponentParameterIndex(cluster, "nb_units_min"), time_step, 0
-#             )
-#             == 2
-#             if time_step != 12
-#             else 3
-#         )
+    for g in ["G1", "G2", "G3"]:
+        for var in ["total_generation", "nb_start", "nb_on"]:
+            x = sum(output.component(g).var(var).value[0])  # type:ignore
+            print(f"{g}_{var} : {round(x)}")
 
-#     # Second optimization with lower bound modified
-#     resolution_step_2 = thermal_problem_builder.main_resolution_step(
-#         week_scenario_index
-#     )
-#     assert resolution_step_2.solver.Objective().Value() == 16805387
 
-#     expected_output = ExpectedOutput(
-#         mode="accurate",
-#         index=week_scenario_index,
-#         dir_path=data_path,
-#         list_cluster=[cluster],
-#         output_idx=ExpectedOutputIndexes(
-#             idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
-#         ),
-#     )
-#     expected_output.check_output_values(OutputValues(resolution_step_2))
+def test_accurate_heuristic_with_day_ahead_reserve(
+    data_path: Path,
+    models: list[Model],
+    week_scenario_index: BlockScenarioIndex,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
+    demand_day_ahead: float,
+) -> None:
+    """ """
+
+    network = get_network(
+        input_components,
+        port_types=[BALANCE_PORT_TYPE],
+        models=[AccurateModelBuilder(THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP).model]
+        + models,
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=False,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
+
+    thermal_problem_builder = ThermalProblemBuilder(
+        network=network,
+        database=database,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
+
+    shift_load(
+        week_scenario_index,
+        time_scenario_parameters,
+        demand_day_ahead,
+        thermal_problem_builder.database,
+    )
+
+    # First optimization
+    resolution_step_1 = thermal_problem_builder.main_resolution_step(
+        week_scenario_index,
+    )
+
+    status = resolution_step_1.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_1),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update="nb_units_min",
+        var_to_read="nb_on",
+        fn_to_apply=lambda x: ceil(round(x, 12)),
+    )
+
+    for g in heuristic_components:
+        # Solve heuristic problem
+        resolution_step_accurate_heuristic = (
+            thermal_problem_builder.heuristic_resolution_step(
+                week_scenario_index,
+                id_component=g,
+                model=HeuristicAccurateModelBuilder(
+                    THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP
+                ).model,
+            )
+        )
+
+        status = resolution_step_accurate_heuristic.solver.Solve()
+        assert status == pywraplp.Solver.OPTIMAL
+
+        thermal_problem_builder.update_database_heuristic(
+            OutputValues(resolution_step_accurate_heuristic),
+            week_scenario_index,
+            [g],
+            param_to_update="nb_units_min",
+            var_to_read="nb_on",
+            fn_to_apply=lambda x: ceil(round(x, 12)),
+        )
+
+    shift_load(
+        week_scenario_index,
+        time_scenario_parameters,
+        -demand_day_ahead,
+        thermal_problem_builder.database,
+    )
+
+    # Second optimization with lower bound modified
+    resolution_step_2 = thermal_problem_builder.main_resolution_step(
+        week_scenario_index,
+    )
+
+    status = resolution_step_2.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+
+    output = OutputValues(resolution_step_2)
+    assert resolution_step_2.solver.Objective().Value() == pytest.approx(12600136)
+    assert sum(
+        output.component("N").var("spillage_energy").value[0]  # type:ignore
+    ) == pytest.approx(667)
+
+
+def test_accurate_heuristic_without_day_ahead_reserve(
+    data_path: Path,
+    models: list[Model],
+    week_scenario_index: BlockScenarioIndex,
+    input_components: InputComponents,
+    heuristic_components: List[str],
+    time_scenario_parameters: TimeScenarioHourParameter,
+) -> None:
+    """ """
+
+    network = get_network(
+        input_components,
+        port_types=[BALANCE_PORT_TYPE],
+        models=[AccurateModelBuilder(THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP).model]
+        + models,
+    )
+    database = get_database(
+        input_components,
+        data_path,
+        fast=False,
+        cluster=heuristic_components,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
+
+    thermal_problem_builder = ThermalProblemBuilder(
+        network=network,
+        database=database,
+        time_scenario_hour_parameter=time_scenario_parameters,
+    )
+
+    # First optimization
+    resolution_step_1 = thermal_problem_builder.main_resolution_step(
+        week_scenario_index,
+    )
+
+    status = resolution_step_1.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_1),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update="nb_units_min",
+        var_to_read="nb_on",
+        fn_to_apply=lambda x: ceil(round(x, 12)),
+    )
+
+    for g in heuristic_components:
+        # Solve heuristic problem
+        resolution_step_accurate_heuristic = (
+            thermal_problem_builder.heuristic_resolution_step(
+                week_scenario_index,
+                id_component=g,
+                model=HeuristicAccurateModelBuilder(
+                    THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP
+                ).model,
+            )
+        )
+
+        status = resolution_step_accurate_heuristic.solver.Solve()
+        assert status == pywraplp.Solver.OPTIMAL
+
+        thermal_problem_builder.update_database_heuristic(
+            OutputValues(resolution_step_accurate_heuristic),
+            week_scenario_index,
+            [g],
+            param_to_update="nb_units_min",
+            var_to_read="nb_on",
+            fn_to_apply=lambda x: ceil(round(x, 12)),
+        )
+
+    # Second optimization with lower bound modified
+    resolution_step_2 = thermal_problem_builder.main_resolution_step(
+        week_scenario_index,
+    )
+
+    status = resolution_step_2.solver.Solve()
+    assert status == pywraplp.Solver.OPTIMAL
+    output = OutputValues(resolution_step_2)
+    assert resolution_step_2.solver.Objective().Value() == pytest.approx(3415137)
+    assert sum(
+        output.component("N").var("spillage_energy").value[0]  # type:ignore
+    ) == pytest.approx(60)

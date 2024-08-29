@@ -260,7 +260,7 @@ THERMAL_CLUSTER_MODEL_MILP_WITH_RAMP = model(
 
 RESERVE_PORT_TYPE = PortType(
     id="reserve_balance",
-    fields=[PortField("energy"), PortField("day_ahead"), PortField("primary_reserve")],
+    fields=[PortField("energy"), PortField("primary_reserve")],
 )
 
 NODE_WITH_RESERVE_MODEL = model(
@@ -273,8 +273,6 @@ NODE_WITH_RESERVE_MODEL = model(
     variables=[
         float_variable("spillage_energy", lower_bound=literal(0)),
         float_variable("unsupplied_energy", lower_bound=literal(0)),
-        float_variable("spillage_day_ahead", lower_bound=literal(0)),
-        float_variable("unsupplied_day_ahead", lower_bound=literal(0)),
         float_variable("unsupplied_reserve", lower_bound=literal(0)),
     ],
     ports=[
@@ -287,11 +285,6 @@ NODE_WITH_RESERVE_MODEL = model(
             == var("spillage_energy") - var("unsupplied_energy"),
         ),
         Constraint(
-            name="Balance day ahead",
-            expression=port_field("balance_port", "day_ahead").sum_connections()
-            == var("spillage_day_ahead") - var("unsupplied_day_ahead"),
-        ),
-        Constraint(
             name="Balance reserve",
             expression=port_field("balance_port", "primary_reserve").sum_connections()
             == -var("unsupplied_reserve"),
@@ -300,8 +293,6 @@ NODE_WITH_RESERVE_MODEL = model(
     objective_operational_contribution=(
         param("spillage_cost") * var("spillage_energy")
         + param("ens_cost") * var("unsupplied_energy")
-        + param("spillage_cost") * var("spillage_day_ahead")
-        + param("ens_cost") * var("unsupplied_day_ahead")
         + param("reserve_not_supplied_cost") * var("unsupplied_reserve")
     )
     .sum()
@@ -312,7 +303,6 @@ DEMAND_WITH_RESERVE_MODEL = model(
     id="DEMAND_MODEL",
     parameters=[
         float_parameter("demand_energy", TIME_AND_SCENARIO_FREE),
-        float_parameter("demand_day_ahead", TIME_AND_SCENARIO_FREE),
         float_parameter("demand_primary_reserve", TIME_AND_SCENARIO_FREE),
     ],
     ports=[ModelPort(port_type=RESERVE_PORT_TYPE, port_name="balance_port")],
@@ -320,10 +310,6 @@ DEMAND_WITH_RESERVE_MODEL = model(
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "energy"),
             definition=-param("demand_energy"),
-        ),
-        PortFieldDefinition(
-            port_field=PortFieldId("balance_port", "day_ahead"),
-            definition=-param("demand_day_ahead"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "primary_reserve"),
@@ -351,12 +337,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
     ],
     variables=[
         float_variable(
-            "generation",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        float_variable(
-            "generation_day_ahead",
+            "total_generation",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -392,11 +373,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
     port_fields_definitions=[
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "energy"),
-            definition=var("generation"),
-        ),
-        PortFieldDefinition(
-            port_field=PortFieldId("balance_port", "day_ahead"),
-            definition=var("generation_day_ahead"),
+            definition=var("total_generation") - var("generation_reserve"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "primary_reserve"),
@@ -406,19 +383,24 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
     constraints=[
         Constraint(
             "Max generation",
-            var("generation") <= param("max_generating"),
+            var("total_generation") <= param("max_generating"),
         ),
         Constraint(
             "Min generation",
-            var("generation") >= param("min_generating"),
+            var("total_generation") >= param("min_generating"),
         ),
         Constraint(
             "Max generation with NODU",
-            var("generation") <= param("p_max") * var("nb_on"),
+            var("total_generation") <= param("p_max") * var("nb_on"),
         ),
         Constraint(
             "Min generation with NODU",
-            var("generation") >= param("p_min") * var("nb_on"),
+            var("total_generation") >= param("p_min") * var("nb_on"),
+        ),
+        Constraint(
+            "Primary reserve generation above p_min",
+            var("generation_reserve")
+            <= var("total_generation") - param("p_min") * var("nb_on"),
         ),
         Constraint(
             "NODU balance",
@@ -448,7 +430,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
     objective_operational_contribution=(
-        param("cost") * var("generation")
+        param("cost") * var("total_generation")
         + param("startup_cost") * var("nb_start")
         + param("fixed_cost") * var("nb_on")
     )

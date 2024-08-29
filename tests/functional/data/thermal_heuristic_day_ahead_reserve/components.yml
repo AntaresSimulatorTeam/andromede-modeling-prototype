@@ -14,41 +14,50 @@ study:
     - id: N
       model: NODE_MODEL
       parameters:
-        - name: cost
+        - name: ens_cost
           type: constant
-          value: 10000
+          value: 20000
+        - name: spillage_cost
+          type: constant
+          value: 15000
+        - name: reserve_not_supplied_cost
+          type: constant
+          value: 2000
 
   components:
     - id: D
       model: DEMAND_MODEL
       parameters:
-        - name: demand
+        - name: demand_energy
           type: timeseries
-          timeseries: demand-ts      
+          timeseries: demand-ts
+        - name: demand_primary_reserve
+          type: constant
+          value: 23      
     - id: G1
       model: GEN
       parameters:
         - name: p_max
           type: constant
-          value: 410
+          value: 34
         - name: p_min
           type: constant
-          value: 180
+          value: 15
         - name: cost
           type: constant
-          value: 96
+          value: 90
         - name: startup_cost
           type: constant
-          value: 100500
+          value: 11500
         - name: fixed_cost
           type: constant
           value: 1
         - name: d_min_up
           type: constant
-          value: 8
+          value: 12
         - name: d_min_down
           type: constant
-          value: 8
+          value: 12
         - name: nb_units_min
           type: constant
           value: 0
@@ -59,38 +68,38 @@ study:
           type: constant
           value: 0
         - name: max_generating
-          type: timeseries
-          timeseries: series_G1
+          type: constant
+          value: 34
     - id: G2
       model: GEN
       parameters:
         - name: p_max
           type: constant
-          value: 90
+          value: 30
         - name: p_min
           type: constant
-          value: 60
+          value: 10
         - name: cost
           type: constant
-          value: 137
+          value: 85
         - name: startup_cost
           type: constant
-          value: 24500
+          value: 12500
         - name: fixed_cost
           type: constant
           value: 1
         - name: d_min_up
           type: constant
-          value: 11
+          value: 12
         - name: d_min_down
           type: constant
-          value: 11
+          value: 12
         - name: nb_units_min
           type: constant
           value: 0
         - name: nb_units_max
           type: constant
-          value: 3
+          value: 2
         - name: min_generating
           type: constant
           value: 0
@@ -102,31 +111,31 @@ study:
       parameters:
         - name: p_max
           type: constant
-          value: 275
+          value: 18
         - name: p_min
           type: constant
-          value: 150
+          value: 13
         - name: cost
           type: constant
-          value: 107
+          value: 100
         - name: startup_cost
           type: constant
-          value: 69500
+          value: 4500
         - name: fixed_cost
           type: constant
           value: 1
         - name: d_min_up
           type: constant
-          value: 9
+          value: 3
         - name: d_min_down
           type: constant
-          value: 9
+          value: 1
         - name: nb_units_min
           type: constant
           value: 0
         - name: nb_units_max
           type: constant
-          value: 4
+          value: 12
         - name: min_generating
           type: constant
           value: 0

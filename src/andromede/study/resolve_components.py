@@ -145,7 +145,7 @@ def build_data_base(
     input_comp: InputComponents, timeseries_dir: Optional[Path]
 ) -> DataBase:
     database = DataBase()
-    for comp in input_comp.components:
+    for comp in input_comp.components + input_comp.nodes:
         for param in comp.parameters or []:
             param_value = _evaluate_param_type(
                 param.type, param.value, param.timeseries, timeseries_dir

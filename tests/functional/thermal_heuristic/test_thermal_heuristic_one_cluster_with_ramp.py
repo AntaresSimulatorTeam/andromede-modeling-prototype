@@ -65,7 +65,7 @@ def test_milp_version(
     database = get_database(
         input_components,
         data_path,
-        fast=True,
+        fast=False,
         cluster=heuristic_components,
         time_scenario_hour_parameter=time_scenario_parameters,
     )
