@@ -33,14 +33,14 @@ from andromede.model.resolve_library import resolve_library
 
 
 @pytest.fixture(scope="session")
-def lib_dir(data_dir) -> Path:
+def lib_dir(data_dir: Path) -> Path:
     return data_dir / "lib_for_resolving_test"
 
 
 # in following tests "lib_A -> lib_B" means lib_A must be resolved before lib_B
 
 
-def test_simple_dependency_tree(lib_dir):
+def test_simple_dependency_tree(lib_dir: Path) -> None:
     """basic_lib
         |     |
         V     V
@@ -78,7 +78,7 @@ def test_simple_dependency_tree(lib_dir):
     assert len(lib.port_types) == 1
 
 
-def test_multiple_dependencies_tree(lib_dir):
+def test_multiple_dependencies_tree(lib_dir: Path) -> None:
     """basic_lib   CO2_port
         |     |       |
         V     V       V
@@ -101,7 +101,7 @@ def test_multiple_dependencies_tree(lib_dir):
     assert len(lib.port_types) == 2
 
 
-def test_looping_dependency(lib_dir):
+def test_looping_dependency(lib_dir: Path) -> None:
     """looping_lib_1 -> looping_lib_2
     <-
     """
@@ -119,7 +119,7 @@ def test_looping_dependency(lib_dir):
         lib = resolve_library(input_libs)
 
 
-def test_model_redefinition(lib_dir):
+def test_model_redefinition(lib_dir: Path) -> None:
     """basic_lib   CO2_port
             |     |      |
             V     V      V
@@ -143,7 +143,7 @@ def test_model_redefinition(lib_dir):
         lib = resolve_library(input_libs)
 
 
-def test_port_redefinition(lib_dir):
+def test_port_redefinition(lib_dir: Path) -> None:
     """basic_lib -> port_redefinition"""
     lib_files = [
         lib_dir / "basic_lib.yml",

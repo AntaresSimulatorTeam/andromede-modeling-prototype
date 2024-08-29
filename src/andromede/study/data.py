@@ -111,11 +111,25 @@ def load_ts_from_txt(
         timeseries_with_extension = timeseries_name + ".txt"
         ts_path = path_to_file / timeseries_with_extension
     try:
-        return pd.read_csv(ts_path, header=None, sep="\s+")
+        return pd.read_csv(ts_path, header=None, sep=r"\s+")
+
     except FileNotFoundError:
         raise FileNotFoundError(f"File '{timeseries_name}' does not exist")
     except Exception:
         raise Exception(f"An error has arrived when processing '{ts_path}'")
+
+
+@dataclass(frozen=True)
+class Scenarization:
+    _scenarization: Dict[int, int]
+
+    def get_scenario_for_year(self, year: int) -> int:
+        return self._scenarization[year]
+
+    def add_year(self, year: int, scenario: int) -> None:
+        if year in self._scenarization:
+            raise ValueError(f"the year {year} is already defined")
+        self._scenarization[year] = scenario
 
 
 @dataclass(frozen=True)
@@ -127,8 +141,11 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     """
 
     time_scenario_series: pd.DataFrame
+    scenarization: Optional[Scenarization] = None
 
     def get_value(self, timestep: int, scenario: int) -> float:
+        if self.scenarization:
+            scenario = self.scenarization.get_scenario_for_year(scenario)
         value = str(self.time_scenario_series.iloc[timestep, scenario])
         return float(value)
 

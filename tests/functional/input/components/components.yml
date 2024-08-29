@@ -54,6 +54,7 @@ study:
       model: demand
       parameters:
         - name: demand
+          scenario-group: g1
           type: timeseries
           timeseries: demand-ts
     - id: S
