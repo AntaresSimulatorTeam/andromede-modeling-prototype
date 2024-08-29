@@ -29,7 +29,6 @@ from andromede.study import (
 )
 from andromede.study.data import (
     AbstractDataStructure,
-    TimeScenarioIndex,
     TimeScenarioSeriesData,
     load_ts_from_txt,
 )
@@ -146,7 +145,9 @@ def build_data_base(
     input_comp: InputComponents, timeseries_dir: Optional[Path]
 ) -> DataBase:
     database = DataBase()
+
     for comp in input_comp.components:
+        # This idiom allows mypy to 'ignore' the fact that comp.parameter can be None
         for param in comp.parameters or []:
             param_value = _evaluate_param_type(
                 param.type, param.value, param.timeseries, timeseries_dir
@@ -175,7 +176,7 @@ def _evaluate_param_type(
 
 
 def _resolve_scenarization(
-    scenario_builder_data: pd.core.frame.DataFrame,
+    scenario_builder_data: pd.DataFrame,
 ) -> Dict[str, Scenarization]:
     output: Dict[str, Scenarization] = {}
     for i, row in scenario_builder_data.iterrows():
@@ -188,15 +189,18 @@ def _resolve_scenarization(
 
 def build_scenarized_data_base(
     input_comp: InputComponents,
-    scenario_builder_data: pd.core.frame.DataFrame,
+    scenario_builder_data: pd.DataFrame,
     timeseries_dir: Optional[Path],
 ) -> DataBase:
     database = DataBase()
     scenarizations = _resolve_scenarization(scenario_builder_data)
+
     for comp in input_comp.components:
         scenarization = None
         if comp.scenario_group:
             scenarization = scenarizations[comp.scenario_group]
+
+        # This idiom allows mypy to 'ignore' the fact that comp.parameter can be None
         for param in comp.parameters or []:
             if param.scenario_group:
                 scenarization = scenarizations[param.scenario_group]

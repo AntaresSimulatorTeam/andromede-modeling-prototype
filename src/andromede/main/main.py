@@ -15,11 +15,11 @@ from pathlib import Path
 from typing import List, Optional
 
 from andromede.model.library import Library
-from andromede.model.parsing import parse, parse_yaml_library
+from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
 from andromede.study import DataBase
-from andromede.study.parsing import parse_yaml_components
+from andromede.study.parsing import parse_cli, parse_yaml_components
 from andromede.study.resolve_components import (
     NetworkComponents,
     build_data_base,
@@ -61,7 +61,7 @@ def input_components(study_path: Path, model: Library) -> NetworkComponents:
 
 
 def main_cli() -> None:
-    parsed_args = parse()
+    parsed_args = parse_cli()
 
     models = input_models(parsed_args.models_path)
     components = input_components(parsed_args.components_path, models)
