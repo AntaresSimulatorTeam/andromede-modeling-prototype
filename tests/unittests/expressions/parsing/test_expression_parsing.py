@@ -58,7 +58,7 @@ from andromede.expression.print import print_expr
         (
             {"x"},
             {},
-            "x[-1..5]",
+            "sum(-1..5, x)",
             var("x").sum(eval=ExpressionRange(-literal(1), literal(5))),
         ),
         ({"x"}, {}, "x[1]", var("x").eval(1)),
@@ -66,7 +66,7 @@ from andromede.expression.print import print_expr
         (
             {"x"},
             {},
-            "x[t-1, t+4]",  # TODO: Should raise ValueError: shift always with sum
+            "sum((t-1, t+4), x)",  # TODO: Should raise ValueError: shift always with sum
             var("x").sum(shift=[-literal(1), literal(4)]),
         ),
         (
@@ -186,6 +186,9 @@ def test_parsing_visitor(
         "x[t+1-t]",
         "x[2*t]",
         "x[t 4]",
+        "x[t..4]",
+        "x[t+1..t+4]",
+        "x[1..4]",
     ],
 )
 def test_parse_cancellation_should_throw(expression_str: str) -> None:

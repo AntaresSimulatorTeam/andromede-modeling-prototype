@@ -140,20 +140,38 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> LinearExpression:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
         time_shift = ctx.shift().accept(self)  # type: ignore
-        return shifted_expr.sum(shift=time_shift)
+        # specifics for x[t] ...
+        if expressions_equal(time_shift, literal(0)):
+            # TODO: Should expression simplification be handled only in linear expression building rather than here in the parsing ?
+            return shifted_expr
+        return shifted_expr.shift(time_shift)
     
     # Visit a parse tree produced by ExprParser#timeSum.
-    def visitTimeSum(self, ctx:ExprParser.TimeSumContext):
-        return self.visitChildren(ctx)
+    def visitTimeSum(self, ctx:ExprParser.TimeSumContext) -> LinearExpression:
+        summed_expr = self._convert_identifier(ctx.IDENTIFIER().getText())
+        expr = ctx.expr()
+        shift = ctx.shift()
+        time_range = ctx.timeRange()
+        time_shift_range = ctx.timeShiftRange()
+        if expr is not None:
+            return summed_expr.sum(eval=expr.accept(self))
+        elif shift is not None:
+            return summed_expr.sum(shift=shift.accept(self))
+        elif time_range is not None:
+            return summed_expr.sum(eval=time_range.accept(self))
+        elif time_shift_range is not None:
+            return summed_expr.sum(shift=time_shift_range.accept(self))
+        else:
+            return summed_expr.sum()
     
     # Visit a parse tree produced by ExprParser#timeShiftRange.
     def visitTimeShiftRange(self, ctx:ExprParser.TimeShiftRangeContext):
-        return ExpressionRange(ctx.shift, ctx.shift2)
+        return ExpressionRange(ctx.shift1, ctx.shift2)
 
 
     # Visit a parse tree produced by ExprParser#timeRange.
     def visitTimeRange(self, ctx:ExprParser.TimeRangeContext):
-        return self.visitChildren(ctx)
+        return ExpressionRange(ctx.expr1, ctx.expr2)
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> LinearExpression:

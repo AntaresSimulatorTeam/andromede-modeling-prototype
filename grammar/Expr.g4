@@ -28,7 +28,7 @@ expr
     | IDENTIFIER '(' expr ')'                  # function
     | IDENTIFIER '[' shift ']'    # timeShift
     | IDENTIFIER '[' expr  ']'    # timeIndex
-    | TIME_SUM '(' (expr | shift | timeShiftRange | timeRange) ',' IDENTIFIER ')'  #timeSum
+    | TIME_SUM '(' ((expr | shift | timeShiftRange | timeRange) ',')? IDENTIFIER ')'  #timeSum
     ;
 
 atom
