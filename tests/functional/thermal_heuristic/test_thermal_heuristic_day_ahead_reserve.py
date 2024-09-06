@@ -192,22 +192,6 @@ def test_milp_without_day_ahead_reserve(
     assert main_resolution_step.solver.Objective().Value() == pytest.approx(2512645)
 
 
-def print_sum_output(output: OutputValues) -> None:
-    for var in [
-        "spillage_energy",
-        "unsupplied_energy",
-        "unsupplied_day_ahead",
-        "unsupplied_reserve",
-    ]:
-        x = sum(output.component("N").var(var).value[0])  # type:ignore
-        print(f"{var} : {round(x)}")
-
-    for g in ["G1", "G2", "G3"]:
-        for var in ["total_generation", "nb_start", "nb_on"]:
-            x = sum(output.component(g).var(var).value[0])  # type:ignore
-            print(f"{g}_{var} : {round(x)}")
-
-
 def test_accurate_heuristic_with_day_ahead_reserve(
     data_path: Path,
     models: list[Model],
