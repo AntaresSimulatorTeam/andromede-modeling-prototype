@@ -110,7 +110,7 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"({visit(node.operand, self)}.time_sum({visit(node.from_time, self)}, {visit(node.to_time, self)}))"
 
     def all_time_sum(self, node: AllTimeSumNode) -> str:
-        return f"({visit(node.operand, self)}.all_time_sum())"
+        return f"({visit(node.operand, self)}.time_sum())"
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> str:
         return f"({visit(node.operand, self)}.{str(node.name)})"

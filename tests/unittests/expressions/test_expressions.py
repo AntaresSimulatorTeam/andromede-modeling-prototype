@@ -194,7 +194,7 @@ def test_time_sum() -> None:
 
 def test_sum_over_whole_block() -> None:
     x = var("x")
-    expr = x.all_time_sum()
+    expr = x.time_sum()
     provider = StructureProvider()
 
     assert compute_indexation(expr, provider) == IndexingStructure(False, True)

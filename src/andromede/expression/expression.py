@@ -16,7 +16,7 @@ Defines the model for generic expressions.
 import enum
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
 import andromede.expression.port_operator
 import andromede.expression.scenario_operator
@@ -77,16 +77,19 @@ class ExpressionNode:
         return _apply_if_node(rhs, lambda x: ComparisonNode(self, x, Comparator.EQUAL))
 
     def time_sum(
-        self, from_shift: AnyExpression, to_shift: AnyExpression
+        self,
+        from_shift: Optional[AnyExpression] = None,
+        to_shift: Optional[AnyExpression] = None,
     ) -> "ExpressionNode":
+        if from_shift is None and to_shift is None:
+            return AllTimeSumNode(self)
+        if from_shift is None or to_shift is None:
+            raise ValueError("Both time bounds of a time sum must be defined.")
         return TimeSumNode(
             operand=self,
             from_time=_wrap_in_node(from_shift),
             to_time=_wrap_in_node(to_shift),
         )
-
-    def all_time_sum(self) -> "ExpressionNode":
-        return AllTimeSumNode(self)
 
     def sum_connections(self) -> "ExpressionNode":
         if isinstance(self, PortFieldNode):

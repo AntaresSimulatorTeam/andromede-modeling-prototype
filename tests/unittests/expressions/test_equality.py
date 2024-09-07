@@ -27,7 +27,7 @@ from andromede.expression.equality import expressions_equal
         var("x") * 3,
         var("x").time_sum(1, 10),
         var("x").time_sum(1, param("p")),
-        var("x").all_time_sum(),
+        var("x").time_sum(),
         var("x") + 5 <= 2,
         var("x").expec(),
     ],

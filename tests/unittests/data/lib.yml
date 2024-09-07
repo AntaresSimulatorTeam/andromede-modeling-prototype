@@ -178,7 +178,7 @@ library:
         - name: Number of units variation
           expression: nb_on = nb_on[t-1] + nb_start - nb_stop
         - name: Min up time
-          expression: sum(nb_start[t-d_min_up + 1 .. t]) <= nb_on
+          expression: sum(t-d_min_up + 1 .. t, nb_start) <= nb_on
         - name: Min down time
-          expression: sum(nb_stop[t-d_min_down + 1 .. t]) <= nb_units_max[t-d_min_down] - nb_on
+          expression: sum(t-d_min_down + 1 .. t, nb_stop) <= nb_units_max[t-d_min_down] - nb_on
       objective: expec(sum(cost * generation))

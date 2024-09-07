@@ -19,8 +19,6 @@ from typing import Callable, Dict, List, Optional, TypeVar, Union
 
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.scenario_operator import ScenarioOperator
-from andromede.expression.time_operator import TimeAggregator, TimeOperator
-from andromede.model.model import PortFieldId
 
 T = TypeVar("T")
 
@@ -44,6 +42,53 @@ def is_minus_one(value: float) -> bool:
 
 
 @dataclass(frozen=True)
+class TimeExpansion:
+    """
+    Carries knowledge of which timesteps this term refers to.
+    Simplest one is "only the current timestep"
+    """
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [current_timestep]
+
+
+@dataclass(frozen=True)
+class AllTimeExpansion(TimeExpansion):
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [t for t in range(block_length)]
+
+
+@dataclass(frozen=True)
+class TimeEvalExpansion(TimeExpansion):
+    timestep: int
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [self.timestep]
+
+
+@dataclass(frozen=True)
+class TimeShiftExpansion(TimeExpansion):
+    shift: int
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [current_timestep + self.shift]
+
+
+@dataclass(frozen=True)
+class TimeSumExpansion(TimeExpansion):
+    from_shift: int
+    to_shift: int
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [
+            t
+            for t in range(
+                current_timestep + self.from_shift, current_timestep + self.to_shift
+            )
+        ]
+
+
+@dataclass(frozen=True)
 class TermKey:
 
     """
@@ -52,8 +97,7 @@ class TermKey:
 
     component_id: str
     variable_name: str
-    time_operator: Optional[TimeOperator]
-    time_aggregator: Optional[TimeAggregator]
+    time_expansion: TimeExpansion
     scenario_operator: Optional[ScenarioOperator]
 
 
@@ -73,8 +117,7 @@ class Term:
     structure: IndexingStructure = field(
         default=IndexingStructure(time=True, scenario=True)
     )
-    time_operator: Optional[TimeOperator] = None
-    time_aggregator: Optional[TimeAggregator] = None
+    time_expansion: TimeExpansion = TimeExpansion()
     scenario_operator: Optional[ScenarioOperator] = None
 
     # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
@@ -95,30 +138,17 @@ class Term:
     def __str__(self) -> str:
         # Useful for debugging tests
         result = self.str_for_coeff() + str(self.variable_name)
-        if self.time_operator is not None:
-            result += f".{str(self.time_operator)}"
-        if self.time_aggregator is not None:
-            result += f".{str(self.time_aggregator)}"
+        result += f".{str(self.time_expansion)}"
         if self.scenario_operator is not None:
             result += f".{str(self.scenario_operator)}"
         return result
-
-    def number_of_instances(self) -> int:
-        if self.time_aggregator is not None:
-            return self.time_aggregator.size()
-        else:
-            if self.time_operator is not None:
-                return self.time_operator.size()
-            else:
-                return 1
 
 
 def generate_key(term: Term) -> TermKey:
     return TermKey(
         term.component_id,
         term.variable_name,
-        term.time_operator,
-        term.time_aggregator,
+        term.time_expansion,
         term.scenario_operator,
     )
 
@@ -140,8 +170,7 @@ def _merge_dicts(
                     v.component_id,
                     v.variable_name,
                     v.structure,
-                    v.time_operator,
-                    v.time_aggregator,
+                    v.time_expansion,
                     v.scenario_operator,
                 ),
             ),
@@ -154,8 +183,7 @@ def _merge_dicts(
                     v.component_id,
                     v.variable_name,
                     v.structure,
-                    v.time_operator,
-                    v.time_aggregator,
+                    v.time_expansion,
                     v.scenario_operator,
                 ),
                 v,
@@ -167,8 +195,7 @@ def _merge_is_possible(lhs: Term, rhs: Term) -> None:
     if lhs.component_id != rhs.component_id or lhs.variable_name != rhs.variable_name:
         raise ValueError("Cannot merge terms for different variables")
     if (
-        lhs.time_operator != rhs.time_operator
-        or lhs.time_aggregator != rhs.time_aggregator
+        lhs.time_expansion != rhs.time_expansion
         or lhs.scenario_operator != rhs.scenario_operator
     ):
         raise ValueError("Cannot merge terms with different operators")
@@ -183,8 +210,7 @@ def _add_terms(lhs: Term, rhs: Term) -> Term:
         lhs.component_id,
         lhs.variable_name,
         lhs.structure,
-        lhs.time_operator,
-        lhs.time_aggregator,
+        lhs.time_expansion,
         lhs.scenario_operator,
     )
 
@@ -196,8 +222,7 @@ def _substract_terms(lhs: Term, rhs: Term) -> Term:
         lhs.component_id,
         lhs.variable_name,
         lhs.structure,
-        lhs.time_operator,
-        lhs.time_aggregator,
+        lhs.time_expansion,
         lhs.scenario_operator,
     )
 
@@ -341,8 +366,7 @@ class LinearExpression:
                         term.component_id,
                         term.variable_name,
                         term.structure,
-                        term.time_operator,
-                        term.time_aggregator,
+                        term.time_expansion,
                         term.scenario_operator,
                     )
                 _copy_expression(left_expr, self)
@@ -373,8 +397,7 @@ class LinearExpression:
                         term.component_id,
                         term.variable_name,
                         term.structure,
-                        term.time_operator,
-                        term.time_aggregator,
+                        term.time_expansion,
                         term.scenario_operator,
                     )
         return self
@@ -391,26 +414,6 @@ class LinearExpression:
         for term_key, term in self.terms.copy().items():
             if is_close_abs(term.coefficient, 0, EPS):
                 del self.terms[term_key]
-
-    def is_valid(self) -> bool:
-        nb_instances = None
-        for term in self.terms.values():
-            term_instances = term.number_of_instances()
-            if nb_instances is None:
-                nb_instances = term_instances
-            else:
-                if term_instances != nb_instances:
-                    raise ValueError(
-                        "The terms of the linear expression {self} do not have the same number of instances"
-                    )
-        return True
-
-    def number_of_instances(self) -> int:
-        if self.is_valid():
-            # All terms have the same number of instances, just pick one
-            return self.terms[next(iter(self.terms))].number_of_instances()
-        else:
-            raise ValueError(f"{self} is not a valid linear expression")
 
 
 def _copy_expression(src: LinearExpression, dst: LinearExpression) -> None:

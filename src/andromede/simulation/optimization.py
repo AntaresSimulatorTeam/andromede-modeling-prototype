@@ -36,7 +36,6 @@ from andromede.expression.indexing import IndexingStructureProvider, compute_ind
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.expression.scenario_operator import Expectation
-from andromede.expression.time_operator import TimeEvaluation, TimeShift, TimeSum
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
@@ -460,12 +459,6 @@ def _create_constraint(
     Adds a component-related constraint to the solver.
     """
     constraint_indexing = _compute_indexing_structure(context, constraint)
-
-    # Perf: Perform linearization (tree traversing) without timesteps so that we can get the number of instances for the expression (from the time_ids of operators)
-    linear_expr = context.linearize_expression(0, 0, constraint.expression)
-    # Will there be cases where instances > 1 ? If not, maybe just a check that get_number_of_instances == 1 is sufficient ? Anyway, the function should be implemented
-    instances_per_time_step = linear_expr.number_of_instances()
-
     for block_timestep in context.opt_context.get_time_indices(constraint_indexing):
         for scenario in context.opt_context.get_scenario_indices(constraint_indexing):
             linear_expr_at_t = context.linearize_expression(
@@ -488,7 +481,6 @@ def _create_constraint(
                 block_timestep,
                 scenario,
                 constraint_data,
-                instances_per_time_step,
             )
 
 
@@ -521,7 +513,6 @@ def _create_objective(
                 opt_context,
                 0,
                 scenario,
-                0,
             )
 
             for solver_var in solver_vars:
@@ -548,76 +539,21 @@ def _get_solver_vars(
     context: OptimizationContext,
     block_timestep: int,
     scenario: int,
-    instance: int,
 ) -> List[lp.Variable]:
+    timesteps = term.time_expansion.get_timesteps(
+        block_timestep, context.block_length()
+    )
     solver_vars = []
-    if isinstance(term.time_aggregator, TimeSum):
-        if isinstance(term.time_operator, TimeShift):
-            for time_id in term.time_operator.time_ids:
-                solver_vars.append(
-                    context.get_component_variable(
-                        block_timestep + time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
-                )
-        elif isinstance(term.time_operator, TimeEvaluation):
-            for time_id in term.time_operator.time_ids:
-                solver_vars.append(
-                    context.get_component_variable(
-                        time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
-                )
-        else:  # time_operator is None, retrieve variable for each time step of the block. What happens if we do x.sum() with x not being indexed by time ? Is there a check that it is a valid expression ?
-            for time_id in range(context.block_length()):
-                solver_vars.append(
-                    context.get_component_variable(
-                        block_timestep + time_id,
-                        scenario,
-                        term.component_id,
-                        term.variable_name,
-                        term.structure,
-                    )
-                )
-
-    else:  # time_aggregator is None
-        if isinstance(term.time_operator, TimeShift):
-            solver_vars.append(
-                context.get_component_variable(
-                    block_timestep + term.time_operator.time_ids[instance],
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
+    for t in timesteps:
+        solver_vars.append(
+            context.get_component_variable(
+                t,
+                scenario,
+                term.component_id,
+                term.variable_name,
+                term.structure,
             )
-        elif isinstance(term.time_operator, TimeEvaluation):
-            solver_vars.append(
-                context.get_component_variable(
-                    term.time_operator.time_ids[instance],
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
-            )
-        else:  # time_operator is None
-            # TODO: horrible tous ces if/else
-            solver_vars.append(
-                context.get_component_variable(
-                    block_timestep,
-                    scenario,
-                    term.component_id,
-                    term.variable_name,
-                    term.structure,
-                )
-            )
+        )
     return solver_vars
 
 
@@ -627,41 +563,36 @@ def make_constraint(
     block_timestep: int,
     scenario: int,
     data: ConstraintData,
-    instances: int,
 ) -> Dict[str, lp.Constraint]:
     """
     Adds constraint to the solver.
     """
     solver_constraints = {}
     constraint_name = f"{data.name}_t{block_timestep}_s{scenario}"
-    for instance in range(instances):
-        if instances > 1:
-            constraint_name += f"_{instance}"
 
-        solver_constraint: lp.Constraint = solver.Constraint(constraint_name)
-        constant: float = 0
-        for term in data.expression.terms.values():
-            solver_vars = _get_solver_vars(
-                term,
-                context,
-                block_timestep,
-                scenario,
-                instance,
-            )
-            for solver_var in solver_vars:
-                coefficient = term.coefficient + solver_constraint.GetCoefficient(
-                    solver_var
-                )
-                solver_constraint.SetCoefficient(solver_var, coefficient)
-        # TODO: On pourrait aussi faire que l'objet Constraint n'ait pas de terme constant dans son expression et que les constantes soit déjà prises en compte dans les bornes, ça simplifierait le traitement ici
-        constant += data.expression.constant
-
-        solver_constraint.SetBounds(
-            data.lower_bound - constant, data.upper_bound - constant
+    solver_constraint: lp.Constraint = solver.Constraint(constraint_name)
+    constant: float = 0
+    for term in data.expression.terms.values():
+        solver_vars = _get_solver_vars(
+            term,
+            context,
+            block_timestep,
+            scenario,
         )
+        for solver_var in solver_vars:
+            coefficient = term.coefficient + solver_constraint.GetCoefficient(
+                solver_var
+            )
+            solver_constraint.SetCoefficient(solver_var, coefficient)
+    # TODO: On pourrait aussi faire que l'objet Constraint n'ait pas de terme constant dans son expression et que les constantes soit déjà prises en compte dans les bornes, ça simplifierait le traitement ici
+    constant += data.expression.constant
 
-        # TODO: this dictionary does not make sense, we override the content when there are multiple instances
-        solver_constraints[constraint_name] = solver_constraint
+    solver_constraint.SetBounds(
+        data.lower_bound - constant, data.upper_bound - constant
+    )
+
+    # TODO: this dictionary does not make sense, we override the content when there are multiple instances
+    solver_constraints[constraint_name] = solver_constraint
     return solver_constraints
 
 

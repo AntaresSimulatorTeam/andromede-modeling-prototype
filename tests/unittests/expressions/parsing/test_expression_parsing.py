@@ -41,7 +41,7 @@ from andromede.expression.parsing.parse_expression import (
             "port.f <= 0",
             port_field("port", "f") <= 0,
         ),
-        ({"x"}, {}, "sum(x)", var("x").all_time_sum()),
+        ({"x"}, {}, "sum(x)", var("x").time_sum()),
         ({"x"}, {}, "x[-1]", var("x").eval(-literal(1))),
         ({"x"}, {}, "x[1]", var("x").eval(1)),
         ({"x"}, {}, "x[t-1]", var("x").shift(-literal(1))),
@@ -117,7 +117,7 @@ from andromede.expression.parsing.parse_expression import (
             {"generation"},
             {"cost"},
             "expec(sum(cost * generation))",
-            (param("cost") * var("generation")).all_time_sum().expec(),
+            (param("cost") * var("generation")).time_sum().expec(),
         ),
     ],
 )

@@ -140,7 +140,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     def visitAllTimeSum(self, ctx: ExprParser.AllTimeSumContext) -> ExpressionNode:
         shifted_expr = ctx.expr().accept(self)  # type: ignore
-        return shifted_expr.all_time_sum()
+        return shifted_expr.time_sum()
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:

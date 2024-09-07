@@ -14,7 +14,6 @@ import pytest
 
 from andromede.expression.expression import (
     ExpressionNode,
-    ExpressionRange,
     comp_param,
     comp_var,
     literal,
@@ -22,8 +21,8 @@ from andromede.expression.expression import (
     port_field,
     var,
 )
-from andromede.model import Constraint, float_parameter, float_variable, model
-from andromede.model.model import PortFieldDefinition, port_field_def
+from andromede.model import Constraint, float_variable, model
+from andromede.model.model import port_field_def
 
 
 @pytest.mark.parametrize(
@@ -172,7 +171,7 @@ def test_writing_min_up_constraint_should_represent_all_expected_constraints() -
 
         _ = Constraint(
             "min_up_time",
-            off_on <= on.shift(ExpressionRange(literal(1), d_min_up)).time_sum(),
+            off_on <= on.time_sum(literal(1), d_min_up),
         )
 
         # Later on, the goal is to assert that when this constraint is sent to the solver, it correctly builds: for all t, for all t' in [t+1, t+d_min_up], off_on[k,t,w] <= on[k,t',w]

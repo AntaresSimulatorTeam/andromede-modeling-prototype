@@ -34,19 +34,21 @@ from andromede.expression import (
 )
 from andromede.expression.degree import is_linear
 from andromede.expression.expression import (
+    AllTimeSumNode,
     BinaryOperatorNode,
     ComponentParameterNode,
     ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.port_resolver import PortFieldId
-from andromede.expression.visitor import T, visit
+from andromede.expression.visitor import visit
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
 from andromede.model.port import PortType
@@ -269,10 +271,16 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
             "Port definition must not contain a variable associated to a component."
         )
 
-    def time_operator(self, node: TimeOperatorNode) -> None:
+    def time_shift(self, node: TimeShiftNode) -> None:
         visit(node.operand, self)
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> None:
+    def time_eval(self, node: TimeEvalNode) -> None:
+        visit(node.operand, self)
+
+    def time_sum(self, node: TimeSumNode) -> None:
+        visit(node.operand, self)
+
+    def all_time_sum(self, node: AllTimeSumNode) -> None:
         visit(node.operand, self)
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> None:
