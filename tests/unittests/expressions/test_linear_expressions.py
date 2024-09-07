@@ -35,9 +35,9 @@ from andromede.simulation.linear_expression import (
         (Term(-3, "c", "x"), "-3x"),
         (
             Term(-3, "c", "x", time_expansion=TimeShiftExpansion(-1)),
-            "-3x.shift([-1])",
+            "-3x.shift(-1)",
         ),
-        (Term(-3, "c", "x", time_expansion=AllTimeExpansion()), "-3x.sum(True)"),
+        (Term(-3, "c", "x", time_expansion=AllTimeExpansion()), "-3x.sum()"),
         (
             Term(
                 -3,
@@ -45,7 +45,7 @@ from andromede.simulation.linear_expression import (
                 "x",
                 time_expansion=TimeSumExpansion(2, 3),
             ),
-            "-3x.shift([2, 3]).sum(False)",
+            "-3x.sum(2, 3)",
         ),
         (Term(-3, "c", "x", scenario_operator=Expectation()), "-3x.expec()"),
         (
@@ -56,7 +56,7 @@ from andromede.simulation.linear_expression import (
                 time_expansion=AllTimeExpansion(),
                 scenario_operator=Expectation(),
             ),
-            "-3x.sum(True).expec()",
+            "-3x.sum().expec()",
         ),
     ],
 )

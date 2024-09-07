@@ -123,6 +123,26 @@ class TermKey:
     scenario_operator: Optional[ScenarioOperator]
 
 
+def _str_for_coeff(coeff: float) -> str:
+    if is_one(coeff):
+        return "+"
+    elif is_minus_one(coeff):
+        return "-"
+    else:
+        return "{:+g}".format(coeff)
+
+
+def _str_for_time_expansion(exp: TimeExpansion) -> str:
+    if isinstance(exp, TimeShiftExpansion):
+        return f".shift({exp.shift})"
+    elif isinstance(exp, TimeSumExpansion):
+        return f".sum({exp.from_shift}, {exp.to_shift})"
+    elif isinstance(exp, AllTimeExpansion):
+        return ".sum()"
+    else:
+        return ""
+
+
 @dataclass(frozen=True)
 class Term:
     """
@@ -147,20 +167,10 @@ class Term:
     def is_zero(self) -> bool:
         return is_zero(self.coefficient)
 
-    def str_for_coeff(self) -> str:
-        str_for_coeff = ""
-        if is_one(self.coefficient):
-            str_for_coeff = "+"
-        elif is_minus_one(self.coefficient):
-            str_for_coeff = "-"
-        else:
-            str_for_coeff = "{:+g}".format(self.coefficient)
-        return str_for_coeff
-
     def __str__(self) -> str:
         # Useful for debugging tests
-        result = self.str_for_coeff() + str(self.variable_name)
-        result += f".{str(self.time_expansion)}"
+        result = _str_for_coeff(self.coefficient) + str(self.variable_name)
+        result += _str_for_time_expansion(self.time_expansion)
         if self.scenario_operator is not None:
             result += f".{str(self.scenario_operator)}"
         return result

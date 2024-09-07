@@ -6,7 +6,11 @@ from unittests.expressions.test_expressions import (
 
 from andromede.expression import ExpressionNode, param, var
 from andromede.expression.expression import comp_var
-from andromede.simulation.linear_expression import LinearExpression, Term
+from andromede.simulation.linear_expression import (
+    AllTimeExpansion,
+    LinearExpression,
+    Term,
+)
 from andromede.simulation.linearize import linearize_expression
 
 
@@ -36,23 +40,83 @@ def test_linearization_of_non_linear_expressions_should_raise_value_error() -> N
     )
 
 
+def test_time_sum_is_distributed_on_expression() -> None:
+    x = comp_var("c", "x")
+    y = comp_var("c", "y")
+    expr = (x + y).time_sum()
+    provider = StructureProvider()
+
+    assert linearize_expression(expr, provider) == LinearExpression(
+        [
+            Term(1, "c", "x", time_expansion=AllTimeExpansion()),
+            Term(1, "c", "y", time_expansion=AllTimeExpansion()),
+        ],
+        0,
+    )
+
+
+@pytest.mark.skip(reason="Not yet supported")
+def test_time_sum_is_distributed_on_expression() -> None:
+    x = comp_var("c", "x")
+    y = comp_var("c", "y")
+    expr = (x + y).time_sum()
+    provider = StructureProvider()
+
+    assert linearize_expression(expr, provider) == LinearExpression(
+        [
+            Term(1, "c", "x", time_expansion=AllTimeExpansion()),
+            Term(1, "c", "y", time_expansion=AllTimeExpansion()),
+        ],
+        0,
+    )
+
+
+def test_linearize_time_sum_on_expression() -> None:
+    x = comp_var("c", "x")
+    y = comp_var("c", "y")
+    expr = (x + y).time_sum()
+    provider = StructureProvider()
+
+    assert linearize_expression(expr, provider) == LinearExpression(
+        [
+            Term(1, "c", "x", time_expansion=AllTimeExpansion()),
+            Term(1, "c", "y", time_expansion=AllTimeExpansion()),
+        ],
+        0,
+    )
+
+
+X = comp_var("c", "x")
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [(X + 2).time_sum(), (X + 2).time_sum(-1, 2)],
+)
+def test_sum_of_constant_not_supported(
+    expr: ExpressionNode,
+) -> None:
+    structure_provider = StructureProvider()
+    value_provider = ComponentEvaluationContext()
+    with pytest.raises(ValueError):
+        linearize_expression(expr, structure_provider, value_provider)
+
+
 @pytest.mark.parametrize(
     "expr",
     [
-        (comp_var("c", "x").shift(-1).shift(+1),),
-        (comp_var("c", "x").shift(-1).time_sum(),),
-        (comp_var("c", "x").shift(-1).time_sum(-2, +2),),
-        (comp_var("c", "x").time_sum().shift(-1),),
-        (comp_var("c", "x").time_sum(-2, +2).shift(-1),),
-        (comp_var("c", "x").eval(2).time_sum(),),
+        X.shift(-1).shift(+1),
+        X.shift(-1).time_sum(),
+        X.shift(-1).time_sum(-2, +2),
+        X.time_sum().shift(-1),
+        X.time_sum(-2, +2).shift(-1),
+        X.eval(2).time_sum(),
     ],
 )
 def test_linearization_of_nested_time_operations_should_raise_value_error(
     expr: ExpressionNode,
 ) -> None:
-    x = comp_var("c", "x")
-
     structure_provider = StructureProvider()
     value_provider = ComponentEvaluationContext()
-    with pytest.raises(ValueError, match="not supported"):
-        linearize_expression(x.shift(-1).shift(+1), structure_provider, value_provider)
+    with pytest.raises(ValueError):
+        linearize_expression(expr, structure_provider, value_provider)

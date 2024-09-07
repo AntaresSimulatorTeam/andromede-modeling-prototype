@@ -47,6 +47,21 @@ from andromede.simulation.linear_expression import (
 )
 
 
+def _apply_time_expansion(
+    input: LinearExpression, time_expansion: TimeExpansion
+) -> LinearExpression:
+    result_terms = {}
+    for term in input.terms.values():
+        term_with_operator = dataclasses.replace(
+            term, time_expansion=term.time_expansion.apply(time_expansion)
+        )
+        result_terms[generate_key(term_with_operator)] = term_with_operator
+
+    # TODO: How can we apply a shift on a parameter ? It seems impossible for now as parameters must already be evaluated...
+    result_expr = LinearExpression(result_terms, input.constant)
+    return result_expr
+
+
 @dataclass(frozen=True)
 class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
     """
@@ -90,43 +105,41 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
     def comp_parameter(self, node: ComponentParameterNode) -> LinearExpression:
         raise ValueError("Parameters must be evaluated before linearization.")
 
-    def _update_time_expansion(
-        self, input: LinearExpression, time_expansion: TimeExpansion
-    ) -> LinearExpression:
-        result_terms = {}
-        for term in input.terms.values():
-            term_with_operator = dataclasses.replace(
-                term, time_expansion=term.time_expansion.apply(time_expansion)
-            )
-            result_terms[generate_key(term_with_operator)] = term_with_operator
-
-        # TODO: How can we apply a shift on a parameter ? It seems impossible for now as parameters must already be evaluated...
-        result_expr = LinearExpression(result_terms, input.constant)
-        return result_expr
-
     def time_eval(self, node: TimeEvalNode) -> LinearExpression:
         operand_expr = visit(node.operand, self)
         eval_time = evaluate_time_id(node.eval_time, self._value_provider())
         time_expansion = TimeEvalExpansion(eval_time)
-        return self._update_time_expansion(operand_expr, time_expansion)
+        return _apply_time_expansion(operand_expr, time_expansion)
 
     def time_shift(self, node: TimeShiftNode) -> LinearExpression:
         operand_expr = visit(node.operand, self)
         time_shift = evaluate_time_id(node.time_shift, self._value_provider())
         time_expansion = TimeShiftExpansion(time_shift)
-        return self._update_time_expansion(operand_expr, time_expansion)
+        return _apply_time_expansion(operand_expr, time_expansion)
 
     def time_sum(self, node: TimeSumNode) -> LinearExpression:
         operand_expr = visit(node.operand, self)
         from_shift = evaluate_time_id(node.from_time, self._value_provider())
         to_shift = evaluate_time_id(node.to_time, self._value_provider())
         time_expansion = TimeSumExpansion(from_shift, to_shift)
-        return self._update_time_expansion(operand_expr, time_expansion)
+        if operand_expr.constant != 0:
+            # We could multiply by number of steps, but not very safe, it might depend on block bounds
+            # will be handled when refactoring for better parametrs handling
+            raise ValueError(
+                "Summing an expression containing a constant is not supported for now."
+            )
+        return _apply_time_expansion(operand_expr, time_expansion)
 
     def all_time_sum(self, node: AllTimeSumNode) -> LinearExpression:
         operand_expr = visit(node.operand, self)
         time_expansion = AllTimeExpansion()
-        return self._update_time_expansion(operand_expr, time_expansion)
+        if operand_expr.constant != 0:
+            # We could multiply by number of steps if we had them, but we don't
+            # will be handled when refactoring for better parametrs handling
+            raise ValueError(
+                "Summing an expression containing a constant is not supported for now."
+            )
+        return _apply_time_expansion(operand_expr, time_expansion)
 
     def _value_provider(self) -> ValueProvider:
         if self.value_provider is None:
