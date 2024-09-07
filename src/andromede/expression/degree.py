@@ -12,11 +12,14 @@
 
 import andromede.expression.scenario_operator
 from andromede.expression.expression import (
+    AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 
 from .expression import (
@@ -30,7 +33,6 @@ from .expression import (
     ParameterNode,
     ScenarioOperatorNode,
     SubstractionNode,
-    TimeAggregatorNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, T, visit
@@ -78,17 +80,17 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
     def comp_parameter(self, node: ComponentParameterNode) -> int:
         return 0
 
-    def time_operator(self, node: TimeOperatorNode) -> int:
-        if node.name in ["TimeShift", "TimeEvaluation"]:
-            return visit(node.operand, self)
-        else:
-            return NotImplemented
+    def time_shift(self, node: TimeShiftNode) -> int:
+        return visit(node.operand, self)
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> int:
-        if node.name in ["TimeSum"]:
-            return visit(node.operand, self)
-        else:
-            return NotImplemented
+    def time_eval(self, node: TimeEvalNode) -> int:
+        return visit(node.operand, self)
+
+    def time_sum(self, node: TimeSumNode) -> int:
+        return visit(node.operand, self)
+
+    def all_time_sum(self, node: AllTimeSumNode) -> int:
+        return visit(node.operand, self)
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> int:
         scenario_operator_cls = getattr(

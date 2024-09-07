@@ -45,6 +45,7 @@ from andromede.expression.expression import (
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.port_resolver import PortFieldId
 from andromede.expression.visitor import T, visit
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
@@ -106,12 +107,6 @@ class ModelPort:
 
     port_type: PortType
     port_name: str
-
-
-@dataclass(frozen=True)
-class PortFieldId:
-    port_name: str
-    field_name: str
 
 
 @dataclass(frozen=True)

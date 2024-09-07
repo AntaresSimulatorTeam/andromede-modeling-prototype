@@ -155,7 +155,7 @@ def test_variable_bound() -> None:
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
     )
 

@@ -27,14 +27,14 @@ from andromede.expression import (
     VariableNode,
 )
 from andromede.expression.expression import (
+    AllTimeSumNode,
     BinaryOperatorNode,
-    ExpressionRange,
-    InstancesTimeIndex,
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 
 
@@ -76,12 +76,14 @@ class EqualityVisitor:
             return self.variable(left, right)
         if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
             return self.parameter(left, right)
-        if isinstance(left, TimeOperatorNode) and isinstance(right, TimeOperatorNode):
-            return self.time_operator(left, right)
-        if isinstance(left, TimeAggregatorNode) and isinstance(
-            right, TimeAggregatorNode
-        ):
-            return self.time_aggregator(left, right)
+        if isinstance(left, TimeShiftNode) and isinstance(right, TimeShiftNode):
+            return self.time_shift(left, right)
+        if isinstance(left, TimeEvalNode) and isinstance(right, TimeEvalNode):
+            return self.time_eval(left, right)
+        if isinstance(left, TimeSumNode) and isinstance(right, TimeSumNode):
+            return self.time_sum(left, right)
+        if isinstance(left, AllTimeSumNode) and isinstance(right, AllTimeSumNode):
+            return self.all_time_sum(left, right)
         if isinstance(left, ScenarioOperatorNode) and isinstance(
             right, ScenarioOperatorNode
         ):
@@ -130,41 +132,25 @@ class EqualityVisitor:
     def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
         return left.name == right.name
 
-    def expression_range(self, left: ExpressionRange, right: ExpressionRange) -> bool:
-        if not self.visit(left.start, right.start):
-            return False
-        if not self.visit(left.stop, right.stop):
-            return False
-        if left.step is not None and right.step is not None:
-            return self.visit(left.step, right.step)
-        return left.step is None and right.step is None
+    def time_shift(self, left: TimeShiftNode, right: TimeShiftNode) -> bool:
+        return self.visit(left.time_shift, right.time_shift) and self.visit(
+            left.operand, right.operand
+        )
 
-    def instances_index(self, lhs: InstancesTimeIndex, rhs: InstancesTimeIndex) -> bool:
-        if isinstance(lhs.expressions, ExpressionRange) and isinstance(
-            rhs.expressions, ExpressionRange
-        ):
-            return self.expression_range(lhs.expressions, rhs.expressions)
-        if isinstance(lhs.expressions, list) and isinstance(rhs.expressions, list):
-            return len(lhs.expressions) == len(rhs.expressions) and all(
-                self.visit(l, r) for l, r in zip(lhs.expressions, rhs.expressions)
-            )
-        return False
+    def time_eval(self, left: TimeEvalNode, right: TimeEvalNode) -> bool:
+        return self.visit(left.eval_time, right.eval_time) and self.visit(
+            left.operand, right.operand
+        )
 
-    def time_operator(self, left: TimeOperatorNode, right: TimeOperatorNode) -> bool:
+    def time_sum(self, left: TimeSumNode, right: TimeSumNode) -> bool:
         return (
-            left.name == right.name
-            and self.instances_index(left.instances_index, right.instances_index)
+            self.visit(left.from_time, right.from_time)
+            and self.visit(left.to_time, right.to_time)
             and self.visit(left.operand, right.operand)
         )
 
-    def time_aggregator(
-        self, left: TimeAggregatorNode, right: TimeAggregatorNode
-    ) -> bool:
-        return (
-            left.name == right.name
-            and left.stay_roll == right.stay_roll
-            and self.visit(left.operand, right.operand)
-        )
+    def all_time_sum(self, left: AllTimeSumNode, right: AllTimeSumNode) -> bool:
+        return self.visit(left.operand, right.operand)
 
     def scenario_operator(
         self, left: ScenarioOperatorNode, right: ScenarioOperatorNode

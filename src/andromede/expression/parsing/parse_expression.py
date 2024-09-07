@@ -17,12 +17,7 @@ from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from andromede.expression import ExpressionNode, literal, param, var
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression import (
-    Comparator,
-    ComparisonNode,
-    ExpressionRange,
-    PortFieldNode,
-)
+from andromede.expression.expression import Comparator, ComparisonNode, PortFieldNode
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
 from andromede.expression.parsing.antlr.ExprParser import ExprParser
 from andromede.expression.parsing.antlr.ExprVisitor import ExprVisitor
@@ -125,31 +120,27 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     # Visit a parse tree produced by ExprParser#timeShift.
     def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext) -> ExpressionNode:
-        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        time_shifts = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.eval(time_shifts)
-
-    # Visit a parse tree produced by ExprParser#rangeTimeShift.
-    def visitTimeRange(self, ctx: ExprParser.TimeRangeContext) -> ExpressionNode:
-        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        expressions = [e.accept(self) for e in ctx.expr()]  # type: ignore
-        return shifted_expr.eval(ExpressionRange(expressions[0], expressions[1]))
+        expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
+        eval_time = ctx.expr().accept(self)  # type: ignore
+        return expr.eval(eval_time)
 
     def visitTimeShift(self, ctx: ExprParser.TimeShiftContext) -> ExpressionNode:
         shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        time_shifts = [s.accept(self) for s in ctx.shift()]  # type: ignore
+        time_shift = ctx.shift().accept(self)  # type: ignore
         # specifics for x[t] ...
-        if len(time_shifts) == 1 and expressions_equal(time_shifts[0], literal(0)):
+        if expressions_equal(time_shift, literal(0)):
             return shifted_expr
-        return shifted_expr.shift(time_shifts)
+        return shifted_expr.shift(time_shift)
 
-    def visitTimeShiftRange(
-        self, ctx: ExprParser.TimeShiftRangeContext
-    ) -> ExpressionNode:
-        shifted_expr = self._convert_identifier(ctx.IDENTIFIER().getText())  # type: ignore
-        shift1 = ctx.shift1.accept(self)  # type: ignore
-        shift2 = ctx.shift2.accept(self)  # type: ignore
-        return shifted_expr.shift(ExpressionRange(shift1, shift2))
+    def visitTimeSum(self, ctx: ExprParser.TimeSumContext) -> ExpressionNode:
+        shifted_expr = ctx.expr().accept(self)  # type: ignore
+        from_shift = ctx.from_.accept(self)  # type: ignore
+        to_shift = ctx.to.accept(self)  # type: ignore
+        return shifted_expr.time_sum(from_shift, to_shift)
+
+    def visitAllTimeSum(self, ctx: ExprParser.AllTimeSumContext) -> ExpressionNode:
+        shifted_expr = ctx.expr().accept(self)  # type: ignore
+        return shifted_expr.all_time_sum()
 
     # Visit a parse tree produced by ExprParser#function.
     def visitFunction(self, ctx: ExprParser.FunctionContext) -> ExpressionNode:
@@ -228,7 +219,6 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
 
 _FUNCTIONS = {
-    "sum": ExpressionNode.sum,
     "sum_connections": ExpressionNode.sum_connections,
     "expec": ExpressionNode.expec,
 }

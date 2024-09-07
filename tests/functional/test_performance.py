@@ -143,7 +143,7 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
                 structure=IndexingStructure(True, False),
             ),
         ],
-        objective_operational_contribution=(param("cost") * var("var")).sum(),
+        objective_operational_contribution=(param("cost") * var("var")).time_sum(),
     )
 
     network = Network("test")

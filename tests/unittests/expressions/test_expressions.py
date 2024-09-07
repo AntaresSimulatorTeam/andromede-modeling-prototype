@@ -39,17 +39,9 @@ from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
     ComponentParameterNode,
     ComponentVariableNode,
-    ExpressionRange,
-    Instances,
-    comp_param,
-    comp_var,
-    port_field,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.model.model import PortFieldId
-from andromede.simulation.linear_expression import LinearExpression, Term
-from andromede.simulation.linearize import linearize_expression
 
 
 @dataclass(frozen=True)
@@ -158,32 +150,6 @@ def test_parameters_resolution() -> None:
     assert resolve_parameters(expr, TestParamProvider()) == (5 * x + 3) / 2
 
 
-def test_linearization() -> None:
-    x = comp_var("c", "x")
-    expr = (5 * x + 3) / 2
-    provider = StructureProvider()
-
-    assert linearize_expression(expr, provider) == LinearExpression(
-        [Term(2.5, "c", "x")], 1.5
-    )
-
-    with pytest.raises(ValueError):
-        linearize_expression(param("p") * x, provider)
-
-
-def test_linearization_of_non_linear_expressions_should_raise_value_error() -> None:
-    x = var("x")
-    expr = x.variance()
-
-    provider = StructureProvider()
-    with pytest.raises(ValueError) as exc:
-        linearize_expression(expr, provider)
-    assert (
-        str(exc.value)
-        == "Cannot linearize expression with a non-linear operator: Variance"
-    )
-
-
 def test_comparison() -> None:
     x = var("x")
     p = param("p")
@@ -212,54 +178,26 @@ class StructureProvider(IndexingStructureProvider):
 
 def test_shift() -> None:
     x = var("x")
-    expr = x.shift(ExpressionRange(literal(1), literal(4)))
+    expr = x.shift(1)
 
+    provider = StructureProvider()
+    assert compute_indexation(expr, provider) == IndexingStructure(True, True)
+
+
+def test_time_sum() -> None:
+    x = var("x")
+    expr = x.time_sum(1, 4)
     provider = StructureProvider()
 
     assert compute_indexation(expr, provider) == IndexingStructure(True, True)
-    assert expr.instances == Instances.MULTIPLE
-
-
-def test_shifting_sum() -> None:
-    x = var("x")
-    expr = x.shift(ExpressionRange(literal(1), literal(4))).sum()
-    provider = StructureProvider()
-
-    assert compute_indexation(expr, provider) == IndexingStructure(True, True)
-    assert expr.instances == Instances.SIMPLE
-
-
-def test_eval() -> None:
-    x = var("x")
-    expr = x.eval(ExpressionRange(literal(1), literal(4)))
-    provider = StructureProvider()
-
-    assert compute_indexation(expr, provider) == IndexingStructure(False, True)
-    assert expr.instances == Instances.MULTIPLE
-
-
-def test_eval_sum() -> None:
-    x = var("x")
-    expr = x.eval(ExpressionRange(literal(1), literal(4))).sum()
-    provider = StructureProvider()
-
-    assert compute_indexation(expr, provider) == IndexingStructure(False, True)
-    assert expr.instances == Instances.SIMPLE
 
 
 def test_sum_over_whole_block() -> None:
     x = var("x")
-    expr = x.sum()
+    expr = x.all_time_sum()
     provider = StructureProvider()
 
     assert compute_indexation(expr, provider) == IndexingStructure(False, True)
-    assert expr.instances == Instances.SIMPLE
-
-
-def test_forbidden_composition_should_raise_value_error() -> None:
-    x = var("x")
-    with pytest.raises(ValueError):
-        _ = x.shift(ExpressionRange(literal(1), literal(4))) + var("y")
 
 
 def test_expectation() -> None:
@@ -268,7 +206,6 @@ def test_expectation() -> None:
     provider = StructureProvider()
 
     assert compute_indexation(expr, provider) == IndexingStructure(True, False)
-    assert expr.instances == Instances.SIMPLE
 
 
 def test_indexing_structure_comparison() -> None:

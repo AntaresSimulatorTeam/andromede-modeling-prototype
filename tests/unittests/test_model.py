@@ -172,7 +172,7 @@ def test_writing_min_up_constraint_should_represent_all_expected_constraints() -
 
         _ = Constraint(
             "min_up_time",
-            off_on <= on.shift(ExpressionRange(literal(1), d_min_up)).sum(),
+            off_on <= on.shift(ExpressionRange(literal(1), d_min_up)).time_sum(),
         )
 
         # Later on, the goal is to assert that when this constraint is sent to the solver, it correctly builds: for all t, for all t' in [t+1, t+d_min_up], off_on[k,t,w] <= on[k,t',w]

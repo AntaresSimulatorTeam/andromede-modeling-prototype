@@ -19,6 +19,7 @@ from typing import Generic, Protocol, TypeVar
 
 from andromede.expression.expression import (
     AdditionNode,
+    AllTimeSumNode,
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
@@ -32,8 +33,9 @@ from andromede.expression.expression import (
     PortFieldNode,
     ScenarioOperatorNode,
     SubstractionNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
     VariableNode,
 )
 
@@ -94,11 +96,19 @@ class ExpressionVisitor(ABC, Generic[T]):
         ...
 
     @abstractmethod
-    def time_operator(self, node: TimeOperatorNode) -> T:
+    def time_shift(self, node: TimeShiftNode) -> T:
         ...
 
     @abstractmethod
-    def time_aggregator(self, node: TimeAggregatorNode) -> T:
+    def time_eval(self, node: TimeEvalNode) -> T:
+        ...
+
+    @abstractmethod
+    def time_sum(self, node: TimeSumNode) -> T:
+        ...
+
+    @abstractmethod
+    def all_time_sum(self, node: AllTimeSumNode) -> T:
         ...
 
     @abstractmethod
@@ -140,10 +150,14 @@ def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
         return visitor.substraction(root)
     elif isinstance(root, ComparisonNode):
         return visitor.comparison(root)
-    elif isinstance(root, TimeOperatorNode):
-        return visitor.time_operator(root)
-    elif isinstance(root, TimeAggregatorNode):
-        return visitor.time_aggregator(root)
+    elif isinstance(root, TimeShiftNode):
+        return visitor.time_shift(root)
+    elif isinstance(root, TimeEvalNode):
+        return visitor.time_eval(root)
+    elif isinstance(root, TimeSumNode):
+        return visitor.time_sum(root)
+    elif isinstance(root, AllTimeSumNode):
+        return visitor.all_time_sum(root)
     elif isinstance(root, ScenarioOperatorNode):
         return visitor.scenario_operator(root)
     elif isinstance(root, PortFieldNode):

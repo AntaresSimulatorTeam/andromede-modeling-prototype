@@ -1,4 +1,4 @@
-# Generated from Expr.g4 by ANTLR 4.13.1
+# Generated from Expr.g4 by ANTLR 4.13.2
 from antlr4 import *
 
 if "." in __name__:
@@ -12,6 +12,10 @@ else:
 class ExprVisitor(ParseTreeVisitor):
     # Visit a parse tree produced by ExprParser#fullexpr.
     def visitFullexpr(self, ctx: ExprParser.FullexprContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeSum.
+    def visitTimeSum(self, ctx: ExprParser.TimeSumContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#negation.
@@ -34,6 +38,10 @@ class ExprVisitor(ParseTreeVisitor):
     def visitComparison(self, ctx: ExprParser.ComparisonContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by ExprParser#allTimeSum.
+    def visitAllTimeSum(self, ctx: ExprParser.AllTimeSumContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by ExprParser#timeShift.
     def visitTimeShift(self, ctx: ExprParser.TimeShiftContext):
         return self.visitChildren(ctx)
@@ -46,20 +54,12 @@ class ExprVisitor(ParseTreeVisitor):
     def visitAddsub(self, ctx: ExprParser.AddsubContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#timeShiftRange.
-    def visitTimeShiftRange(self, ctx: ExprParser.TimeShiftRangeContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#portField.
     def visitPortField(self, ctx: ExprParser.PortFieldContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#muldiv.
     def visitMuldiv(self, ctx: ExprParser.MuldivContext):
-        return self.visitChildren(ctx)
-
-    # Visit a parse tree produced by ExprParser#timeRange.
-    def visitTimeRange(self, ctx: ExprParser.TimeRangeContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#number.

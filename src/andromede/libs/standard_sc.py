@@ -170,7 +170,7 @@ C02_POWER_MODEL = model(
             definition=var("p") * param("emission_rate"),
         ),
     ],
-    objective_operational_contribution=(param("cost") * var("p")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("p")).time_sum().expec(),
 )
 
 """
@@ -286,6 +286,6 @@ SHORT_TERM_STORAGE_COMPLEX = model(
         + param("Pgrad+s_penality") * var("Pgrad+s")
         + param("Pgrad-s_penality") * var("Pgrad-s")
     )
-    .sum()
+    .time_sum()
     .expec(),
 )
