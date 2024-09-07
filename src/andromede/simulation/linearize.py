@@ -96,7 +96,7 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
         result_terms = {}
         for term in input.terms.values():
             term_with_operator = dataclasses.replace(
-                term, time_expansion=time_expansion
+                term, time_expansion=term.time_expansion.apply(time_expansion)
             )
             result_terms[generate_key(term_with_operator)] = term_with_operator
 
