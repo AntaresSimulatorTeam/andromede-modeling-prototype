@@ -1,8 +1,4 @@
 import pytest
-from unittests.expressions.test_expressions import (
-    ComponentEvaluationContext,
-    StructureProvider,
-)
 
 from andromede.expression import ExpressionNode, param, var
 from andromede.expression.expression import comp_var
@@ -12,6 +8,8 @@ from andromede.simulation.linear_expression import (
     Term,
 )
 from andromede.simulation.linearize import linearize_expression
+
+from .test_expressions import ComponentEvaluationContext, StructureProvider
 
 
 def test_linearization() -> None:
