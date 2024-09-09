@@ -534,27 +534,19 @@ class ConstraintData:
     expression: LinearExpression
 
 
-def _get_solver_vars(
+def _get_solver_var(
     term: Term,
     context: OptimizationContext,
     block_timestep: int,
     scenario: int,
-) -> List[lp.Variable]:
-    timesteps = term.time_expansion.get_timesteps(
-        block_timestep, context.block_length()
+) -> lp.Variable:
+    return context.get_component_variable(
+        block_timestep,
+        scenario,
+        term.component_id,
+        term.variable_name,
+        term.structure,
     )
-    solver_vars = []
-    for t in timesteps:
-        solver_vars.append(
-            context.get_component_variable(
-                t,
-                scenario,
-                term.component_id,
-                term.variable_name,
-                term.structure,
-            )
-        )
-    return solver_vars
 
 
 def make_constraint(

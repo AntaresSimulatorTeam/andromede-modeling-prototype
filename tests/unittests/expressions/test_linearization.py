@@ -120,3 +120,9 @@ def test_linearization_of_nested_time_operations_should_raise_value_error(
     value_provider = ComponentEvaluationContext()
     with pytest.raises(ValueError):
         linearize_expression(expr, structure_provider, value_provider)
+
+
+def test_expansion_and_linearization():
+    param_provider = ComponentEvaluationContext()
+    with pytest.raises(ValueError):
+        linearize_expression(expr, structure_provider, value_provider)

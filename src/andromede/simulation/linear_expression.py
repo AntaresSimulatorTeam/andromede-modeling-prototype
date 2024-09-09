@@ -14,11 +14,10 @@
 Specific modelling for "instantiated" linear expressions,
 with only variables and literal coefficients.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TypeVar, Union
 
-from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.scenario_operator import ScenarioOperator
+from build.lib.andromede.expression import ExpressionNode
 
 T = TypeVar("T")
 
@@ -42,75 +41,6 @@ def is_minus_one(value: float) -> bool:
 
 
 @dataclass(frozen=True)
-class TimeExpansion:
-    """
-    Carries knowledge of which timesteps this term refers to.
-    Simplest one is "only the current timestep"
-    """
-
-    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
-        return [current_timestep]
-
-    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
-        """
-        Apply another time expansion on this one.
-        For example, a shift of -1 applied to a shift one +1 could provide
-        a no-op TimeExpansion. Not yet supported for now, though.
-        """
-        return other
-
-
-@dataclass(frozen=True)
-class AllTimeExpansion(TimeExpansion):
-    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
-        return [t for t in range(block_length)]
-
-    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
-        raise ValueError("No time operation allowed on all-time sum.")
-
-
-@dataclass(frozen=True)
-class TimeEvalExpansion(TimeExpansion):
-    timestep: int
-
-    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
-        return [self.timestep]
-
-    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
-        raise ValueError(
-            "Time operation on evaluated expression not supported for now."
-        )
-
-
-@dataclass(frozen=True)
-class TimeShiftExpansion(TimeExpansion):
-    shift: int
-
-    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
-        return [current_timestep + self.shift]
-
-    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
-        raise ValueError("Time operation on shifted expression not supported for now.")
-
-
-@dataclass(frozen=True)
-class TimeSumExpansion(TimeExpansion):
-    from_shift: int
-    to_shift: int
-
-    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
-        return [
-            t
-            for t in range(
-                current_timestep + self.from_shift, current_timestep + self.to_shift
-            )
-        ]
-
-    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
-        raise ValueError("Time operation on time-sums not supported for now.")
-
-
-@dataclass(frozen=True)
 class TermKey:
 
     """
@@ -119,8 +49,8 @@ class TermKey:
 
     component_id: str
     variable_name: str
-    time_expansion: TimeExpansion
-    scenario_operator: Optional[ScenarioOperator]
+    timestep: int
+    scenario: int
 
 
 def _str_for_coeff(coeff: float) -> str:
@@ -130,17 +60,6 @@ def _str_for_coeff(coeff: float) -> str:
         return "-"
     else:
         return "{:+g}".format(coeff)
-
-
-def _str_for_time_expansion(exp: TimeExpansion) -> str:
-    if isinstance(exp, TimeShiftExpansion):
-        return f".shift({exp.shift})"
-    elif isinstance(exp, TimeSumExpansion):
-        return f".sum({exp.from_shift}, {exp.to_shift})"
-    elif isinstance(exp, AllTimeExpansion):
-        return ".sum()"
-    else:
-        return ""
 
 
 @dataclass(frozen=True)
@@ -156,11 +75,8 @@ class Term:
     coefficient: float
     component_id: str
     variable_name: str
-    structure: IndexingStructure = field(
-        default=IndexingStructure(time=True, scenario=True)
-    )
-    time_expansion: TimeExpansion = TimeExpansion()
-    scenario_operator: Optional[ScenarioOperator] = None
+    timestep: int
+    scenario: int
 
     # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
 
@@ -170,9 +86,6 @@ class Term:
     def __str__(self) -> str:
         # Useful for debugging tests
         result = _str_for_coeff(self.coefficient) + str(self.variable_name)
-        result += _str_for_time_expansion(self.time_expansion)
-        if self.scenario_operator is not None:
-            result += f".{str(self.scenario_operator)}"
         return result
 
 
@@ -180,8 +93,8 @@ def generate_key(term: Term) -> TermKey:
     return TermKey(
         term.component_id,
         term.variable_name,
-        term.time_expansion,
-        term.scenario_operator,
+        term.timestep,
+        term.scenario,
     )
 
 
@@ -201,9 +114,8 @@ def _merge_dicts(
                     neutral,
                     v.component_id,
                     v.variable_name,
-                    v.structure,
-                    v.time_expansion,
-                    v.scenario_operator,
+                    v.timestep,
+                    v.scenario,
                 ),
             ),
         )
@@ -214,48 +126,31 @@ def _merge_dicts(
                     neutral,
                     v.component_id,
                     v.variable_name,
-                    v.structure,
-                    v.time_expansion,
-                    v.scenario_operator,
+                    v.timestep,
+                    v.scenario,
                 ),
                 v,
             )
     return res
 
 
-def _merge_is_possible(lhs: Term, rhs: Term) -> None:
-    if lhs.component_id != rhs.component_id or lhs.variable_name != rhs.variable_name:
-        raise ValueError("Cannot merge terms for different variables")
-    if (
-        lhs.time_expansion != rhs.time_expansion
-        or lhs.scenario_operator != rhs.scenario_operator
-    ):
-        raise ValueError("Cannot merge terms with different operators")
-    if lhs.structure != rhs.structure:
-        raise ValueError("Cannot merge terms with different structures")
-
-
 def _add_terms(lhs: Term, rhs: Term) -> Term:
-    _merge_is_possible(lhs, rhs)
     return Term(
         lhs.coefficient + rhs.coefficient,
         lhs.component_id,
         lhs.variable_name,
-        lhs.structure,
-        lhs.time_expansion,
-        lhs.scenario_operator,
+        lhs.timestep,
+        lhs.scenario,
     )
 
 
 def _substract_terms(lhs: Term, rhs: Term) -> Term:
-    _merge_is_possible(lhs, rhs)
     return Term(
         lhs.coefficient - rhs.coefficient,
         lhs.component_id,
         lhs.variable_name,
-        lhs.structure,
-        lhs.time_expansion,
-        lhs.scenario_operator,
+        lhs.timestep,
+        lhs.scenario,
     )
 
 
@@ -397,9 +292,8 @@ class LinearExpression:
                         term.coefficient * const_expr.constant,
                         term.component_id,
                         term.variable_name,
-                        term.structure,
-                        term.time_expansion,
-                        term.scenario_operator,
+                        term.timestep,
+                        term.scenario,
                     )
                 _copy_expression(left_expr, self)
         return self
@@ -428,9 +322,8 @@ class LinearExpression:
                         term.coefficient / rhs.constant,
                         term.component_id,
                         term.variable_name,
-                        term.structure,
-                        term.time_expansion,
-                        term.scenario_operator,
+                        term.timestep,
+                        term.scenario,
                     )
         return self
 

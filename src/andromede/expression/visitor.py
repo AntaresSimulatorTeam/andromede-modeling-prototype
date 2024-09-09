@@ -31,6 +31,8 @@ from andromede.expression.expression import (
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     ScenarioOperatorNode,
     SubstractionNode,
     TimeEvalNode,
@@ -96,6 +98,14 @@ class ExpressionVisitor(ABC, Generic[T]):
         ...
 
     @abstractmethod
+    def pb_parameter(self, node: ProblemParameterNode) -> T:
+        ...
+
+    @abstractmethod
+    def pb_variable(self, node: ProblemVariableNode) -> T:
+        ...
+
+    @abstractmethod
     def time_shift(self, node: TimeShiftNode) -> T:
         ...
 
@@ -140,6 +150,10 @@ def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
         return visitor.comp_parameter(root)
     elif isinstance(root, ComponentVariableNode):
         return visitor.comp_variable(root)
+    elif isinstance(root, ProblemParameterNode):
+        return visitor.pb_parameter(root)
+    elif isinstance(root, ProblemVariableNode):
+        return visitor.pb_variable(root)
     elif isinstance(root, AdditionNode):
         return visitor.addition(root)
     elif isinstance(root, MultiplicationNode):

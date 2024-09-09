@@ -10,13 +10,10 @@
 #
 # This file is part of the Antares project.
 
-import dataclasses
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-import andromede.expression.scenario_operator
-from andromede.expression.evaluate import ValueProvider
-from andromede.expression.evaluate_parameters import evaluate_time_id
 from andromede.expression.expression import (
     AllTimeSumNode,
     ComparisonNode,
@@ -27,39 +24,23 @@ from andromede.expression.expression import (
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemVariableNode,
     ScenarioOperatorNode,
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
     VariableNode,
 )
-from andromede.expression.indexing import IndexingStructureProvider
-from andromede.expression.visitor import ExpressionVisitorOperations, T, visit
-from andromede.simulation.linear_expression import (
-    AllTimeExpansion,
-    LinearExpression,
-    Term,
-    TimeEvalExpansion,
-    TimeExpansion,
-    TimeShiftExpansion,
-    TimeSumExpansion,
-    generate_key,
-)
+from andromede.expression.visitor import ExpressionVisitorOperations, visit
+from andromede.simulation.linear_expression import LinearExpression, Term
 
 
-def _apply_time_expansion(
-    input: LinearExpression, time_expansion: TimeExpansion
-) -> LinearExpression:
-    result_terms = {}
-    for term in input.terms.values():
-        term_with_operator = dataclasses.replace(
-            term, time_expansion=term.time_expansion.apply(time_expansion)
-        )
-        result_terms[generate_key(term_with_operator)] = term_with_operator
-
-    # TODO: How can we apply a shift on a parameter ? It seems impossible for now as parameters must already be evaluated...
-    result_expr = LinearExpression(result_terms, input.constant)
-    return result_expr
+class ParameterValueProvider(ABC):
+    @abstractmethod
+    def get_parameter_value(
+        self, component_id: str, parameter_name: str, timestep: int, scenario: int
+    ) -> float:
+        pass
 
 
 @dataclass(frozen=True)
@@ -70,8 +51,7 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
     Parameters should have been evaluated first.
     """
 
-    structure_provider: IndexingStructureProvider
-    value_provider: Optional[ValueProvider] = None
+    value_provider: Optional[ParameterValueProvider] = None
 
     def literal(self, node: LiteralNode) -> LinearExpression:
         return LinearExpression([], node.value)
@@ -88,60 +68,52 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
         raise ValueError("Parameters must be evaluated before linearization.")
 
     def comp_variable(self, node: ComponentVariableNode) -> LinearExpression:
+        raise ValueError(
+            "Variables need to be associated with their timestep/scenario before linearization."
+        )
+
+    def problem_variable(self, node: ProblemVariableNode) -> LinearExpression:
         return LinearExpression(
             [
                 Term(
                     1,
                     node.component_id,
                     node.name,
-                    self.structure_provider.get_component_variable_structure(
-                        node.component_id, node.name
-                    ),
+                    timestep=node.timestep,
+                    scenario=node.scenario,
                 )
             ],
             0,
         )
 
     def comp_parameter(self, node: ComponentParameterNode) -> LinearExpression:
-        raise ValueError("Parameters must be evaluated before linearization.")
+        raise ValueError(
+            "Parameters need to be associated with their timestep/scenario before linearization."
+        )
+
+    def problem_parameter(self, node: ProblemVariableNode) -> LinearExpression:
+        # TODO SL: not the best place to do this.
+        # in the future, we should evaluate coefficients of variables as time vectors once for all timesteps
+        return LinearExpression(
+            [],
+            self._value_provider().get_parameter_value(
+                node.component_id, node.name, node.timestep, node.scenario
+            ),
+        )
 
     def time_eval(self, node: TimeEvalNode) -> LinearExpression:
-        operand_expr = visit(node.operand, self)
-        eval_time = evaluate_time_id(node.eval_time, self._value_provider())
-        time_expansion = TimeEvalExpansion(eval_time)
-        return _apply_time_expansion(operand_expr, time_expansion)
+        raise ValueError("Time operators need to be expanded before linearization.")
 
     def time_shift(self, node: TimeShiftNode) -> LinearExpression:
-        operand_expr = visit(node.operand, self)
-        time_shift = evaluate_time_id(node.time_shift, self._value_provider())
-        time_expansion = TimeShiftExpansion(time_shift)
-        return _apply_time_expansion(operand_expr, time_expansion)
+        raise ValueError("Time operators need to be expanded before linearization.")
 
     def time_sum(self, node: TimeSumNode) -> LinearExpression:
-        operand_expr = visit(node.operand, self)
-        from_shift = evaluate_time_id(node.from_time, self._value_provider())
-        to_shift = evaluate_time_id(node.to_time, self._value_provider())
-        time_expansion = TimeSumExpansion(from_shift, to_shift)
-        if operand_expr.constant != 0:
-            # We could multiply by number of steps, but not very safe, it might depend on block bounds
-            # will be handled when refactoring for better parametrs handling
-            raise ValueError(
-                "Summing an expression containing a constant is not supported for now."
-            )
-        return _apply_time_expansion(operand_expr, time_expansion)
+        raise ValueError("Time operators need to be expanded before linearization.")
 
     def all_time_sum(self, node: AllTimeSumNode) -> LinearExpression:
-        operand_expr = visit(node.operand, self)
-        time_expansion = AllTimeExpansion()
-        if operand_expr.constant != 0:
-            # We could multiply by number of steps if we had them, but we don't
-            # will be handled when refactoring for better parametrs handling
-            raise ValueError(
-                "Summing an expression containing a constant is not supported for now."
-            )
-        return _apply_time_expansion(operand_expr, time_expansion)
+        raise ValueError("Time operators need to be expanded before linearization.")
 
-    def _value_provider(self) -> ValueProvider:
+    def _value_provider(self) -> ParameterValueProvider:
         if self.value_provider is None:
             raise ValueError(
                 "A value provider must be specified to linearize a time operator node."
@@ -151,24 +123,7 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
         return self.value_provider
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> LinearExpression:
-        scenario_operator_cls = getattr(
-            andromede.expression.scenario_operator, node.name
-        )
-        if scenario_operator_cls.degree() > 1:
-            raise ValueError(
-                f"Cannot linearize expression with a non-linear operator: {scenario_operator_cls.__name__}"
-            )
-
-        operand_expr = visit(node.operand, self)
-        result_terms = {}
-        for term in operand_expr.terms.values():
-            term_with_operator = dataclasses.replace(
-                term, scenario_operator=scenario_operator_cls()
-            )
-            result_terms[generate_key(term_with_operator)] = term_with_operator
-
-        result_expr = LinearExpression(result_terms, operand_expr.constant)
-        return result_expr
+        raise ValueError("Scenario operators need to be expanded before linearization.")
 
     def port_field(self, node: PortFieldNode) -> LinearExpression:
         raise ValueError("Port fields must be replaced before linearization.")
@@ -181,9 +136,11 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
 
 def linearize_expression(
     expression: ExpressionNode,
-    structure_provider: IndexingStructureProvider,
-    value_provider: Optional[ValueProvider] = None,
+    value_provider: Optional[ParameterValueProvider] = None,
 ) -> LinearExpression:
     return visit(
-        expression, LinearExpressionBuilder(structure_provider, value_provider)
+        expression,
+        LinearExpressionBuilder(
+            value_provider=value_provider,
+        ),
     )

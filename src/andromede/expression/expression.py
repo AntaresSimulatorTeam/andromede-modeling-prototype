@@ -179,6 +179,24 @@ def comp_param(component_id: str, name: str) -> ComponentParameterNode:
 
 
 @dataclass(frozen=True, eq=False)
+class ProblemParameterNode(ExpressionNode):
+    """
+    Represents one variable of the optimization problem
+    """
+
+    component_id: str
+    name: str
+    timestep: int
+    scenario: int
+
+
+def problem_param(
+    component_id: str, name: str, timestep: int, scenario: int
+) -> ProblemParameterNode:
+    return ProblemParameterNode(component_id, name, timestep, scenario)
+
+
+@dataclass(frozen=True, eq=False)
 class ComponentVariableNode(ExpressionNode):
     """
     Represents one variable of one component.
@@ -194,6 +212,24 @@ class ComponentVariableNode(ExpressionNode):
 
 def comp_var(component_id: str, name: str) -> ComponentVariableNode:
     return ComponentVariableNode(component_id, name)
+
+
+@dataclass(frozen=True, eq=False)
+class ProblemVariableNode(ExpressionNode):
+    """
+    Represents one variable of the optimization problem
+    """
+
+    component_id: str
+    name: str
+    timestep: int
+    scenario: int
+
+
+def problem_var(
+    component_id: str, name: str, timestep: int, scenario: int
+) -> ProblemVariableNode:
+    return ProblemVariableNode(component_id, name, timestep, scenario)
 
 
 @dataclass(frozen=True, eq=False)
