@@ -19,7 +19,7 @@ from andromede.expression.expression import (
     PortFieldNode,
     TimeEvalNode,
     TimeShiftNode,
-    TimeSumNode,
+    TimeSumNode, ProblemVariableNode, ProblemParameterNode,
 )
 
 from .expression import (
@@ -78,6 +78,12 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
         return 1
 
     def comp_parameter(self, node: ComponentParameterNode) -> int:
+        return 0
+
+    def pb_variable(self, node: ProblemVariableNode) -> int:
+        return 1
+
+    def pb_parameter(self, node: ProblemParameterNode) -> int:
         return 0
 
     def time_shift(self, node: TimeShiftNode) -> int:

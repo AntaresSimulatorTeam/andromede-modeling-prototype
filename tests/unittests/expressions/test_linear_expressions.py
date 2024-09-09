@@ -14,15 +14,11 @@ from typing import Dict
 
 import pytest
 
-from andromede.expression.expression import AllTimeSumNode
 from andromede.expression.scenario_operator import Expectation
 from andromede.simulation.linear_expression import (
-    AllTimeExpansion,
     LinearExpression,
     Term,
     TermKey,
-    TimeShiftExpansion,
-    TimeSumExpansion,
 )
 
 

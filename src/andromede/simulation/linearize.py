@@ -14,6 +14,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
+from andromede.expression import ValueProvider, resolve_parameters
+
 from andromede.expression.expression import (
     AllTimeSumNode,
     ComparisonNode,
@@ -30,12 +32,19 @@ from andromede.expression.expression import (
     TimeShiftNode,
     TimeSumNode,
     VariableNode,
+    TimeIndex,
+    TimeShift,
+    ScenarioIndex,
+    TimeStep,
+    OneScenarioIndex,
+    NoScenarioIndex,
+    NoTimeIndex,
 )
 from andromede.expression.visitor import ExpressionVisitorOperations, visit
 from andromede.simulation.linear_expression import LinearExpression, Term
 
 
-class ParameterValueProvider(ABC):
+class ParameterGetter(ABC):
     @abstractmethod
     def get_parameter_value(
         self, component_id: str, parameter_name: str, timestep: int, scenario: int
@@ -51,7 +60,24 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
     Parameters should have been evaluated first.
     """
 
-    value_provider: Optional[ParameterValueProvider] = None
+    # TODO: linear expressions should be re-usable for different timesteps and scenarios
+    timestep: int
+    scenario: int
+    value_provider: Optional[ParameterGetter] = None
+
+    def _get_timestep(self, time_index: TimeIndex) -> int:
+        if isinstance(time_index, TimeShift):
+            return self.timestep + time_index.timeshift
+        if isinstance(time_index, TimeStep):
+            return time_index.timestep
+        if isinstance(time_index, NoTimeIndex):
+            return self.timestep
+
+    def _get_scenario(self, scenario_index: ScenarioIndex) -> int:
+        if isinstance(scenario_index, OneScenarioIndex):
+            return scenario_index.scenario
+        if isinstance(scenario_index, NoScenarioIndex):
+            return self.scenario
 
     def literal(self, node: LiteralNode) -> LinearExpression:
         return LinearExpression([], node.value)
@@ -72,15 +98,15 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
             "Variables need to be associated with their timestep/scenario before linearization."
         )
 
-    def problem_variable(self, node: ProblemVariableNode) -> LinearExpression:
+    def pb_variable(self, node: ProblemVariableNode) -> LinearExpression:
         return LinearExpression(
             [
                 Term(
                     1,
                     node.component_id,
                     node.name,
-                    timestep=node.timestep,
-                    scenario=node.scenario,
+                    time_index=self._get_timestep(node.time_index),
+                    scenario_index=self._get_scenario(node.scenario_index),
                 )
             ],
             0,
@@ -91,13 +117,15 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
             "Parameters need to be associated with their timestep/scenario before linearization."
         )
 
-    def problem_parameter(self, node: ProblemVariableNode) -> LinearExpression:
+    def pb_parameter(self, node: ProblemVariableNode) -> LinearExpression:
         # TODO SL: not the best place to do this.
         # in the future, we should evaluate coefficients of variables as time vectors once for all timesteps
+        time_index = self._get_timestep(node.time_index)
+        scenario_index = self._get_scenario(node.scenario_index)
         return LinearExpression(
             [],
             self._value_provider().get_parameter_value(
-                node.component_id, node.name, node.timestep, node.scenario
+                node.component_id, node.name, time_index, scenario_index
             ),
         )
 
@@ -113,7 +141,7 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
     def all_time_sum(self, node: AllTimeSumNode) -> LinearExpression:
         raise ValueError("Time operators need to be expanded before linearization.")
 
-    def _value_provider(self) -> ParameterValueProvider:
+    def _value_provider(self) -> ParameterGetter:
         if self.value_provider is None:
             raise ValueError(
                 "A value provider must be specified to linearize a time operator node."
@@ -136,11 +164,13 @@ class LinearExpressionBuilder(ExpressionVisitorOperations[LinearExpression]):
 
 def linearize_expression(
     expression: ExpressionNode,
-    value_provider: Optional[ParameterValueProvider] = None,
+    timestep: int,
+    scenario: int,
+    value_provider: Optional[ParameterGetter] = None,
 ) -> LinearExpression:
     return visit(
         expression,
         LinearExpressionBuilder(
-            value_provider=value_provider,
+            value_provider=value_provider, timestep=timestep, scenario=scenario
         ),
     )

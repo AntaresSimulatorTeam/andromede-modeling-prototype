@@ -44,6 +44,8 @@ from andromede.expression.expression import (
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
@@ -267,6 +269,16 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
         )
 
     def comp_variable(self, node: ComponentVariableNode) -> None:
+        raise ValueError(
+            "Port definition must not contain a variable associated to a component."
+        )
+
+    def pb_parameter(self, node: ProblemParameterNode) -> None:
+        raise ValueError(
+            "Port definition must not contain a parameter associated to a component."
+        )
+
+    def pb_variable(self, node: ProblemVariableNode) -> None:
         raise ValueError(
             "Port definition must not contain a variable associated to a component."
         )

@@ -178,6 +178,41 @@ def comp_param(component_id: str, name: str) -> ComponentParameterNode:
     return ComponentParameterNode(component_id, name)
 
 
+@dataclass(frozen=True)
+class TimeIndex:
+    pass
+
+
+@dataclass(frozen=True)
+class NoTimeIndex(TimeIndex):
+    pass
+
+
+@dataclass(frozen=True)
+class TimeShift(TimeIndex):
+    timeshift: int
+
+
+@dataclass(frozen=True)
+class TimeStep(TimeIndex):
+    timestep: int
+
+
+@dataclass(frozen=True)
+class ScenarioIndex:
+    pass
+
+
+@dataclass(frozen=True)
+class NoScenarioIndex(ScenarioIndex):
+    pass
+
+
+@dataclass(frozen=True)
+class OneScenarioIndex(ScenarioIndex):
+    scenario: int
+
+
 @dataclass(frozen=True, eq=False)
 class ProblemParameterNode(ExpressionNode):
     """
@@ -186,14 +221,14 @@ class ProblemParameterNode(ExpressionNode):
 
     component_id: str
     name: str
-    timestep: int
-    scenario: int
+    time_index: TimeIndex
+    scenario_index: ScenarioIndex
 
 
 def problem_param(
-    component_id: str, name: str, timestep: int, scenario: int
+    component_id: str, name: str, time_index: TimeIndex, scenario_index: ScenarioIndex
 ) -> ProblemParameterNode:
-    return ProblemParameterNode(component_id, name, timestep, scenario)
+    return ProblemParameterNode(component_id, name, time_index, scenario_index)
 
 
 @dataclass(frozen=True, eq=False)
@@ -222,14 +257,14 @@ class ProblemVariableNode(ExpressionNode):
 
     component_id: str
     name: str
-    timestep: int
-    scenario: int
+    time_index: TimeIndex
+    scenario_index: ScenarioIndex
 
 
 def problem_var(
-    component_id: str, name: str, timestep: int, scenario: int
+    component_id: str, name: str, time_index: TimeIndex, scenario_index: ScenarioIndex
 ) -> ProblemVariableNode:
-    return ProblemVariableNode(component_id, name, timestep, scenario)
+    return ProblemVariableNode(component_id, name, time_index, scenario_index)
 
 
 @dataclass(frozen=True, eq=False)

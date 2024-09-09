@@ -17,7 +17,13 @@ with only variables and literal coefficients.
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TypeVar, Union
 
-from build.lib.andromede.expression import ExpressionNode
+from andromede.expression.expression import (
+    TimeIndex,
+    ScenarioIndex,
+    TimeShift,
+    TimeStep,
+    OneScenarioIndex,
+)
 
 T = TypeVar("T")
 
@@ -49,8 +55,8 @@ class TermKey:
 
     component_id: str
     variable_name: str
-    timestep: int
-    scenario: int
+    time_index: int
+    scenario_index: int
 
 
 def _str_for_coeff(coeff: float) -> str:
@@ -60,6 +66,25 @@ def _str_for_coeff(coeff: float) -> str:
         return "-"
     else:
         return "{:+g}".format(coeff)
+
+
+def _time_index_to_str(time_index: TimeIndex) -> str:
+    if isinstance(time_index, TimeShift):
+        if time_index.timeshift == 0:
+            return "t"
+        elif time_index.timeshift > 0:
+            return f"t + {time_index.timeshift}"
+        else:
+            return f"t - {-time_index.timeshift}"
+    if isinstance(time_index, TimeStep):
+        return f"{time_index.timestep}"
+    return ""
+
+
+def _scenario_index_to_str(scenario_index: ScenarioIndex) -> str:
+    if isinstance(scenario_index, OneScenarioIndex):
+        return f"{scenario_index.scenario}"
+    return ""
 
 
 @dataclass(frozen=True)
@@ -75,8 +100,8 @@ class Term:
     coefficient: float
     component_id: str
     variable_name: str
-    timestep: int
-    scenario: int
+    time_index: int
+    scenario_index: int
 
     # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
 
@@ -88,13 +113,21 @@ class Term:
         result = _str_for_coeff(self.coefficient) + str(self.variable_name)
         return result
 
+    def __repr__(self) -> str:
+        # Useful for debugging tests
+        result = (
+            f"{_str_for_coeff(self.coefficient)}{self.component_id}.{self.variable_name}"
+            f"[{self.time_index},{self.scenario_index}]"
+        )
+        return result
+
 
 def generate_key(term: Term) -> TermKey:
     return TermKey(
         term.component_id,
         term.variable_name,
-        term.timestep,
-        term.scenario,
+        term.time_index,
+        term.scenario_index,
     )
 
 
@@ -114,8 +147,8 @@ def _merge_dicts(
                     neutral,
                     v.component_id,
                     v.variable_name,
-                    v.timestep,
-                    v.scenario,
+                    v.time_index,
+                    v.scenario_index,
                 ),
             ),
         )
@@ -126,8 +159,8 @@ def _merge_dicts(
                     neutral,
                     v.component_id,
                     v.variable_name,
-                    v.timestep,
-                    v.scenario,
+                    v.time_index,
+                    v.scenario_index,
                 ),
                 v,
             )
@@ -139,8 +172,8 @@ def _add_terms(lhs: Term, rhs: Term) -> Term:
         lhs.coefficient + rhs.coefficient,
         lhs.component_id,
         lhs.variable_name,
-        lhs.timestep,
-        lhs.scenario,
+        lhs.time_index,
+        lhs.scenario_index,
     )
 
 
@@ -149,8 +182,8 @@ def _substract_terms(lhs: Term, rhs: Term) -> Term:
         lhs.coefficient - rhs.coefficient,
         lhs.component_id,
         lhs.variable_name,
-        lhs.timestep,
-        lhs.scenario,
+        lhs.time_index,
+        lhs.scenario_index,
     )
 
 
@@ -211,14 +244,14 @@ class LinearExpression:
         else:
             return "{:+g}".format(self.constant)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         # Useful for debugging tests
         result = ""
         if self.is_zero():
             result += "0"
         else:
             for term in self.terms.values():
-                result += str(term)
+                result += repr(term)
 
             result += self.str_for_constant()
 
@@ -292,8 +325,8 @@ class LinearExpression:
                         term.coefficient * const_expr.constant,
                         term.component_id,
                         term.variable_name,
-                        term.timestep,
-                        term.scenario,
+                        term.time_index,
+                        term.scenario_index,
                     )
                 _copy_expression(left_expr, self)
         return self
@@ -322,8 +355,8 @@ class LinearExpression:
                         term.coefficient / rhs.constant,
                         term.component_id,
                         term.variable_name,
-                        term.timestep,
-                        term.scenario,
+                        term.time_index,
+                        term.scenario_index,
                     )
         return self
 

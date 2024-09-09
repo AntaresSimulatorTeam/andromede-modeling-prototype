@@ -32,15 +32,17 @@ from andromede.expression import (
     visit,
 )
 from andromede.expression.context_adder import add_component_context
+from andromede.expression.evaluate_parameters import evaluate_time_id
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.operators_expansion import expand_operators, ProblemDimensions
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.expression.scenario_operator import Expectation
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
-from andromede.simulation.linearize import linearize_expression
+from andromede.simulation.linearize import linearize_expression, ParameterGetter
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
@@ -352,6 +354,15 @@ class OptimizationContext:
     def get_scenario_indices(self, index_structure: IndexingStructure) -> Iterable[int]:
         return range(self.scenarios) if index_structure.scenario else range(1)
 
+    def _get_variable_structure(
+        self, component_id: str, variable_name: str
+    ) -> IndexingStructure:
+        return (
+            self.network.get_component(component_id)
+            .model.variables[variable_name]
+            .structure
+        )
+
     # TODO: API to improve, variable_structure guides which of the indices block_timestep and scenario should be used
     def get_component_variable(
         self,
@@ -359,8 +370,8 @@ class OptimizationContext:
         scenario: int,
         component_id: str,
         variable_name: str,
-        variable_structure: IndexingStructure,
     ) -> lp.Variable:
+        variable_structure = self._get_variable_structure(component_id, variable_name)
         block_timestep = self._manage_border_timesteps(block_timestep)
 
         # TODO: Improve design, variable_structure defines indexing
@@ -459,11 +470,41 @@ def _create_constraint(
     Adds a component-related constraint to the solver.
     """
     constraint_indexing = _compute_indexing_structure(context, constraint)
+
+    dimensions = ProblemDimensions(
+        context.opt_context.block_length(), context.opt_context.scenarios
+    )
+
+    # TODO: should not need to pass useless args.
+    value_provider = _make_value_provider(context.opt_context, 0, 0, context.component)
+
+    def timestep_evaluator(node: ExpressionNode) -> int:
+        return evaluate_time_id(node, value_provider)
+
+    expanded = expand_operators(constraint.expression, dimensions, timestep_evaluator)
     for block_timestep in context.opt_context.get_time_indices(constraint_indexing):
         for scenario in context.opt_context.get_scenario_indices(constraint_indexing):
-            linear_expr_at_t = context.linearize_expression(
-                block_timestep, scenario, constraint.expression
+            # TODO: it's messy
+            class Params(ParameterGetter):
+                def get_parameter_value(
+                    self,
+                    component_id: str,
+                    parameter_name: str,
+                    timestep: int,
+                    scenario: int,
+                ) -> float:
+                    return _get_parameter_value(
+                        context.opt_context,
+                        timestep,
+                        scenario,
+                        component_id,
+                        parameter_name,
+                    )
+
+            linear_expr_at_t = linearize_expression(
+                expanded, block_timestep, scenario, Params()
             )
+
             # What happens if there is some time_operator in the bounds ?
             constraint_data = ConstraintData(
                 name=constraint.name,
@@ -494,33 +535,37 @@ def _create_objective(
     instantiated_expr = _instantiate_model_expression(
         objective_contribution, component.id, opt_context
     )
-    # We have already checked in the model creation that the objective contribution is neither indexed by time nor by scenario
-    linear_expr = component_context.linearize_expression(0, 0, instantiated_expr)
+    value_provider = _make_value_provider(opt_context, 0, 0, component)
+
+    def timestep_evaluator(node: ExpressionNode) -> int:
+        return evaluate_time_id(node, value_provider)
+
+    dimensions = ProblemDimensions(opt_context.block_length(), opt_context.scenarios)
+    expanded = expand_operators(instantiated_expr, dimensions, timestep_evaluator)
+
+    class Params(ParameterGetter):
+        def get_parameter_value(
+            self, component_id: str, parameter_name: str, timestep: int, scenario: int
+        ) -> float:
+            return _get_parameter_value(
+                opt_context, timestep, scenario, component_id, parameter_name
+            )
+
+    linear_expr = linearize_expression(
+        expanded, 0, 0, Params()
+    )
 
     obj: lp.Objective = solver.Objective()
     for term in linear_expr.terms.values():
-        # TODO : How to handle the scenario operator in a general manner ?
-        if isinstance(term.scenario_operator, Expectation):
-            weight = 1 / opt_context.scenarios
-            scenario_ids = range(opt_context.scenarios)
-        else:
-            weight = 1
-            scenario_ids = range(1)
-
-        for scenario in scenario_ids:
-            solver_vars = _get_solver_vars(
-                term,
-                opt_context,
-                0,
-                scenario,
-            )
-
-            for solver_var in solver_vars:
-                opt_context._solver_variables[solver_var].is_in_objective = True
-                obj.SetCoefficient(
-                    solver_var,
-                    obj.GetCoefficient(solver_var) + weight * term.coefficient,
-                )
+        solver_var = _get_solver_var(
+            term,
+            opt_context,
+        )
+        opt_context._solver_variables[solver_var].is_in_objective = True
+        obj.SetCoefficient(
+            solver_var,
+            obj.GetCoefficient(solver_var) + term.coefficient,
+        )
 
     # This should have no effect on the optimization
     obj.SetOffset(linear_expr.constant + obj.offset())
@@ -537,15 +582,12 @@ class ConstraintData:
 def _get_solver_var(
     term: Term,
     context: OptimizationContext,
-    block_timestep: int,
-    scenario: int,
 ) -> lp.Variable:
     return context.get_component_variable(
-        block_timestep,
-        scenario,
+        term.time_index,
+        term.scenario_index,
         term.component_id,
         term.variable_name,
-        term.structure,
     )
 
 
@@ -565,20 +607,14 @@ def make_constraint(
     solver_constraint: lp.Constraint = solver.Constraint(constraint_name)
     constant: float = 0
     for term in data.expression.terms.values():
-        solver_vars = _get_solver_vars(
+        solver_var = _get_solver_var(
             term,
             context,
-            block_timestep,
-            scenario,
         )
-        for solver_var in solver_vars:
-            coefficient = term.coefficient + solver_constraint.GetCoefficient(
-                solver_var
-            )
-            solver_constraint.SetCoefficient(solver_var, coefficient)
-    # TODO: On pourrait aussi faire que l'objet Constraint n'ait pas de terme constant dans son expression et que les constantes soit déjà prises en compte dans les bornes, ça simplifierait le traitement ici
-    constant += data.expression.constant
+        coefficient = term.coefficient + solver_constraint.GetCoefficient(solver_var)
+        solver_constraint.SetCoefficient(solver_var, coefficient)
 
+    constant += data.expression.constant
     solver_constraint.SetBounds(
         data.lower_bound - constant, data.upper_bound - constant
     )

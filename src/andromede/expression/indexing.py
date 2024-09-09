@@ -34,7 +34,7 @@ from .expression import (
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
-    VariableNode,
+    VariableNode, ProblemVariableNode, ProblemParameterNode,
 )
 from .visitor import ExpressionVisitor, T, visit
 
@@ -106,6 +106,16 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
         )
 
     def comp_parameter(self, node: ComponentParameterNode) -> IndexingStructure:
+        return self.context.get_component_parameter_structure(
+            node.component_id, node.name
+        )
+
+    def pb_variable(self, node: ProblemVariableNode) -> IndexingStructure:
+        return self.context.get_component_variable_structure(
+            node.component_id, node.name
+        )
+
+    def pb_parameter(self, node: ProblemParameterNode) -> IndexingStructure:
         return self.context.get_component_parameter_structure(
             node.component_id, node.name
         )

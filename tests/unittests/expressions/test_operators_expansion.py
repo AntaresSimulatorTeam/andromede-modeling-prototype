@@ -1,3 +1,5 @@
+import pytest
+
 from andromede.expression import ExpressionNode, LiteralNode
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
@@ -5,19 +7,33 @@ from andromede.expression.expression import (
     comp_var,
     problem_param,
     problem_var,
+    TimeStep,
+    TimeShift,
+    NoScenarioIndex,
 )
-from andromede.expression.operators_expansion import expand_operators
+from andromede.expression.operators_expansion import (
+    expand_operators,
+    ProblemDimensions,
+)
 
 P = comp_param("c", "p")
 X = comp_var("c", "x")
 
 
-def P_at(timestep: int = 1, scenario: int = 1):
-    return problem_param("c", "p", timestep, scenario)
+def shifted_P(t: int = 0):
+    return problem_param("c", "p", TimeShift(t), NoScenarioIndex())
 
 
-def X_at(timestep: int = 1, scenario: int = 1):
-    return problem_var("c", "x", timestep, scenario)
+def P_at(t: int = 0):
+    return problem_param("c", "p", TimeStep(t), NoScenarioIndex())
+
+
+def X_at(t: int = 0):
+    return problem_var("c", "x", TimeStep(t), NoScenarioIndex())
+
+
+def shifted_X(t: int = 0):
+    return problem_var("c", "x", TimeShift(t), NoScenarioIndex())
 
 
 def evaluate_literal(node: ExpressionNode) -> int:
@@ -26,50 +42,23 @@ def evaluate_literal(node: ExpressionNode) -> int:
     raise NotImplementedError("Can only evaluate literal nodes.")
 
 
-def test_all_time_sum_expansion():
-    expr = X.time_sum()
-
-    expanded = expand_operators(expr, 1, 1, 2, 1, evaluate_literal)
-    assert expressions_equal(expanded, X_at(timestep=1) + X_at(timestep=2))
-
-
-def test_shift_expansion():
-    expr = X.shift(-1)
-
-    expanded = expand_operators(expr, 1, 1, 2, 1, evaluate_literal)
-    expected = X_at(timestep=0)
-    assert expressions_equal(expanded, expected)
-
-
-def test_time_sum_expansion():
-    expr = X.time_sum(-2, 0)
-
-    expanded = expand_operators(expr, 3, 1, 2, 1, evaluate_literal)
-    expected = X_at(timestep=1) + (X_at(timestep=2) + X_at(timestep=3))
-    assert expressions_equal(expanded, expected)
-
-
-def test_shift_expansion_on_expression():
-    expr = (P * X).shift(-1)
-
-    expanded = expand_operators(expr, 1, 1, 2, 1, evaluate_literal)
-    expected = P_at(timestep=0) * X_at(timestep=0)
-    assert expressions_equal(expanded, expected)
-
-
-def test_sum_expansion_on_complex_expression():
-    expr = P * (P * X).time_sum(-1, 0)
-
-    expanded = expand_operators(expr, 1, 1, 2, 1, evaluate_literal)
-    expected = P_at(timestep=1) * (
-        P_at(timestep=0) * X_at(timestep=0) + P_at(timestep=1) * X_at(timestep=1)
+@pytest.mark.parametrize(
+    "expr,expected",
+    [
+        (X.time_sum(), X_at(0) + X_at(1)),
+        (X.shift(-1), shifted_X(-1)),
+        (X.time_sum(-2, 0), shifted_X(-2) + (shifted_X(-1) + shifted_X(0))),
+        ((P * X).shift(-1), shifted_P(-1) * shifted_X(-1)),
+        (X.shift(-1).shift(+1), shifted_X(0)),
+        (
+            P * (P * X).time_sum(0, 1),
+            shifted_P(0) * (shifted_P(0) * shifted_X(0) + shifted_P(1) * shifted_X(1)),
+        ),
+        (X.eval(2).time_sum(), X_at(2) + X_at(2)),
+    ],
+)
+def test_operators_expansion(expr: ExpressionNode, expected: ExpressionNode) -> None:
+    expanded = expand_operators(
+        expr, ProblemDimensions(2, 1), evaluate_literal
     )
-    assert expressions_equal(expanded, expected)
-
-
-def test_expansion_on_nested_operators():
-    expr = X.shift(-1).shift(+1)
-
-    expanded = expand_operators(expr, 1, 1, 2, 1, evaluate_literal)
-    expected = X_at(1)
     assert expressions_equal(expanded, expected)

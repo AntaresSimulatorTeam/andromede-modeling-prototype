@@ -22,7 +22,7 @@ from andromede.expression.expression import (
     PortFieldNode,
     TimeEvalNode,
     TimeShiftNode,
-    TimeSumNode,
+    TimeSumNode, ProblemParameterNode, ProblemVariableNode,
 )
 
 from .expression import (
@@ -116,6 +116,12 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
 
     def comp_variable(self, node: ComponentVariableNode) -> float:
         return self.context.get_component_variable_value(node.component_id, node.name)
+
+    def pb_parameter(self, node: ProblemParameterNode) -> float:
+        raise ValueError("Should not reach here.")
+
+    def pb_variable(self, node: ProblemVariableNode) -> float:
+        raise ValueError("Should not reach here.")
 
     def time_shift(self, node: TimeShiftNode) -> float:
         raise NotImplementedError()

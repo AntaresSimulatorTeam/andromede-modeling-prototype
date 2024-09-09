@@ -27,7 +27,7 @@ from .expression import (
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
-    VariableNode,
+    VariableNode, ProblemVariableNode, ProblemParameterNode,
 )
 from .visitor import ExpressionVisitorOperations, visit
 
@@ -57,6 +57,12 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
         return ComponentParameterNode(node.component_id, node.name)
+
+    def pb_variable(self, node: ProblemVariableNode) -> ExpressionNode:
+        return ProblemVariableNode(node.component_id, node.name, node.time_index, node.scenario_index)
+
+    def pb_parameter(self, node: ProblemParameterNode) -> ExpressionNode:
+        return ProblemParameterNode(node.component_id, node.name, node.time_index, node.scenario_index)
 
     def time_shift(self, node: TimeShiftNode) -> ExpressionNode:
         return TimeShiftNode(visit(node.operand, self), visit(node.time_shift, self))

@@ -168,8 +168,8 @@ class EqualityVisitor:
         return (
             left.name == right.name
             and left.component_id == right.component_id
-            and left.timestep == right.timestep
-            and left.scenario == right.scenario
+            and left.time_index == right.time_index
+            and left.scenario_index == right.scenario_index
         )
 
     def problem_parameter(
@@ -178,8 +178,8 @@ class EqualityVisitor:
         return (
             left.name == right.name
             and left.component_id == right.component_id
-            and left.timestep == right.timestep
-            and left.scenario == right.scenario
+            and left.time_index == right.time_index
+            and left.scenario_index == right.scenario_index
         )
 
     def time_shift(self, left: TimeShiftNode, right: TimeShiftNode) -> bool:
