@@ -22,7 +22,7 @@ from andromede.expression.expression import (
     PortFieldNode,
     TimeEvalNode,
     TimeShiftNode,
-    TimeSumNode,
+    TimeSumNode, ProblemVariableNode, ProblemParameterNode,
 )
 from andromede.expression.visitor import T
 
@@ -36,7 +36,6 @@ from .expression import (
     NegationNode,
     ParameterNode,
     ScenarioOperatorNode,
-    SubstractionNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, visit
@@ -63,14 +62,8 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"-({visit(node.operand, self)})"
 
     def addition(self, node: AdditionNode) -> str:
-        left_value = visit(node.left, self)
-        right_value = visit(node.right, self)
-        return f"({left_value} + {right_value})"
-
-    def substraction(self, node: SubstractionNode) -> str:
-        left_value = visit(node.left, self)
-        right_value = visit(node.right, self)
-        return f"({left_value} - {right_value})"
+        values = [visit(o, self) for o in node.operands]
+        return f"({' + '.join(values)})"
 
     def multiplication(self, node: MultiplicationNode) -> str:
         left_value = visit(node.left, self)
@@ -98,6 +91,14 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"{node.component_id}.{node.name}"
 
     def comp_parameter(self, node: ComponentParameterNode) -> str:
+        return f"{node.component_id}.{node.name}"
+
+    def pb_variable(self, node: ProblemVariableNode) -> str:
+        # TODO
+        return f"{node.component_id}.{node.name}"
+
+    def pb_parameter(self, node: ProblemParameterNode) -> str:
+        # TODO
         return f"{node.component_id}.{node.name}"
 
     def time_shift(self, node: TimeShiftNode) -> str:

@@ -30,7 +30,6 @@ from .expression import (
     PortFieldAggregatorNode,
     PortFieldNode,
     ScenarioOperatorNode,
-    SubstractionNode,
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
@@ -76,10 +75,11 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
         return visit(node.operand, self)
 
     def addition(self, node: AdditionNode) -> IndexingStructure:
-        return visit(node.left, self) | visit(node.right, self)
-
-    def substraction(self, node: SubstractionNode) -> IndexingStructure:
-        return visit(node.left, self) | visit(node.right, self)
+        operands = [visit(o, self) for o in node.operands]
+        res = operands[0]
+        for o in node.operands[1:]:
+            res = res | visit(o, self)
+        return res
 
     def multiplication(self, node: MultiplicationNode) -> IndexingStructure:
         return visit(node.left, self) | visit(node.right, self)
