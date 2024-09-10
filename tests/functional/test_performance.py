@@ -112,8 +112,6 @@ def test_large_sum_outside_model_with_loop() -> None:
     assert problem.solver.Objective().Value() == obj_coeff
 
 
-# Takes 3 minutes with current implementation !!
-@pytest.mark.skip(reason="Takes 3 minutes")
 def test_large_sum_inside_model_with_sum_operator() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
@@ -206,7 +204,6 @@ def test_large_sum_of_port_connections() -> None:
     assert problem.solver.Objective().Value() == 5 * nb_generators
 
 
-@pytest.mark.skip(reason="Takes 3 minutes")
 def test_basic_balance_on_whole_year() -> None:
     """
     Balance on one node with one fixed demand and one generation, on 8760 timestep.
