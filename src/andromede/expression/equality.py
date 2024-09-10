@@ -23,7 +23,6 @@ from andromede.expression import (
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
     VariableNode,
 )
 from andromede.expression.expression import (
@@ -66,8 +65,6 @@ class EqualityVisitor:
             return self.negation(left, right)
         if isinstance(left, AdditionNode) and isinstance(right, AdditionNode):
             return self.addition(left, right)
-        if isinstance(left, SubstractionNode) and isinstance(right, SubstractionNode):
-            return self.substraction(left, right)
         if isinstance(left, DivisionNode) and isinstance(right, DivisionNode):
             return self.division(left, right)
         if isinstance(left, MultiplicationNode) and isinstance(
@@ -130,10 +127,9 @@ class EqualityVisitor:
         return self.visit(left.operand, right.operand)
 
     def addition(self, left: AdditionNode, right: AdditionNode) -> bool:
-        return self._visit_operands(left, right)
-
-    def substraction(self, left: SubstractionNode, right: SubstractionNode) -> bool:
-        return self._visit_operands(left, right)
+        left_ops = left.operands
+        right_ops = right.operands
+        return len(left_ops) == len(right_ops) and all(self.visit(l, r) for l, r in zip(left_ops, right_ops))
 
     def multiplication(
         self, left: MultiplicationNode, right: MultiplicationNode

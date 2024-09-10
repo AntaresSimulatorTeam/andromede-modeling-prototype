@@ -32,7 +32,6 @@ from .expression import (
     NegationNode,
     ParameterNode,
     ScenarioOperatorNode,
-    SubstractionNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, T, visit
@@ -51,10 +50,8 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
 
     # TODO: Take into account simplification that can occur with literal coefficient for add, sub, mult, div
     def addition(self, node: AdditionNode) -> int:
-        return max(visit(node.left, self), visit(node.right, self))
-
-    def substraction(self, node: SubstractionNode) -> int:
-        return max(visit(node.left, self), visit(node.right, self))
+        degrees = [visit(o, self) for o in node.operands]
+        return max(degrees)
 
     def multiplication(self, node: MultiplicationNode) -> int:
         return visit(node.left, self) + visit(node.right, self)

@@ -34,7 +34,6 @@ from andromede.expression.expression import (
     ProblemParameterNode,
     ProblemVariableNode,
     ScenarioOperatorNode,
-    SubstractionNode,
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
@@ -63,10 +62,6 @@ class ExpressionVisitor(ABC, Generic[T]):
 
     @abstractmethod
     def addition(self, node: AdditionNode) -> T:
-        ...
-
-    @abstractmethod
-    def substraction(self, node: SubstractionNode) -> T:
         ...
 
     @abstractmethod
@@ -160,8 +155,6 @@ def visit(root: ExpressionNode, visitor: ExpressionVisitor[T]) -> T:
         return visitor.multiplication(root)
     elif isinstance(root, DivisionNode):
         return visitor.division(root)
-    elif isinstance(root, SubstractionNode):
-        return visitor.substraction(root)
     elif isinstance(root, ComparisonNode):
         return visitor.comparison(root)
     elif isinstance(root, TimeShiftNode):
@@ -220,14 +213,11 @@ class ExpressionVisitorOperations(ExpressionVisitor[T_op], ABC):
         return -visit(node.operand, self)
 
     def addition(self, node: AdditionNode) -> T_op:
-        left_value = visit(node.left, self)
-        right_value = visit(node.right, self)
-        return left_value + right_value
-
-    def substraction(self, node: SubstractionNode) -> T_op:
-        left_value = visit(node.left, self)
-        right_value = visit(node.right, self)
-        return left_value - right_value
+        operands = [visit(o, self) for o in node.operands]
+        res = operands[0]
+        for o in operands[1:]:
+            res = res + o
+        return res
 
     def multiplication(self, node: MultiplicationNode) -> T_op:
         left_value = visit(node.left, self)

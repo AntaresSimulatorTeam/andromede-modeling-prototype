@@ -29,7 +29,6 @@ from andromede.expression import (
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
     VariableNode,
 )
 from andromede.expression.degree import is_linear
@@ -243,10 +242,8 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
         visit(node.right, self)
 
     def addition(self, node: AdditionNode) -> None:
-        self._visit_binary_op(node)
-
-    def substraction(self, node: SubstractionNode) -> None:
-        self._visit_binary_op(node)
+        for n in node.operands:
+            visit(n, self)
 
     def multiplication(self, node: MultiplicationNode) -> None:
         self._visit_binary_op(node)
