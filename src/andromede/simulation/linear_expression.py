@@ -18,11 +18,11 @@ from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TypeVar, Union
 
 from andromede.expression.expression import (
-    TimeIndex,
+    OneScenarioIndex,
     ScenarioIndex,
+    TimeIndex,
     TimeShift,
     TimeStep,
-    OneScenarioIndex,
 )
 
 T = TypeVar("T")
@@ -135,35 +135,19 @@ def _merge_dicts(
     lhs: Dict[TermKey, Term],
     rhs: Dict[TermKey, Term],
     merge_func: Callable[[Term, Term], Term],
-    neutral: float,
 ) -> Dict[TermKey, Term]:
     res = {}
     for k, v in lhs.items():
-        res[k] = merge_func(
-            v,
-            rhs.get(
-                k,
-                Term(
-                    neutral,
-                    v.component_id,
-                    v.variable_name,
-                    v.time_index,
-                    v.scenario_index,
-                ),
-            ),
-        )
+        if k not in rhs:
+            res[k] = v
+        else:
+            res[k] = merge_func(
+                v,
+                rhs[k],
+            )
     for k, v in rhs.items():
         if k not in lhs:
-            res[k] = merge_func(
-                Term(
-                    neutral,
-                    v.component_id,
-                    v.variable_name,
-                    v.time_index,
-                    v.scenario_index,
-                ),
-                v,
-            )
+            res[k] = v
     return res
 
 
@@ -269,7 +253,7 @@ class LinearExpression:
         if not isinstance(rhs, LinearExpression):
             return NotImplemented
         self.constant += rhs.constant
-        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms, 0)
+        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms)
         self.terms = aggregated_terms
         self.remove_zeros_from_terms()
         return self
@@ -284,7 +268,7 @@ class LinearExpression:
         if not isinstance(rhs, LinearExpression):
             return NotImplemented
         self.constant -= rhs.constant
-        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms, 0)
+        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms)
         self.terms = aggregated_terms
         self.remove_zeros_from_terms()
         return self
