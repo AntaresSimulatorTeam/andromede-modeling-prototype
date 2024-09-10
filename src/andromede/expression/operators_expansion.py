@@ -1,20 +1,25 @@
 import dataclasses
 from dataclasses import dataclass
-from typing import Callable, Union, TypeVar
+from typing import Callable, TypeVar, Union
 
 from andromede.expression import CopyVisitor, ExpressionNode, sum_expressions, visit
 from andromede.expression.expression import (
     AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    NoScenarioIndex,
+    NoTimeIndex,
+    OneScenarioIndex,
     ProblemParameterNode,
     ProblemVariableNode,
     ScenarioOperatorNode,
     TimeEvalNode,
+    TimeShift,
     TimeShiftNode,
+    TimeStep,
     TimeSumNode,
     problem_param,
-    problem_var, TimeShift, TimeStep, NoTimeIndex, NoScenarioIndex, OneScenarioIndex,
+    problem_var,
 )
 from andromede.expression.visitor import T
 
@@ -26,6 +31,7 @@ class ProblemDimensions:
     """
     Dimensions for the simulation window
     """
+
     timesteps_count: int
     scenarios_count: int
 
@@ -35,6 +41,7 @@ class ProblemIndex:
     """
     Index of an object in the simulation window.
     """
+
     timestep: int
     scenario: int
 
@@ -54,10 +61,14 @@ class OperatorsExpansion(CopyVisitor):
     evaluator: ExpressionEvaluator
 
     def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
-        return problem_var(node.component_id, node.name, TimeShift(0), NoScenarioIndex())
+        return problem_var(
+            node.component_id, node.name, TimeShift(0), NoScenarioIndex()
+        )
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
-        return problem_param(node.component_id, node.name, TimeShift(0), NoScenarioIndex())
+        return problem_param(
+            node.component_id, node.name, TimeShift(0), NoScenarioIndex()
+        )
 
     def time_shift(self, node: TimeShiftNode) -> ExpressionNode:
         shift = self.evaluator(node.time_shift)
@@ -93,7 +104,7 @@ class OperatorsExpansion(CopyVisitor):
         operand = visit(node.operand, self)
         for t in range(self.scenarios_count):
             nodes.append(apply_scenario(operand, t))
-        return sum_expressions(nodes)
+        return sum_expressions(nodes) / self.scenarios_count
 
     def pb_parameter(self, node: ProblemParameterNode) -> T:
         raise ValueError("Should not reach")
@@ -115,7 +126,9 @@ def expand_operators(
     )
 
 
-TimeIndexedNode = TypeVar("TimeIndexedNode", bound=Union[ProblemParameterNode, ProblemVariableNode])
+TimeIndexedNode = TypeVar(
+    "TimeIndexedNode", bound=Union[ProblemParameterNode, ProblemVariableNode]
+)
 
 
 @dataclass(frozen=True)
@@ -129,9 +142,13 @@ class ApplyTimeShift(CopyVisitor):
     def _apply_timeshift(self, node: TimeIndexedNode) -> TimeIndexedNode:
         current_index = node.time_index
         if isinstance(current_index, TimeShift):
-            return dataclasses.replace(node, time_index=TimeShift(current_index.timeshift + self.timeshift))
+            return dataclasses.replace(
+                node, time_index=TimeShift(current_index.timeshift + self.timeshift)
+            )
         if isinstance(current_index, TimeStep):
-            return dataclasses.replace(node, time_index=TimeStep(current_index.timestep + self.timeshift))
+            return dataclasses.replace(
+                node, time_index=TimeStep(current_index.timestep + self.timeshift)
+            )
         if isinstance(current_index, NoTimeIndex):
             return node
         raise ValueError("Unknown time index type.")
@@ -152,16 +169,21 @@ class ApplyTimeStep(CopyVisitor):
     """
     Applies timestep to all underlying expressions.
     """
+
     timestep: int
     allow_existing: bool = False
 
     def _apply_timestep(self, node: TimeIndexedNode) -> TimeIndexedNode:
         current_index = node.time_index
         if isinstance(current_index, TimeShift):
-            return dataclasses.replace(node, time_index=TimeStep(current_index.timeshift + self.timestep))
+            return dataclasses.replace(
+                node, time_index=TimeStep(current_index.timeshift + self.timestep)
+            )
         if isinstance(current_index, TimeStep):
             if not self.allow_existing:
-                raise ValueError("Cannot override a previously defined timestep (for example (x[0])[1]).")
+                raise ValueError(
+                    "Cannot override a previously defined timestep (for example (x[0])[1])."
+                )
             return node
         if isinstance(current_index, NoTimeIndex):
             return node
@@ -174,7 +196,9 @@ class ApplyTimeStep(CopyVisitor):
         return self._apply_timestep(node)
 
 
-def apply_timestep(expression: ExpressionNode, timestep: int, allow_existing: bool = False) -> ExpressionNode:
+def apply_timestep(
+    expression: ExpressionNode, timestep: int, allow_existing: bool = False
+) -> ExpressionNode:
     return visit(expression, ApplyTimeStep(timestep, allow_existing))
 
 
