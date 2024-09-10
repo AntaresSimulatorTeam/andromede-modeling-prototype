@@ -35,14 +35,14 @@ from andromede.expression.context_adder import add_component_context
 from andromede.expression.evaluate_parameters import evaluate_time_id
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.operators_expansion import expand_operators, ProblemDimensions
+from andromede.expression.operators_expansion import ProblemDimensions, expand_operators
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.expression.scenario_operator import Expectation
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
-from andromede.simulation.linearize import linearize_expression, ParameterGetter
+from andromede.simulation.linearize import ParameterGetter, linearize_expression
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
@@ -336,7 +336,13 @@ class OptimizationContext:
 
     # TODO: Need to think about data processing when creating blocks with varying or inequal time steps length (aggregation, sum ?, mean of data ?)
     def block_timestep_to_absolute_timestep(self, block_timestep: int) -> int:
-        return self._block.timesteps[block_timestep]
+        return self._block.timesteps[self.get_actual_block_timestep(block_timestep)]
+
+    def get_actual_block_timestep(self, block_timestep):
+        if self._border_management == BlockBorderManagement.CYCLE:
+            return block_timestep % self.block_length()
+        else:
+            raise NotImplementedError()
 
     @property
     def database(self) -> DataBase:
@@ -551,9 +557,7 @@ def _create_objective(
                 opt_context, timestep, scenario, component_id, parameter_name
             )
 
-    linear_expr = linearize_expression(
-        expanded, 0, 0, Params()
-    )
+    linear_expr = linearize_expression(expanded, 0, 0, Params())
 
     obj: lp.Objective = solver.Objective()
     for term in linear_expr.terms.values():
