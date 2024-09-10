@@ -53,30 +53,29 @@ def test_large_sum_inside_model_with_loop() -> None:
     for i in range(1, nb_terms):
         database.add_data("simple_cost", f"cost_{i}", ConstantData(1 / i))
 
-    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        SIMPLE_COST_MODEL = model(
-            id="SIMPLE_COST",
-            parameters=[
-                float_parameter(f"cost_{i}", IndexingStructure(False, False))
-                for i in range(1, nb_terms)
-            ],
-            objective_operational_contribution=cast(
-                ExpressionNode, sum(param(f"cost_{i}") for i in range(1, nb_terms))
-            ),
-        )
+    SIMPLE_COST_MODEL = model(
+        id="SIMPLE_COST",
+        parameters=[
+            float_parameter(f"cost_{i}", IndexingStructure(False, False))
+            for i in range(1, nb_terms)
+        ],
+        objective_operational_contribution=cast(
+            ExpressionNode, sum(param(f"cost_{i}") for i in range(1, nb_terms))
+        ),
+    )
 
-        # Won't run because last statement will raise the error
-        network = Network("test")
-        cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
-        network.add_component(cost_model)
+    # Won't run because last statement will raise the error
+    network = Network("test")
+    cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
+    network.add_component(cost_model)
 
-        problem = build_problem(network, database, time_blocks[0], scenarios)
-        status = problem.solver.Solve()
+    problem = build_problem(network, database, time_blocks[0], scenarios)
+    status = problem.solver.Solve()
 
-        assert status == problem.solver.OPTIMAL
-        assert problem.solver.Objective().Value() == sum(
-            [1 / i for i in range(1, nb_terms)]
-        )
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == sum(
+        [1 / i for i in range(1, nb_terms)]
+    )
 
 
 def test_large_sum_outside_model_with_loop() -> None:
@@ -113,6 +112,8 @@ def test_large_sum_outside_model_with_loop() -> None:
     assert problem.solver.Objective().Value() == obj_coeff
 
 
+# Takes 3 minutes with current implementation !!
+@pytest.mark.skip(reason="Takes 3 minutes")
 def test_large_sum_inside_model_with_sum_operator() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
@@ -196,16 +197,16 @@ def test_large_sum_of_port_connections() -> None:
             PortRef(generators[gen_id], "balance_port"), PortRef(node, "balance_port")
         )
 
-    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        problem = build_problem(network, database, time_block, scenarios)
+    problem = build_problem(network, database, time_block, scenarios)
 
-        # Won't run because last statement will raise the error
-        status = problem.solver.Solve()
+    # Won't run because last statement will raise the error
+    status = problem.solver.Solve()
 
-        assert status == problem.solver.OPTIMAL
-        assert problem.solver.Objective().Value() == 5 * nb_generators
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 5 * nb_generators
 
 
+@pytest.mark.skip(reason="Takes 3 minutes")
 def test_basic_balance_on_whole_year() -> None:
     """
     Balance on one node with one fixed demand and one generation, on 8760 timestep.

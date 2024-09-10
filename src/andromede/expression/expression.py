@@ -16,7 +16,7 @@ Defines the model for generic expressions.
 import enum
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Sequence, Union, List
+from typing import Any, Callable, List, Optional, Sequence, Union
 
 import andromede.expression.port_operator
 import andromede.expression.scenario_operator
@@ -327,4 +327,4 @@ def sum_expressions(expressions: Sequence[ExpressionNode]) -> ExpressionNode:
         return LiteralNode(0)
     if len(expressions) == 1:
         return expressions[0]
-    return expressions[0] + sum_expressions(expressions[1:])
+    return AdditionNode([e for e in expressions])
