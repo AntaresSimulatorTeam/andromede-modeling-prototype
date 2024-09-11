@@ -23,7 +23,7 @@ from andromede.model import (
     model,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
-from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation import TimeBlock, build_problem, scenario_playlist
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -171,7 +171,9 @@ def test_electrolyzer() -> None:
     )
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 3000

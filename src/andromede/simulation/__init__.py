@@ -14,7 +14,12 @@ from .benders_decomposed import (
     BendersDecomposedProblem,
     build_benders_decomposed_problem,
 )
-from .optimization import BlockBorderManagement, OptimizationProblem, build_problem
+from .optimization import (
+    BlockBorderManagement,
+    OptimizationProblem,
+    build_problem,
+    scenario_playlist,
+)
 from .output_values import BendersSolution, OutputValues
 from .runner import BendersRunner, MergeMPSRunner
 from .strategy import MergedProblemStrategy, ModelSelectionStrategy

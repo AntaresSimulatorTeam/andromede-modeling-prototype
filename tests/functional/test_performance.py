@@ -24,7 +24,7 @@ from andromede.libs.standard import (
     NODE_BALANCE_MODEL,
 )
 from andromede.model import float_parameter, float_variable, model
-from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation import TimeBlock, build_problem, scenario_playlist
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -70,7 +70,9 @@ def test_large_sum_inside_model_with_loop() -> None:
         cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
         network.add_component(cost_model)
 
-        problem = build_problem(network, database, time_blocks[0], scenarios)
+        problem = build_problem(
+            network, database, time_blocks[0], scenario_playlist(scenarios)
+        )
         status = problem.solver.Solve()
 
         assert status == problem.solver.OPTIMAL
@@ -106,7 +108,9 @@ def test_large_sum_outside_model_with_loop() -> None:
     )
     network.add_component(simple_model)
 
-    problem = build_problem(network, database, time_blocks[0], scenarios)
+    problem = build_problem(
+        network, database, time_blocks[0], scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -151,7 +155,9 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
     cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
     network.add_component(cost_model)
 
-    problem = build_problem(network, database, time_blocks[0], scenarios)
+    problem = build_problem(
+        network, database, time_blocks[0], scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -197,7 +203,9 @@ def test_large_sum_of_port_connections() -> None:
         )
 
     with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        problem = build_problem(network, database, time_block, scenarios)
+        problem = build_problem(
+            network, database, time_block, scenario_playlist(scenarios)
+        )
 
         # Won't run because last statement will raise the error
         status = problem.solver.Solve()
@@ -235,7 +243,7 @@ def test_basic_balance_on_whole_year() -> None:
     network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
 
-    problem = build_problem(network, database, time_block, scenarios)
+    problem = build_problem(network, database, time_block, scenario_playlist(scenarios))
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -273,7 +281,7 @@ def test_basic_balance_on_whole_year_with_large_sum() -> None:
     network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
 
-    problem = build_problem(network, database, time_block, scenarios)
+    problem = build_problem(network, database, time_block, scenario_playlist(scenarios))
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

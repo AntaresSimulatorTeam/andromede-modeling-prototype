@@ -207,7 +207,7 @@ def build_benders_decomposed_problem(
     network: Network,
     database: DataBase,
     blocks: List[TimeBlock],
-    scenarios: int,
+    scenarios: List[int],
     *,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
@@ -217,6 +217,7 @@ def build_benders_decomposed_problem(
 
     Returns a Benders Decomposed problem
     """
+    null_scenario: List[int] = []
 
     # Benders Decomposed Master Problem
     master = build_problem(
@@ -225,7 +226,7 @@ def build_benders_decomposed_problem(
         null_time_block := TimeBlock(  # Not necessary for master, but list must be non-empty
             0, [0]
         ),
-        null_scenario := 0,  # Not necessary for master
+        null_scenario,  # Not necessary for master
         problem_name="master",
         border_management=border_management,
         solver_id=solver_id,

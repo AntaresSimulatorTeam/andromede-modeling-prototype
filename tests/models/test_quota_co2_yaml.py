@@ -14,7 +14,12 @@ import math
 from pathlib import Path
 
 from andromede.model.library import Library
-from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation import (
+    OutputValues,
+    TimeBlock,
+    build_problem,
+    scenario_playlist,
+)
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -85,7 +90,9 @@ def test_quota_co2(data_dir: Path, lib: Library, lib_sc: Library) -> None:
     database.add_data("QuotaCO2", "quota", ConstantData(150))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     output = OutputValues(problem)

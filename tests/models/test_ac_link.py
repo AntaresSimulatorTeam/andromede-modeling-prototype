@@ -17,7 +17,12 @@ from andromede.libs.standard import BALANCE_PORT_TYPE, DEMAND_MODEL, GENERATOR_M
 from andromede.model.library import Library, library
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.simulation import OutputValues, TimeBlock, build_problem
+from andromede.simulation import (
+    OutputValues,
+    TimeBlock,
+    build_problem,
+    scenario_playlist,
+)
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -80,7 +85,9 @@ def test_ac_network_no_links(ac_lib: Library) -> None:
     network.connect(PortRef(gen, "balance_port"), PortRef(node, "injections"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -137,7 +144,9 @@ def test_ac_network(ac_lib: Library) -> None:
     network.connect(PortRef(link, "port2"), PortRef(node2, "links"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -206,7 +215,9 @@ def test_parallel_ac_links(ac_lib: Library) -> None:
     network.connect(PortRef(link2, "port2"), PortRef(node2, "links"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -283,7 +294,9 @@ def test_parallel_ac_links_with_pst(ac_lib: Library) -> None:
     network.connect(PortRef(link2, "port2"), PortRef(node2, "links"))
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(
+        network, database, TimeBlock(1, [0]), scenario_playlist(scenarios)
+    )
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

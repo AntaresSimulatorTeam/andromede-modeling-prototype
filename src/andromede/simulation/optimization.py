@@ -19,7 +19,7 @@ import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Union
 
 import ortools.linear_solver.pywraplp as lp
 
@@ -69,8 +69,9 @@ def _get_parameter_value(
     name: str,
 ) -> float:
     data = context.database.get_data(component_id, name)
+    absolute_scenario = context.scenario_to_absolute_scenario(scenario)
     absolute_timestep = context.block_timestep_to_absolute_timestep(block_timestep)
-    return data.get_value(absolute_timestep, scenario)
+    return data.get_value(absolute_timestep, absolute_scenario)
 
 
 # TODO: Maybe add the notion of constant parameter in the model
@@ -304,7 +305,7 @@ class OptimizationContext:
         network: Network,
         database: DataBase,
         block: TimeBlock,
-        scenarios: int,
+        scenarios: List[int],
         border_management: BlockBorderManagement,
     ):
         self._network = network
@@ -323,8 +324,11 @@ class OptimizationContext:
         return self._network
 
     @property
-    def scenarios(self) -> int:
+    def scenarios(self) -> List[int]:
         return self._scenarios
+
+    def scenario_length(self) -> int:
+        return len(self._scenarios)
 
     def block_length(self) -> int:
         return len(self._block.timesteps)
@@ -336,6 +340,12 @@ class OptimizationContext:
     # TODO: Need to think about data processing when creating blocks with varying or inequal time steps length (aggregation, sum ?, mean of data ?)
     def block_timestep_to_absolute_timestep(self, block_timestep: int) -> int:
         return self._block.timesteps[block_timestep]
+
+    def scenario_to_absolute_scenario(self, scenario: int) -> int:
+        if len(self.scenarios) == 0:
+            return 0
+        else:
+            return self.scenarios[scenario]
 
     @property
     def database(self) -> DataBase:
@@ -351,7 +361,7 @@ class OptimizationContext:
         return range(self.block_length()) if index_structure.time else range(1)
 
     def get_scenario_indices(self, index_structure: IndexingStructure) -> Iterable[int]:
-        return range(self.scenarios) if index_structure.scenario else range(1)
+        return range(self.scenario_length()) if index_structure.scenario else range(1)
 
     # TODO: API to improve, variable_structure guides which of the indices block_timestep and scenario should be used
     def get_component_variable(
@@ -509,8 +519,8 @@ def _create_objective(
     for term in linear_expr.terms.values():
         # TODO : How to handle the scenario operator in a general manner ?
         if isinstance(term.scenario_operator, Expectation):
-            weight = 1 / opt_context.scenarios
-            scenario_ids = range(opt_context.scenarios)
+            weight = 1 / opt_context.scenario_length()
+            scenario_ids = range(opt_context.scenario_length())
         else:
             weight = 1
             scenario_ids = range(1)
@@ -761,7 +771,7 @@ class OptimizationProblem:
                         scenario_suffix = (
                             f"_s{scenario}"
                             if var_indexing.is_scenario_varying()
-                            and (self.context.scenarios > 1)
+                            and (self.context.scenario_length() > 1)
                             else ""
                         )
 
@@ -853,7 +863,7 @@ def build_problem(
     network: Network,
     database: DataBase,
     block: TimeBlock,
-    scenarios: int,
+    scenarios: List[int],
     *,
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
@@ -872,3 +882,7 @@ def build_problem(
     )
 
     return OptimizationProblem(problem_name, solver, opt_context, problem_strategy)
+
+
+def scenario_playlist(scenarios: int) -> List[int]:
+    return list(range(scenarios))

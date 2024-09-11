@@ -34,6 +34,7 @@ from andromede.simulation import (
     OutputValues,
     TimeBlock,
     build_problem,
+    scenario_playlist,
 )
 from andromede.study import (
     ConstantData,
@@ -89,7 +90,7 @@ def test_timeseries() -> None:
     time_block = TimeBlock(1, [0, 1])
     scenarios = 1
 
-    problem = build_problem(network, database, time_block, scenarios)
+    problem = build_problem(network, database, time_block, scenario_playlist(scenarios))
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -161,7 +162,7 @@ def test_variable_bound() -> None:
 
     network = create_one_node_network(generator_model)
     database = create_simple_database(max_generation=200)
-    problem = build_problem(network, database, TimeBlock(1, [0]), 1)
+    problem = build_problem(network, database, TimeBlock(1, [0]), scenario_playlist(1))
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
@@ -169,7 +170,7 @@ def test_variable_bound() -> None:
 
     network = create_one_node_network(generator_model)
     database = create_simple_database(max_generation=80)
-    problem = build_problem(network, database, TimeBlock(1, [0]), 1)
+    problem = build_problem(network, database, TimeBlock(1, [0]), scenario_playlist(1))
     status = problem.solver.Solve()
     assert status == problem.solver.INFEASIBLE  # Infeasible
 
@@ -179,7 +180,9 @@ def test_variable_bound() -> None:
         ValueError,
         match="Upper and lower bounds of variable G_generation have the same value: 0",
     ):
-        problem = build_problem(network, database, TimeBlock(1, [0]), 1)
+        problem = build_problem(
+            network, database, TimeBlock(1, [0]), scenario_playlist(1)
+        )
 
     network = create_one_node_network(generator_model)
     database = create_simple_database(max_generation=-10)
@@ -187,7 +190,9 @@ def test_variable_bound() -> None:
         ValueError,
         match=r"Upper bound \(-10\) must be strictly greater than lower bound \(0\) for variable G_generation",
     ):
-        problem = build_problem(network, database, TimeBlock(1, [0]), 1)
+        problem = build_problem(
+            network, database, TimeBlock(1, [0]), scenario_playlist(1)
+        )
 
 
 def generate_data(
@@ -251,7 +256,7 @@ def short_term_storage_base(efficiency: float, horizon: int) -> None:
         network,
         database,
         time_blocks[0],
-        scenarios,
+        scenario_playlist(scenarios),
         border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()

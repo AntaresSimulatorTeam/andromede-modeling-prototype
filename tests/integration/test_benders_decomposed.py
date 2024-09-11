@@ -37,6 +37,7 @@ from andromede.simulation import (
     BendersSolution,
     TimeBlock,
     build_benders_decomposed_problem,
+    scenario_playlist,
 )
 from andromede.study import (
     Component,
@@ -233,7 +234,7 @@ def test_benders_decomposed_integration(
     scenarios = 1
 
     xpansion = build_benders_decomposed_problem(
-        network, database, [TimeBlock(1, [0])], scenarios
+        network, database, [TimeBlock(1, [0])], scenario_playlist(scenarios)
     )
 
     data = {
@@ -324,7 +325,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
         network,
         database,
         [TimeBlock(1, [0]), TimeBlock(2, [1])],
-        scenarios,
+        scenario_playlist(scenarios),
     )
 
     data_output = {
@@ -412,7 +413,7 @@ def test_benders_decomposed_single_time_block_multi_scenario(
         network,
         database,
         [TimeBlock(1, [0])],
-        scenarios,
+        scenario_playlist(scenarios),
     )
 
     data_output = {
@@ -507,7 +508,7 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
         network,
         database,
         [TimeBlock(1, [0]), TimeBlock(2, [1])],
-        scenarios,
+        scenario_playlist(scenarios),
     )
 
     data_output = {

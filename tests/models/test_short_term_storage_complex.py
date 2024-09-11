@@ -14,7 +14,12 @@ from andromede.libs.standard import (
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.libs.standard_sc import SHORT_TERM_STORAGE_COMPLEX
-from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
+from andromede.simulation import (
+    BlockBorderManagement,
+    TimeBlock,
+    build_problem,
+    scenario_playlist,
+)
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -100,7 +105,7 @@ def short_term_storage_base(efficiency: float, horizon: int, result: int) -> Non
         network,
         database,
         time_blocks[0],
-        scenarios,
+        scenario_playlist(scenarios),
         border_management=BlockBorderManagement.CYCLE,
     )
     status = problem.solver.Solve()
