@@ -229,7 +229,7 @@ class OneScenarioIndex(ScenarioIndex):
 @dataclass(frozen=True, eq=False)
 class ProblemParameterNode(ExpressionNode):
     """
-    Represents one variable of the optimization problem
+    Represents one parameter of the optimization problem
     """
 
     component_id: str
