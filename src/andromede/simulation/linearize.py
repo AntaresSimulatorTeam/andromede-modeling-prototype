@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 
 from abc import ABC, abstractmethod
-from dataclasses import Field, dataclass
+from dataclasses import dataclass
 from typing import List, Optional
 
 from andromede.expression import (
@@ -20,8 +20,6 @@ from andromede.expression import (
     ExpressionVisitor,
     MultiplicationNode,
     NegationNode,
-    ValueProvider,
-    resolve_parameters,
 )
 from andromede.expression.expression import (
     AllTimeSumNode,
@@ -47,7 +45,7 @@ from andromede.expression.expression import (
     TimeSumNode,
     VariableNode,
 )
-from andromede.expression.visitor import ExpressionVisitorOperations, T, visit
+from andromede.expression.visitor import visit
 from andromede.simulation.linear_expression import LinearExpression, Term, TermKey
 
 
@@ -85,15 +83,6 @@ class MutableTerm:
         )
 
 
-def generate_key(term: MutableTerm) -> TermKey:
-    return TermKey(
-        term.component_id,
-        term.variable_name,
-        term.time_index,
-        term.scenario_index,
-    )
-
-
 @dataclass
 class LinearExpressionData:
     terms: List[MutableTerm]
@@ -102,7 +91,7 @@ class LinearExpressionData:
     def build(self) -> LinearExpression:
         res_terms = {}
         for t in self.terms:
-            k = generate_key(t)
+            k = t.to_key()
             if k in res_terms:
                 current_t = res_terms[k]
                 current_t.coefficient += t.coefficient
@@ -143,9 +132,13 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
         if not lhs.terms:
             multiplier = lhs.constant
             actual_expr = rhs
-        else:
+        elif not rhs.terms:
             multiplier = rhs.constant
             actual_expr = lhs
+        else:
+            raise ValueError(
+                "At least one operand of a multiplication must be a constant expression."
+            )
         actual_expr.constant *= multiplier
         for t in actual_expr.terms:
             t.coefficient *= multiplier
@@ -154,6 +147,10 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
     def division(self, node: DivisionNode) -> LinearExpressionData:
         lhs = visit(node.left, self)
         rhs = visit(node.right, self)
+        if rhs.terms:
+            raise ValueError(
+                "The second operand of a division must be a constant expression."
+            )
         divider = rhs.constant
         actual_expr = lhs
         actual_expr.constant /= divider

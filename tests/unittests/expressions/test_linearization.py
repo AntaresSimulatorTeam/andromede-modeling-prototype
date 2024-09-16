@@ -1,26 +1,26 @@
 from unittest.mock import Mock
 
 import pytest
+from pydantic._internal._validators import pattern_bytes_validator
+from unittests.expressions.test_expressions import StructureProvider
 
-from andromede.expression import ExpressionNode, var, LiteralNode
+from andromede.expression import ExpressionNode, LiteralNode, literal, var
 from andromede.expression.expression import (
-    comp_var,
-    comp_param,
     ComponentVariableNode,
+    NoScenarioIndex,
+    ProblemVariableNode,
+    TimeShift,
+    comp_param,
+    comp_var,
+    problem_var,
 )
 from andromede.expression.operators_expansion import (
-    expand_operators,
     ProblemDimensions,
     ProblemIndex,
+    expand_operators,
 )
-from andromede.simulation.linear_expression import (
-    LinearExpression,
-    Term,
-)
-from andromede.simulation.linearize import linearize_expression, ParameterGetter
-from unittests.expressions.test_expressions import (
-    StructureProvider,
-)
+from andromede.simulation.linear_expression import LinearExpression, Term
+from andromede.simulation.linearize import ParameterGetter, linearize_expression
 
 P = comp_param("c", "p")
 X = comp_var("c", "x")
@@ -111,7 +111,19 @@ def test_linearization_of_nested_time_operations(
     assert _expand_and_linearize(expr, dimensions, index, params) == expected
 
 
-# def test_expansion_and_linearization():
-#     param_provider = ComponentEvaluationContext()
-#     with pytest.raises(ValueError):
-#         linearize_expression(expr, structure_provider, value_provider)
+def test_invalid_multiplication() -> None:
+    params = Mock(spec=ParameterGetter)
+
+    x = problem_var("c", "x", time_index=TimeShift(0), scenario_index=NoScenarioIndex())
+    expression = x * x
+    with pytest.raises(ValueError, match="constant"):
+        linearize_expression(expression, 0, 0, params)
+
+
+def test_invalid_division() -> None:
+    params = Mock(spec=ParameterGetter)
+
+    x = problem_var("c", "x", time_index=TimeShift(0), scenario_index=NoScenarioIndex())
+    expression = literal(1) / x
+    with pytest.raises(ValueError, match="constant"):
+        linearize_expression(expression, 0, 0, params)
