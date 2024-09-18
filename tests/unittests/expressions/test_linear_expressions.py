@@ -16,11 +16,7 @@ import pytest
 
 from andromede.expression.expression import AllTimeSumNode
 from andromede.expression.scenario_operator import Expectation
-from andromede.simulation.linear_expression import (
-    LinearExpression,
-    Term,
-    TermKey,
-)
+from andromede.simulation.linear_expression import LinearExpression, Term, TermKey
 
 
 @pytest.mark.parametrize(

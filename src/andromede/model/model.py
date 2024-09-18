@@ -39,12 +39,12 @@ from andromede.expression.expression import (
     ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     ScenarioOperatorNode,
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
-    ProblemParameterNode,
-    ProblemVariableNode,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure

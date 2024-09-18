@@ -129,7 +129,9 @@ class EqualityVisitor:
     def addition(self, left: AdditionNode, right: AdditionNode) -> bool:
         left_ops = left.operands
         right_ops = right.operands
-        return len(left_ops) == len(right_ops) and all(self.visit(l, r) for l, r in zip(left_ops, right_ops))
+        return len(left_ops) == len(right_ops) and all(
+            self.visit(l, r) for l, r in zip(left_ops, right_ops)
+        )
 
     def multiplication(
         self, left: MultiplicationNode, right: MultiplicationNode

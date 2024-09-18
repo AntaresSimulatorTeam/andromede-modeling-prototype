@@ -20,9 +20,11 @@ from andromede.expression.expression import (
     ExpressionNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     TimeEvalNode,
     TimeShiftNode,
-    TimeSumNode, ProblemVariableNode, ProblemParameterNode,
+    TimeSumNode,
 )
 
 from .expression import (
