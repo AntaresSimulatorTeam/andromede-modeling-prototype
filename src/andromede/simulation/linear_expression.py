@@ -47,6 +47,75 @@ def is_minus_one(value: float) -> bool:
 
 
 @dataclass(frozen=True)
+class TimeExpansion:
+    """
+    Carries knowledge of which timesteps this term refers to.
+    Simplest one is "only the current timestep"
+    """
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [current_timestep]
+
+    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
+        """
+        Apply another time expansion on this one.
+        For example, a shift of -1 applied to a shift one +1 could provide
+        a no-op TimeExpansion. Not yet supported for now, though.
+        """
+        return other
+
+
+@dataclass(frozen=True)
+class AllTimeExpansion(TimeExpansion):
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [t for t in range(block_length)]
+
+    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
+        raise ValueError("No time operation allowed on all-time sum.")
+
+
+@dataclass(frozen=True)
+class TimeEvalExpansion(TimeExpansion):
+    timestep: int
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [self.timestep]
+
+    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
+        raise ValueError(
+            "Time operation on evaluated expression not supported for now."
+        )
+
+
+@dataclass(frozen=True)
+class TimeShiftExpansion(TimeExpansion):
+    shift: int
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [current_timestep + self.shift]
+
+    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
+        raise ValueError("Time operation on shifted expression not supported for now.")
+
+
+@dataclass(frozen=True)
+class TimeSumExpansion(TimeExpansion):
+    from_shift: int
+    to_shift: int
+
+    def get_timesteps(self, current_timestep: int, block_length: int) -> List[int]:
+        return [
+            t
+            for t in range(
+                current_timestep + self.from_shift, current_timestep + self.to_shift
+            )
+        ]
+
+    def apply(self, other: "TimeExpansion") -> "TimeExpansion":
+        raise ValueError("Time operation on time-sums not supported for now.")
+
+
+@dataclass(frozen=True)
 class TermKey:
 
     """
@@ -85,6 +154,26 @@ def _scenario_index_to_str(scenario_index: ScenarioIndex) -> str:
     if isinstance(scenario_index, OneScenarioIndex):
         return f"{scenario_index.scenario}"
     return ""
+
+
+def _str_for_coeff(coeff: float) -> str:
+    if is_one(coeff):
+        return "+"
+    elif is_minus_one(coeff):
+        return "-"
+    else:
+        return "{:+g}".format(coeff)
+
+
+def _str_for_time_expansion(exp: TimeExpansion) -> str:
+    if isinstance(exp, TimeShiftExpansion):
+        return f".shift({exp.shift})"
+    elif isinstance(exp, TimeSumExpansion):
+        return f".sum({exp.from_shift}, {exp.to_shift})"
+    elif isinstance(exp, AllTimeExpansion):
+        return ".sum()"
+    else:
+        return ""
 
 
 @dataclass(frozen=True)

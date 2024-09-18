@@ -24,7 +24,6 @@ from andromede.expression.expression import (
     TimeShiftNode,
     TimeSumNode, ProblemVariableNode, ProblemParameterNode,
 )
-from andromede.expression.visitor import T
 
 from .expression import (
     AdditionNode,
@@ -62,8 +61,15 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"-({visit(node.operand, self)})"
 
     def addition(self, node: AdditionNode) -> str:
-        values = [visit(o, self) for o in node.operands]
-        return f"({' + '.join(values)})"
+        if len(node.operands) == 0:
+            return ""
+        res = visit(node.operands[0], self)
+        for o in node.operands[1:]:
+            if isinstance(o, NegationNode):
+                res += f" - {visit(o.operand, self)}"
+            else:
+                res += f" + {visit(o, self)}"
+        return f"({res})"
 
     def multiplication(self, node: MultiplicationNode) -> str:
         left_value = visit(node.left, self)
