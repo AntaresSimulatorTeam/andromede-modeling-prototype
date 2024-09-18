@@ -81,7 +81,7 @@ class ComponentEvaluationContext(ValueProvider):
 
 
 def test_comp_parameter() -> None:
-    add_node = AdditionNode(LiteralNode(1), ComponentVariableNode("comp1", "x"))
+    add_node = AdditionNode([LiteralNode(1), ComponentVariableNode("comp1", "x")])
     expr = DivisionNode(add_node, ComponentParameterNode("comp1", "p"))
 
     assert visit(expr, PrinterVisitor()) == "((1 + comp1.x) / comp1.p)"
@@ -93,7 +93,7 @@ def test_comp_parameter() -> None:
 
 
 def test_ast() -> None:
-    add_node = AdditionNode(LiteralNode(1), VariableNode("x"))
+    add_node = AdditionNode([LiteralNode(1), VariableNode("x")])
     expr = DivisionNode(add_node, ParameterNode("p"))
 
     assert visit(expr, PrinterVisitor()) == "((1 + x) / p)"

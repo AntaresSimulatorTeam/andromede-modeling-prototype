@@ -53,6 +53,22 @@ def test_time_sum_is_distributed_on_expression() -> None:
     )
 
 
+@pytest.mark.skip(reason="Not yet supported")
+def test_time_sum_is_distributed_on_expression() -> None:
+    x = comp_var("c", "x")
+    y = comp_var("c", "y")
+    expr = (x + y).time_sum()
+    provider = StructureProvider()
+
+    assert linearize_expression(expr, provider) == LinearExpression(
+        [
+            Term(1, "c", "x", time_expansion=AllTimeExpansion()),
+            Term(1, "c", "y", time_expansion=AllTimeExpansion()),
+        ],
+        0,
+    )
+
+
 X = comp_var("c", "x")
 
 

@@ -16,7 +16,7 @@ Defines the model for generic expressions.
 import enum
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, List, Optional, Sequence, Union
 
 import andromede.expression.port_operator
 import andromede.expression.scenario_operator
@@ -40,16 +40,29 @@ class ExpressionNode:
         return NegationNode(self)
 
     def __add__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: AdditionNode(self, x))
+        lhs = self
+        operands = []
+        rhs = _wrap_in_node(rhs)
+        operands.extend(lhs.operands if isinstance(lhs, AdditionNode) else [lhs])
+        operands.extend(rhs.operands if isinstance(rhs, AdditionNode) else [rhs])
+        return AdditionNode(operands)
 
     def __radd__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: AdditionNode(x, self))
+        lhs = _wrap_in_node(lhs)
+        return lhs + self
 
     def __sub__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: SubstractionNode(self, x))
+        lhs = self
+        operands = []
+        rhs = _wrap_in_node(rhs)
+        operands.extend(lhs.operands if isinstance(lhs, AdditionNode) else [lhs])
+        right_operands = rhs.operands if isinstance(rhs, AdditionNode) else [rhs]
+        operands.extend([-o for o in right_operands])
+        return AdditionNode(operands)
 
     def __rsub__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: SubstractionNode(x, self))
+        lhs = _wrap_in_node(lhs)
+        return lhs + self
 
     def __mul__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(rhs, lambda x: MultiplicationNode(self, x))
@@ -251,13 +264,8 @@ class ComparisonNode(BinaryOperatorNode):
 
 
 @dataclass(frozen=True, eq=False)
-class AdditionNode(BinaryOperatorNode):
-    pass
-
-
-@dataclass(frozen=True, eq=False)
-class SubstractionNode(BinaryOperatorNode):
-    pass
+class AdditionNode(ExpressionNode):
+    operands: List[ExpressionNode]
 
 
 @dataclass(frozen=True, eq=False)
@@ -319,4 +327,4 @@ def sum_expressions(expressions: Sequence[ExpressionNode]) -> ExpressionNode:
         return LiteralNode(0)
     if len(expressions) == 1:
         return expressions[0]
-    return expressions[0] + sum_expressions(expressions[1:])
+    return AdditionNode([e for e in expressions])
