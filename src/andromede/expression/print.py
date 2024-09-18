@@ -14,11 +14,15 @@ from dataclasses import dataclass
 from typing import Dict
 
 from andromede.expression.expression import (
+    AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
     ExpressionNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 from andromede.expression.visitor import T
 
@@ -33,8 +37,6 @@ from .expression import (
     ParameterNode,
     ScenarioOperatorNode,
     SubstractionNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, visit
@@ -98,12 +100,17 @@ class PrinterVisitor(ExpressionVisitor[str]):
     def comp_parameter(self, node: ComponentParameterNode) -> str:
         return f"{node.component_id}.{node.name}"
 
-    # TODO: Add pretty print for node.instances_index
-    def time_operator(self, node: TimeOperatorNode) -> str:
-        return f"({visit(node.operand, self)}.{str(node.name)}({node.instances_index}))"
+    def time_shift(self, node: TimeShiftNode) -> str:
+        return f"({visit(node.operand, self)}.shift({visit(node.time_shift, self)}))"
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> str:
-        return f"({visit(node.operand, self)}.{str(node.name)}({node.stay_roll}))"
+    def time_eval(self, node: TimeEvalNode) -> str:
+        return f"({visit(node.operand, self)}.eval({visit(node.eval_time, self)}))"
+
+    def time_sum(self, node: TimeSumNode) -> str:
+        return f"({visit(node.operand, self)}.time_sum({visit(node.from_time, self)}, {visit(node.to_time, self)}))"
+
+    def all_time_sum(self, node: AllTimeSumNode) -> str:
+        return f"({visit(node.operand, self)}.time_sum())"
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> str:
         return f"({visit(node.operand, self)}.{str(node.name)})"

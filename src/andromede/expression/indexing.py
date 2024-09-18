@@ -13,11 +13,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-import andromede.expression.time_operator
 from andromede.expression.indexing_structure import IndexingStructure
 
 from .expression import (
     AdditionNode,
+    AllTimeSumNode,
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
@@ -31,8 +31,9 @@ from .expression import (
     PortFieldNode,
     ScenarioOperatorNode,
     SubstractionNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, T, visit
@@ -109,18 +110,17 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
             node.component_id, node.name
         )
 
-    def time_operator(self, node: TimeOperatorNode) -> IndexingStructure:
-        time_operator_cls = getattr(andromede.expression.time_operator, node.name)
-        if time_operator_cls.rolling():
-            return visit(node.operand, self)
-        else:
-            return IndexingStructure(False, visit(node.operand, self).scenario)
+    def time_shift(self, node: TimeShiftNode) -> IndexingStructure:
+        return visit(node.operand, self)
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> IndexingStructure:
-        if node.stay_roll:
-            return visit(node.operand, self)
-        else:
-            return IndexingStructure(False, visit(node.operand, self).scenario)
+    def time_eval(self, node: TimeEvalNode) -> IndexingStructure:
+        return visit(node.operand, self)
+
+    def time_sum(self, node: TimeSumNode) -> IndexingStructure:
+        return visit(node.operand, self)
+
+    def all_time_sum(self, node: AllTimeSumNode) -> IndexingStructure:
+        return IndexingStructure(False, visit(node.operand, self).scenario)
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> IndexingStructure:
         return IndexingStructure(visit(node.operand, self).time, False)

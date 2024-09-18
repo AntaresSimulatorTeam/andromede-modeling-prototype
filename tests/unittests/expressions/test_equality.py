@@ -10,21 +10,10 @@
 #
 # This file is part of the Antares project.
 
-import math
-
 import pytest
 
 from andromede.expression import ExpressionNode, copy_expression, literal, param, var
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression import (
-    ExpressionRange,
-    TimeAggregatorNode,
-    expression_range,
-)
-
-
-def shifted_x() -> ExpressionNode:
-    return var("x").shift(expression_range(0, 2))
 
 
 @pytest.mark.parametrize(
@@ -36,10 +25,9 @@ def shifted_x() -> ExpressionNode:
         var("x") - 1,
         var("x") / 2,
         var("x") * 3,
-        var("x").shift(expression_range(1, 10, 2)).sum(),
-        var("x").shift(expression_range(1, param("p"))).sum(),
-        TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=True),
-        TimeAggregatorNode(shifted_x(), name="TimeAggregator", stay_roll=True),
+        var("x").time_sum(1, 10),
+        var("x").time_sum(1, param("p")),
+        var("x").time_sum(),
         var("x") + 5 <= 2,
         var("x").expec(),
     ],
@@ -56,20 +44,12 @@ def test_equals(expr: ExpressionNode) -> None:
         (literal(1), literal(2)),
         (var("x") + 1, var("x")),
         (
-            var("x").shift(expression_range(1, param("p"))).sum(),
-            var("x").shift(expression_range(1, param("q"))).sum(),
+            var("x").time_sum(1, param("p")),
+            var("x").time_sum(1, param("q")),
         ),
         (
-            var("x").shift(expression_range(1, 10, 2)).sum(),
-            var("x").shift(expression_range(1, 10, 3)).sum(),
-        ),
-        (
-            TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=True),
-            TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=False),
-        ),
-        (
-            TimeAggregatorNode(shifted_x(), name="TimeSum", stay_roll=True),
-            TimeAggregatorNode(shifted_x(), name="TimeAggregator", stay_roll=True),
+            var("x").time_sum(2, 10),
+            var("x").time_sum(1, 10),
         ),
         (var("x").expec(), var("y").expec()),
     ],

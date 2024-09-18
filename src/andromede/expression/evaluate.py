@@ -15,28 +15,25 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 from andromede.expression.expression import (
+    AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 
 from .expression import (
-    AdditionNode,
     ComparisonNode,
-    DivisionNode,
     ExpressionNode,
     LiteralNode,
-    MultiplicationNode,
-    NegationNode,
     ParameterNode,
     ScenarioOperatorNode,
-    SubstractionNode,
-    TimeAggregatorNode,
     VariableNode,
 )
-from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
+from .visitor import ExpressionVisitorOperations, visit
 
 
 class ValueProvider(ABC):
@@ -120,10 +117,16 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
     def comp_variable(self, node: ComponentVariableNode) -> float:
         return self.context.get_component_variable_value(node.component_id, node.name)
 
-    def time_operator(self, node: TimeOperatorNode) -> float:
+    def time_shift(self, node: TimeShiftNode) -> float:
         raise NotImplementedError()
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> float:
+    def time_eval(self, node: TimeEvalNode) -> float:
+        raise NotImplementedError()
+
+    def time_sum(self, node: TimeSumNode) -> float:
+        raise NotImplementedError()
+
+    def all_time_sum(self, node: AllTimeSumNode) -> float:
         raise NotImplementedError()
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> float:
@@ -156,8 +159,14 @@ class InstancesIndexVisitor(EvaluationVisitor):
             )
         return self.context.get_parameter_value(node.name)
 
-    def time_operator(self, node: TimeOperatorNode) -> float:
-        raise ValueError("An instance index expression cannot contain time operator")
+    def time_shift(self, node: TimeShiftNode) -> float:
+        raise ValueError("An instance index expression cannot contain time shift")
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> float:
-        raise ValueError("An instance index expression cannot contain time aggregator")
+    def time_eval(self, node: TimeEvalNode) -> float:
+        raise ValueError("An instance index expression cannot contain time eval")
+
+    def time_sum(self, node: TimeSumNode) -> float:
+        raise ValueError("An instance index expression cannot contain time sum")
+
+    def all_time_sum(self, node: AllTimeSumNode) -> float:
+        raise ValueError("An instance index expression cannot contain time sum")

@@ -14,7 +14,7 @@
 The standard module contains the definition of standard models.
 """
 from andromede.expression import literal, param, var
-from andromede.expression.expression import ExpressionRange, port_field
+from andromede.expression.expression import port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.constraint import Constraint
 from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
@@ -60,7 +60,7 @@ NODE_WITH_SPILL_AND_ENS_MODEL = model(
         param("spillage_cost") * var("spillage")
         + param("ens_cost") * var("unsupplied_energy")
     )
-    .sum()
+    .time_sum()
     .expec(),
 )
 
@@ -129,7 +129,7 @@ GENERATOR_MODEL = model(
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
-    .sum()
+    .time_sum()
     .expec(),
 )
 
@@ -159,7 +159,7 @@ GENERATOR_MODEL_WITH_PMIN = model(
         ),  # To test both ways of setting constraints
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
-    .sum()
+    .time_sum()
     .expec(),
 )
 
@@ -188,11 +188,11 @@ GENERATOR_MODEL_WITH_STORAGE = model(
         ),
         Constraint(
             name="Total storage",
-            expression=var("generation").sum() <= param("full_storage"),
+            expression=var("generation").time_sum() <= param("full_storage"),
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
-    .sum()
+    .time_sum()
     .expec(),
 )
 
@@ -254,22 +254,17 @@ THERMAL_CLUSTER_MODEL_HD = model(
         ),
         Constraint(
             "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            var("nb_start").time_sum(-param("d_min_up") + 1, literal(0))
             <= var("nb_on"),
         ),
         Constraint(
             "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
+            var("nb_stop").time_sum(-param("d_min_down") + 1, literal(0))
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
         ),
-        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
-    .sum()
+    .time_sum()
     .expec(),
 )
 
@@ -331,21 +326,17 @@ THERMAL_CLUSTER_MODEL_DHD = model(
         ),
         Constraint(
             "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            var("nb_start").time_sum(-param("d_min_up") + 1, literal(0))
             <= var("nb_on"),
         ),
         Constraint(
             "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
+            var("nb_stop").time_sum(-param("d_min_down") + 1, literal(0))
             <= param("nb_units_max").shift(-param("d_min_down")) - var("nb_on"),
         ),
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
-    .sum()
+    .time_sum()
     .expec(),
 )
 
@@ -360,7 +351,9 @@ SPILLAGE_MODEL = model(
             definition=-var("spillage"),
         )
     ],
-    objective_operational_contribution=(param("cost") * var("spillage")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("spillage"))
+    .time_sum()
+    .expec(),
 )
 
 UNSUPPLIED_ENERGY_MODEL = model(
@@ -375,7 +368,7 @@ UNSUPPLIED_ENERGY_MODEL = model(
         )
     ],
     objective_operational_contribution=(param("cost") * var("unsupplied_energy"))
-    .sum()
+    .time_sum()
     .expec(),
 )
 

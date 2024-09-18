@@ -182,7 +182,7 @@ library:
         - name: on units variation
           expression: nb_units_on = nb_units_on[t-1] + nb_starting - nb_stoping
         - name: starting time
-          expression: sum(nb_starting[t-d_min_up + 1 .. t]) <= nb_units_on
+          expression: sum(t-d_min_up + 1 .. t, nb_starting) <= nb_units_on
         - name: stoping time
-          expression: sum(nb_stoping[t-d_min_down + 1 .. t]) <= nb_units_max - nb_units_on
+          expression: sum(t-d_min_down + 1 .. t, nb_stoping) <= nb_units_max - nb_units_on
       objective: expec(sum(cost * production))

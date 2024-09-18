@@ -66,7 +66,7 @@ def test_library_parsing(data_dir: Path) -> None:
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
     )
     short_term_storage = lib.models["short-term-storage"]

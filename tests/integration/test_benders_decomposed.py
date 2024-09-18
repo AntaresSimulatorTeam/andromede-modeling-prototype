@@ -91,7 +91,7 @@ def thermal_candidate() -> Model:
             )
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
         objective_investment_contribution=param("invest_cost") * var("p_max"),
     )
@@ -142,7 +142,7 @@ def discrete_candidate() -> Model:
             ),
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
         objective_investment_contribution=param("invest_cost") * var("p_max"),
     )

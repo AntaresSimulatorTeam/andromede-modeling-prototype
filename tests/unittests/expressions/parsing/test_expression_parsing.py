@@ -15,7 +15,7 @@ import pytest
 
 from andromede.expression import ExpressionNode, literal, param, print_expr, var
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression import ExpressionRange, port_field
+from andromede.expression.expression import port_field
 from andromede.expression.parsing.parse_expression import (
     AntaresParseException,
     ModelIdentifiers,
@@ -41,22 +41,10 @@ from andromede.expression.parsing.parse_expression import (
             "port.f <= 0",
             port_field("port", "f") <= 0,
         ),
-        ({"x"}, {}, "sum(x)", var("x").sum()),
+        ({"x"}, {}, "sum(x)", var("x").time_sum()),
         ({"x"}, {}, "x[-1]", var("x").eval(-literal(1))),
-        (
-            {"x"},
-            {},
-            "x[-1..5]",
-            var("x").eval(ExpressionRange(-literal(1), literal(5))),
-        ),
         ({"x"}, {}, "x[1]", var("x").eval(1)),
         ({"x"}, {}, "x[t-1]", var("x").shift(-literal(1))),
-        (
-            {"x"},
-            {},
-            "x[t-1, t+4]",
-            var("x").shift([-literal(1), literal(4)]),
-        ),
         (
             {"x"},
             {},
@@ -90,35 +78,23 @@ from andromede.expression.parsing.parse_expression import (
         (
             {"x"},
             {},
-            "x[t-1, t, t+4]",
-            var("x").shift([-literal(1), literal(0), literal(4)]),
+            "sum(t-1..t+5, x)",
+            var("x").time_sum(-literal(1), literal(5)),
         ),
         (
             {"x"},
             {},
-            "x[t-1..t+5]",
-            var("x").shift(ExpressionRange(-literal(1), literal(5))),
+            "sum(t-1..t, x)",
+            var("x").time_sum(-literal(1), literal(0)),
         ),
         (
             {"x"},
             {},
-            "x[t-1..t]",
-            var("x").shift(ExpressionRange(-literal(1), literal(0))),
-        ),
-        (
-            {"x"},
-            {},
-            "x[t..t+5]",
-            var("x").shift(ExpressionRange(literal(0), literal(5))),
+            "sum(t..t+5, x)",
+            var("x").time_sum(literal(0), literal(5)),
         ),
         ({"x"}, {}, "x[t]", var("x")),
         ({"x"}, {"p"}, "x[t+p]", var("x").shift(param("p"))),
-        (
-            {"x"},
-            {},
-            "sum(x[-1..5])",
-            var("x").eval(ExpressionRange(-literal(1), literal(5))).sum(),
-        ),
         ({}, {}, "sum_connections(port.f)", port_field("port", "f").sum_connections()),
         (
             {"level", "injection", "withdrawal"},
@@ -133,17 +109,15 @@ from andromede.expression.parsing.parse_expression import (
         (
             {"nb_start", "nb_on"},
             {"d_min_up"},
-            "sum(nb_start[-d_min_up + 1 .. 0]) <= nb_on",
-            var("nb_start")
-            .eval(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
+            "sum(t - d_min_up + 1 .. t, nb_start) <= nb_on",
+            var("nb_start").time_sum(-param("d_min_up") + 1, literal(0))
             <= var("nb_on"),
         ),
         (
             {"generation"},
             {"cost"},
             "expec(sum(cost * generation))",
-            (param("cost") * var("generation")).sum().expec(),
+            (param("cost") * var("generation")).time_sum().expec(),
         ),
     ],
 )

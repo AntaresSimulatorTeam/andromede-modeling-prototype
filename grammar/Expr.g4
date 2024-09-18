@@ -25,11 +25,11 @@ expr
     | expr op=('/' | '*') expr                 # muldiv
     | expr op=('+' | '-') expr                 # addsub
     | expr COMPARISON expr                     # comparison
+    | 'sum' '(' expr ')'                    # allTimeSum
+    | 'sum' '(' from=shift '..' to=shift ',' expr ')'  # timeSum
     | IDENTIFIER '(' expr ')'                  # function
-    | IDENTIFIER '[' shift (',' shift)* ']'    # timeShift
-    | IDENTIFIER '[' expr  (',' expr )* ']'    # timeIndex
-    | IDENTIFIER '[' shift1=shift '..' shift2=shift ']'     # timeShiftRange
-    | IDENTIFIER '[' expr '..' expr ']'        # timeRange
+    | IDENTIFIER '[' shift ']'                 # timeShift
+    | IDENTIFIER '[' expr  ']'                 # timeIndex
     ;
 
 atom

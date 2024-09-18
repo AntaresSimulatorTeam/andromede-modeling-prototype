@@ -64,7 +64,7 @@ ELECTRICAL_GENERATOR_MODEL = model(
         )
     ],
     objective_operational_contribution=(param("cost") * var("generation"))
-    .sum()
+    .time_sum()
     .expec(),
 )
 
