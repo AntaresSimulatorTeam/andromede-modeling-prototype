@@ -1,14 +1,11 @@
 from unittest.mock import Mock
 
 import pytest
-from pydantic._internal._validators import pattern_bytes_validator
-from unittests.expressions.test_expressions import StructureProvider
 
 from andromede.expression import ExpressionNode, LiteralNode, literal, var
 from andromede.expression.expression import (
     ComponentVariableNode,
     NoScenarioIndex,
-    ProblemVariableNode,
     TimeShift,
     comp_param,
     comp_var,
@@ -21,6 +18,8 @@ from andromede.expression.operators_expansion import (
 )
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import ParameterGetter, linearize_expression
+
+from .test_expressions import StructureProvider
 
 P = comp_param("c", "p")
 X = comp_var("c", "x")
