@@ -106,10 +106,10 @@ class OperatorsExpansion(CopyVisitor):
             nodes.append(apply_scenario(operand, t))
         return sum_expressions(nodes) / self.scenarios_count
 
-    def pb_parameter(self, node: ProblemParameterNode) -> T:
+    def pb_parameter(self, node: ProblemParameterNode) -> ExpressionNode:
         raise ValueError("Should not reach")
 
-    def pb_variable(self, node: ProblemVariableNode) -> T:
+    def pb_variable(self, node: ProblemVariableNode) -> ExpressionNode:
         raise ValueError("Should not reach")
 
 

@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from andromede.expression import (
     AdditionNode,
@@ -34,6 +34,7 @@ from andromede.expression.expression import (
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
     ProblemVariableNode,
     ScenarioIndex,
     ScenarioOperatorNode,
@@ -89,7 +90,7 @@ class LinearExpressionData:
     constant: float
 
     def build(self) -> LinearExpression:
-        res_terms = {}
+        res_terms: Dict[TermKey, Any] = {}
         for t in self.terms:
             k = t.to_key()
             if k in res_terms:
@@ -120,7 +121,7 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
     def addition(self, node: AdditionNode) -> LinearExpressionData:
         operands = [visit(o, self) for o in node.operands]
         terms = []
-        constant = 0
+        constant: float = 0
         for o in operands:
             constant += o.constant
             terms.extend(o.terms)
@@ -170,12 +171,18 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
             return time_index.timestep
         if isinstance(time_index, NoTimeIndex):
             return self.timestep
+        else:
+            raise TypeError(f"Type {type(time_index)} is not a valid TimeIndex type.")
 
     def _get_scenario(self, scenario_index: ScenarioIndex) -> int:
         if isinstance(scenario_index, OneScenarioIndex):
             return scenario_index.scenario
         if isinstance(scenario_index, NoScenarioIndex):
             return self.scenario
+        else:
+            raise TypeError(
+                f"Type {type(scenario_index)} is not a valid TimeIndex type."
+            )
 
     def literal(self, node: LiteralNode) -> LinearExpressionData:
         return LinearExpressionData([], node.value)
@@ -215,7 +222,7 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
             "Parameters need to be associated with their timestep/scenario before linearization."
         )
 
-    def pb_parameter(self, node: ProblemVariableNode) -> LinearExpressionData:
+    def pb_parameter(self, node: ProblemParameterNode) -> LinearExpressionData:
         # TODO SL: not the best place to do this.
         # in the future, we should evaluate coefficients of variables as time vectors once for all timesteps
         time_index = self._get_timestep(node.time_index)

@@ -244,28 +244,7 @@ class ComponentContext:
             scenario,
             self.component.id,
             variable_name,
-            self.component.model.variables[variable_name].structure,
         )
-
-    def linearize_expression(
-        self,
-        block_timestep: int,
-        scenario: int,
-        expression: ExpressionNode,
-    ) -> LinearExpression:
-        parameters_valued_provider = _make_parameter_value_provider(
-            self.opt_context, block_timestep, scenario
-        )
-        evaluated_expr = resolve_parameters(expression, parameters_valued_provider)
-
-        value_provider = _make_value_provider(
-            self.opt_context, block_timestep, scenario, self.component
-        )
-        structure_provider = _make_data_structure_provider(
-            self.opt_context.network, self.component
-        )
-
-        return linearize_expression(evaluated_expr, structure_provider, value_provider)
 
 
 class BlockBorderManagement(Enum):
@@ -338,7 +317,7 @@ class OptimizationContext:
     def block_timestep_to_absolute_timestep(self, block_timestep: int) -> int:
         return self._block.timesteps[self.get_actual_block_timestep(block_timestep)]
 
-    def get_actual_block_timestep(self, block_timestep):
+    def get_actual_block_timestep(self, block_timestep: int) -> int:
         if self._border_management == BlockBorderManagement.CYCLE:
             return block_timestep % self.block_length()
         else:

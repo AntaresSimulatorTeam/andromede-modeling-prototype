@@ -156,15 +156,6 @@ def _scenario_index_to_str(scenario_index: ScenarioIndex) -> str:
     return ""
 
 
-def _str_for_coeff(coeff: float) -> str:
-    if is_one(coeff):
-        return "+"
-    elif is_minus_one(coeff):
-        return "-"
-    else:
-        return "{:+g}".format(coeff)
-
-
 def _str_for_time_expansion(exp: TimeExpansion) -> str:
     if isinstance(exp, TimeShiftExpansion):
         return f".shift({exp.shift})"
