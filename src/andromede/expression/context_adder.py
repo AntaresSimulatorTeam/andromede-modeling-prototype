@@ -18,7 +18,9 @@ from .expression import (
     ComponentVariableNode,
     ExpressionNode,
     ParameterNode,
-    VariableNode, ProblemVariableNode, ProblemParameterNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
+    VariableNode,
 )
 from .visitor import visit
 

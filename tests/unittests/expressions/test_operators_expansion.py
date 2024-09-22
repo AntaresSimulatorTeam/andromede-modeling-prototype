@@ -3,18 +3,15 @@ import pytest
 from andromede.expression import ExpressionNode, LiteralNode
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
+    NoScenarioIndex,
+    TimeShift,
+    TimeStep,
     comp_param,
     comp_var,
     problem_param,
     problem_var,
-    TimeStep,
-    TimeShift,
-    NoScenarioIndex,
 )
-from andromede.expression.operators_expansion import (
-    expand_operators,
-    ProblemDimensions,
-)
+from andromede.expression.operators_expansion import ProblemDimensions, expand_operators
 
 P = comp_param("c", "p")
 X = comp_var("c", "x")
@@ -58,7 +55,5 @@ def evaluate_literal(node: ExpressionNode) -> int:
     ],
 )
 def test_operators_expansion(expr: ExpressionNode, expected: ExpressionNode) -> None:
-    expanded = expand_operators(
-        expr, ProblemDimensions(2, 1), evaluate_literal
-    )
+    expanded = expand_operators(expr, ProblemDimensions(2, 1), evaluate_literal)
     assert expressions_equal(expanded, expected)
