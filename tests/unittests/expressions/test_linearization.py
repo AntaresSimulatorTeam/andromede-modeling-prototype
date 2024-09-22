@@ -5,6 +5,7 @@ import pytest
 from andromede.expression import ExpressionNode, LiteralNode, literal, var
 from andromede.expression.expression import (
     ComponentVariableNode,
+    CurrentScenarioIndex,
     NoScenarioIndex,
     TimeShift,
     comp_param,
@@ -111,7 +112,9 @@ def test_linearization_of_nested_time_operations(
 def test_invalid_multiplication() -> None:
     params = Mock(spec=ParameterGetter)
 
-    x = problem_var("c", "x", time_index=TimeShift(0), scenario_index=NoScenarioIndex())
+    x = problem_var(
+        "c", "x", time_index=TimeShift(0), scenario_index=CurrentScenarioIndex()
+    )
     expression = x * x
     with pytest.raises(ValueError, match="constant"):
         linearize_expression(expression, 0, 0, params)
@@ -120,7 +123,9 @@ def test_invalid_multiplication() -> None:
 def test_invalid_division() -> None:
     params = Mock(spec=ParameterGetter)
 
-    x = problem_var("c", "x", time_index=TimeShift(0), scenario_index=NoScenarioIndex())
+    x = problem_var(
+        "c", "x", time_index=TimeShift(0), scenario_index=CurrentScenarioIndex()
+    )
     expression = literal(1) / x
     with pytest.raises(ValueError, match="constant"):
         linearize_expression(expression, 0, 0, params)

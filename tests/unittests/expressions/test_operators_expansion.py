@@ -3,6 +3,7 @@ import pytest
 from andromede.expression import ExpressionNode, LiteralNode
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
+    CurrentScenarioIndex,
     NoScenarioIndex,
     TimeShift,
     TimeStep,
@@ -18,19 +19,19 @@ X = comp_var("c", "x")
 
 
 def shifted_P(t: int = 0):
-    return problem_param("c", "p", TimeShift(t), NoScenarioIndex())
+    return problem_param("c", "p", TimeShift(t), CurrentScenarioIndex())
 
 
 def P_at(t: int = 0):
-    return problem_param("c", "p", TimeStep(t), NoScenarioIndex())
+    return problem_param("c", "p", TimeStep(t), CurrentScenarioIndex())
 
 
 def X_at(t: int = 0):
-    return problem_var("c", "x", TimeStep(t), NoScenarioIndex())
+    return problem_var("c", "x", TimeStep(t), CurrentScenarioIndex())
 
 
 def shifted_X(t: int = 0):
-    return problem_var("c", "x", TimeShift(t), NoScenarioIndex())
+    return problem_var("c", "x", TimeShift(t), CurrentScenarioIndex())
 
 
 def evaluate_literal(node: ExpressionNode) -> int:

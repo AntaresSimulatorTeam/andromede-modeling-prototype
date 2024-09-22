@@ -7,6 +7,7 @@ from andromede.expression.expression import (
     AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    CurrentScenarioIndex,
     NoScenarioIndex,
     NoTimeIndex,
     OneScenarioIndex,
@@ -61,13 +62,15 @@ class OperatorsExpansion(CopyVisitor):
     evaluator: ExpressionEvaluator
 
     def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
+        # TODO: if variable is not time or scenario dependent, we should have "no index" here
         return problem_var(
-            node.component_id, node.name, TimeShift(0), NoScenarioIndex()
+            node.component_id, node.name, TimeShift(0), CurrentScenarioIndex()
         )
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
+        # TODO: if variable is not time or scenario dependent, we should have "no index" here
         return problem_param(
-            node.component_id, node.name, TimeShift(0), NoScenarioIndex()
+            node.component_id, node.name, TimeShift(0), CurrentScenarioIndex()
         )
 
     def time_shift(self, node: TimeShiftNode) -> ExpressionNode:

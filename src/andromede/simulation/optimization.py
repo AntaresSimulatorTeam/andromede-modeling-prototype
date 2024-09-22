@@ -28,7 +28,6 @@ from andromede.expression import (
     ExpressionNode,
     ParameterValueProvider,
     ValueProvider,
-    resolve_parameters,
     visit,
 )
 from andromede.expression.context_adder import add_component_context
@@ -37,7 +36,6 @@ from andromede.expression.indexing import IndexingStructureProvider, compute_ind
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.operators_expansion import ProblemDimensions, expand_operators
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
-from andromede.expression.scenario_operator import Expectation
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId

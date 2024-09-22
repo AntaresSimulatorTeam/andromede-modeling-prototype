@@ -198,16 +198,29 @@ class TimeIndex:
 
 @dataclass(frozen=True)
 class NoTimeIndex(TimeIndex):
+    """
+    Some values do not depend on the timestep, this index should be used for them
+    (think one variable for all timesteps).
+    """
+
     pass
 
 
 @dataclass(frozen=True)
 class TimeShift(TimeIndex):
+    """
+    Represents the current timestep + a shift
+    """
+
     timeshift: int
 
 
 @dataclass(frozen=True)
 class TimeStep(TimeIndex):
+    """
+    Represents a given timestep, independently of the current timestep
+    """
+
     timestep: int
 
 
@@ -218,11 +231,29 @@ class ScenarioIndex:
 
 @dataclass(frozen=True)
 class NoScenarioIndex(ScenarioIndex):
+    """
+    Some values do not depend on the scenario, this index should be used for them
+    (think one variable for all timesteps).
+    """
+
+    pass
+
+
+@dataclass(frozen=True)
+class CurrentScenarioIndex(ScenarioIndex):
+    """
+    Represents the current scenario
+    """
+
     pass
 
 
 @dataclass(frozen=True)
 class OneScenarioIndex(ScenarioIndex):
+    """
+    Represents a given scenario out of all scenarios.
+    """
+
     scenario: int
 
 

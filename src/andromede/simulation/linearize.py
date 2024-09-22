@@ -26,6 +26,7 @@ from andromede.expression.expression import (
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    CurrentScenarioIndex,
     ExpressionNode,
     LiteralNode,
     NoScenarioIndex,
@@ -111,6 +112,11 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
     Parameters should have been evaluated first.
     """
 
+    # TODO: linear expressions should be re-usable for different timesteps and scenarios
+    timestep: int
+    scenario: int
+    value_provider: Optional[ParameterGetter] = None
+
     def negation(self, node: NegationNode) -> LinearExpressionData:
         operand = visit(node.operand, self)
         operand.constant = -operand.constant
@@ -159,11 +165,6 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
             t.coefficient /= divider
         return actual_expr
 
-    # TODO: linear expressions should be re-usable for different timesteps and scenarios
-    timestep: int
-    scenario: int
-    value_provider: Optional[ParameterGetter] = None
-
     def _get_timestep(self, time_index: TimeIndex) -> int:
         if isinstance(time_index, TimeShift):
             return self.timestep + time_index.timeshift
@@ -177,11 +178,13 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
     def _get_scenario(self, scenario_index: ScenarioIndex) -> int:
         if isinstance(scenario_index, OneScenarioIndex):
             return scenario_index.scenario
-        if isinstance(scenario_index, NoScenarioIndex):
+        if isinstance(scenario_index, CurrentScenarioIndex):
             return self.scenario
+        elif isinstance(scenario_index, NoScenarioIndex):
+            raise ValueError("Cannot associate a scenario to NoScenarioIndex")
         else:
             raise TypeError(
-                f"Type {type(scenario_index)} is not a valid TimeIndex type."
+                f"Type {type(scenario_index)} is not a valid ScenarioIndex type."
             )
 
     def literal(self, node: LiteralNode) -> LinearExpressionData:
