@@ -14,6 +14,7 @@
 Specific modelling for "instantiated" linear expressions,
 with only variables and literal coefficients.
 """
+import dataclasses
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TypeVar, Union
 
@@ -190,8 +191,7 @@ class Term:
 
     def __str__(self) -> str:
         # Useful for debugging tests
-        result = _str_for_coeff(self.coefficient) + str(self.variable_name)
-        return result
+        return repr(self)
 
     def __repr__(self) -> str:
         # Useful for debugging tests
@@ -214,41 +214,36 @@ def generate_key(term: Term) -> TermKey:
 def _merge_dicts(
     lhs: Dict[TermKey, Term],
     rhs: Dict[TermKey, Term],
-    merge_func: Callable[[Term, Term], Term],
+    merge_func: Callable[[Optional[Term], Optional[Term]], Term],
 ) -> Dict[TermKey, Term]:
     res = {}
-    for k, v in lhs.items():
-        if k not in rhs:
-            res[k] = v
-        else:
-            res[k] = merge_func(
-                v,
-                rhs[k],
-            )
-    for k, v in rhs.items():
+    for k, left in lhs.items():
+        right = rhs.get(k, None)
+        res[k] = merge_func(left, right)
+    for k, right in rhs.items():
         if k not in lhs:
-            res[k] = v
+            res[k] = merge_func(None, right)
     return res
 
 
-def _add_terms(lhs: Term, rhs: Term) -> Term:
-    return Term(
-        lhs.coefficient + rhs.coefficient,
-        lhs.component_id,
-        lhs.variable_name,
-        lhs.time_index,
-        lhs.scenario_index,
-    )
+def _add_terms(lhs: Optional[Term], rhs: Optional[Term]) -> Term:
+    if lhs is not None and rhs is not None:
+        return dataclasses.replace(rhs, coefficient=lhs.coefficient + rhs.coefficient)
+    elif lhs is not None and rhs is None:
+        return lhs
+    elif lhs is None and rhs is not None:
+        return rhs
+    raise ValueError("Cannot add 2 null terms.")
 
 
-def _substract_terms(lhs: Term, rhs: Term) -> Term:
-    return Term(
-        lhs.coefficient - rhs.coefficient,
-        lhs.component_id,
-        lhs.variable_name,
-        lhs.time_index,
-        lhs.scenario_index,
-    )
+def _substract_terms(lhs: Optional[Term], rhs: Optional[Term]) -> Term:
+    if lhs is not None and rhs is not None:
+        return dataclasses.replace(lhs, coefficient=lhs.coefficient - rhs.coefficient)
+    elif lhs is not None and rhs is None:
+        return lhs
+    elif lhs is None and rhs is not None:
+        return dataclasses.replace(rhs, coefficient=-rhs.coefficient)
+    raise ValueError("Cannot subtract 2 null terms.")
 
 
 class LinearExpression:

@@ -59,17 +59,15 @@ def evaluate_literal(node: ExpressionNode) -> int:
     raise NotImplementedError("Can only evaluate literal nodes.")
 
 
-def test_linearization_of_non_linear_expressions_should_raise_value_error() -> None:
+def test_linearization_before_operator_substitution_raises_an_error() -> None:
     x = var("x")
     expr = x.variance()
 
     provider = StructureProvider()
-    with pytest.raises(ValueError) as exc:
-        linearize_expression(expr, provider)
-    assert (
-        str(exc.value)
-        == "Cannot linearize expression with a non-linear operator: Variance"
-    )
+    with pytest.raises(
+        ValueError, match="Scenario operators need to be expanded before linearization"
+    ):
+        linearize_expression(expr, timestep=0, scenario=0)
 
 
 def _expand_and_linearize(
