@@ -54,7 +54,11 @@ from andromede.simulation.linear_expression import LinearExpression, Term, TermK
 class ParameterGetter(ABC):
     @abstractmethod
     def get_parameter_value(
-        self, component_id: str, parameter_name: str, timestep: int, scenario: int
+        self,
+        component_id: str,
+        parameter_name: str,
+        timestep: Optional[int],
+        scenario: Optional[int],
     ) -> float:
         pass
 

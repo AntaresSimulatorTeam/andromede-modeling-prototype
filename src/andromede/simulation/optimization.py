@@ -82,14 +82,16 @@ class TimestepValueProvider(ABC):
     """
 
     @abstractmethod
-    def get_value(self, block_timestep: int, scenario: int) -> float:
+    def get_value(
+        self, block_timestep: Optional[int], scenario: Optional[int]
+    ) -> float:
         raise NotImplementedError()
 
 
 def _make_value_provider(
     context: "OptimizationContext",
-    block_timestep: int,
-    scenario: int,
+    block_timestep: Optional[int],
+    scenario: Optional[int],
     component: Component,
 ) -> ValueProvider:
     """
@@ -134,7 +136,9 @@ class ExpressionTimestepValueProvider(TimestepValueProvider):
 
     # OptimizationContext has knowledge of the block, so that get_value only needs block_timestep and scenario to get the correct data value
 
-    def get_value(self, block_timestep: int, scenario: int) -> float:
+    def get_value(
+        self, block_timestep: Optional[int], scenario: Optional[int]
+    ) -> float:
         param_value_provider = _make_value_provider(
             self.context, block_timestep, scenario, self.component
         )
@@ -144,8 +148,8 @@ class ExpressionTimestepValueProvider(TimestepValueProvider):
 
 def _make_parameter_value_provider(
     context: "OptimizationContext",
-    block_timestep: int,
-    scenario: int,
+    block_timestep: Optional[int],
+    scenario: Optional[int],
 ) -> ParameterValueProvider:
     """
     A value provider which takes its values from
@@ -187,8 +191,8 @@ class ComponentContext:
 
     def add_variable(
         self,
-        block_timestep: int,
-        scenario: int,
+        block_timestep: Optional[int],
+        scenario: Optional[int],
         model_var_name: str,
         variable: lp.Variable,
     ) -> None:
@@ -321,7 +325,6 @@ class OptimizationContext:
             .structure
         )
 
-    # TODO: API to improve, variable_structure guides which of the indices block_timestep and scenario should be used
     def get_component_variable(
         self,
         block_timestep: Optional[int],
@@ -344,8 +347,8 @@ class OptimizationContext:
 
     def register_component_variable(
         self,
-        block_timestep: int,
-        scenario: int,
+        block_timestep: Optional[int],
+        scenario: Optional[int],
         component_id: str,
         variable_name: str,
         variable: lp.Variable,
@@ -441,8 +444,8 @@ class OptimizationContext:
                 self,
                 component_id: str,
                 parameter_name: str,
-                timestep: int,
-                scenario: int,
+                timestep: Optional[int],
+                scenario: Optional[int],
             ) -> float:
                 return _get_parameter_value(
                     ctxt,
@@ -697,16 +700,12 @@ class OptimizationProblem:
                         model_var.upper_bound, component.id, self.context
                     )
 
-                time_indices = (
-                    self.context.get_time_indices(var_indexing)
-                    if var_indexing.time
-                    else [None]
-                )
-                scenario_indices = (
-                    self.context.get_scenario_indices(var_indexing)
-                    if var_indexing.scenario
-                    else [None]
-                )
+                time_indices: Iterable[Optional[int]] = [None]
+                if var_indexing.time:
+                    time_indices = self.context.get_time_indices(var_indexing)
+                scenario_indices: Iterable[Optional[int]] = [None]
+                if var_indexing.scenario:
+                    scenario_indices = self.context.get_scenario_indices(var_indexing)
 
                 for t, s in itertools.product(time_indices, scenario_indices):
                     lower_bound = -self.solver.infinity()

@@ -204,9 +204,6 @@ class OutputValues:
             return
 
         for key, value in self.problem.context.get_all_component_variables().items():
-            if (key.block_timestep is None) or (key.scenario is None):
-                continue
-
             (
                 self.component(key.component_id)
                 .var(str(key.variable_name))
