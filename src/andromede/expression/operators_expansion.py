@@ -1,4 +1,5 @@
 import dataclasses
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, TypeVar, Union
 
@@ -22,7 +23,8 @@ from andromede.expression.expression import (
     problem_param,
     problem_var,
 )
-from andromede.expression.visitor import T
+from andromede.expression.indexing import IndexingStructureProvider
+from andromede.expression.indexing_structure import IndexingStructure
 
 ExpressionEvaluator = Callable[[ExpressionNode], int]
 
@@ -50,8 +52,8 @@ class ProblemIndex:
 @dataclass(frozen=True)
 class OperatorsExpansion(CopyVisitor):
     """
-    Replaces operators (shift, time sum, expectations ...) by their
-    arithmetic expansion for a given timestep and scenario.
+    Replaces aggregators (time sum, expectations ...) by their
+    arithmetic expansion.
 
     This will allow to easily translate it to a plain linear expression later on,
     without complex handling of operators.
@@ -60,18 +62,27 @@ class OperatorsExpansion(CopyVisitor):
     timesteps_count: int
     scenarios_count: int
     evaluator: ExpressionEvaluator
+    structure_provider: IndexingStructureProvider
 
     def comp_variable(self, node: ComponentVariableNode) -> ExpressionNode:
-        # TODO: if variable is not time or scenario dependent, we should have "no index" here
-        return problem_var(
-            node.component_id, node.name, TimeShift(0), CurrentScenarioIndex()
+        structure = self.structure_provider.get_component_variable_structure(
+            node.component_id, node.name
         )
+        time_index = TimeShift(0) if structure.time else NoTimeIndex()
+        scenario_index = (
+            CurrentScenarioIndex() if structure.scenario else NoScenarioIndex()
+        )
+        return problem_var(node.component_id, node.name, time_index, scenario_index)
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
-        # TODO: if variable is not time or scenario dependent, we should have "no index" here
-        return problem_param(
-            node.component_id, node.name, TimeShift(0), CurrentScenarioIndex()
+        structure = self.structure_provider.get_component_parameter_structure(
+            node.component_id, node.name
         )
+        time_index = TimeShift(0) if structure.time else NoTimeIndex()
+        scenario_index = (
+            CurrentScenarioIndex() if structure.scenario else NoScenarioIndex()
+        )
+        return problem_param(node.component_id, node.name, time_index, scenario_index)
 
     def time_shift(self, node: TimeShiftNode) -> ExpressionNode:
         shift = self.evaluator(node.time_shift)
@@ -120,11 +131,15 @@ def expand_operators(
     expression: ExpressionNode,
     dimensions: ProblemDimensions,
     evaluator: ExpressionEvaluator,
+    structure_provider: IndexingStructureProvider,
 ) -> ExpressionNode:
     return visit(
         expression,
         OperatorsExpansion(
-            dimensions.timesteps_count, dimensions.scenarios_count, evaluator
+            dimensions.timesteps_count,
+            dimensions.scenarios_count,
+            evaluator,
+            structure_provider,
         ),
     )
 
@@ -210,9 +225,13 @@ class ApplyScenario(CopyVisitor):
     scenario: int
 
     def pb_parameter(self, node: ProblemParameterNode) -> ExpressionNode:
+        if isinstance(node.scenario_index, NoScenarioIndex):
+            return node
         return dataclasses.replace(node, scenario_index=OneScenarioIndex(self.scenario))
 
     def pb_variable(self, node: ProblemVariableNode) -> ExpressionNode:
+        if isinstance(node.scenario_index, NoScenarioIndex):
+            return node
         return dataclasses.replace(node, scenario_index=OneScenarioIndex(self.scenario))
 
 

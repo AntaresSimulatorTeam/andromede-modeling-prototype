@@ -143,9 +143,9 @@ def test_ac_network(ac_lib: Library) -> None:
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == pytest.approx(3500, abs=0.01)
 
-    assert OutputValues(problem).component("L").var("flow").value == pytest.approx(
-        -100, abs=0.01
-    )
+    assert OutputValues(problem).component("L").var("flow").value == [
+        [pytest.approx(-100, abs=0.01)]
+    ]
 
 
 def test_parallel_ac_links(ac_lib: Library) -> None:

@@ -64,8 +64,8 @@ class MutableTerm:
     coefficient: float
     component_id: str
     variable_name: str
-    time_index: int
-    scenario_index: int
+    time_index: Optional[int]
+    scenario_index: Optional[int]
 
     def to_key(self) -> TermKey:
         return TermKey(
@@ -165,23 +165,23 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
             t.coefficient /= divider
         return actual_expr
 
-    def _get_timestep(self, time_index: TimeIndex) -> int:
+    def _get_timestep(self, time_index: TimeIndex) -> Optional[int]:
         if isinstance(time_index, TimeShift):
             return self.timestep + time_index.timeshift
         if isinstance(time_index, TimeStep):
             return time_index.timestep
         if isinstance(time_index, NoTimeIndex):
-            return self.timestep
+            return None
         else:
             raise TypeError(f"Type {type(time_index)} is not a valid TimeIndex type.")
 
-    def _get_scenario(self, scenario_index: ScenarioIndex) -> int:
+    def _get_scenario(self, scenario_index: ScenarioIndex) -> Optional[int]:
         if isinstance(scenario_index, OneScenarioIndex):
             return scenario_index.scenario
-        if isinstance(scenario_index, CurrentScenarioIndex):
+        elif isinstance(scenario_index, CurrentScenarioIndex):
             return self.scenario
         elif isinstance(scenario_index, NoScenarioIndex):
-            raise ValueError("Cannot associate a scenario to NoScenarioIndex")
+            return None
         else:
             raise TypeError(
                 f"Type {type(scenario_index)} is not a valid ScenarioIndex type."

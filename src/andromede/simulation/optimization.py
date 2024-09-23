@@ -14,7 +14,7 @@
 The optimization module contains the logic to translate the input model
 into a mathematical optimization problem.
 """
-
+import itertools
 import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -31,11 +31,14 @@ from andromede.expression import (
     visit,
 )
 from andromede.expression.context_adder import add_component_context
-from andromede.expression.evaluate_parameters import evaluate_time_id
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.operators_expansion import ProblemDimensions, expand_operators
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
+from andromede.expression.time_bounds_evaluator import (
+    ConstantParameterValueProvider,
+    evaluate_time_bound,
+)
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
@@ -43,6 +46,7 @@ from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import ParameterGetter, linearize_expression
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
+from andromede.study import ConstantData
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
 from andromede.utils import get_or_add
@@ -62,29 +66,14 @@ class TimestepComponentVariableKey:
 
 def _get_parameter_value(
     context: "OptimizationContext",
-    block_timestep: int,
-    scenario: int,
+    block_timestep: Optional[int],
+    scenario: Optional[int],
     component_id: str,
     name: str,
 ) -> float:
     data = context.database.get_data(component_id, name)
     absolute_timestep = context.block_timestep_to_absolute_timestep(block_timestep)
     return data.get_value(absolute_timestep, scenario)
-
-
-# TODO: Maybe add the notion of constant parameter in the model
-# TODO : And constant over scenarios ?
-def _parameter_is_constant_over_time(
-    component: Component,
-    name: str,
-    context: "OptimizationContext",
-    block_timestep: int,
-    scenario: int,
-) -> bool:
-    data = context.database.get_data(component.id, name)
-    return data.get_value(block_timestep, scenario) == IndexingStructure(
-        time=False, scenario=False
-    )
 
 
 class TimestepValueProvider(ABC):
@@ -110,7 +99,7 @@ def _make_value_provider(
     Cannot evaluate expressions which contain variables.
     """
 
-    class Provider(ValueProvider):
+    class Impl(ValueProvider):
         def get_component_variable_value(self, component_id: str, name: str) -> float:
             raise NotImplementedError(
                 "Cannot provide variable value at problem build time."
@@ -134,7 +123,7 @@ def _make_value_provider(
         def parameter_is_constant_over_time(self, name: str) -> bool:
             return not component.model.parameters[name].structure.time
 
-    return Provider()
+    return Impl()
 
 
 @dataclass(frozen=True)
@@ -165,7 +154,7 @@ def _make_parameter_value_provider(
     Cannot evaluate expressions which contain variables.
     """
 
-    class Provider(ParameterValueProvider):
+    class Impl(ParameterValueProvider):
         def get_component_parameter_value(self, component_id: str, name: str) -> float:
             return _get_parameter_value(
                 context, block_timestep, scenario, component_id, name
@@ -176,34 +165,7 @@ def _make_parameter_value_provider(
                 "Parameters should have been associated with their component before resolution."
             )
 
-    return Provider()
-
-
-def _make_data_structure_provider(
-    network: Network, component: Component
-) -> IndexingStructureProvider:
-    """
-    Retrieve information in data structure (parameter and variable) from the model
-    """
-
-    class Provider(IndexingStructureProvider):
-        def get_component_variable_structure(
-            self, component_id: str, name: str
-        ) -> IndexingStructure:
-            return network.get_component(component_id).model.variables[name].structure
-
-        def get_component_parameter_structure(
-            self, component_id: str, name: str
-        ) -> IndexingStructure:
-            return network.get_component(component_id).model.parameters[name].structure
-
-        def get_parameter_structure(self, name: str) -> IndexingStructure:
-            return component.model.parameters[name].structure
-
-        def get_variable_structure(self, name: str) -> IndexingStructure:
-            return component.model.variables[name].structure
-
-    return Provider()
+    return Impl()
 
 
 @dataclass(frozen=True)
@@ -296,6 +258,12 @@ class OptimizationContext:
             PortFieldKey, List[ExpressionNode]
         ] = {}
 
+        self._constant_parameters_value_provider = (
+            self._make_constant_parameter_value_provider()
+        )
+        self._indexing_structure_provider = self._make_data_structure_provider()
+        self._parameter_getter = self._make_parameter_getter()
+
     @property
     def network(self) -> Network:
         return self._network
@@ -312,7 +280,14 @@ class OptimizationContext:
         return self._connection_fields_expressions
 
     # TODO: Need to think about data processing when creating blocks with varying or inequal time steps length (aggregation, sum ?, mean of data ?)
-    def block_timestep_to_absolute_timestep(self, block_timestep: int) -> int:
+    def block_timestep_to_absolute_timestep(
+        self, block_timestep: Optional[int]
+    ) -> Optional[int]:
+        """
+        Timestep may be None for parameters or variables that don't depend on time.
+        """
+        if block_timestep is None:
+            return None
         return self._block.timesteps[self.get_actual_block_timestep(block_timestep)]
 
     def get_actual_block_timestep(self, block_timestep: int) -> int:
@@ -349,20 +324,13 @@ class OptimizationContext:
     # TODO: API to improve, variable_structure guides which of the indices block_timestep and scenario should be used
     def get_component_variable(
         self,
-        block_timestep: int,
-        scenario: int,
+        block_timestep: Optional[int],
+        scenario: Optional[int],
         component_id: str,
         variable_name: str,
     ) -> lp.Variable:
-        variable_structure = self._get_variable_structure(component_id, variable_name)
-        block_timestep = self._manage_border_timesteps(block_timestep)
-
-        # TODO: Improve design, variable_structure defines indexing
-        if variable_structure.time == False:
-            block_timestep = 0
-        if variable_structure.scenario == False:
-            scenario = 0
-
+        if block_timestep is not None:
+            block_timestep = self._manage_border_timesteps(block_timestep)
         return self._component_variables[
             TimestepComponentVariableKey(
                 component_id, variable_name, block_timestep, scenario
@@ -406,6 +374,96 @@ class OptimizationContext:
             expression
         )
 
+    def _make_constant_parameter_value_provider(self) -> ConstantParameterValueProvider:
+        network = self.network
+        database = self.database
+
+        class Impl(ConstantParameterValueProvider):
+            def get_parameter_value(self, component_id: str, name: str) -> float:
+                model = network.get_component(component_id).model
+                structure = model.parameters[name].structure
+                if structure.time or structure.scenario:
+                    raise ValueError(f"Parameter {name} is not constant.")
+                data = database.get_data(component_id, name)
+                if not isinstance(data, ConstantData):
+                    raise ValueError(f"Value of parameter {name} is not constant.")
+                return data.value
+
+        return Impl()
+
+    def evaluate_time_bound(self, expression: ExpressionNode) -> int:
+        return evaluate_time_bound(expression, self._constant_parameters_value_provider)
+
+    def _make_data_structure_provider(self) -> IndexingStructureProvider:
+        """
+        Retrieve information in data structure (parameter and variable) from the model
+        """
+        network = self.network
+
+        class Impl(IndexingStructureProvider):
+            def get_component_variable_structure(
+                self, component_id: str, name: str
+            ) -> IndexingStructure:
+                return (
+                    network.get_component(component_id).model.variables[name].structure
+                )
+
+            def get_component_parameter_structure(
+                self, component_id: str, name: str
+            ) -> IndexingStructure:
+                return (
+                    network.get_component(component_id).model.parameters[name].structure
+                )
+
+            def get_parameter_structure(self, name: str) -> IndexingStructure:
+                raise RuntimeError("Component context should have been initialized.")
+
+            def get_variable_structure(self, name: str) -> IndexingStructure:
+                raise RuntimeError("Component context should have been initialized.")
+
+        return Impl()
+
+    def expand_operators(self, expression: ExpressionNode) -> ExpressionNode:
+        dimensions = ProblemDimensions(self.block_length(), self.scenarios)
+        time_bound_evaluator = self.evaluate_time_bound
+        return expand_operators(
+            expression,
+            dimensions,
+            time_bound_evaluator,
+            self._indexing_structure_provider,
+        )
+
+    def _make_parameter_getter(self) -> ParameterGetter:
+        ctxt = self
+
+        class Impl(ParameterGetter):
+            def get_parameter_value(
+                self,
+                component_id: str,
+                parameter_name: str,
+                timestep: int,
+                scenario: int,
+            ) -> float:
+                return _get_parameter_value(
+                    ctxt,
+                    timestep,
+                    scenario,
+                    component_id,
+                    parameter_name,
+                )
+
+        return Impl()
+
+    def linearize_expression(
+        self, expanded: ExpressionNode, timestep: int, scenario: int
+    ) -> LinearExpression:
+        return linearize_expression(
+            expanded, timestep, scenario, self._parameter_getter
+        )
+
+    def compute_indexing(self, expression: ExpressionNode) -> IndexingStructure:
+        return compute_indexation(expression, self._indexing_structure_provider)
+
 
 def _get_indexing(
     constraint: Constraint, provider: IndexingStructureProvider
@@ -418,13 +476,13 @@ def _get_indexing(
 
 
 def _compute_indexing_structure(
-    context: ComponentContext, constraint: Constraint
+    context: OptimizationContext, constraint: Constraint
 ) -> IndexingStructure:
-    data_structure_provider = _make_data_structure_provider(
-        context.opt_context.network, context.component
+    return (
+        context.compute_indexing(constraint.expression)
+        or context.compute_indexing(constraint.lower_bound)
+        or context.compute_indexing(constraint.upper_bound)
     )
-    constraint_indexing = _get_indexing(constraint, data_structure_provider)
-    return constraint_indexing
 
 
 def _instantiate_model_expression(
@@ -452,40 +510,13 @@ def _create_constraint(
     """
     Adds a component-related constraint to the solver.
     """
-    constraint_indexing = _compute_indexing_structure(context, constraint)
+    expanded = context.opt_context.expand_operators(constraint.expression)
+    constraint_indexing = _compute_indexing_structure(context.opt_context, constraint)
 
-    dimensions = ProblemDimensions(
-        context.opt_context.block_length(), context.opt_context.scenarios
-    )
-
-    # TODO: should not need to pass useless args.
-    value_provider = _make_value_provider(context.opt_context, 0, 0, context.component)
-
-    def timestep_evaluator(node: ExpressionNode) -> int:
-        return evaluate_time_id(node, value_provider)
-
-    expanded = expand_operators(constraint.expression, dimensions, timestep_evaluator)
     for block_timestep in context.opt_context.get_time_indices(constraint_indexing):
         for scenario in context.opt_context.get_scenario_indices(constraint_indexing):
-            # TODO: it's messy
-            class Params(ParameterGetter):
-                def get_parameter_value(
-                    self,
-                    component_id: str,
-                    parameter_name: str,
-                    timestep: int,
-                    scenario: int,
-                ) -> float:
-                    return _get_parameter_value(
-                        context.opt_context,
-                        timestep,
-                        scenario,
-                        component_id,
-                        parameter_name,
-                    )
-
-            linear_expr_at_t = linearize_expression(
-                expanded, block_timestep, scenario, Params()
+            linear_expr_at_t = context.opt_context.linearize_expression(
+                expanded, block_timestep, scenario
             )
 
             # What happens if there is some time_operator in the bounds ?
@@ -512,29 +543,13 @@ def _create_objective(
     solver: lp.Solver,
     opt_context: OptimizationContext,
     component: Component,
-    component_context: ComponentContext,
     objective_contribution: ExpressionNode,
 ) -> None:
     instantiated_expr = _instantiate_model_expression(
         objective_contribution, component.id, opt_context
     )
-    value_provider = _make_value_provider(opt_context, 0, 0, component)
-
-    def timestep_evaluator(node: ExpressionNode) -> int:
-        return evaluate_time_id(node, value_provider)
-
-    dimensions = ProblemDimensions(opt_context.block_length(), opt_context.scenarios)
-    expanded = expand_operators(instantiated_expr, dimensions, timestep_evaluator)
-
-    class Params(ParameterGetter):
-        def get_parameter_value(
-            self, component_id: str, parameter_name: str, timestep: int, scenario: int
-        ) -> float:
-            return _get_parameter_value(
-                opt_context, timestep, scenario, component_id, parameter_name
-            )
-
-    linear_expr = linearize_expression(expanded, 0, 0, Params())
+    expanded = opt_context.expand_operators(instantiated_expr)
+    linear_expr = opt_context.linearize_expression(expanded, 0, 0)
 
     obj: lp.Objective = solver.Objective()
     for term in linear_expr.terms.values():
@@ -578,11 +593,10 @@ def make_constraint(
     block_timestep: int,
     scenario: int,
     data: ConstraintData,
-) -> Dict[str, lp.Constraint]:
+) -> None:
     """
     Adds constraint to the solver.
     """
-    solver_constraints = {}
     constraint_name = f"{data.name}_t{block_timestep}_s{scenario}"
 
     solver_constraint: lp.Constraint = solver.Constraint(constraint_name)
@@ -599,10 +613,6 @@ def make_constraint(
     solver_constraint.SetBounds(
         data.lower_bound - constant, data.upper_bound - constant
     )
-
-    # TODO: this dictionary does not make sense, we override the content when there are multiple instances
-    solver_constraints[constraint_name] = solver_constraint
-    return solver_constraints
 
 
 class OptimizationProblem:
@@ -656,6 +666,18 @@ class OptimizationProblem:
                     expression=instantiated_expression,
                 )
 
+    def _solver_variable_name(
+        self, component_id: str, var_name: str, t: Optional[int], s: Optional[int]
+    ) -> str:
+        scenario_suffix = f"_s{s}" if s is not None else ""
+        block_suffix = f"_t{t}" if t is not None else ""
+
+        # Set solver var name
+        # Externally, for the Solver, this variable will have a full name
+        # Internally, it will be indexed by a structure that into account
+        # the component id, variable name, timestep and scenario separately
+        return f"{component_id}_{var_name}{block_suffix}{scenario_suffix}"
+
     def _create_variables(self) -> None:
         for component in self.context.network.all_components:
             component_context = self.context.get_component_context(component)
@@ -675,72 +697,60 @@ class OptimizationProblem:
                         model_var.upper_bound, component.id, self.context
                     )
 
-                var_name: str = f"{model_var.name}"
-                component_prefix = f"{component.id}_" if component.id else ""
+                time_indices = (
+                    self.context.get_time_indices(var_indexing)
+                    if var_indexing.time
+                    else [None]
+                )
+                scenario_indices = (
+                    self.context.get_scenario_indices(var_indexing)
+                    if var_indexing.scenario
+                    else [None]
+                )
 
-                for block_timestep in self.context.get_time_indices(var_indexing):
-                    block_suffix = (
-                        f"_t{block_timestep}"
-                        if var_indexing.is_time_varying()
-                        and (self.context.block_length() > 1)
-                        else ""
+                for t, s in itertools.product(time_indices, scenario_indices):
+                    lower_bound = -self.solver.infinity()
+                    upper_bound = self.solver.infinity()
+                    if instantiated_lb_expr:
+                        lower_bound = component_context.get_values(
+                            instantiated_lb_expr
+                        ).get_value(t, s)
+                    if instantiated_ub_expr:
+                        upper_bound = component_context.get_values(
+                            instantiated_ub_expr
+                        ).get_value(t, s)
+
+                    solver_var_name = self._solver_variable_name(
+                        component.id, model_var.name, t, s
                     )
 
-                    for scenario in self.context.get_scenario_indices(var_indexing):
-                        lower_bound = -self.solver.infinity()
-                        upper_bound = self.solver.infinity()
-                        if instantiated_lb_expr:
-                            lower_bound = component_context.get_values(
-                                instantiated_lb_expr
-                            ).get_value(block_timestep, scenario)
-                        if instantiated_ub_expr:
-                            upper_bound = component_context.get_values(
-                                instantiated_ub_expr
-                            ).get_value(block_timestep, scenario)
-
-                        scenario_suffix = (
-                            f"_s{scenario}"
-                            if var_indexing.is_scenario_varying()
-                            and (self.context.scenarios > 1)
-                            else ""
+                    if math.isclose(lower_bound, upper_bound):
+                        raise ValueError(
+                            f"Upper and lower bounds of variable {solver_var_name} have the same value: {lower_bound}"
+                        )
+                    elif lower_bound > upper_bound:
+                        raise ValueError(
+                            f"Upper bound ({upper_bound}) must be strictly greater than lower bound ({lower_bound}) for variable {solver_var_name}"
                         )
 
-                        # Set solver var name
-                        # Externally, for the Solver, this variable will have a full name
-                        # Internally, it will be indexed by a structure that into account
-                        # the component id, variable name, timestep and scenario separately
-                        solver_var = None
-                        solver_var_name = f"{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
-
-                        if math.isclose(lower_bound, upper_bound):
-                            raise ValueError(
-                                f"Upper and lower bounds of variable {solver_var_name} have the same value: {lower_bound}"
-                            )
-                        elif lower_bound > upper_bound:
-                            raise ValueError(
-                                f"Upper bound ({upper_bound}) must be strictly greater than lower bound ({lower_bound}) for variable {solver_var_name}"
-                            )
-
-                        if model_var.data_type == ValueType.BOOL:
-                            solver_var = self.solver.BoolVar(
-                                solver_var_name,
-                            )
-                        elif model_var.data_type == ValueType.INTEGER:
-                            solver_var = self.solver.IntVar(
-                                lower_bound,
-                                upper_bound,
-                                solver_var_name,
-                            )
-                        else:
-                            solver_var = self.solver.NumVar(
-                                lower_bound,
-                                upper_bound,
-                                solver_var_name,
-                            )
-
-                        component_context.add_variable(
-                            block_timestep, scenario, model_var.name, solver_var
+                    if model_var.data_type == ValueType.BOOL:
+                        solver_var = self.solver.BoolVar(
+                            solver_var_name,
                         )
+                    elif model_var.data_type == ValueType.INTEGER:
+                        solver_var = self.solver.IntVar(
+                            lower_bound,
+                            upper_bound,
+                            solver_var_name,
+                        )
+                    else:
+                        solver_var = self.solver.NumVar(
+                            lower_bound,
+                            upper_bound,
+                            solver_var_name,
+                        )
+
+                    component_context.add_variable(t, s, model_var.name, solver_var)
 
     def _create_constraints(self) -> None:
         for component in self.context.network.all_components:
@@ -769,16 +779,13 @@ class OptimizationProblem:
 
     def _create_objectives(self) -> None:
         for component in self.context.network.all_components:
-            component_context = self.context.get_component_context(component)
             model = component.model
-
             for objective in self.strategy.get_objectives(model):
                 if objective is not None:
                     _create_objective(
                         self.solver,
                         self.context,
                         component,
-                        component_context,
                         objective,
                     )
 

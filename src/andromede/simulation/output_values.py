@@ -21,6 +21,75 @@ from andromede.simulation.optimization import OptimizationProblem
 from andromede.study.data import TimeScenarioIndex
 
 
+@dataclass(frozen=True)
+class OutputVariableIndex:
+    timestep: Optional[int]
+    scenario: Optional[int]
+
+
+@dataclass(frozen=True)
+class OutputVariableValues:
+    def flatten(self) -> Union[None, float, List[float], List[List[float]]]:
+        return None
+
+
+@dataclass(frozen=True)
+class ConstantValues(OutputVariableValues):
+    value: float
+
+    def flatten(self) -> Union[None, float, List[float], List[List[float]]]:
+        return self.value
+
+
+def constant_value(value: float) -> ConstantValues:
+    return ConstantValues(value)
+
+
+@dataclass(frozen=True)
+class ScenarioValues(OutputVariableValues):
+    values: Dict[int, float]
+
+    def flatten(self) -> Union[None, float, List[float], List[List[float]]]:
+        return [self.values[s] for s in range(len(self.values))]
+
+
+def scenario_values(values: List[float]) -> ScenarioValues:
+    return ScenarioValues(dict((k, v) for k, v in enumerate(values)))
+
+
+@dataclass(frozen=True)
+class TimeValues(OutputVariableValues):
+    values: Dict[int, float]
+
+    def flatten(self) -> Union[None, float, List[float], List[List[float]]]:
+        return [self.values[t] for t in range(len(self.values))]
+
+
+def time_values(values: List[float]) -> TimeValues:
+    return TimeValues(dict((k, v) for k, v in enumerate(values)))
+
+
+@dataclass(frozen=True)
+class TimeScenarioValues(OutputVariableValues):
+    values: Dict[TimeScenarioIndex, float]
+
+    def flatten(self) -> Union[None, float, List[float], List[List[float]]]:
+        timesteps = max([k.time for k in self.values]) + 1
+        scenarios = max([k.scenario for k in self.values]) + 1
+        return [
+            [self.values[TimeScenarioIndex(t, s)] for t in range(timesteps)]
+            for s in range(scenarios)
+        ]
+
+
+def time_scenario_values(values: List[List[float]]) -> TimeScenarioValues:
+    values_dict = {}
+    for s, time_values in enumerate(values):
+        for t, value in enumerate(time_values):
+            values_dict[TimeScenarioIndex(t, s)] = value
+    return TimeScenarioValues(values_dict)
+
+
 @dataclass
 class OutputValues:
     """
@@ -39,17 +108,14 @@ class OutputValues:
         """
 
         _name: str
-        _value: Dict[TimeScenarioIndex, float] = field(init=False, default_factory=dict)
-        _size: Tuple[int, int] = field(init=False, default=(0, 0))
+        _value: OutputVariableValues = OutputVariableValues()
         ignore: bool = field(default=False, init=False)
 
         def __eq__(self, other: object) -> bool:
             if not isinstance(other, OutputValues.Variable):
                 return NotImplemented
             return (self.ignore or other.ignore) or (
-                self._name == other._name
-                and self._size == other._size
-                and self._value == other._value
+                self._name == other._name and self._value == other._value
             )
 
         def is_close(
@@ -63,7 +129,6 @@ class OutputValues:
             # math.isclose(a, b) returns abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
             return (self.ignore or other.ignore) or (
                 self._name == other._name
-                and self._size == other._size
                 and self._value.keys() == other._value.keys()
                 and all(
                     math.isclose(
@@ -83,52 +148,38 @@ class OutputValues:
 
         @property
         def value(self) -> Union[None, float, List[float], List[List[float]]]:
-            size_s, size_t = self._size
-            if size_t == 1:
-                if size_s == 1:
-                    # Constant
-                    return self._value[TimeScenarioIndex(0, 0)]
-                else:
-                    # Scenario-only
-                    return [self._value[TimeScenarioIndex(0, s)] for s in range(size_s)]
-            else:
-                # Either Time-only or Time-Scenario
-                return [
-                    [self._value[TimeScenarioIndex(t, s)] for t in range(size_t)]
-                    for s in range(size_s)
-                ]
+            return self._value.flatten()
 
         @value.setter
-        def value(self, values: Union[float, List[float], List[List[float]]]) -> None:
-            size_s, size_t = 1, 1
+        def value(self, values: OutputVariableValues) -> None:
+            self._value = values
 
-            if isinstance(values, list):
-                size_s = len(values)
-                for scenario, timesteps in enumerate(values):
-                    if isinstance(timesteps, list):
-                        size_t = len(timesteps)
-                        for timestep, value in enumerate(timesteps):
-                            # Either Time-only or Time-Scenario
-                            self._value[TimeScenarioIndex(timestep, scenario)] = value
-                    else:
-                        # Scenario-only
-                        self._value[TimeScenarioIndex(0, scenario)] = cast(
-                            float, timesteps
-                        )
+        def _set(
+            self, timestep: Optional[int], scenario: Optional[int], value: float
+        ) -> None:
+            if timestep is not None and scenario is not None:
+                if isinstance(self._value, OutputVariableValues):
+                    self._value = TimeScenarioValues({})
+                if not isinstance(self._value, TimeScenarioValues):
+                    raise ValueError("Variable cannot have different indexings.")
+                self._value.values[TimeScenarioIndex(timestep, scenario)] = value
+            elif timestep is not None:
+                if isinstance(self._value, OutputVariableValues):
+                    self._value = TimeValues({})
+                if not isinstance(self._value, TimeValues):
+                    raise ValueError("Variable cannot have different indexings.")
+                self._value.values[timestep] = value
+            elif scenario is not None:
+                if isinstance(self._value, OutputVariableValues):
+                    self._value = ScenarioValues({})
+                if not isinstance(self._value, ScenarioValues):
+                    raise ValueError("Variable cannot have different indexings.")
+                self._value.values[scenario] = value
             else:
-                # Constant
-                self._value[TimeScenarioIndex(0, 0)] = values
-
-            self._size = (size_s, size_t)
-
-        def _set(self, timestep: int, scenario: int, value: float) -> None:
-            key = TimeScenarioIndex(timestep, scenario)
-            if key not in self._value:
-                size_s = max(self._size[0], scenario + 1)
-                size_t = max(self._size[1], timestep + 1)
-                self._size = (size_s, size_t)
-
-            self._value[key] = value
+                if isinstance(self._value, OutputVariableValues):
+                    self._value = ConstantValues(value)
+                else:
+                    raise ValueError("Variable cannot have different indexings.")
 
     @dataclass
     class Component:
@@ -200,12 +251,9 @@ class OutputValues:
             return
 
         for key, value in self.problem.context.get_all_component_variables().items():
-            if (key.block_timestep is None) or (key.scenario is None):
-                continue
-
             (
                 self.component(key.component_id)
-                .var(str(key.variable_name))
+                .var(key.variable_name)
                 ._set(key.block_timestep, key.scenario, value.solution_value())
             )
 

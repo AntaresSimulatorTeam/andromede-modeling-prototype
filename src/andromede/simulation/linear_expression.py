@@ -125,8 +125,8 @@ class TermKey:
 
     component_id: str
     variable_name: str
-    time_index: int
-    scenario_index: int
+    time_index: Optional[int]
+    scenario_index: Optional[int]
 
 
 def _str_for_coeff(coeff: float) -> str:
@@ -181,8 +181,8 @@ class Term:
     coefficient: float
     component_id: str
     variable_name: str
-    time_index: int
-    scenario_index: int
+    time_index: Optional[int]
+    scenario_index: Optional[int]
 
     # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
 

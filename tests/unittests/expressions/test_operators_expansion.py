@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from typing import Dict
+
 import pytest
 
 from andromede.expression import ExpressionNode, LiteralNode
@@ -5,6 +8,9 @@ from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
     CurrentScenarioIndex,
     NoScenarioIndex,
+    NoTimeIndex,
+    ProblemParameterNode,
+    ProblemVariableNode,
     TimeShift,
     TimeStep,
     comp_param,
@@ -12,32 +18,84 @@ from andromede.expression.expression import (
     problem_param,
     problem_var,
 )
+from andromede.expression.indexing import IndexingStructureProvider
+from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.operators_expansion import ProblemDimensions, expand_operators
 
 P = comp_param("c", "p")
 X = comp_var("c", "x")
+CONST = comp_var("c", "const")
 
 
-def shifted_P(t: int = 0):
+def shifted_P(t: int = 0) -> ProblemParameterNode:
     return problem_param("c", "p", TimeShift(t), CurrentScenarioIndex())
 
 
-def P_at(t: int = 0):
+def P_at(t: int = 0) -> ProblemParameterNode:
     return problem_param("c", "p", TimeStep(t), CurrentScenarioIndex())
 
 
-def X_at(t: int = 0):
+def X_at(t: int = 0) -> ProblemVariableNode:
     return problem_var("c", "x", TimeStep(t), CurrentScenarioIndex())
 
 
-def shifted_X(t: int = 0):
+def shifted_X(t: int = 0) -> ProblemVariableNode:
     return problem_var("c", "x", TimeShift(t), CurrentScenarioIndex())
+
+
+def const() -> ProblemVariableNode:
+    return problem_var("c", "x", NoTimeIndex(), NoScenarioIndex())
 
 
 def evaluate_literal(node: ExpressionNode) -> int:
     if isinstance(node, LiteralNode):
         return int(node.value)
     raise NotImplementedError("Can only evaluate literal nodes.")
+
+
+@dataclass(frozen=True)
+class AllTimeScenarioDependent(IndexingStructureProvider):
+    def get_parameter_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_variable_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_component_variable_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_component_parameter_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+
+@dataclass(frozen=True)
+class StructureProviderDict(IndexingStructureProvider):
+    """
+    Defines indexing structure through dictionaries. Default is time-scenario dependent.
+    """
+
+    variables: Dict[str, IndexingStructure]
+    parameters: Dict[str, IndexingStructure]
+
+    def get_parameter_structure(self, name: str) -> IndexingStructure:
+        return self.parameters.get(name, IndexingStructure(True, True))
+
+    def get_variable_structure(self, name: str) -> IndexingStructure:
+        return self.variables.get(name, IndexingStructure(True, True))
+
+    def get_component_variable_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return self.variables.get(name, IndexingStructure(True, True))
+
+    def get_component_parameter_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return self.parameters.get(name, IndexingStructure(True, True))
 
 
 @pytest.mark.parametrize(
@@ -56,5 +114,18 @@ def evaluate_literal(node: ExpressionNode) -> int:
     ],
 )
 def test_operators_expansion(expr: ExpressionNode, expected: ExpressionNode) -> None:
-    expanded = expand_operators(expr, ProblemDimensions(2, 1), evaluate_literal)
+    expanded = expand_operators(
+        expr, ProblemDimensions(2, 1), evaluate_literal, AllTimeScenarioDependent()
+    )
     assert expressions_equal(expanded, expected)
+
+
+def test_time_scenario_independent_var_has_no_time_or_scenario_index():
+    structure_provider = StructureProviderDict(
+        parameters={}, variables={"const": IndexingStructure(False, False)}
+    )
+    expr = (X + CONST).time_sum()
+    expanded = expand_operators(
+        expr, ProblemDimensions(2, 1), evaluate_literal, structure_provider
+    )
+    assert expanded == X_at(0) + const() + X_at(1) + const()
