@@ -12,6 +12,8 @@ from andromede.expression.expression import (
     comp_var,
     problem_var,
 )
+from andromede.expression.indexing import IndexingStructureProvider
+from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.operators_expansion import (
     ProblemDimensions,
     ProblemIndex,
@@ -71,13 +73,33 @@ def test_linearization_before_operator_substitution_raises_an_error() -> None:
         linearize_expression(expr, timestep=0, scenario=0)
 
 
+class AllTimeScenarioDependent(IndexingStructureProvider):
+    def get_parameter_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_variable_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_component_variable_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_component_parameter_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+
 def _expand_and_linearize(
     expr: ExpressionNode,
     dimensions: ProblemDimensions,
     index: ProblemIndex,
     parameter_value_provider: ParameterGetter,
 ) -> LinearExpression:
-    expanded = expand_operators(expr, dimensions, evaluate_literal)
+    expanded = expand_operators(
+        expr, dimensions, evaluate_literal, AllTimeScenarioDependent()
+    )
     return linearize_expression(
         expanded, index.timestep, index.scenario, parameter_value_provider
     )
