@@ -16,7 +16,6 @@ into a mathematical optimization problem.
 """
 import itertools
 import math
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Iterable, List, Optional
@@ -29,10 +28,6 @@ from andromede.expression.indexing import IndexingStructureProvider, compute_ind
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.operators_expansion import ProblemDimensions, expand_operators
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
-from andromede.expression.time_bounds_evaluator import (
-    ConstantParameterValueProvider,
-    evaluate_time_bound,
-)
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
 from andromede.model.model import PortFieldId
@@ -40,7 +35,6 @@ from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import ParameterGetter, linearize_expression
 from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
 from andromede.simulation.time_block import TimeBlock
-from andromede.study import ConstantData
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
 from andromede.utils import get_or_add
@@ -142,6 +136,13 @@ class SolverVariableInfo:
     is_in_objective: bool
 
 
+def float_to_int(value: float) -> int:
+    if isinstance(value, int) or value.is_integer():
+        return int(value)
+    else:
+        raise ValueError(f"{value} is not an integer.")
+
+
 class OptimizationContext:
     """
     Helper class to build the optimization problem.
@@ -171,9 +172,7 @@ class OptimizationContext:
             PortFieldKey, List[ExpressionNode]
         ] = {}
 
-        self._constant_parameters_value_provider = (
-            self._make_constant_parameter_value_provider()
-        )
+        self._constant_value_provider = self._make_constant_value_provider()
         self._indexing_structure_provider = self._make_data_structure_provider()
         self._parameter_getter = self._make_parameter_getter()
 
@@ -274,25 +273,9 @@ class OptimizationContext:
             expression
         )
 
-    def _make_constant_parameter_value_provider(self) -> ConstantParameterValueProvider:
-        network = self.network
-        database = self.database
-
-        class Impl(ConstantParameterValueProvider):
-            def get_parameter_value(self, component_id: str, name: str) -> float:
-                model = network.get_component(component_id).model
-                structure = model.parameters[name].structure
-                if structure.time or structure.scenario:
-                    raise ValueError(f"Parameter {name} is not constant.")
-                data = database.get_data(component_id, name)
-                if not isinstance(data, ConstantData):
-                    raise ValueError(f"Value of parameter {name} is not constant.")
-                return data.value
-
-        return Impl()
-
     def evaluate_time_bound(self, expression: ExpressionNode) -> int:
-        return evaluate_time_bound(expression, self._constant_parameters_value_provider)
+        res = visit(expression, EvaluationVisitor(self._constant_value_provider))
+        return float_to_int(res)
 
     def _make_data_structure_provider(self) -> IndexingStructureProvider:
         """
@@ -366,6 +349,42 @@ class OptimizationContext:
 
     def compute_indexing(self, expression: ExpressionNode) -> IndexingStructure:
         return compute_indexation(expression, self._indexing_structure_provider)
+
+    def _make_constant_value_provider(self) -> ValueProvider:
+        """
+        Value provider which only provides values for constant parameters
+        """
+        context = self
+        network = self.network
+
+        class Impl(ValueProvider):
+            def get_component_variable_value(
+                self, component_id: str, name: str
+            ) -> float:
+                raise NotImplementedError(
+                    "Cannot provide variable value at problem build time."
+                )
+
+            def get_component_parameter_value(
+                self, component_id: str, name: str
+            ) -> float:
+                model = network.get_component(component_id).model
+                structure = model.parameters[name].structure
+                if structure.time or structure.scenario:
+                    raise ValueError(f"Parameter {name} is not constant.")
+                return _get_parameter_value(context, None, None, component_id, name)
+
+            def get_variable_value(self, name: str) -> float:
+                raise NotImplementedError(
+                    "Cannot provide variable value at problem build time."
+                )
+
+            def get_parameter_value(self, name: str) -> float:
+                raise ValueError(
+                    "Parameter must be associated to its component before resolution."
+                )
+
+        return Impl()
 
 
 def _compute_indexing(
