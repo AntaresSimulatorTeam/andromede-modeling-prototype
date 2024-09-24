@@ -117,8 +117,8 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
     """
 
     # TODO: linear expressions should be re-usable for different timesteps and scenarios
-    timestep: int
-    scenario: int
+    timestep: Optional[int]
+    scenario: Optional[int]
     value_provider: Optional[ParameterGetter] = None
 
     def negation(self, node: NegationNode) -> LinearExpressionData:
@@ -171,6 +171,8 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
 
     def _get_timestep(self, time_index: TimeIndex) -> Optional[int]:
         if isinstance(time_index, TimeShift):
+            if self.timestep is None:
+                raise ValueError("Cannot shift a time-independent expression.")
             return self.timestep + time_index.timeshift
         if isinstance(time_index, TimeStep):
             return time_index.timestep
@@ -278,8 +280,8 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
 
 def linearize_expression(
     expression: ExpressionNode,
-    timestep: int,
-    scenario: int,
+    timestep: Optional[int],
+    scenario: Optional[int],
     value_provider: Optional[ParameterGetter] = None,
 ) -> LinearExpression:
     return visit(

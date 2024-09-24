@@ -61,11 +61,6 @@ class ValueProvider(ABC):
     def get_component_parameter_value(self, component_id: str, name: str) -> float:
         ...
 
-    # TODO: Should this really be an abstract method ? Or maybe, only the Provider in _make_value_provider should implement it. And the context attribute in the InstancesIndexVisitor is a ValueProvider that implements the parameter_is_constant_over_time method. Maybe create a child class of ValueProvider like TimeValueProvider ?
-    @abstractmethod
-    def parameter_is_constant_over_time(self, name: str) -> bool:
-        ...
-
 
 @dataclass(frozen=True)
 class EvaluationContext(ValueProvider):
@@ -87,9 +82,6 @@ class EvaluationContext(ValueProvider):
         raise NotImplementedError()
 
     def get_component_parameter_value(self, component_id: str, name: str) -> float:
-        raise NotImplementedError()
-
-    def parameter_is_constant_over_time(self, name: str) -> bool:
         raise NotImplementedError()
 
 
