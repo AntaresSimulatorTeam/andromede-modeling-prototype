@@ -1,105 +1,153 @@
+from unittest.mock import Mock
+
 import pytest
 
-from andromede.expression import ExpressionNode, param, var
-from andromede.expression.expression import comp_var
-from andromede.simulation.linear_expression import (
-    AllTimeExpansion,
-    LinearExpression,
-    Term,
+from andromede.expression import ExpressionNode, LiteralNode, literal, var
+from andromede.expression.expression import (
+    ComponentVariableNode,
+    CurrentScenarioIndex,
+    NoScenarioIndex,
+    TimeShift,
+    comp_param,
+    comp_var,
+    problem_var,
 )
-from andromede.simulation.linearize import linearize_expression
+from andromede.expression.indexing import IndexingStructureProvider
+from andromede.expression.indexing_structure import IndexingStructure
+from andromede.expression.operators_expansion import (
+    ProblemDimensions,
+    ProblemIndex,
+    expand_operators,
+)
+from andromede.simulation.linear_expression import LinearExpression, Term
+from andromede.simulation.linearize import ParameterGetter, linearize_expression
 
-from .test_expressions import ComponentEvaluationContext, StructureProvider
+from .test_expressions import StructureProvider
+
+P = comp_param("c", "p")
+X = comp_var("c", "x")
+Y = comp_var("c", "y")
 
 
-def test_linearization() -> None:
-    x = comp_var("c", "x")
-    expr = (5 * x + 3) / 2
-    provider = StructureProvider()
-
-    assert linearize_expression(expr, provider) == LinearExpression(
-        [Term(2.5, "c", "x")], 1.5
+def var_at(var: ComponentVariableNode, timestep, scenario) -> LinearExpression:
+    return LinearExpression(
+        terms=[
+            Term(
+                1,
+                var.component_id,
+                var.name,
+                time_index=timestep,
+                scenario_index=scenario,
+            )
+        ],
+        constant=0,
     )
 
-    with pytest.raises(ValueError):
-        linearize_expression(param("p") * x, provider)
+
+def X_at(t: int = 0, s: int = 0) -> LinearExpression:
+    return var_at(X, timestep=t, scenario=s)
 
 
-def test_linearization_of_non_linear_expressions_should_raise_value_error() -> None:
+def Y_at(t: int = 0, s: int = 0) -> LinearExpression:
+    return var_at(Y, timestep=t, scenario=s)
+
+
+def constant(c: float) -> LinearExpression:
+    return LinearExpression([], c)
+
+
+def evaluate_literal(node: ExpressionNode) -> int:
+    if isinstance(node, LiteralNode):
+        return int(node.value)
+    raise NotImplementedError("Can only evaluate literal nodes.")
+
+
+def test_linearization_before_operator_substitution_raises_an_error() -> None:
     x = var("x")
     expr = x.variance()
 
     provider = StructureProvider()
-    with pytest.raises(ValueError) as exc:
-        linearize_expression(expr, provider)
-    assert (
-        str(exc.value)
-        == "Cannot linearize expression with a non-linear operator: Variance"
-    )
+    with pytest.raises(
+        ValueError, match="Scenario operators need to be expanded before linearization"
+    ):
+        linearize_expression(expr, timestep=0, scenario=0)
 
 
-def test_time_sum_is_distributed_on_expression() -> None:
-    x = comp_var("c", "x")
-    y = comp_var("c", "y")
-    expr = (x + y).time_sum()
-    provider = StructureProvider()
+class AllTimeScenarioDependent(IndexingStructureProvider):
+    def get_parameter_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
 
-    assert linearize_expression(expr, provider) == LinearExpression(
-        [
-            Term(1, "c", "x", time_expansion=AllTimeExpansion()),
-            Term(1, "c", "y", time_expansion=AllTimeExpansion()),
-        ],
-        0,
-    )
+    def get_variable_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
 
+    def get_component_variable_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
 
-@pytest.mark.skip(reason="Not yet supported")
-def test_time_sum_is_distributed_on_expression() -> None:
-    x = comp_var("c", "x")
-    y = comp_var("c", "y")
-    expr = (x + y).time_sum()
-    provider = StructureProvider()
-
-    assert linearize_expression(expr, provider) == LinearExpression(
-        [
-            Term(1, "c", "x", time_expansion=AllTimeExpansion()),
-            Term(1, "c", "y", time_expansion=AllTimeExpansion()),
-        ],
-        0,
-    )
+    def get_component_parameter_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
 
 
-X = comp_var("c", "x")
-
-
-@pytest.mark.parametrize(
-    "expr",
-    [(X + 2).time_sum(), (X + 2).time_sum(-1, 2)],
-)
-def test_sum_of_constant_not_supported(
+def _expand_and_linearize(
     expr: ExpressionNode,
-) -> None:
-    structure_provider = StructureProvider()
-    value_provider = ComponentEvaluationContext()
-    with pytest.raises(ValueError):
-        linearize_expression(expr, structure_provider, value_provider)
+    dimensions: ProblemDimensions,
+    index: ProblemIndex,
+    parameter_value_provider: ParameterGetter,
+) -> LinearExpression:
+    expanded = expand_operators(
+        expr, dimensions, evaluate_literal, AllTimeScenarioDependent()
+    )
+    return linearize_expression(
+        expanded, index.timestep, index.scenario, parameter_value_provider
+    )
 
 
 @pytest.mark.parametrize(
-    "expr",
+    "expr,expected",
     [
-        X.shift(-1).shift(+1),
-        X.shift(-1).time_sum(),
-        X.shift(-1).time_sum(-2, +2),
-        X.time_sum().shift(-1),
-        X.time_sum(-2, +2).shift(-1),
-        X.eval(2).time_sum(),
+        ((5 * X + 3) / 2, constant(2.5) * X_at(t=0) + constant(1.5)),
+        ((X + Y).time_sum(), X_at(t=0) + Y_at(t=0) + X_at(t=1) + Y_at(t=1)),
+        (X.shift(-1).shift(+1), X_at(t=0)),
+        (X.shift(-1).time_sum(), X_at(t=-1) + X_at(t=0)),
+        (X.shift(-1).time_sum(-1, +1), X_at(t=-2) + X_at(t=-1) + X_at(t=0)),
+        (X.time_sum().shift(-1), X_at(t=-1) + X_at(t=0)),
+        (X.time_sum(-1, +1).shift(-1), X_at(t=-2) + X_at(t=-1) + X_at(t=0)),
+        (X.eval(2).time_sum(), X_at(t=2) + X_at(t=2)),
+        ((X + 2).time_sum(), X_at(t=0) + X_at(t=1) + constant(4)),
+        ((X + 2).time_sum(-1, 0), X_at(t=-1) + X_at(t=0) + constant(4)),
+        ((X + 2).time_sum(-1, 0), X_at(t=-1) + X_at(t=0) + constant(4)),
     ],
 )
-def test_linearization_of_nested_time_operations_should_raise_value_error(
-    expr: ExpressionNode,
+def test_linearization_of_nested_time_operations(
+    expr: ExpressionNode, expected: LinearExpression
 ) -> None:
-    structure_provider = StructureProvider()
-    value_provider = ComponentEvaluationContext()
-    with pytest.raises(ValueError):
-        linearize_expression(expr, structure_provider, value_provider)
+    dimensions = ProblemDimensions(timesteps_count=2, scenarios_count=1)
+    index = ProblemIndex(timestep=0, scenario=0)
+    params = Mock(spec=ParameterGetter)
+
+    assert _expand_and_linearize(expr, dimensions, index, params) == expected
+
+
+def test_invalid_multiplication() -> None:
+    params = Mock(spec=ParameterGetter)
+
+    x = problem_var(
+        "c", "x", time_index=TimeShift(0), scenario_index=CurrentScenarioIndex()
+    )
+    expression = x * x
+    with pytest.raises(ValueError, match="constant"):
+        linearize_expression(expression, 0, 0, params)
+
+
+def test_invalid_division() -> None:
+    params = Mock(spec=ParameterGetter)
+
+    x = problem_var(
+        "c", "x", time_index=TimeShift(0), scenario_index=CurrentScenarioIndex()
+    )
+    expression = literal(1) / x
+    with pytest.raises(ValueError, match="constant"):
+        linearize_expression(expression, 0, 0, params)

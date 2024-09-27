@@ -206,7 +206,7 @@ def test_variable_bound() -> None:
     database = create_simple_database(max_generation=0)  # Equal upper and lower bounds
     with pytest.raises(
         ValueError,
-        match="Upper and lower bounds of variable G_generation have the same value: 0",
+        match="Upper and lower bounds of variable G_generation_t0_s0 have the same value: 0",
     ):
         problem = build_problem(network, database, TimeBlock(1, [0]), 1)
 

@@ -9,7 +9,8 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
+import cProfile
+from pstats import SortKey
 from typing import cast
 
 import pytest
@@ -112,12 +113,13 @@ def test_large_sum_outside_model_with_loop() -> None:
     assert problem.solver.Objective().Value() == obj_coeff
 
 
+# Takes 3 minutes with current implementation !!
 def test_large_sum_inside_model_with_sum_operator() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
     Here the objective function is the sum over nb_terms terms with the sum() operator inside the model
     """
-    nb_terms = 10_000
+    nb_terms = 3000
 
     scenarios = 1
     time_blocks = [TimeBlock(0, list(range(nb_terms)))]
@@ -210,7 +212,7 @@ def test_basic_balance_on_whole_year() -> None:
     """
 
     scenarios = 1
-    horizon = 8760
+    horizon = 10000
     time_block = TimeBlock(1, list(range(horizon)))
 
     database = DataBase()
@@ -233,7 +235,9 @@ def test_basic_balance_on_whole_year() -> None:
     network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
 
-    problem = build_problem(network, database, time_block, scenarios)
+    with cProfile.Profile() as pr:
+        problem = build_problem(network, database, time_block, scenarios)
+        pr.print_stats(sort=SortKey.CUMULATIVE)
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

@@ -20,6 +20,8 @@ from andromede.expression.expression import (
     ExpressionNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
@@ -97,6 +99,14 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"{node.component_id}.{node.name}"
 
     def comp_parameter(self, node: ComponentParameterNode) -> str:
+        return f"{node.component_id}.{node.name}"
+
+    def pb_variable(self, node: ProblemVariableNode) -> str:
+        # TODO
+        return f"{node.component_id}.{node.name}"
+
+    def pb_parameter(self, node: ProblemParameterNode) -> str:
+        # TODO
         return f"{node.component_id}.{node.name}"
 
     def time_shift(self, node: TimeShiftNode) -> str:

@@ -20,6 +20,8 @@ from andromede.expression.expression import (
     ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     TimeEvalNode,
     TimeShiftNode,
     TimeSumNode,
@@ -33,6 +35,7 @@ from .expression import (
     ScenarioOperatorNode,
     VariableNode,
 )
+from .indexing import IndexingStructureProvider
 from .visitor import ExpressionVisitorOperations, visit
 
 
@@ -58,11 +61,6 @@ class ValueProvider(ABC):
     def get_component_parameter_value(self, component_id: str, name: str) -> float:
         ...
 
-    # TODO: Should this really be an abstract method ? Or maybe, only the Provider in _make_value_provider should implement it. And the context attribute in the InstancesIndexVisitor is a ValueProvider that implements the parameter_is_constant_over_time method. Maybe create a child class of ValueProvider like TimeValueProvider ?
-    @abstractmethod
-    def parameter_is_constant_over_time(self, name: str) -> bool:
-        ...
-
 
 @dataclass(frozen=True)
 class EvaluationContext(ValueProvider):
@@ -84,9 +82,6 @@ class EvaluationContext(ValueProvider):
         raise NotImplementedError()
 
     def get_component_parameter_value(self, component_id: str, name: str) -> float:
-        raise NotImplementedError()
-
-    def parameter_is_constant_over_time(self, name: str) -> bool:
         raise NotImplementedError()
 
 
@@ -117,6 +112,12 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
     def comp_variable(self, node: ComponentVariableNode) -> float:
         return self.context.get_component_variable_value(node.component_id, node.name)
 
+    def pb_parameter(self, node: ProblemParameterNode) -> float:
+        raise ValueError("Should not reach here.")
+
+    def pb_variable(self, node: ProblemVariableNode) -> float:
+        raise ValueError("Should not reach here.")
+
     def time_shift(self, node: TimeShiftNode) -> float:
         raise NotImplementedError()
 
@@ -141,32 +142,3 @@ class EvaluationVisitor(ExpressionVisitorOperations[float]):
 
 def evaluate(expression: ExpressionNode, value_provider: ValueProvider) -> float:
     return visit(expression, EvaluationVisitor(value_provider))
-
-
-@dataclass(frozen=True)
-class InstancesIndexVisitor(EvaluationVisitor):
-    """
-    Evaluates an expression given as instances index which should have no variable and constant parameter values.
-    """
-
-    def variable(self, node: VariableNode) -> float:
-        raise ValueError("An instance index expression cannot contain variable")
-
-    def parameter(self, node: ParameterNode) -> float:
-        if not self.context.parameter_is_constant_over_time(node.name):
-            raise ValueError(
-                "Parameter given in an instance index expression must be constant over time"
-            )
-        return self.context.get_parameter_value(node.name)
-
-    def time_shift(self, node: TimeShiftNode) -> float:
-        raise ValueError("An instance index expression cannot contain time shift")
-
-    def time_eval(self, node: TimeEvalNode) -> float:
-        raise ValueError("An instance index expression cannot contain time eval")
-
-    def time_sum(self, node: TimeSumNode) -> float:
-        raise ValueError("An instance index expression cannot contain time sum")
-
-    def all_time_sum(self, node: AllTimeSumNode) -> float:
-        raise ValueError("An instance index expression cannot contain time sum")

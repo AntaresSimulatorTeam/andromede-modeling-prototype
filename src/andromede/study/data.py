@@ -38,8 +38,8 @@ class ScenarioIndex:
 
 @dataclass(frozen=True)
 class AbstractDataStructure(ABC):
-    def get_value(self, timestep: int, scenario: int) -> float:
-        return NotImplemented
+    def get_value(self, timestep: Optional[int], scenario: Optional[int]) -> float:
+        raise NotImplementedError()
 
     @abstractmethod
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -54,7 +54,7 @@ class AbstractDataStructure(ABC):
 class ConstantData(AbstractDataStructure):
     value: float
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(self, timestep: Optional[int], scenario: Optional[int]) -> float:
         return self.value
 
     # ConstantData can be used for time varying or constant models
@@ -74,7 +74,9 @@ class TimeSeriesData(AbstractDataStructure):
 
     time_series: Dict[TimeIndex, float]
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(self, timestep: Optional[int], scenario: Optional[int]) -> float:
+        if timestep is None:
+            raise KeyError("Time series data requires a time index.")
         return self.time_series[TimeIndex(timestep)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -94,7 +96,9 @@ class ScenarioSeriesData(AbstractDataStructure):
 
     scenario_series: Dict[ScenarioIndex, float]
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(self, timestep: Optional[int], scenario: Optional[int]) -> float:
+        if scenario is None:
+            raise KeyError("Scenario series data requires a scenario index.")
         return self.scenario_series[ScenarioIndex(scenario)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -143,7 +147,11 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     time_scenario_series: pd.DataFrame
     scenarization: Optional[Scenarization] = None
 
-    def get_value(self, timestep: int, scenario: int) -> float:
+    def get_value(self, timestep: Optional[int], scenario: Optional[int]) -> float:
+        if timestep is None:
+            raise KeyError("Time scenario data requires a time index.")
+        if scenario is None:
+            raise KeyError("Time scenario data requires a scenario index.")
         if self.scenarization:
             scenario = self.scenarization.get_scenario_for_year(scenario)
         value = str(self.time_scenario_series.iloc[timestep, scenario])

@@ -14,11 +14,17 @@
 Specific modelling for "instantiated" linear expressions,
 with only variables and literal coefficients.
 """
-from dataclasses import dataclass, field
+import dataclasses
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, TypeVar, Union
 
-from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.scenario_operator import ScenarioOperator
+from andromede.expression.expression import (
+    OneScenarioIndex,
+    ScenarioIndex,
+    TimeIndex,
+    TimeShift,
+    TimeStep,
+)
 
 T = TypeVar("T")
 
@@ -119,8 +125,8 @@ class TermKey:
 
     component_id: str
     variable_name: str
-    time_expansion: TimeExpansion
-    scenario_operator: Optional[ScenarioOperator]
+    time_index: Optional[int]
+    scenario_index: Optional[int]
 
 
 def _str_for_coeff(coeff: float) -> str:
@@ -130,6 +136,25 @@ def _str_for_coeff(coeff: float) -> str:
         return "-"
     else:
         return "{:+g}".format(coeff)
+
+
+def _time_index_to_str(time_index: TimeIndex) -> str:
+    if isinstance(time_index, TimeShift):
+        if time_index.timeshift == 0:
+            return "t"
+        elif time_index.timeshift > 0:
+            return f"t + {time_index.timeshift}"
+        else:
+            return f"t - {-time_index.timeshift}"
+    if isinstance(time_index, TimeStep):
+        return f"{time_index.timestep}"
+    return ""
+
+
+def _scenario_index_to_str(scenario_index: ScenarioIndex) -> str:
+    if isinstance(scenario_index, OneScenarioIndex):
+        return f"{scenario_index.scenario}"
+    return ""
 
 
 def _str_for_time_expansion(exp: TimeExpansion) -> str:
@@ -156,11 +181,8 @@ class Term:
     coefficient: float
     component_id: str
     variable_name: str
-    structure: IndexingStructure = field(
-        default=IndexingStructure(time=True, scenario=True)
-    )
-    time_expansion: TimeExpansion = TimeExpansion()
-    scenario_operator: Optional[ScenarioOperator] = None
+    time_index: Optional[int]
+    scenario_index: Optional[int]
 
     # TODO: It may be useful to define __add__, __sub__, etc on terms, which should return a linear expression ?
 
@@ -169,10 +191,14 @@ class Term:
 
     def __str__(self) -> str:
         # Useful for debugging tests
-        result = _str_for_coeff(self.coefficient) + str(self.variable_name)
-        result += _str_for_time_expansion(self.time_expansion)
-        if self.scenario_operator is not None:
-            result += f".{str(self.scenario_operator)}"
+        return repr(self)
+
+    def __repr__(self) -> str:
+        # Useful for debugging tests
+        result = (
+            f"{_str_for_coeff(self.coefficient)}{self.component_id}.{self.variable_name}"
+            f"[{self.time_index},{self.scenario_index}]"
+        )
         return result
 
 
@@ -180,83 +206,44 @@ def generate_key(term: Term) -> TermKey:
     return TermKey(
         term.component_id,
         term.variable_name,
-        term.time_expansion,
-        term.scenario_operator,
+        term.time_index,
+        term.scenario_index,
     )
 
 
 def _merge_dicts(
     lhs: Dict[TermKey, Term],
     rhs: Dict[TermKey, Term],
-    merge_func: Callable[[Term, Term], Term],
-    neutral: float,
+    merge_func: Callable[[Optional[Term], Optional[Term]], Term],
 ) -> Dict[TermKey, Term]:
     res = {}
-    for k, v in lhs.items():
-        res[k] = merge_func(
-            v,
-            rhs.get(
-                k,
-                Term(
-                    neutral,
-                    v.component_id,
-                    v.variable_name,
-                    v.structure,
-                    v.time_expansion,
-                    v.scenario_operator,
-                ),
-            ),
-        )
-    for k, v in rhs.items():
+    for k, left in lhs.items():
+        right = rhs.get(k, None)
+        res[k] = merge_func(left, right)
+    for k, right in rhs.items():
         if k not in lhs:
-            res[k] = merge_func(
-                Term(
-                    neutral,
-                    v.component_id,
-                    v.variable_name,
-                    v.structure,
-                    v.time_expansion,
-                    v.scenario_operator,
-                ),
-                v,
-            )
+            res[k] = merge_func(None, right)
     return res
 
 
-def _merge_is_possible(lhs: Term, rhs: Term) -> None:
-    if lhs.component_id != rhs.component_id or lhs.variable_name != rhs.variable_name:
-        raise ValueError("Cannot merge terms for different variables")
-    if (
-        lhs.time_expansion != rhs.time_expansion
-        or lhs.scenario_operator != rhs.scenario_operator
-    ):
-        raise ValueError("Cannot merge terms with different operators")
-    if lhs.structure != rhs.structure:
-        raise ValueError("Cannot merge terms with different structures")
+def _add_terms(lhs: Optional[Term], rhs: Optional[Term]) -> Term:
+    if lhs is not None and rhs is not None:
+        return dataclasses.replace(rhs, coefficient=lhs.coefficient + rhs.coefficient)
+    elif lhs is not None and rhs is None:
+        return lhs
+    elif lhs is None and rhs is not None:
+        return rhs
+    raise ValueError("Cannot add 2 null terms.")
 
 
-def _add_terms(lhs: Term, rhs: Term) -> Term:
-    _merge_is_possible(lhs, rhs)
-    return Term(
-        lhs.coefficient + rhs.coefficient,
-        lhs.component_id,
-        lhs.variable_name,
-        lhs.structure,
-        lhs.time_expansion,
-        lhs.scenario_operator,
-    )
-
-
-def _substract_terms(lhs: Term, rhs: Term) -> Term:
-    _merge_is_possible(lhs, rhs)
-    return Term(
-        lhs.coefficient - rhs.coefficient,
-        lhs.component_id,
-        lhs.variable_name,
-        lhs.structure,
-        lhs.time_expansion,
-        lhs.scenario_operator,
-    )
+def _substract_terms(lhs: Optional[Term], rhs: Optional[Term]) -> Term:
+    if lhs is not None and rhs is not None:
+        return dataclasses.replace(lhs, coefficient=lhs.coefficient - rhs.coefficient)
+    elif lhs is not None and rhs is None:
+        return lhs
+    elif lhs is None and rhs is not None:
+        return dataclasses.replace(rhs, coefficient=-rhs.coefficient)
+    raise ValueError("Cannot subtract 2 null terms.")
 
 
 class LinearExpression:
@@ -316,14 +303,14 @@ class LinearExpression:
         else:
             return "{:+g}".format(self.constant)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         # Useful for debugging tests
         result = ""
         if self.is_zero():
             result += "0"
         else:
             for term in self.terms.values():
-                result += str(term)
+                result += repr(term)
 
             result += self.str_for_constant()
 
@@ -341,7 +328,7 @@ class LinearExpression:
         if not isinstance(rhs, LinearExpression):
             return NotImplemented
         self.constant += rhs.constant
-        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms, 0)
+        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _add_terms)
         self.terms = aggregated_terms
         self.remove_zeros_from_terms()
         return self
@@ -356,7 +343,7 @@ class LinearExpression:
         if not isinstance(rhs, LinearExpression):
             return NotImplemented
         self.constant -= rhs.constant
-        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms, 0)
+        aggregated_terms = _merge_dicts(self.terms, rhs.terms, _substract_terms)
         self.terms = aggregated_terms
         self.remove_zeros_from_terms()
         return self
@@ -397,9 +384,8 @@ class LinearExpression:
                         term.coefficient * const_expr.constant,
                         term.component_id,
                         term.variable_name,
-                        term.structure,
-                        term.time_expansion,
-                        term.scenario_operator,
+                        term.time_index,
+                        term.scenario_index,
                     )
                 _copy_expression(left_expr, self)
         return self
@@ -428,9 +414,8 @@ class LinearExpression:
                         term.coefficient / rhs.constant,
                         term.component_id,
                         term.variable_name,
-                        term.structure,
-                        term.time_expansion,
-                        term.scenario_operator,
+                        term.time_index,
+                        term.scenario_index,
                     )
         return self
 
