@@ -209,7 +209,10 @@ class NoTimeIndex(TimeIndex):
 @dataclass(frozen=True)
 class TimeShift(TimeIndex):
     """
-    Represents the current timestep + a shift
+    Represents the current timestep + a shift.
+
+    This should only be used for nodes that actually depend on the timestep,
+    never for time-independent nodes (constant parameters ...).
     """
 
     timeshift: int
@@ -218,7 +221,10 @@ class TimeShift(TimeIndex):
 @dataclass(frozen=True)
 class TimeStep(TimeIndex):
     """
-    Represents a given timestep, independently of the current timestep
+    Represents a given timestep, independently of the current timestep.
+
+    This should only be used for nodes that actually depend on the timestep,
+    never for time-independent nodes (constant parameters ...).
     """
 
     timestep: int
@@ -242,7 +248,10 @@ class NoScenarioIndex(ScenarioIndex):
 @dataclass(frozen=True)
 class CurrentScenarioIndex(ScenarioIndex):
     """
-    Represents the current scenario
+    Represents the current scenario.
+
+    This should only be used for nodes that actually depend on the scenario,
+    never for scenario-independent nodes (constant parameters ...).
     """
 
     pass
@@ -252,6 +261,9 @@ class CurrentScenarioIndex(ScenarioIndex):
 class OneScenarioIndex(ScenarioIndex):
     """
     Represents a given scenario out of all scenarios.
+
+    This should only be used for nodes that actually depend on the scenario,
+    never for scenario-independent nodes (constant parameters ...).
     """
 
     scenario: int

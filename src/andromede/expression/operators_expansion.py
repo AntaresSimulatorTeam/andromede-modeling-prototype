@@ -1,5 +1,4 @@
 import dataclasses
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, TypeVar, Union
 
@@ -24,7 +23,6 @@ from andromede.expression.expression import (
     problem_var,
 )
 from andromede.expression.indexing import IndexingStructureProvider
-from andromede.expression.indexing_structure import IndexingStructure
 
 ExpressionEvaluator = Callable[[ExpressionNode], int]
 
@@ -57,6 +55,9 @@ class OperatorsExpansion(CopyVisitor):
 
     This will allow to easily translate it to a plain linear expression later on,
     without complex handling of operators.
+
+    The obtained expression only contains `ProblemVariableNode` for variables
+    and `ProblemParameterNode` parameters.
     """
 
     timesteps_count: int

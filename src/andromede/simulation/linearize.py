@@ -113,7 +113,11 @@ class LinearExpressionBuilder(ExpressionVisitor[LinearExpressionData]):
     """
     Reduces a generic expression to a linear expression.
 
-    Parameters should have been evaluated first.
+    The input expression must respect the constraints of the output of
+    the operators expansion expression:
+    it must only contain `ProblemVariableNode` for variables
+    and `ProblemParameterNode` parameters. It cannot contain anymore
+    time aggregators or scenario aggregators, nor port-related nodes.
     """
 
     # TODO: linear expressions should be re-usable for different timesteps and scenarios
