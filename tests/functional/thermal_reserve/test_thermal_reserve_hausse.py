@@ -37,7 +37,7 @@ from andromede.thermal_heuristic.problem import (
     get_network,
 )
 from tests.functional.conftest import ExpectedOutput, ExpectedOutputIndexes
-from tests.functional.libs.lib_thermal_heuristic import (
+from tests.functional.libs.lib_thermal_reserve import (
     THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP,
     DEMAND_WITH_RESERVE_MODEL,
     RESERVE_PORT_TYPE,
