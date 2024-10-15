@@ -12,27 +12,34 @@
 study:
   nodes:
     - id: N
-      model: NODE_BALANCE_MODEL
+      model: NODE_MODEL
+      parameters:
+      - name: spillage_cost
+        type: constant
+        value: 0
+      - name: ens_cost
+        type: constant
+        value: 100000
+      - name: reserve_up_not_supplied_cost
+        type: constant
+        value: 100
+      - name: reserve_down_not_supplied_cost
+        type: constant
+        value: 100
 
   components:
     - id: D
-      model: FIXED_DEMAND
+      model: DEMAND_MODEL
       parameters:
-        - name: demand
+        - name: demand_energy
           type: timeseries
-          timeseries: demand-ts
-    - id: S
-      model: SPI
-      parameters:
-        - name: cost
+          timeseries: demand_energy-ts
+        - name: demand_primary_reserve_up
+          type: timeseries
+          timeseries: demand_primary_reserve_up-ts
+        - name: demand_primary_reserve_down
           type: constant
-          value: 0
-    - id: U
-      model: UNSP
-      parameters:
-        - name: cost
-          type: constant
-          value: 100000
+          timeseries: 0
     - id: G
       model: GEN
       parameters:
@@ -75,6 +82,12 @@ study:
         - name: nb_units_max_min_down_time
           type: constant
           value: 8
+        - name: participation_max_primary_reserve_up
+          type: constant
+          value: 27
+        - name: participation_max_primary_reserve_down
+          type: constant
+          value: 27
 
 
   connections:
@@ -86,16 +99,6 @@ study:
       - component1: N
         port_1: balance_port
         component2: G
-        port_2: balance_port
-
-      - component1: N
-        port_1: balance_port
-        component2: U
-        port_2: balance_port
-
-      - component1: N
-        port_1: balance_port
-        component2: S
         port_2: balance_port
 
 
