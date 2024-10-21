@@ -19,13 +19,31 @@ study:
         value: 0
       - name: ens_cost
         type: constant
-        value: 100000
-      - name: reserve_up_not_supplied_cost
-        type: constant
         value: 100
-      - name: reserve_down_not_supplied_cost
+      - name: primary_reserve_up_not_supplied_cost
         type: constant
-        value: 100
+        value: 1000
+      - name: primary_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: secondary_reserve_up_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: secondary_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary1_reserve_up_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary1_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary2_reserve_up_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary2_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
 
   components:
     - id: D
@@ -38,8 +56,27 @@ study:
           type: timeseries
           timeseries: demand_primary_reserve_up-ts
         - name: demand_primary_reserve_down
+          type: timeseries
+          timeseries: demand_primary_reserve_down-ts
+        - name: demand_secondary_reserve_up
           type: constant
-          timeseries: 0
+          value: 0
+        - name: demand_secondary_reserve_down
+          type: constant
+          value: 0
+        - name: demand_tertiary1_reserve_up
+          type: constant
+          value: 0
+        - name: demand_tertiary1_reserve_down
+          type: constant
+          value: 0
+        - name: demand_tertiary2_reserve_up
+          type: constant
+          value: 0
+        - name: demand_tertiary2_reserve_down
+          type: constant
+          value: 0
+
     - id: G
       model: GEN
       parameters:
@@ -88,7 +125,24 @@ study:
         - name: participation_max_primary_reserve_down
           type: constant
           value: 27
-
+        - name: participation_max_secondary_reserve_up
+          type: constant
+          value: 27
+        - name: participation_max_secondary_reserve_down
+          type: constant
+          value: 27
+        - name: participation_max_tertiary1_reserve_up
+          type: constant
+          value: 27
+        - name: participation_max_tertiary1_reserve_down
+          type: constant
+          value: 27
+        - name: participation_max_tertiary2_reserve_up
+          type: constant
+          value: 27
+        - name: participation_max_tertiary2_reserve_down
+          type: constant
+          value: 27
 
   connections:
       - component1: N
