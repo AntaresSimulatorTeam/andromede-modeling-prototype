@@ -260,7 +260,10 @@ THERMAL_CLUSTER_MODEL_MILP_WITH_RAMP = model(
 
 RESERVE_PORT_TYPE = PortType(
     id="reserve_balance",
-    fields=[PortField("energy"), PortField("primary_reserve_up"), PortField("primary_reserve_down")],
+    fields=[PortField("energy"), PortField("primary_reserve_up"), PortField("primary_reserve_down"),
+            PortField("secondary_reserve_up"), PortField("secondary_reserve_down"),
+            PortField("tertiary1_reserve_up"), PortField("tertiary1_reserve_down"),
+            PortField("tertiary2_reserve_up"), PortField("tertiary2_reserve_down")],
 )
 
 NODE_WITH_RESERVE_MODEL = model(
@@ -268,14 +271,26 @@ NODE_WITH_RESERVE_MODEL = model(
     parameters=[
         float_parameter("spillage_cost"),
         float_parameter("ens_cost"),
-        float_parameter("reserve_up_not_supplied_cost"),
-        float_parameter("reserve_down_not_supplied_cost"),
+        float_parameter("primary_reserve_up_not_supplied_cost"),
+        float_parameter("primary_reserve_down_not_supplied_cost"),
+        float_parameter("secondary_reserve_up_not_supplied_cost"),
+        float_parameter("secondary_reserve_down_not_supplied_cost"),
+        float_parameter("tertiary1_reserve_up_not_supplied_cost"),
+        float_parameter("tertiary1_reserve_down_not_supplied_cost"),
+        float_parameter("tertiary2_reserve_up_not_supplied_cost"),
+        float_parameter("tertiary2_reserve_down_not_supplied_cost"),
     ],
     variables=[
         float_variable("spillage_energy", lower_bound=literal(0)),
         float_variable("unsupplied_energy", lower_bound=literal(0)),
-        float_variable("unsupplied_reserve_up", lower_bound=literal(0)),
-        float_variable("unsupplied_reserve_down", lower_bound=literal(0)),
+        float_variable("unsupplied_up_reserve_primary", lower_bound=literal(0)),
+        float_variable("unsupplied_down_reserve_primary", lower_bound=literal(0)),
+        float_variable("unsupplied_up_reserve_secondary", lower_bound=literal(0)),
+        float_variable("unsupplied_down_reserve_secondary", lower_bound=literal(0)),
+        float_variable("unsupplied_up_reserve_tertiary1", lower_bound=literal(0)),
+        float_variable("unsupplied_down_reserve_tertiary1", lower_bound=literal(0)),
+        float_variable("unsupplied_up_reserve_tertiary2", lower_bound=literal(0)),
+        float_variable("unsupplied_down_reserve_tertiary2", lower_bound=literal(0)),
     ],
     ports=[
         ModelPort(port_type=RESERVE_PORT_TYPE, port_name="balance_port"),
@@ -287,21 +302,57 @@ NODE_WITH_RESERVE_MODEL = model(
             == var("spillage_energy") - var("unsupplied_energy"),
         ),
         Constraint(
-            name="Balance reserve up",
+            name="Balance primary reserve up",
             expression=port_field("balance_port", "primary_reserve_up").sum_connections()
-            == -var("unsupplied_reserve_up"),
+            == -var("unsupplied_up_reserve_primary"),
         ),
         Constraint(
-            name="Balance reserve down",
+            name="Balance primary reserve down",
             expression=port_field("balance_port", "primary_reserve_down").sum_connections()
-            == -var("unsupplied_reserve_down"),
+            == -var("unsupplied_down_reserve_primary"),
+        ),
+        Constraint(
+            name="Balance secondary reserve up",
+            expression=port_field("balance_port", "secondary_reserve_up").sum_connections()
+            == -var("unsupplied_up_reserve_secondary"),
+        ),
+        Constraint(
+            name="Balance secondary reserve down",
+            expression=port_field("balance_port", "secondary_reserve_down").sum_connections()
+            == -var("unsupplied_down_reserve_secondary"),
+        ),
+        Constraint(
+            name="Balance tertiary1 reserve up",
+            expression=port_field("balance_port", "tertiary1_reserve_up").sum_connections()
+            == -var("unsupplied_up_reserve_tertiary1"),
+        ),
+        Constraint(
+            name="Balance tertiary1 reserve down",
+            expression=port_field("balance_port", "tertiary1_reserve_down").sum_connections()
+            == -var("unsupplied_down_reserve_tertiary1"),
+        ),
+        Constraint(
+            name="Balance tertiary2 reserve up",
+            expression=port_field("balance_port", "tertiary2_reserve_up").sum_connections()
+            == -var("unsupplied_up_reserve_tertiary2"),
+        ),
+        Constraint(
+            name="Balance tertiary2 reserve down",
+            expression=port_field("balance_port", "tertiary2_reserve_down").sum_connections()
+            == -var("unsupplied_down_reserve_tertiary2"),
         ),
     ],
     objective_operational_contribution=(
         param("spillage_cost") * var("spillage_energy")
         + param("ens_cost") * var("unsupplied_energy")
-        + param("reserve_not_supplied_cost_up") * var("unsupplied_reserve_up")
-        + param("reserve_not_supplied_cost_down") * var("unsupplied_reserve_down")
+        + param("primary_reserve_up_not_supplied_cost") * var("unsupplied_up_reserve_primary")
+        + param("primary_reserve_down_not_supplied_cost") * var("unsupplied_down_reserve_primary")
+        + param("secondary_reserve_up_not_supplied_cost") * var("unsupplied_up_reserve_secondary")
+        + param("secondary_reserve_down_not_supplied_cost") * var("unsupplied_down_reserve_secondary")
+        + param("tertiary1_reserve_up_not_supplied_cost") * var("unsupplied_up_reserve_tertiary1")
+        + param("tertiary1_reserve_down_not_supplied_cost") * var("unsupplied_down_reserve_tertiary1")
+        + param("tertiary2_reserve_up_not_supplied_cost") * var("unsupplied_up_reserve_tertiary2")
+        + param("tertiary2_reserve_down_not_supplied_cost") * var("unsupplied_down_reserve_tertiary2")
     )
     .sum()
     .expec(),
@@ -313,6 +364,12 @@ DEMAND_WITH_RESERVE_MODEL = model(
         float_parameter("demand_energy", TIME_AND_SCENARIO_FREE),
         float_parameter("demand_primary_reserve_up", TIME_AND_SCENARIO_FREE),
         float_parameter("demand_primary_reserve_down", TIME_AND_SCENARIO_FREE),
+        float_parameter("demand_secondary_reserve_up", TIME_AND_SCENARIO_FREE),
+        float_parameter("demand_secondary_reserve_down", TIME_AND_SCENARIO_FREE),
+        float_parameter("demand_tertiary1_reserve_up", TIME_AND_SCENARIO_FREE),
+        float_parameter("demand_tertiary1_reserve_down", TIME_AND_SCENARIO_FREE),
+        float_parameter("demand_tertiary2_reserve_up", TIME_AND_SCENARIO_FREE),
+        float_parameter("demand_tertiary2_reserve_down", TIME_AND_SCENARIO_FREE),
     ],
     ports=[ModelPort(port_type=RESERVE_PORT_TYPE, port_name="balance_port")],
     port_fields_definitions=[
@@ -327,6 +384,30 @@ DEMAND_WITH_RESERVE_MODEL = model(
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "primary_reserve_down"),
             definition=-param("demand_primary_reserve_down"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "secondary_reserve_up"),
+            definition=-param("demand_secondary_reserve_up"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "secondary_reserve_down"),
+            definition=-param("demand_secondary_reserve_down"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary1_reserve_up"),
+            definition=-param("demand_tertiary1_reserve_up"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary1_reserve_down"),
+            definition=-param("demand_tertiary1_reserve_down"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary2_reserve_up"),
+            definition=-param("demand_tertiary2_reserve_up"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary2_reserve_down"),
+            definition=-param("demand_tertiary2_reserve_down"),
         ),
     ],
 )
@@ -349,6 +430,12 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         int_parameter("nb_units_max_min_down_time", TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_primary_reserve_up",TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_primary_reserve_down",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_secondary_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_secondary_reserve_down",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary1_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary1_reserve_down",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary2_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary2_reserve_down",TIME_AND_SCENARIO_FREE),
     ],
     variables=[
         float_variable(
@@ -357,12 +444,42 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         float_variable(
-            "generation_reserve_up",
+            "generation_reserve_up_primary",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         float_variable(
-            "generation_reserve_down",
+            "generation_reserve_down_primary",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_up_secondary",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_down_secondary",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_up_tertiary1",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_down_tertiary1",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_up_tertiary2",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_down_tertiary2",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -394,43 +511,100 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "energy"),
             definition=var("energy_generation"),
-            # definition=var("total_generation") - var("generation_reserve"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "primary_reserve_up"),
-            definition=var("generation_reserve_up"),
+            definition=var("generation_reserve_up_primary"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "primary_reserve_down"),
-            definition=var("generation_reserve_down"),
+            definition=var("generation_reserve_down_primary"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "secondary_reserve_up"),
+            definition=var("generation_reserve_up_secondary"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "secondary_reserve_down"),
+            definition=var("generation_reserve_down_secondary"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary1_reserve_up"),
+            definition=var("generation_reserve_up_tertiary1"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary1_reserve_down"),
+            definition=var("generation_reserve_down_tertiary1"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary2_reserve_up"),
+            definition=var("generation_reserve_up_tertiary2"),
+        ),
+        PortFieldDefinition(
+            port_field=PortFieldId("balance_port", "tertiary2_reserve_down"),
+            definition=var("generation_reserve_down_tertiary2"),
         ),
     ],
     constraints=[
         Constraint(
             "Max generation",
-            var("energy_generation") + var("generation_reserve_up")<= param("max_generating"),
+            var("energy_generation") + var("generation_reserve_up_primary") + var("generation_reserve_up_secondary")
+            + var("generation_reserve_up_tertiary1") + var("generation_reserve_up_tertiary2") <= param("max_generating"),
         ),
         Constraint(
             "Min generation",
-            var("energy_generation") - var("generation_reserve_down") >= param("min_generating"),
+            var("energy_generation") - var("generation_reserve_down_primary") - var("generation_reserve_down_secondary")
+            - var("generation_reserve_down_tertiary1") - var("generation_reserve_down_tertiary2") >= param("min_generating"),
         ),
         Constraint(
             "Max generation with NODU",
-            var("energy_generation") + var("generation_reserve_up") <= param("p_max") * var("nb_on"),
+            var("energy_generation") + var("generation_reserve_up_primary") + var("generation_reserve_up_secondary")
+            + var("generation_reserve_up_tertiary1") + var("generation_reserve_up_tertiary2") <= param("p_max") * var("nb_on"),
         ),
         Constraint(
             "Min generation with NODU",
-            var("energy_generation") - var("generation_reserve_down") >= param("p_min") * var("nb_on"),
+            var("energy_generation") - var("generation_reserve_down_primary") - var("generation_reserve_down_secondary")
+            - var("generation_reserve_down_tertiary1") - var("generation_reserve_down_tertiary2") >= param("p_min") * var("nb_on"),
         ),
         Constraint(
-            "Limite participation primary reserve up",
-            var("generation_reserve_up")
+            "LImite particiption primary reserve up",
+            var("generation_reserve_up_primary")
             <= param("participation_max_primary_reserve_up") * var("nb_on"),
         ),
         Constraint(
-            "Limite participation primary reserve down",
-            var("generation_reserve_down")
+            "LImite particiption primary reserve down",
+            var("generation_reserve_down_primary")
             <= param("participation_max_primary_reserve_down") * var("nb_on"),
+        ),
+        Constraint(
+            "LImite particiption secondary reserve up",
+            var("generation_reserve_up_secondary")
+            <= param("participation_max_secondary_reserve_up") * var("nb_on"),
+        ),
+        Constraint(
+            "LImite particiption secondary reserve down",
+            var("generation_reserve_down_secondary")
+            <= param("participation_max_secondary_reserve_down") * var("nb_on"),
+        ),
+        Constraint(
+            "LImite particiption tertiary1 reserve up",
+            var("generation_reserve_up_tertiary1")
+            <= param("participation_max_tertiary1_reserve_up") * var("nb_on"),
+        ),
+        Constraint(
+            "LImite particiption tertiary1 reserve down",
+            var("generation_reserve_down_tertiary1")
+            <= param("participation_max_tertiary1_reserve_down") * var("nb_on"),
+        ),
+        Constraint(
+            "LImite particiption tertiary2 reserve up",
+            var("generation_reserve_up_tertiary2")
+            <= param("participation_max_tertiary2_reserve_up") * var("nb_on"),
+        ),
+        Constraint(
+            "LImite particiption tertiary2 reserve down",
+            var("generation_reserve_down_tertiary2")
+            <= param("participation_max_tertiary2_reserve_down") * var("nb_on"),
         ),
         Constraint(
             "NODU balance",
@@ -460,11 +634,10 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
     objective_operational_contribution=(
-        param("cost") * var("total_generation")
+        param("cost") * var("energy_generation")
         + param("startup_cost") * var("nb_start")
         + param("fixed_cost") * var("nb_on")
     )
     .sum()
     .expec(),
 )
-
