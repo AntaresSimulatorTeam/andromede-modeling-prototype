@@ -72,7 +72,7 @@ class ThermalProblemBuilder:
         index: BlockScenarioIndex,
         list_cluster_id: List[str],
         param_to_update: str,
-        var_to_read: str,
+        var_to_read: List[str],
         fn_to_apply: Callable,
         param_needed_to_compute: Optional[List[str]] = None,
     ) -> None:
@@ -88,8 +88,9 @@ class ThermalProblemBuilder:
                 * self.time_scenario_hour_parameter.week,
                 self.time_scenario_hour_parameter.scenario,
             )
-
-            sol = output.component(cluster).var(var_to_read).value[0]  # type:ignore
+            sol = {}
+            for variable in var_to_read:
+                sol[variable] = output.component(cluster).var(variable).value[0] # type:ignore
 
             param = {}
             if param_needed_to_compute is not None:
@@ -106,7 +107,7 @@ class ThermalProblemBuilder:
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 self.database.set_value(
                     ComponentParameterIndex(cluster, param_to_update),
-                    fn_to_apply(sol[i], *[p[i] for p in param.values()]),  # type:ignore
+                    fn_to_apply(*[s[i] for s in sol.values()], *[p[i] for p in param.values()]),  # type:ignore
                     t,
                     index.scenario,
                 )
