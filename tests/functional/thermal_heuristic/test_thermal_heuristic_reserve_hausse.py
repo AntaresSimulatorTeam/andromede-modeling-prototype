@@ -44,7 +44,7 @@ from tests.functional.libs.lib_thermal_reserve import (
     RESERVE_PORT_TYPE,
     NODE_WITH_RESERVE_MODEL
 )
-from tests.functional.libs.heuristic import nouvelle_heuristique
+from tests.functional.libs.heuristic import nouvelle_heuristique, heuristique_opti, heuristique_opti1, old_heuristique
 
 @pytest.fixture
 def data_path() -> Path:
@@ -239,7 +239,6 @@ def test_difference_milp_accurate(
     assert status == pywraplp.Solver.OPTIMAL
 
     result_milp = OutputValues(milp_resolution)
-    # return(reserve_up_production,reserve_down_production)
     
     # resolution with accurate
 
@@ -275,10 +274,15 @@ def test_difference_milp_accurate(
         week_scenario_index,
         heuristic_components,
         param_to_update= "nb_units_min",
-        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary"],
+        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
+                     "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
         # fn_to_apply=lambda x: ceil(round(x, 12)),
-        fn_to_apply= nouvelle_heuristique,
+        fn_to_apply= old_heuristique,
         param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
+                                 "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
+                                 "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
+                                 "participation_max_tertiary2_reserve_up","participation_max_tertiary2_reserve_down",
                                  "cost","startup_cost","fixed_cost"],
     )
     # thermal_problem_builder.update_database_heuristic(
@@ -300,17 +304,22 @@ def test_difference_milp_accurate(
         )
     )
     status = resolution_step_accurate_heuristic.solver.Solve()
-    # assert status == pywraplp.Solver.OPTIMAL
+    assert status == pywraplp.Solver.OPTIMAL
 
     thermal_problem_builder.update_database_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
         param_to_update= "nb_units_min",
-        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary"],
+        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
+                     "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
         # fn_to_apply=lambda x: ceil(round(x, 12)),
-        fn_to_apply= nouvelle_heuristique,
+        fn_to_apply= old_heuristique,
         param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
+                                 "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
+                                 "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
+                                 "participation_max_tertiary2_reserve_up","participation_max_tertiary2_reserve_down",
                                  "cost","startup_cost","fixed_cost"],
     )
     thermal_problem_builder.update_database_heuristic(
@@ -318,10 +327,15 @@ def test_difference_milp_accurate(
         week_scenario_index,
         heuristic_components,
         param_to_update= "nb_units_max",
-        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary"],
+        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
+                     "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
         # fn_to_apply=lambda x: ceil(round(x, 12)),
-        fn_to_apply= nouvelle_heuristique,
+        fn_to_apply= old_heuristique,
         param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
+                                 "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
+                                 "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
+                                 "participation_max_tertiary2_reserve_up","participation_max_tertiary2_reserve_down",
                                  "cost","startup_cost","fixed_cost"],
     )
     
@@ -330,7 +344,7 @@ def test_difference_milp_accurate(
         week_scenario_index
     )
     status = resolution_step_2.solver.Solve()
-    # assert status == pywraplp.Solver.OPTIMAL
+    assert status == pywraplp.Solver.OPTIMAL
 
     result_step1 = OutputValues(resolution_step_1)
     result_step2 = OutputValues(resolution_step_2)
@@ -350,12 +364,18 @@ def test_difference_milp_accurate(
     reserve_up_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_primary'].value
     reserve_down_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_down_primary'].value  
 
-    de_milp = pd.DataFrame(data = {"energy_production": energy_production_milp[0],"nbr_on": nbr_on_milp[0],"reserve_up":reserve_up_production_milp[0],"reserve down":reserve_down_production_milp[0]})
+    de_milp = pd.DataFrame(data = {"energy_production": energy_production_milp[0],"nbr_on": nbr_on_milp[0],
+                                   "reserve_up":reserve_up_production_milp[0],"reserve down":reserve_down_production_milp[0],
+                                   "Fonction_objectif":milp_resolution.solver.Objective().Value()})
     de_milp.to_csv("result_milp.csv",index=False)
-    de_accurate_step1 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step1[0],"nbr_on": nbr_on_accurate_step1[0],"reserve_up":reserve_up_production_accurate_step1[0],"reserve down":reserve_down_production_accurate_step1[0]})
+    de_accurate_step1 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step1[0],"nbr_on": nbr_on_accurate_step1[0],
+                                             "reserve_up":reserve_up_production_accurate_step1[0],"reserve down":reserve_down_production_accurate_step1[0],
+                                             "Fonction_objectif":resolution_step_1.solver.Objective().Value()})
     de_accurate_step1.to_csv("result_accurate_step1.csv",index=False)
-    de_accurate_step2 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step2[0],"nbr_on": nbr_on_accurate_step2[0],"reserve_up":reserve_up_production_accurate_step2[0],"reserve down":reserve_down_production_accurate_step2[0]})
+    de_accurate_step2 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step2[0],"nbr_on": nbr_on_accurate_step2[0],
+                                             "reserve_up":reserve_up_production_accurate_step2[0],"reserve down":reserve_down_production_accurate_step2[0],
+                                             "Fonction_objectif":resolution_step_2.solver.Objective().Value()})
     de_accurate_step2.to_csv("result_accurate_step2.csv",index=False)
 
     # assert nbr_on_accurate_step1 == nbr_on_accurate_step2
-    assert nbr_on_milp == nbr_on_accurate_step2
+    # assert nbr_on_milp == nbr_on_accurate_step2

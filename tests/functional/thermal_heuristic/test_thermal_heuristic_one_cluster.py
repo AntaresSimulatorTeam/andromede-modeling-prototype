@@ -306,7 +306,6 @@ def test_accurate_heuristic(
     #         idx_generation=4, idx_nodu=6, idx_spillage=33, idx_unsupplied=29
     #     ),
     # )
-    production = OutputValues(resolution_step_2)._components['G']._variables['generation'].value
     # expected_output.check_output_values(OutputValues(resolution_step_2))
 
 
