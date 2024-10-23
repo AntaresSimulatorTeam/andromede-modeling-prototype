@@ -71,23 +71,25 @@ class ThermalProblemBuilder:
         output: OutputValues,
         index: BlockScenarioIndex,
         list_cluster_id: List[str],
-        param_to_update: str,
+        param_to_update: List[str],
         var_to_read: List[str],
         fn_to_apply: Callable,
         param_needed_to_compute: Optional[List[str]] = None,
+        param_node_needed_to_compute : Optional[List[str]] = None,
     ) -> None:
         for cluster in list_cluster_id:
-            if (
-                ComponentParameterIndex(cluster, param_to_update)
-                not in self.database.__dict__.keys()
-            ):
-                self.database.add_data(cluster, param_to_update, ConstantData(0))
-            self.database.convert_to_time_scenario_series_data(
-                ComponentParameterIndex(cluster, param_to_update),
-                self.time_scenario_hour_parameter.hour
-                * self.time_scenario_hour_parameter.week,
-                self.time_scenario_hour_parameter.scenario,
-            )
+            for param_update in param_to_update:
+                if (
+                    ComponentParameterIndex(cluster, param_update)
+                    not in self.database.__dict__.keys()
+                ):
+                    self.database.add_data(cluster, param_update, ConstantData(0))
+                self.database.convert_to_time_scenario_series_data(
+                    ComponentParameterIndex(cluster, param_update),
+                    self.time_scenario_hour_parameter.hour
+                    * self.time_scenario_hour_parameter.week,
+                    self.time_scenario_hour_parameter.scenario,
+                )
             sol = {}
             for variable in var_to_read:
                 sol[variable] = output.component(cluster).var(variable).value[0] # type:ignore
@@ -103,14 +105,26 @@ class ThermalProblemBuilder:
                         )
                         for t in timesteps(index, self.time_scenario_hour_parameter)
                     ]
-
+            if param_node_needed_to_compute is not None:
+                list_connections = self.network._connections
+                print(list_connections)
+                node = None
+                for connection in list_connections:
+                    if connection.port1.component.id == cluster:
+                        node = connection.port2.component.id
+                    if connection.port2.component.id == cluster:
+                        node = connection.port1.component.id
+                for p in param_node_needed_to_compute:
+                    param[p] = [self.database.get_data(node,p).value
+                                for t in timesteps(index, self.time_scenario_hour_parameter)]
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                self.database.set_value(
-                    ComponentParameterIndex(cluster, param_to_update),
-                    fn_to_apply(*[s[i] for s in sol.values()], *[p[i] for p in param.values()]),  # type:ignore
-                    t,
-                    index.scenario,
-                )
+                for param_update in param_to_update:
+                    self.database.set_value(
+                        ComponentParameterIndex(cluster, param_update),
+                        fn_to_apply(*[s[i] for s in sol.values()], *[p[i] for p in param.values()]),  # type:ignore
+                        t,
+                        index.scenario,
+                    )
 
     def heuristic_resolution_step(
         self,
