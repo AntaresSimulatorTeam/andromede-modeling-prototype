@@ -16,17 +16,7 @@ from typing import Dict, Generator, Iterable, List, Optional, Set
 
 from anytree import LevelOrderIter, NodeMixin
 
-from andromede.expression import (
-    Comparator,
-    ComparisonNode,
-    ExpressionNode,
-    literal,
-    visit,
-)
-from andromede.expression.attributes import (
-    VariableGetterVisitor,
-    VariableNamePrependerVisitor,
-)
+from andromede.expression import ExpressionNode, literal, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
@@ -101,70 +91,67 @@ class DecisionTreeNode(NodeMixin):
         # probability sum equal to one
         return all(child.is_leaves_prob_sum_one() for child in self.children)
 
-    def connect_from_parent(
-        self, component_par: Component, component_chd: Component, expr: ExpressionNode
+    def define_coupling_constraint(
+        self,
+        component_par: Component,
+        cumulative_par_var_id: str,
+        component_chd: Component,
+        cumulative_chd_var_id: str,
+        incremental_chd_var_id: str,
     ) -> None:
+        """
+        Define a coupling constraint of the form:
+
+        var(cumulative_par_var_id) == var(cumulative_chd_var_id) - var(incremental_chd_var_id)
+
+        where 'cumulative_par_var_id' is a variable of component_par;\n
+        and 'cumulative_chd_var_id' and 'incremental_chd_var_id' are variables of component_chd
+        """
         if self.parent and (component_par not in self.parent.network.all_components):
             raise RuntimeError(
                 f"Component {component_par.id} not present in parent's network!"
             )
 
         if component_chd not in self.network.all_components:
-            raise RuntimeError(
-                f"Component {component_chd.id} not present in child's network!"
-            )
+            raise RuntimeError(f"Component {component_chd.id} not present in network!")
 
-        if not isinstance(expr, ComparisonNode):
+        if not component_par.is_variable_in_model(cumulative_par_var_id):
             raise ValueError(
-                f"Expression must be a comparison node (lhs for parent, rhs for child)."
+                f"Cumulative variable {cumulative_par_var_id} not present in parent's {component_par.id}"
             )
 
-        expr_par = expr.left
-        expr_chd = expr.right
+        elif not component_chd.is_variable_in_model(cumulative_chd_var_id):
+            raise ValueError(
+                f"Cumulative variable {cumulative_chd_var_id} not present in {component_chd.id}"
+            )
 
-        prefix_par = f"{self.parent.id}_{component_par.id}" if self.parent else ""
+        elif not component_chd.is_variable_in_model(incremental_chd_var_id):
+            raise ValueError(
+                f"Incremental variable {incremental_chd_var_id} not present in {component_chd.id}"
+            )
+
+        prefix_par = ""
+        cumulative_var_par_id = ""
+        if self.parent:
+            prefix_par = f"{self.parent.id}_{component_par.id}"
+            cumulative_var_par_id = f"{prefix_par}_{cumulative_par_var_id}"
+
+            self.coupling_info.variables.add(cumulative_var_par_id)
+
         prefix_chd = f"{self.id}_{component_chd.id}"
+        cumulative_var_chd_id = f"{prefix_chd}_{cumulative_chd_var_id}"
+        incremental_var_par_id = f"{prefix_chd}_{incremental_chd_var_id}"
 
-        for var in visit(expr_par, VariableGetterVisitor()):
-            if not component_par.is_variable_in_model(var):
-                raise ValueError(
-                    f"Variable {var} not present in parent's {component_par.id}"
-                )
-
-            self.coupling_info.variables.add(f"{prefix_par}_{var}")
-
-        for var in visit(expr_chd, VariableGetterVisitor()):
-            if not component_chd.is_variable_in_model(var):
-                raise ValueError(
-                    f"Variable {var} not present in child's {component_chd.id}"
-                )
-
-            self.coupling_info.variables.add(f"{prefix_chd}_{var}")
-
-        new_expr_par = visit(expr_par, VariableNamePrependerVisitor(prefix_par))
-        new_expr_chd = visit(expr_chd, VariableNamePrependerVisitor(prefix_chd))
-
-        if expr.comparator == Comparator.EQUAL:
-            new_expr = new_expr_par == new_expr_chd
-        elif expr.comparator == Comparator.LESS_THAN:
-            new_expr = new_expr_par <= new_expr_chd
-        else:
-            new_expr = new_expr_par >= new_expr_chd
+        self.coupling_info.variables.add(cumulative_var_chd_id)
+        self.coupling_info.variables.add(incremental_var_par_id)
 
         self.coupling_info.constraints[
             f"{prefix_par}_{prefix_chd}_{len(self.coupling_info.constraints)}"
-        ] = new_expr
+        ] = (var(cumulative_var_chd_id) - var(incremental_var_par_id)) == (
+            var(cumulative_var_par_id) if cumulative_var_par_id else literal(0)
+        )
 
-    def connect_to_children(
-        self, component_par: Component, component_chd: Component, expr: ExpressionNode
-    ) -> None:
-        if not self.children:
-            raise RuntimeError("Cannot connect downwards because no child is defined!")
-
-        for child in self.children:
-            child.connect_from_parent(component_par, component_chd, expr)
-
-    def _add_coupling_component(self) -> None:
+    def _add_coupling_constraints(self) -> None:
         variables: List[Variable] = []
         constraints: List[Constraint] = []
 

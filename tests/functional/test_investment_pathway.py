@@ -234,15 +234,19 @@ def test_investment_pathway_on_sequential_nodes(
     )
 
     # === Coupling model ===
-    decision_tree_par.connect_to_children(
+    decision_tree_par.define_coupling_constraint(
         candidate_par,
-        candidate_chd,
-        var("invested_capa") - var("delta_invest") == literal(0),
+        "invested_capa",
+        candidate_par,
+        "invested_capa",
+        "delta_invest",
     )
-    decision_tree_chd.connect_from_parent(
+    decision_tree_chd.define_coupling_constraint(
         candidate_par,
+        "invested_capa",
         candidate_chd,
-        var("invested_capa") == var("invested_capa") - var("delta_invest"),
+        "invested_capa",
+        "delta_invest",
     )
 
     # === Build problem ===
@@ -435,18 +439,26 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
 
     # === Coupling model ===
-    dt_root.connect_to_children(
-        candidate, candidate, var("invested_capa") - var("delta_invest") == literal(0)
+    dt_root.define_coupling_constraint(
+        candidate,
+        "invested_capa",
+        candidate,
+        "invested_capa",
+        "delta_invest",
     )
-    dt_child_A.connect_from_parent(
+    dt_child_A.define_coupling_constraint(
         candidate,
+        "invested_capa",
         candidate,
-        var("invested_capa") == var("invested_capa") - var("delta_invest"),
+        "invested_capa",
+        "delta_invest",
     )
-    dt_child_B.connect_from_parent(
+    dt_child_B.define_coupling_constraint(
         candidate,
+        "invested_capa",
         candidate,
-        var("invested_capa") == var("invested_capa") - var("delta_invest"),
+        "invested_capa",
+        "delta_invest",
     )
 
     # === Build problem ===

@@ -238,7 +238,7 @@ def build_benders_decomposed_problem(
     )  # Not necessary for master, but list must be non-empty
     null_scenario = 0  # Not necessary for master
 
-    decision_tree_root._add_coupling_component()
+    decision_tree_root._add_coupling_constraints()
 
     coupler = build_problem(
         decision_tree_root.coupling_network,
