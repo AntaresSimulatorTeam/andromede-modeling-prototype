@@ -1,9 +1,8 @@
 from math import ceil,floor
 from typing import Callable, List, Optional
 
-from ortools.sat.python import cp_model
 from ortools.linear_solver import pywraplp
-
+import ortools.linear_solver.pywraplp as lp
 
 def heuristique_opti(
     nbr_on_float : float,
@@ -39,12 +38,14 @@ def heuristique_opti(
     tertiary1_reserve_down_not_supplied_cost : Optional[float] = 0,
     tertiary2_reserve_up_not_supplied_cost : Optional[float] = 0,
     tertiary2_reserve_down_not_supplied_cost : Optional[float] = 0,
+    param_start_up : Optional[str] = None, 
 ) -> int:
     
     nbr_on = floor(round(nbr_on_float,12))
     nbr_on_classic = ceil(round(nbr_on_float,12))
 
-    solver = pywraplp.Solver.CreateSolver("GLOP")
+    solver = lp.Solver.CreateSolver("SCIP")
+    # pywraplp.Solver.CreateSolver("GLOP")
 
     UNSP_primary_up_min = max(0,generation_reserve_up_primary-nbr_on*participation_max_primary_reserve_up)  
     UNSP_primary_down_min = max(0,generation_reserve_down_primary-nbr_on*participation_max_primary_reserve_down)
@@ -88,6 +89,12 @@ def heuristique_opti(
                                       min(energy_generation,
                                           nbr_on_classic * p_max - generation_reserve_up))
     gain = fixed_cost  + (cost + spillage_cost) * (energy_generation_classique - energy_generation) - startup_cost
+    
+    
+    if param_start_up is not None:
+        if solver.Objective().Value() < gain:  
+            return( nbr_on,solver.Objective().Value(),gain,startup_cost)
+        return ( nbr_on_classic,solver.Objective().Value(),gain,startup_cost)
     if solver.Objective().Value() < gain:  
         return nbr_on
     return nbr_on_classic
@@ -127,6 +134,7 @@ def heuristique_opti_sans_start_up(
     tertiary1_reserve_down_not_supplied_cost : Optional[float] = 0,
     tertiary2_reserve_up_not_supplied_cost : Optional[float] = 0,
     tertiary2_reserve_down_not_supplied_cost : Optional[float] = 0,
+    param_start_up : Optional[str] = None,
 ) -> int:
     
     nbr_on = floor(round(nbr_on_float,12))
@@ -172,10 +180,18 @@ def heuristique_opti_sans_start_up(
     # Solve the system.
     status = solver.Solve()
 
+    a = x.SolutionValue()
+    b = ya.SolutionValue()
+    c= za.SolutionValue()
+
     energy_generation_classique = max(nbr_on_classic * p_min + generation_reserve_down,
                                       min(energy_generation,
                                           nbr_on_classic * p_max - generation_reserve_up))
     gain = fixed_cost  + (cost + spillage_cost) * (energy_generation_classique - energy_generation)
+    if param_start_up is not None:
+        if solver.Objective().Value() < gain:  
+            return [nbr_on,solver.Objective().Value(),gain,startup_cost]
+        return  [nbr_on_classic,solver.Objective().Value(),gain,startup_cost]
     if solver.Objective().Value() < gain:  
         return nbr_on
     return nbr_on_classic

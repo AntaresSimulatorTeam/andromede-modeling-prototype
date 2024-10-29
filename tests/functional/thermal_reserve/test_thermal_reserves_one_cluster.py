@@ -287,7 +287,7 @@ def test_difference_milp_accurate(
         var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
                      "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
                      "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
-        fn_to_apply= nouvelle_heuristique,
+        fn_to_apply= heuristique_opti,
         param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
                                  "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
                                  "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
@@ -299,6 +299,29 @@ def test_difference_milp_accurate(
                                       "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost"],
     )
     
+    a = heuristique_opti(nbr_on_float = 1.333333333333334, energy_generation = 123.3333333333334,
+generation_reserve_up_primary = 10.0, generation_reserve_down_primary = 10.0,
+generation_reserve_up_secondary = 0.0, generation_reserve_down_secondary = 0.0,
+generation_reserve_up_tertiary1 = 0.0, generation_reserve_down_tertiary1 = 0.0,
+generation_reserve_up_tertiary2 = 0.0, generation_reserve_down_tertiary2 = 0.0,
+p_max = 100.0, p_min = 85.0, participation_max_primary_reserve_up = 27.0,
+participation_max_primary_reserve_down = 27.0,
+participation_max_secondary_reserve_up = 27.0,
+participation_max_secondary_reserve_down = 27.0,
+participation_max_tertiary1_reserve_up = 27.0,
+participation_max_tertiary1_reserve_down = 27.0,
+participation_max_tertiary2_reserve_up = 27.0,
+participation_max_tertiary2_reserve_down = 27.0, cost = 35.0,
+startup_cost = 100.0, fixed_cost = 5000.0, spillage_cost = 0.0, ens_cost = 100.0,
+primary_reserve_up_not_supplied_cost = 10000.0,
+primary_reserve_down_not_supplied_cost = 1000.0,
+secondary_reserve_up_not_supplied_cost = 1000.0,
+secondary_reserve_down_not_supplied_cost = 1000.0,
+tertiary1_reserve_up_not_supplied_cost = 1000.0,
+tertiary1_reserve_down_not_supplied_cost = 1000.0,
+tertiary2_reserve_up_not_supplied_cost = 1000.0,
+tertiary2_reserve_down_not_supplied_cost = 1000.0)
+
     # Solve heuristic problem
     resolution_step_accurate_heuristic = (
         thermal_problem_builder.heuristic_resolution_step(
@@ -371,9 +394,3 @@ def test_difference_milp_accurate(
 
     # assert nbr_on_accurate_step1 == nbr_on_accurate_step2
     # assert nbr_on_milp == nbr_on_accurate_step2
-
-# def tests():
-#     a = nouvelle_heuristique(7.11,575.9999999,134.9999999,149.9999999,0.0,0.0,0.0,0.0,0.0,0.0,
-#                          100.0,30.0,27.0,27.0,27.0,27.0,27.0,27.0,27.0,27.0,35.0,100.0,
-#                          1000.0,0.0,100.0,1000.0,1000.0,1000.0,1000.0,1000.0,1000.0,1000.0,1000.0)
-#     assert a != 0
