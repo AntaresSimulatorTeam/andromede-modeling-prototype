@@ -4,7 +4,7 @@ from typing import Callable, List, Optional
 from ortools.linear_solver import pywraplp
 import ortools.linear_solver.pywraplp as lp
 
-def heuristique_opti(
+def arrondi_opti_avec_start_up(
     nbr_on_float : float,
     energy_generation : float,
     generation_reserve_up_primary : float,
@@ -28,17 +28,24 @@ def heuristique_opti(
     cost : float,
     startup_cost : float,
     fixed_cost : float,
+    cost_participation_primary_reserve_up : float,
+    cost_participation_primary_reserve_down : float,
+    cost_participation_secondary_reserve_up : float,
+    cost_participation_secondary_reserve_down : float,
+    cost_participation_tertiary1_reserve_up : float,
+    cost_participation_tertiary1_reserve_down : float,
+    cost_participation_tertiary2_reserve_up : float,        
+    cost_participation_tertiary2_reserve_down : float,
     spillage_cost : float,
     ens_cost : float,
-    primary_reserve_up_not_supplied_cost : Optional[float] = 0,
-    primary_reserve_down_not_supplied_cost : Optional[float] = 0,
-    secondary_reserve_up_not_supplied_cost : Optional[float] = 0,
-    secondary_reserve_down_not_supplied_cost : Optional[float] = 0,
-    tertiary1_reserve_up_not_supplied_cost : Optional[float] = 0,
-    tertiary1_reserve_down_not_supplied_cost : Optional[float] = 0,
-    tertiary2_reserve_up_not_supplied_cost : Optional[float] = 0,
-    tertiary2_reserve_down_not_supplied_cost : Optional[float] = 0,
-    param_start_up : Optional[str] = None, 
+    primary_reserve_up_not_supplied_cost : float,
+    primary_reserve_down_not_supplied_cost : float,
+    secondary_reserve_up_not_supplied_cost : float,
+    secondary_reserve_down_not_supplied_cost : float,
+    tertiary1_reserve_up_not_supplied_cost : float,
+    tertiary1_reserve_down_not_supplied_cost : float,
+    tertiary2_reserve_up_not_supplied_cost : float,
+    tertiary2_reserve_down_not_supplied_cost : float,
 ) -> int:
     
     nbr_on = floor(round(nbr_on_float,12))
@@ -76,14 +83,19 @@ def heuristique_opti(
     solver.Add(1 * x - 1 * za - 1 * zb - 1 * zc - 1 * zd <= borne_min)
 
 
-    solver.Minimize(primary_reserve_up_not_supplied_cost * ya + secondary_reserve_up_not_supplied_cost * yb
-                     + tertiary1_reserve_up_not_supplied_cost * yc + tertiary2_reserve_up_not_supplied_cost * yd
-                       + primary_reserve_down_not_supplied_cost * za + secondary_reserve_down_not_supplied_cost * zb
-                         + tertiary1_reserve_down_not_supplied_cost * zc + tertiary2_reserve_down_not_supplied_cost * zd
-                           + (ens_cost - cost - spillage_cost) * x)
+    solver.Minimize((primary_reserve_up_not_supplied_cost-cost_participation_primary_reserve_up) * ya
+                     + (secondary_reserve_up_not_supplied_cost-cost_participation_secondary_reserve_up) * yb
+                      + (tertiary1_reserve_up_not_supplied_cost-cost_participation_tertiary1_reserve_up) * yc
+                       + (tertiary2_reserve_up_not_supplied_cost-cost_participation_tertiary2_reserve_up) * yd
+                        + (primary_reserve_down_not_supplied_cost-cost_participation_primary_reserve_down) * za
+                         + (secondary_reserve_down_not_supplied_cost-cost_participation_secondary_reserve_down) * zb
+                          + (tertiary1_reserve_down_not_supplied_cost-cost_participation_tertiary1_reserve_down) * zc 
+                           + (tertiary2_reserve_down_not_supplied_cost-cost_participation_tertiary2_reserve_down) * zd
+                            + (ens_cost - cost - spillage_cost) * x)
 
     # Solve the system.
     status = solver.Solve()
+
 
     energy_generation_classique = max(nbr_on_classic * p_min + generation_reserve_down,
                                       min(energy_generation,
@@ -91,16 +103,12 @@ def heuristique_opti(
     gain = fixed_cost  + (cost + spillage_cost) * (energy_generation_classique - energy_generation) - startup_cost
     
     
-    if param_start_up is not None:
-        if solver.Objective().Value() < gain:  
-            return( nbr_on,solver.Objective().Value(),gain,startup_cost)
-        return ( nbr_on_classic,solver.Objective().Value(),gain,startup_cost)
     if solver.Objective().Value() < gain:  
         return nbr_on
     return nbr_on_classic
 
 
-def heuristique_opti_sans_start_up(
+def arrondi_opti_sans_start_up(
     nbr_on_float : float,
     energy_generation : float,
     generation_reserve_up_primary : float,
@@ -124,23 +132,30 @@ def heuristique_opti_sans_start_up(
     cost : float,
     startup_cost : float,
     fixed_cost : float,
+    cost_participation_primary_reserve_up : float,
+    cost_participation_primary_reserve_down : float,
+    cost_participation_secondary_reserve_up : float,
+    cost_participation_secondary_reserve_down : float,
+    cost_participation_tertiary1_reserve_up : float,
+    cost_participation_tertiary1_reserve_down : float,
+    cost_participation_tertiary2_reserve_up : float,        
+    cost_participation_tertiary2_reserve_down : float,
     spillage_cost : float,
     ens_cost : float,
-    primary_reserve_up_not_supplied_cost : Optional[float] = 0,
-    primary_reserve_down_not_supplied_cost : Optional[float] = 0,
-    secondary_reserve_up_not_supplied_cost : Optional[float] = 0,
-    secondary_reserve_down_not_supplied_cost : Optional[float] = 0,
-    tertiary1_reserve_up_not_supplied_cost : Optional[float] = 0,
-    tertiary1_reserve_down_not_supplied_cost : Optional[float] = 0,
-    tertiary2_reserve_up_not_supplied_cost : Optional[float] = 0,
-    tertiary2_reserve_down_not_supplied_cost : Optional[float] = 0,
-    param_start_up : Optional[str] = None,
+    primary_reserve_up_not_supplied_cost : float,
+    primary_reserve_down_not_supplied_cost : float,
+    secondary_reserve_up_not_supplied_cost : float,
+    secondary_reserve_down_not_supplied_cost : float,
+    tertiary1_reserve_up_not_supplied_cost : float,
+    tertiary1_reserve_down_not_supplied_cost : float,
+    tertiary2_reserve_up_not_supplied_cost : float,
+    tertiary2_reserve_down_not_supplied_cost : float,
 ) -> int:
     
     nbr_on = floor(round(nbr_on_float,12))
     nbr_on_classic = ceil(round(nbr_on_float,12))
 
-    solver = pywraplp.Solver.CreateSolver("GLOP")
+    solver = lp.Solver.CreateSolver("SCIP")
 
     UNSP_primary_up_min = max(0,generation_reserve_up_primary-nbr_on*participation_max_primary_reserve_up)  
     UNSP_primary_down_min = max(0,generation_reserve_down_primary-nbr_on*participation_max_primary_reserve_down)
@@ -171,33 +186,38 @@ def heuristique_opti_sans_start_up(
     solver.Add(1 * x - 1 * za - 1 * zb - 1 * zc - 1 * zd <= borne_min)
 
 
-    solver.Minimize(primary_reserve_up_not_supplied_cost * ya + secondary_reserve_up_not_supplied_cost * yb
-                     + tertiary1_reserve_up_not_supplied_cost * yc + tertiary2_reserve_up_not_supplied_cost * yd
-                       + primary_reserve_down_not_supplied_cost * za + secondary_reserve_down_not_supplied_cost * zb
-                         + tertiary1_reserve_down_not_supplied_cost * zc + tertiary2_reserve_down_not_supplied_cost * zd
-                           + (ens_cost - cost - spillage_cost) * x)
+    solver.Minimize((primary_reserve_up_not_supplied_cost-cost_participation_primary_reserve_up) * ya
+                     + (secondary_reserve_up_not_supplied_cost-cost_participation_secondary_reserve_up) * yb
+                      + (tertiary1_reserve_up_not_supplied_cost-cost_participation_tertiary1_reserve_up) * yc
+                       + (tertiary2_reserve_up_not_supplied_cost-cost_participation_tertiary2_reserve_up) * yd
+                        + (primary_reserve_down_not_supplied_cost-cost_participation_primary_reserve_down) * za
+                         + (secondary_reserve_down_not_supplied_cost-cost_participation_secondary_reserve_down) * zb
+                          + (tertiary1_reserve_down_not_supplied_cost-cost_participation_tertiary1_reserve_down) * zc 
+                           + (tertiary2_reserve_down_not_supplied_cost-cost_participation_tertiary2_reserve_down) * zd
+                            + (ens_cost - cost - spillage_cost) * x)
 
     # Solve the system.
     status = solver.Solve()
 
     a = x.SolutionValue()
     b = ya.SolutionValue()
-    c= za.SolutionValue()
+    c = za.SolutionValue()
+    d = solver.Objective().Value()
+
+    # if nbr_on_float > 12 and p_max > 600:
+    #     e = f,
+    #     g = e
 
     energy_generation_classique = max(nbr_on_classic * p_min + generation_reserve_down,
                                       min(energy_generation,
                                           nbr_on_classic * p_max - generation_reserve_up))
     gain = fixed_cost  + (cost + spillage_cost) * (energy_generation_classique - energy_generation)
-    if param_start_up is not None:
-        if solver.Objective().Value() < gain:  
-            return [nbr_on,solver.Objective().Value(),gain,startup_cost]
-        return  [nbr_on_classic,solver.Objective().Value(),gain,startup_cost]
-    if solver.Objective().Value() < gain:  
+    if solver.Objective().Value() <= gain:  
         return nbr_on
     return nbr_on_classic
 
 
-def nouvelle_heuristique(
+def nouvelle_arrondi(
     nbr_on_float : float,
     energy_generation : float,
     generation_reserve_up_primary : float,
@@ -221,16 +241,24 @@ def nouvelle_heuristique(
     cost : float,
     startup_cost : float,
     fixed_cost : float,
+    cost_participation_primary_reserve_up : float,
+    cost_participation_primary_reserve_down : float,
+    cost_participation_secondary_reserve_up : float,
+    cost_participation_secondary_reserve_down : float,
+    cost_participation_tertiary1_reserve_up : float,
+    cost_participation_tertiary1_reserve_down : float,
+    cost_participation_tertiary2_reserve_up : float,        
+    cost_participation_tertiary2_reserve_down : float,
     spillage_cost : float,
     ens_cost : float,
-    primary_reserve_up_not_supplied_cost : Optional[float] = 0,
-    primary_reserve_down_not_supplied_cost : Optional[float] = 0,
-    secondary_reserve_up_not_supplied_cost : Optional[float] = 0,
-    secondary_reserve_down_not_supplied_cost : Optional[float] = 0,
-    tertiary1_reserve_up_not_supplied_cost : Optional[float] = 0,
-    tertiary1_reserve_down_not_supplied_cost : Optional[float] = 0,
-    tertiary2_reserve_up_not_supplied_cost : Optional[float] = 0,
-    tertiary2_reserve_down_not_supplied_cost : Optional[float] = 0,
+    primary_reserve_up_not_supplied_cost : float,
+    primary_reserve_down_not_supplied_cost : float,
+    secondary_reserve_up_not_supplied_cost : float,
+    secondary_reserve_down_not_supplied_cost : float,
+    tertiary1_reserve_up_not_supplied_cost : float,
+    tertiary1_reserve_down_not_supplied_cost : float,
+    tertiary2_reserve_up_not_supplied_cost : float,
+    tertiary2_reserve_down_not_supplied_cost : float,
 ) -> int:
     
     nbr_on = floor(round(nbr_on_float,12))
@@ -261,7 +289,7 @@ def nouvelle_heuristique(
         return(nbr_on)
     return(nbr_on_classic)
     
-def old_heuristique(
+def old_arrondi(
     nbr_on_float : float,
     energy_generation : Optional[float] = 0,
     generation_reserve_up_primary : Optional[float] = 0,
@@ -285,6 +313,14 @@ def old_heuristique(
     cost : Optional[float] = 0,
     startup_cost : Optional[float] = 0,
     fixed_cost : Optional[float] = 0,
+    cost_participation_primary_reserve_up : Optional[float] = 0,
+    cost_participation_primary_reserve_down : Optional[float] = 0,
+    cost_participation_secondary_reserve_up : Optional[float] = 0,
+    cost_participation_secondary_reserve_down : Optional[float] = 0,
+    cost_participation_tertiary1_reserve_up : Optional[float] = 0,
+    cost_participation_tertiary1_reserve_down : Optional[float] = 0,
+    cost_participation_tertiary2_reserve_up : Optional[float] = 0,       
+    cost_participation_tertiary2_reserve_down : Optional[float] = 0,
     spillage_cost : Optional[float] = 0,
     ens_cost : Optional[float] = 0,
     primary_reserve_up_not_supplied_cost : Optional[float] = 0,

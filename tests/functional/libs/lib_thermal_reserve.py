@@ -428,14 +428,26 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         float_parameter("max_generating", TIME_AND_SCENARIO_FREE),
         int_parameter("max_failure", TIME_AND_SCENARIO_FREE),
         int_parameter("nb_units_max_min_down_time", TIME_AND_SCENARIO_FREE),
-        float_parameter("participation_max_primary_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_primary_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_primary_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_primary_reserve_down",TIME_AND_SCENARIO_FREE),
-        float_parameter("participation_max_secondary_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_secondary_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_secondary_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_secondary_reserve_down",TIME_AND_SCENARIO_FREE),
-        float_parameter("participation_max_tertiary1_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary1_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary1_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_tertiary1_reserve_down",TIME_AND_SCENARIO_FREE),
-        float_parameter("participation_max_tertiary2_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary2_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("participation_max_tertiary2_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_tertiary2_reserve_down",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_primary_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_primary_reserve_down",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_secondary_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_secondary_reserve_down",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary1_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary1_reserve_down",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary2_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary2_reserve_down",TIME_AND_SCENARIO_FREE),
     ],
     variables=[
         float_variable(
@@ -444,7 +456,12 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         float_variable(
-            "generation_reserve_up_primary",
+            "generation_reserve_up_primary_on",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_up_primary_off",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -454,7 +471,12 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         float_variable(
-            "generation_reserve_up_secondary",
+            "generation_reserve_up_secondary_on",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_up_secondary_off",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -464,7 +486,12 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         float_variable(
-            "generation_reserve_up_tertiary1",
+            "generation_reserve_up_tertiary1_on",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_up_tertiary1_off",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -474,7 +501,12 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         float_variable(
-            "generation_reserve_up_tertiary2",
+            "generation_reserve_up_tertiary2_on",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "generation_reserve_up_tertiary2_off",
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
@@ -487,6 +519,11 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             "nb_on",
             lower_bound=param("nb_units_min"),
             upper_bound=param("nb_units_max"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        int_variable(
+            "nb_off_reserve_up",
+            lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         int_variable(
@@ -514,7 +551,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "primary_reserve_up"),
-            definition=var("generation_reserve_up_primary"),
+            definition=var("generation_reserve_up_primary_on") + var("generation_reserve_up_primary_off"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "primary_reserve_down"),
@@ -522,7 +559,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "secondary_reserve_up"),
-            definition=var("generation_reserve_up_secondary"),
+            definition=var("generation_reserve_up_secondary_on") + var("generation_reserve_up_secondary_off"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "secondary_reserve_down"),
@@ -530,7 +567,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "tertiary1_reserve_up"),
-            definition=var("generation_reserve_up_tertiary1"),
+            definition=var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary1_off"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "tertiary1_reserve_down"),
@@ -538,7 +575,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "tertiary2_reserve_up"),
-            definition=var("generation_reserve_up_tertiary2"),
+            definition=var("generation_reserve_up_tertiary2_on") + var("generation_reserve_up_tertiary2_off"),
         ),
         PortFieldDefinition(
             port_field=PortFieldId("balance_port", "tertiary2_reserve_down"),
@@ -548,8 +585,8 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
     constraints=[
         Constraint(
             "Max generation",
-            var("energy_generation") + var("generation_reserve_up_primary") + var("generation_reserve_up_secondary")
-            + var("generation_reserve_up_tertiary1") + var("generation_reserve_up_tertiary2") <= param("max_generating"),
+            var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on") <= param("max_generating"),
         ),
         Constraint(
             "Min generation",
@@ -558,8 +595,8 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         ),
         Constraint(
             "Max generation with NODU",
-            var("energy_generation") + var("generation_reserve_up_primary") + var("generation_reserve_up_secondary")
-            + var("generation_reserve_up_tertiary1") + var("generation_reserve_up_tertiary2") <= param("p_max") * var("nb_on"),
+            var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on") <= param("p_max") * var("nb_on"),
         ),
         Constraint(
             "Min generation with NODU",
@@ -567,48 +604,76 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             - var("generation_reserve_down_tertiary1") - var("generation_reserve_down_tertiary2") >= param("p_min") * var("nb_on"),
         ),
         Constraint(
-            "LImite particiption primary reserve up",
-            var("generation_reserve_up_primary")
-            <= param("participation_max_primary_reserve_up") * var("nb_on"),
+            "Min generation primary reserve up off",
+            var("generation_reserve_up_primary_off") >= param("p_min") * var("nb_off_reserve_up"),
         ),
         Constraint(
-            "LImite particiption primary reserve down",
+            "Limite participation primary reserve up on",
+            var("generation_reserve_up_primary_on")
+            <= param("participation_max_primary_reserve_up_on") * var("nb_on"),
+        ),
+        Constraint(
+            "Limite participation primary reserve up off",
+            var("generation_reserve_up_primary_off")
+            <= param("participation_max_primary_reserve_up_off") * var("nb_off_reserve_up"),
+        ),
+        Constraint(
+            "Limite participation primary reserve down",
             var("generation_reserve_down_primary")
             <= param("participation_max_primary_reserve_down") * var("nb_on"),
         ),
         Constraint(
-            "LImite particiption secondary reserve up",
-            var("generation_reserve_up_secondary")
-            <= param("participation_max_secondary_reserve_up") * var("nb_on"),
+            "Limite participation secondary reserve up on",
+            var("generation_reserve_up_secondary_on")
+            <= param("participation_max_secondary_reserve_up_on") * var("nb_on"),
         ),
         Constraint(
-            "LImite particiption secondary reserve down",
+            "Limite participation secondary reserve up off",
+            var("generation_reserve_up_secondary_off")
+            <= param("participation_max_secondary_reserve_up_off") * var("nb_off_reserve_up"),
+        ),
+        Constraint(
+            "Limite participation secondary reserve down",
             var("generation_reserve_down_secondary")
             <= param("participation_max_secondary_reserve_down") * var("nb_on"),
         ),
         Constraint(
-            "LImite particiption tertiary1 reserve up",
-            var("generation_reserve_up_tertiary1")
-            <= param("participation_max_tertiary1_reserve_up") * var("nb_on"),
+            "Limite participation tertiary1 reserve up on",
+            var("generation_reserve_up_tertiary1_on")
+            <= param("participation_max_tertiary1_reserve_up_on") * var("nb_on"),
         ),
         Constraint(
-            "LImite particiption tertiary1 reserve down",
+            "Limite participation tertiary1 reserve up off",
+            var("generation_reserve_up_tertiary1_off")
+            <= param("participation_max_tertiary1_reserve_up_off") * var("nb_off_reserve_up"),
+        ),
+        Constraint(
+            "Limite participation tertiary1 reserve down",
             var("generation_reserve_down_tertiary1")
             <= param("participation_max_tertiary1_reserve_down") * var("nb_on"),
         ),
         Constraint(
-            "LImite particiption tertiary2 reserve up",
-            var("generation_reserve_up_tertiary2")
-            <= param("participation_max_tertiary2_reserve_up") * var("nb_on"),
+            "Limite participation tertiary2 reserve up on",
+            var("generation_reserve_up_tertiary2_on")
+            <= param("participation_max_tertiary2_reserve_up_on") * var("nb_on"),
         ),
         Constraint(
-            "LImite particiption tertiary2 reserve down",
+            "Limite participation tertiary2 reserve up off",
+            var("generation_reserve_up_tertiary2_off")
+            <= param("participation_max_tertiary2_reserve_up_off") * var("nb_off_reserve_up"),
+        ),
+        Constraint(
+            "Limite participation tertiary2 reserve down",
             var("generation_reserve_down_tertiary2")
             <= param("participation_max_tertiary2_reserve_down") * var("nb_on"),
         ),
         Constraint(
             "NODU balance",
             var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
+        ),
+        Constraint(
+            "On/Off balance",
+            var("nb_off_reserve_up") <= param("nb_units_max") - var("nb_on"),
         ),
         Constraint(
             "Max failures",
@@ -637,6 +702,14 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         param("cost") * var("energy_generation")
         + param("startup_cost") * var("nb_start")
         + param("fixed_cost") * var("nb_on")
+        + param("cost_participation_primary_reserve_up") * (var("generation_reserve_up_primary_on") + var("generation_reserve_up_primary_off"))
+        + param("cost_participation_primary_reserve_down") * var("generation_reserve_down_primary")
+        + param("cost_participation_secondary_reserve_up") * (var("generation_reserve_up_secondary_on") + var("generation_reserve_up_secondary_off"))
+        + param("cost_participation_secondary_reserve_down") * var("generation_reserve_down_secondary")
+        + param("cost_participation_tertiary1_reserve_up") * (var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary1_off"))
+        + param("cost_participation_tertiary1_reserve_down") * var("generation_reserve_down_tertiary1")
+        + param("cost_participation_tertiary2_reserve_up") * (var("generation_reserve_up_tertiary2_on") + var("generation_reserve_up_tertiary2_off"))
+        + param("cost_participation_tertiary2_reserve_down") * var("generation_reserve_down_tertiary2")
     )
     .sum()
     .expec(),
