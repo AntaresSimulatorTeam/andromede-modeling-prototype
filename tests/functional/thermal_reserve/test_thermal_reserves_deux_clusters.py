@@ -44,7 +44,7 @@ from tests.functional.libs.lib_thermal_reserve import (
     RESERVE_PORT_TYPE,
     NODE_WITH_RESERVE_MODEL
 )
-from tests.functional.libs.heuristic import nouvelle_heuristique, heuristique_opti, heuristique_opti_sans_start_up, old_heuristique
+from tests.functional.libs.heuristique import *
 
 @pytest.fixture
 def data_path() -> Path:
@@ -124,52 +124,76 @@ def test_difference_milp_accurate(
         week_scenario_index,
         heuristic_components,
         param_to_update= ["nb_units_min"],
-        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
-                     "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
-                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
-        fn_to_apply= heuristique_opti_sans_start_up,
-        param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
-                                 "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
-                                 "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
-                                 "participation_max_tertiary2_reserve_up","participation_max_tertiary2_reserve_down",
-                                 "cost","startup_cost","fixed_cost"],
+        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary_on","generation_reserve_down_primary",
+                     "generation_reserve_up_secondary_on","generation_reserve_down_secondary","generation_reserve_up_tertiary1_on",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_down_tertiary2"],
+        fn_to_apply= heuristique_mix,
+        param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up_on","participation_max_primary_reserve_down",
+                                 "participation_max_secondary_reserve_up_on","participation_max_secondary_reserve_down",
+                                 "participation_max_tertiary1_reserve_up_on","participation_max_tertiary1_reserve_down",
+                                 "participation_max_tertiary2_reserve_up_on","participation_max_tertiary2_reserve_down",
+                                 "cost","startup_cost","fixed_cost",
+                                 "cost_participation_primary_reserve_up","cost_participation_primary_reserve_down",
+                                 "cost_participation_secondary_reserve_up","cost_participation_secondary_reserve_down",
+                                 "cost_participation_tertiary1_reserve_up","cost_participation_tertiary1_reserve_down",
+                                 "cost_participation_tertiary2_reserve_up","cost_participation_tertiary2_reserve_down"],
         param_node_needed_to_compute=["spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
                                       "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
                                       "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
                                       "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost"],
-        # param_start_up = "simple"
     )
-    for g in heuristic_components:
-                # Solve heuristic problem
-                resolution_step_accurate_heuristic = (
-                    thermal_problem_builder.heuristic_resolution_step(
-                        week_scenario_index,
-                        id_component=g,
-                        model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP).model,
-                    )
-                )
-                status = resolution_step_accurate_heuristic.solver.Solve()
-                assert status == pywraplp.Solver.OPTIMAL
 
-                thermal_problem_builder.update_database_heuristic(
-                    OutputValues(resolution_step_accurate_heuristic),
-                    week_scenario_index,
-                    [g],
-                    param_to_update= ["nb_units_min","nb_units_max"],
-                    var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
-                     "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
-                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
-                    fn_to_apply= old_heuristique,
-                    param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
-                                 "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
-                                 "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
-                                 "participation_max_tertiary2_reserve_up","participation_max_tertiary2_reserve_down",
-                                 "cost","startup_cost","fixed_cost"],
-                    param_node_needed_to_compute=["spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
-                                      "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
-                                      "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
-                                      "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost"],
-                )          
+
+    # from andromede.thermal_heuristic.time_scenario_parameter import (
+    #      BlockScenarioIndex,
+    #      TimeScenarioHourParameter,
+    #      timesteps,
+    #  )
+
+    # for cluster in heuristic_components:
+    #     a = [thermal_problem_builder.database.get_value(
+    #                         ComponentParameterIndex(cluster, "nb_units_min"),
+    #                         t,
+    #                         week_scenario_index.scenario,
+    #                     )
+    #                     for t in timesteps(week_scenario_index, thermal_problem_builder.time_scenario_hour_parameter)]
+
+    for g in heuristic_components:
+        # Solve heuristic problem
+        resolution_step_accurate_heuristic = (
+            thermal_problem_builder.heuristic_resolution_step(
+                week_scenario_index,
+                id_component=g,
+                model=HeuristicAccurateModelBuilder(THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP).model,
+            )
+        )
+
+        status = resolution_step_accurate_heuristic.solver.Solve()
+        assert status == pywraplp.Solver.OPTIMAL
+
+        thermal_problem_builder.update_database_heuristic(
+            OutputValues(resolution_step_accurate_heuristic),
+            week_scenario_index,
+            [g],
+            param_to_update= ["nb_units_min","nb_units_max"],
+            var_to_read=["nb_on","energy_generation","generation_reserve_up_primary_on","generation_reserve_down_primary",
+                     "generation_reserve_up_secondary_on","generation_reserve_down_secondary","generation_reserve_up_tertiary1_on",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_down_tertiary2"],
+            fn_to_apply= old_heuristique,
+            param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up_on","participation_max_primary_reserve_down",
+                                     "participation_max_secondary_reserve_up_on","participation_max_secondary_reserve_down",
+                                     "participation_max_tertiary1_reserve_up_on","participation_max_tertiary1_reserve_down",
+                                     "participation_max_tertiary2_reserve_up_on","participation_max_tertiary2_reserve_down",
+                                     "cost","startup_cost","fixed_cost",
+                                     "cost_participation_primary_reserve_up","cost_participation_primary_reserve_down",
+                                     "cost_participation_secondary_reserve_up","cost_participation_secondary_reserve_down",
+                                     "cost_participation_tertiary1_reserve_up","cost_participation_tertiary1_reserve_down",
+                                     "cost_participation_tertiary2_reserve_up","cost_participation_tertiary2_reserve_down"],
+            param_node_needed_to_compute=["spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
+                                          "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
+                                          "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
+                                          "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost"],
+        )          
 
     
     # Second optimization with lower bound modified
@@ -184,17 +208,17 @@ def test_difference_milp_accurate(
 
     nbr_on_milp_1 = result_milp._components['BASE']._variables['nb_on'].value
     energy_production_milp_1 = result_milp._components['BASE']._variables['energy_generation'].value
-    reserve_up_production_milp_1 = result_milp._components['BASE']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_milp_1 = result_milp._components['BASE']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_milp_1 = result_milp._components['BASE']._variables['generation_reserve_down_primary'].value 
 
     nbr_on_accurate_step1_1 = result_step1._components['BASE']._variables['nb_on'].value
     energy_production_accurate_step1_1 = result_step1._components['BASE']._variables['energy_generation'].value
-    reserve_up_production_accurate_step1_1 = result_step1._components['BASE']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_accurate_step1_1 = result_step1._components['BASE']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_accurate_step1_1 = result_step1._components['BASE']._variables['generation_reserve_down_primary'].value   
     
     nbr_on_accurate_step2_old1 = result_step2._components['BASE']._variables['nb_on'].value
     energy_production_accurate_step2_old1 = result_step2._components['BASE']._variables['energy_generation'].value
-    reserve_up_production_accurate_step2_old1 = result_step2._components['BASE']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_accurate_step2_old1 = result_step2._components['BASE']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_accurate_step2_old1 = result_step2._components['BASE']._variables['generation_reserve_down_primary'].value  
 
     de_milp_1 = pd.DataFrame(data = {"energy_production": energy_production_milp_1[0],"nbr_on": nbr_on_milp_1[0],
@@ -209,17 +233,17 @@ def test_difference_milp_accurate(
 
     nbr_on_milp_2 = result_milp._components['PEAK']._variables['nb_on'].value
     energy_production_milp_2 = result_milp._components['PEAK']._variables['energy_generation'].value
-    reserve_up_production_milp_2 = result_milp._components['PEAK']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_milp_2 = result_milp._components['PEAK']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_milp_2 = result_milp._components['PEAK']._variables['generation_reserve_down_primary'].value 
 
     nbr_on_accurate_step1_2 = result_step1._components['PEAK']._variables['nb_on'].value
     energy_production_accurate_step1_2 = result_step1._components['PEAK']._variables['energy_generation'].value
-    reserve_up_production_accurate_step1_2 = result_step1._components['PEAK']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_accurate_step1_2 = result_step1._components['PEAK']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_accurate_step1_2 = result_step1._components['PEAK']._variables['generation_reserve_down_primary'].value   
     
     nbr_on_accurate_step2_old2 = result_step2._components['PEAK']._variables['nb_on'].value
     energy_production_accurate_step2_old2 = result_step2._components['PEAK']._variables['energy_generation'].value
-    reserve_up_production_accurate_step2_old2 = result_step2._components['PEAK']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_accurate_step2_old2 = result_step2._components['PEAK']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_accurate_step2_old2 = result_step2._components['PEAK']._variables['generation_reserve_down_primary'].value  
 
     de_milp_2 = pd.DataFrame(data = {"energy_production": energy_production_milp_2[0],"nbr_on": nbr_on_milp_2[0],
@@ -284,15 +308,19 @@ def test_difference_milp_accurate(
         week_scenario_index,
         heuristic_components,
         param_to_update= ["nb_units_min"],
-        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
-                     "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
-                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
-        fn_to_apply= heuristique_opti,
-        param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
-                                 "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
-                                 "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
-                                 "participation_max_tertiary2_reserve_up","participation_max_tertiary2_reserve_down",
-                                 "cost","startup_cost","fixed_cost"],
+        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary_on","generation_reserve_down_primary",
+                     "generation_reserve_up_secondary_on","generation_reserve_down_secondary","generation_reserve_up_tertiary1_on",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_down_tertiary2"],
+        fn_to_apply= heuristique_opti_avec_start_up,
+        param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up_on","participation_max_primary_reserve_down",
+                                 "participation_max_secondary_reserve_up_on","participation_max_secondary_reserve_down",
+                                 "participation_max_tertiary1_reserve_up_on","participation_max_tertiary1_reserve_down",
+                                 "participation_max_tertiary2_reserve_up_on","participation_max_tertiary2_reserve_down",
+                                 "cost","startup_cost","fixed_cost",
+                                 "cost_participation_primary_reserve_up","cost_participation_primary_reserve_down",
+                                 "cost_participation_secondary_reserve_up","cost_participation_secondary_reserve_down",
+                                 "cost_participation_tertiary1_reserve_up","cost_participation_tertiary1_reserve_down",
+                                 "cost_participation_tertiary2_reserve_up","cost_participation_tertiary2_reserve_down"],
         param_node_needed_to_compute=["spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
                                       "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
                                       "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
@@ -316,19 +344,23 @@ def test_difference_milp_accurate(
                     week_scenario_index,
                     [g],
                     param_to_update= ["nb_units_min","nb_units_max"],
-                    var_to_read=["nb_on","energy_generation","generation_reserve_up_primary","generation_reserve_down_primary",
-                     "generation_reserve_up_secondary","generation_reserve_down_secondary","generation_reserve_up_tertiary1",
-                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2","generation_reserve_down_tertiary2"],
-                    fn_to_apply= old_heuristique,
-                    param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up","participation_max_primary_reserve_down",
-                                 "participation_max_secondary_reserve_up","participation_max_secondary_reserve_down",
-                                 "participation_max_tertiary1_reserve_up","participation_max_tertiary1_reserve_down",
-                                 "participation_max_tertiary2_reserve_up","participation_max_tertiary2_reserve_down",
-                                 "cost","startup_cost","fixed_cost"],
-                    param_node_needed_to_compute=["spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
-                                      "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
-                                      "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
-                                      "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost"],
+                    var_to_read=["nb_on","energy_generation","generation_reserve_up_primary_on","generation_reserve_down_primary",
+                     "generation_reserve_up_secondary_on","generation_reserve_down_secondary","generation_reserve_up_tertiary1_on",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_down_tertiary2"],
+                fn_to_apply= old_heuristique,
+                param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up_on","participation_max_primary_reserve_down",
+                                         "participation_max_secondary_reserve_up_on","participation_max_secondary_reserve_down",
+                                         "participation_max_tertiary1_reserve_up_on","participation_max_tertiary1_reserve_down",
+                                         "participation_max_tertiary2_reserve_up_on","participation_max_tertiary2_reserve_down",
+                                         "cost","startup_cost","fixed_cost",
+                                         "cost_participation_primary_reserve_up","cost_participation_primary_reserve_down",
+                                         "cost_participation_secondary_reserve_up","cost_participation_secondary_reserve_down",
+                                         "cost_participation_tertiary1_reserve_up","cost_participation_tertiary1_reserve_down",
+                                         "cost_participation_tertiary2_reserve_up","cost_participation_tertiary2_reserve_down"],
+                param_node_needed_to_compute=["spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
+                                              "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
+                                              "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
+                                              "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost"],
                 )          
 
     # Second optimization with lower bound modified
@@ -343,12 +375,12 @@ def test_difference_milp_accurate(
 
     nbr_on_accurate_step2_opti2 = result_step2._components['PEAK']._variables['nb_on'].value
     energy_production_accurate_step2_opti2 = result_step2._components['PEAK']._variables['energy_generation'].value
-    reserve_up_production_accurate_step2_opti2 = result_step2._components['PEAK']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_accurate_step2_opti2 = result_step2._components['PEAK']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_accurate_step2_opti2 = result_step2._components['PEAK']._variables['generation_reserve_down_primary'].value  
 
     nbr_on_accurate_step2_opti1 = result_step2._components['BASE']._variables['nb_on'].value
     energy_production_accurate_step2_opti1 = result_step2._components['BASE']._variables['energy_generation'].value
-    reserve_up_production_accurate_step2_opti1 = result_step2._components['BASE']._variables['generation_reserve_up_primary'].value
+    reserve_up_production_accurate_step2_opti1 = result_step2._components['BASE']._variables['generation_reserve_up_primary_on'].value
     reserve_down_production_accurate_step2_opti1 = result_step2._components['BASE']._variables['generation_reserve_down_primary'].value  
 
 
@@ -365,8 +397,39 @@ def test_difference_milp_accurate(
     assert nbr_on_accurate_step2_old1 == nbr_on_accurate_step2_opti1
 
 
-# def tests():
-#     a = heuristique_opti(7.860139860139843,381.216783216782,180.78321678321603,-3.472199124950491e-13,0.0,0.0,0.0,0.0,0.0,0.0,
-#                          97,48.5,23.0,25.0,23.0,23.0,23.0,23.0,23.0,23.0,50.0,160.654,
-#                          0.0,0.0,10000.0,1000.0,1000.0,1000.0,1000.0,1000.0,1000.0,1000.0,1000.0)
-#     assert a != 0
+def tests():
+     a = heuristique_opti_sans_start_up(2.555555555555556,145.66666666666669,54.0,69.0,0.0,0.0,0.0,0.0,0.0,0.0,
+                          100.0,30.0,27.0,27.0,27.0,27.0,27.0,27.0,27.0,27.0,35.0,100.0,
+                          1000.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,100.0,100.0,1000.0,1000.0,1000.0,1000.0,1000.0,1000.0)
+     assert a != 0
+
+# nbr_on_float = 2.555555555555556, energy_generation = 145.66666666666669
+# generation_reserve_up_primary = 54.0, generation_reserve_down_primary = 69.0
+# generation_reserve_up_secondary = 0.0, generation_reserve_down_secondary = 0.0
+# generation_reserve_up_tertiary1 = 0.0, generation_reserve_down_tertiary1 = 0.0
+# generation_reserve_up_tertiary2 = 0.0, generation_reserve_down_tertiary2 = 0.0
+# p_max = 100.0, p_min = 30.0, participation_max_primary_reserve_up = 27.0
+# participation_max_primary_reserve_down = 27.0
+# participation_max_secondary_reserve_up = 27.0
+# participation_max_secondary_reserve_down = 27.0
+# participation_max_tertiary1_reserve_up = 27.0
+# participation_max_tertiary1_reserve_down = 27.0
+# participation_max_tertiary2_reserve_up = 27.0
+# participation_max_tertiary2_reserve_down = 27.0, cost = 35.0
+# startup_cost = 100.0, fixed_cost = 1000.0, spillage_cost = 0.0, ens_cost = 0.0
+# primary_reserve_up_not_supplied_cost = 0.0
+# primary_reserve_down_not_supplied_cost = 0.0
+# secondary_reserve_up_not_supplied_cost = 0.0
+# secondary_reserve_down_not_supplied_cost = 0.0
+# tertiary1_reserve_up_not_supplied_cost = 0.0
+# tertiary1_reserve_down_not_supplied_cost = 0.0
+# tertiary2_reserve_up_not_supplied_cost = 0.0
+# tertiary2_reserve_down_not_supplied_cost = 100.0
+# cost_participation_primary_reserve_up = 1000.0
+# cost_participation_primary_reserve_down = 1000.0
+# cost_participation_secondary_reserve_up = 1000.0
+# cost_participation_secondary_reserve_down = 1000.0
+# cost_participation_tertiary1_reserve_up = 1000.0
+# cost_participation_tertiary1_reserve_down = 1000.0
+# cost_participation_tertiary2_reserve_up = 1000.0
+# cost_participation_tertiary2_reserve_down = 1000.0

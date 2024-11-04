@@ -119,30 +119,66 @@ study:
         - name: nb_units_max_min_down_time
           type: constant
           value: 12
-        - name: participation_max_primary_reserve_up
+        - name: participation_max_primary_reserve_up_on
           type: constant
           value: 270
+        - name: participation_max_primary_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_primary_reserve_down
           type: constant
           value: 270
-        - name: participation_max_secondary_reserve_up
+        - name: participation_max_secondary_reserve_up_on
           type: constant
           value: 27
+        - name: participation_max_secondary_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_secondary_reserve_down
           type: constant
           value: 27
-        - name: participation_max_tertiary1_reserve_up
+        - name: participation_max_tertiary1_reserve_up_on
           type: constant
           value: 27
+        - name: participation_max_tertiary1_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_tertiary1_reserve_down
           type: constant
           value: 27
-        - name: participation_max_tertiary2_reserve_up
+        - name: participation_max_tertiary2_reserve_up_on
           type: constant
           value: 27
+        - name: participation_max_tertiary2_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_tertiary2_reserve_down
           type: constant
           value: 27
+        - name : cost_participation_primary_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_primary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_secondary_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_secondary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_down
+          type : constant
+          value : 0
 
     - id: PEAK
       model: GEN
@@ -186,30 +222,66 @@ study:
         - name: nb_units_max_min_down_time
           type: constant
           value: 30
-        - name: participation_max_primary_reserve_up
+        - name: participation_max_primary_reserve_up_on
           type: constant
           value: 23
+        - name: participation_max_primary_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_primary_reserve_down
           type: constant
           value: 25
-        - name: participation_max_secondary_reserve_up
+        - name: participation_max_secondary_reserve_up_on
           type: constant
           value: 23
+        - name: participation_max_secondary_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_secondary_reserve_down
           type: constant
           value: 23
-        - name: participation_max_tertiary1_reserve_up
+        - name: participation_max_tertiary1_reserve_up_on
           type: constant
           value: 23
+        - name: participation_max_tertiary1_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_tertiary1_reserve_down
           type: constant
           value: 23
-        - name: participation_max_tertiary2_reserve_up
+        - name: participation_max_tertiary2_reserve_up_on
           type: constant
           value: 23
+        - name: participation_max_tertiary2_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_tertiary2_reserve_down
           type: constant
           value: 23
+        - name : cost_participation_primary_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_primary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_secondary_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_secondary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_down
+          type : constant
+          value : 0
 
   connections:
       - component1: N

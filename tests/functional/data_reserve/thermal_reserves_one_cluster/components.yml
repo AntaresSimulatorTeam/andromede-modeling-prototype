@@ -22,7 +22,7 @@ study:
         value: 100
       - name: primary_reserve_up_not_supplied_cost
         type: constant
-        value: 10000
+        value: 1000
       - name: primary_reserve_down_not_supplied_cost
         type: constant
         value: 1000
@@ -85,7 +85,7 @@ study:
           value: 100
         - name: p_min
           type: constant
-          value: 85
+          value: 30
         - name: cost
           type: constant
           value: 35
@@ -94,7 +94,7 @@ study:
           value: 100
         - name: fixed_cost
           type: constant
-          value: 5000
+          value: 1000
         - name: d_min_up
           type: constant
           value: 3
@@ -119,30 +119,66 @@ study:
         - name: nb_units_max_min_down_time
           type: constant
           value: 8
-        - name: participation_max_primary_reserve_up
+        - name: participation_max_primary_reserve_up_on
           type: constant
           value: 27
+        - name: participation_max_primary_reserve_up_off
+          type: constant
+          value: 100
         - name: participation_max_primary_reserve_down
           type: constant
           value: 27
-        - name: participation_max_secondary_reserve_up
+        - name: participation_max_secondary_reserve_up_on
           type: constant
           value: 27
+        - name: participation_max_secondary_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_secondary_reserve_down
           type: constant
           value: 27
-        - name: participation_max_tertiary1_reserve_up
+        - name: participation_max_tertiary1_reserve_up_on
           type: constant
           value: 27
+        - name: participation_max_tertiary1_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_tertiary1_reserve_down
           type: constant
           value: 27
-        - name: participation_max_tertiary2_reserve_up
+        - name: participation_max_tertiary2_reserve_up_on
           type: constant
           value: 27
+        - name: participation_max_tertiary2_reserve_up_off
+          type: constant
+          value: 0
         - name: participation_max_tertiary2_reserve_down
           type: constant
           value: 27
+        - name : cost_participation_primary_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_primary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_secondary_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_secondary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_up
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_down
+          type : constant
+          value : 0
 
   connections:
       - component1: N

@@ -76,7 +76,6 @@ class ThermalProblemBuilder:
         fn_to_apply: Callable,
         param_needed_to_compute: Optional[List[str]] = None,
         param_node_needed_to_compute : Optional[List[str]] = None,
-        param_start_up : Optional[str] = None
     ) -> None:
         for cluster in list_cluster_id:
             for param_update in param_to_update:
@@ -117,48 +116,21 @@ class ThermalProblemBuilder:
                         node = connection.port1.component.id
                 for p in param_node_needed_to_compute:
                     param[p] = [self.database.get_data(node,p).value
-                                for t in timesteps(index, self.time_scenario_hour_parameter)]                     
-            if param_start_up is not None:
-                result_sans_start_up = [ [] for t in timesteps(index, self.time_scenario_hour_parameter)]
-                for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                    result_sans_start_up[i] = fn_to_apply(*[s[i] for s in sol.values()], *[p[i] for p in param.values()], param_start_up)  # type:ignore
-                for i,t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                    if (((t - 1) in timesteps(index,self.time_scenario_hour_parameter) and result_sans_start_up[i-1][0] >= result_sans_start_up[i][0])
-                            and ((t + 1) in timesteps(index,self.time_scenario_hour_parameter) and result_sans_start_up[i+1][0] >= result_sans_start_up[i][0])):
-                        if result_sans_start_up[i][0] == 0 or result_sans_start_up[i][1] < result_sans_start_up[i][2] - result_sans_start_up[i][3]:
-                            for param_update in param_to_update:
-                                self.database.set_value(
-                                    ComponentParameterIndex(cluster, param_update),
-                                    result_sans_start_up[i][0],  # type:ignore
-                                    t,
-                                    index.scenario,
-                                )
-                        else: 
-                            for param_update in param_to_update:
-                                self.database.set_value(
-                                    ComponentParameterIndex(cluster, param_update),
-                                    result_sans_start_up[i][0] + 1,  # type:ignore
-                                    t,
-                                    index.scenario,
-                                )
-                    else:
-                        for param_update in param_to_update:
-                            self.database.set_value(
-                                ComponentParameterIndex(cluster, param_update),
-                                result_sans_start_up[i][0],  # type:ignore
-                                t,
-                                index.scenario,
-                            )
-                          
-            else:
-                for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                    for param_update in param_to_update:
-                        self.database.set_value(
-                            ComponentParameterIndex(cluster, param_update),
-                            fn_to_apply(*[s[i] for s in sol.values()], *[p[i] for p in param.values()]),  # type:ignore
-                            t,
-                            index.scenario,
-                        )
+                                for t in timesteps(index, self.time_scenario_hour_parameter)]   
+
+            result_heuristic = fn_to_apply( [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                           [s for s in sol.values()], [p for p in param.values()])
+                                      
+            for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
+                for param_update in param_to_update:
+                    self.database.set_value(
+                        ComponentParameterIndex(cluster, param_update),
+                        result_heuristic[i],  # type:ignore
+                        t,
+                        index.scenario,
+                    )
+
+
 
     def heuristic_resolution_step(
         self,
