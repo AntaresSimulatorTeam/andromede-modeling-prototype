@@ -8,16 +8,8 @@ def full_workflow():
         get_network()
         get_data()
 
-        # Annual part of hydro heuristic
-        get_heuristic_model()
-        get_heuristic_data()
-        build_heuristic_problem()
-        solve()
-        get_output()
-        set_data()
-
-        # Monthly part of hydro heuristic
-        for month in range(12):
+        for component in get_hydro_component():
+            # Annual part of hydro heuristic
             get_heuristic_model()
             get_heuristic_data()
             build_heuristic_problem()
@@ -25,9 +17,17 @@ def full_workflow():
             get_output()
             set_data()
 
-        # Weekly targets of hydro heuristic
-        get_weekly_targets()
-        set_data()
+            # Monthly part of hydro heuristic
+            for month in range(12):
+                get_heuristic_model()
+                get_heuristic_data()
+                build_heuristic_problem()
+                solve()
+                get_output()
+                set_data()
+
+            # Weekly targets of hydro heuristic
+            set_data()
 
         for w in weeks:
             # Iteration 1
@@ -37,11 +37,12 @@ def full_workflow():
             set_data()
 
             # Thermal heuristic
-            get_heuristic_model()
-            build_heuristic_problem()
-            solve()
-            get_output()
-            set_data()
+            for component in get_thermal_component():
+                get_heuristic_model()
+                build_heuristic_problem()
+                solve()
+                get_output()
+                set_data()
 
             # Iteration 2
             build_main_problem()
@@ -110,4 +111,10 @@ class ResolutionWorkflow:
         @param database : current database to update
         @param data_update_functions : description of operations to perform on output data to update the database
         """
+        pass
+
+    def get_thermal_component():
+        pass
+
+    def get_hydro_component():
         pass
