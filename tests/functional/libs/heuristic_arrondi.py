@@ -132,13 +132,17 @@ def arrondi_opti_sans_start_up(
     cost : float,
     startup_cost : float,
     fixed_cost : float,
-    cost_participation_primary_reserve_up : float,
+    cost_participation_primary_reserve_up_on : float,
+    cost_participation_primary_reserve_up_off : float,
     cost_participation_primary_reserve_down : float,
-    cost_participation_secondary_reserve_up : float,
+    cost_participation_secondary_reserve_up_on : float,
+    cost_participation_secondary_reserve_up_off : float,
     cost_participation_secondary_reserve_down : float,
-    cost_participation_tertiary1_reserve_up : float,
+    cost_participation_tertiary1_reserve_up_on : float,
+    cost_participation_tertiary1_reserve_up_off : float,
     cost_participation_tertiary1_reserve_down : float,
-    cost_participation_tertiary2_reserve_up : float,        
+    cost_participation_tertiary2_reserve_up_on : float,   
+    cost_participation_tertiary2_reserve_up_off : float,        
     cost_participation_tertiary2_reserve_down : float,
     spillage_cost : float,
     ens_cost : float,
@@ -241,13 +245,17 @@ def nouvelle_arrondi(
     cost : float,
     startup_cost : float,
     fixed_cost : float,
-    cost_participation_primary_reserve_up : float,
+    cost_participation_primary_reserve_up_on : float,
+    cost_participation_primary_reserve_up_off : float,
     cost_participation_primary_reserve_down : float,
-    cost_participation_secondary_reserve_up : float,
+    cost_participation_secondary_reserve_up_on : float,
+    cost_participation_secondary_reserve_up_off : float,
     cost_participation_secondary_reserve_down : float,
-    cost_participation_tertiary1_reserve_up : float,
+    cost_participation_tertiary1_reserve_up_on : float,
+    cost_participation_tertiary1_reserve_up_off : float,
     cost_participation_tertiary1_reserve_down : float,
-    cost_participation_tertiary2_reserve_up : float,        
+    cost_participation_tertiary2_reserve_up_on : float,   
+    cost_participation_tertiary2_reserve_up_off : float,        
     cost_participation_tertiary2_reserve_down : float,
     spillage_cost : float,
     ens_cost : float,
@@ -313,13 +321,17 @@ def old_arrondi(
     cost : Optional[float] = 0,
     startup_cost : Optional[float] = 0,
     fixed_cost : Optional[float] = 0,
-    cost_participation_primary_reserve_up : Optional[float] = 0,
+    cost_participation_primary_reserve_up_on : Optional[float] = 0,
+    cost_participation_primary_reserve_up_off : Optional[float] = 0,
     cost_participation_primary_reserve_down : Optional[float] = 0,
-    cost_participation_secondary_reserve_up : Optional[float] = 0,
+    cost_participation_secondary_reserve_up_on : Optional[float] = 0,
+    cost_participation_secondary_reserve_up_off : Optional[float] = 0,
     cost_participation_secondary_reserve_down : Optional[float] = 0,
-    cost_participation_tertiary1_reserve_up : Optional[float] = 0,
+    cost_participation_tertiary1_reserve_up_on : Optional[float] = 0,
+    cost_participation_tertiary1_reserve_up_off : Optional[float] = 0,
     cost_participation_tertiary1_reserve_down : Optional[float] = 0,
-    cost_participation_tertiary2_reserve_up : Optional[float] = 0,       
+    cost_participation_tertiary2_reserve_up_on : Optional[float] = 0,   
+    cost_participation_tertiary2_reserve_up_off : Optional[float] = 0,       
     cost_participation_tertiary2_reserve_down : Optional[float] = 0,
     spillage_cost : Optional[float] = 0,
     ens_cost : Optional[float] = 0,
@@ -331,6 +343,28 @@ def old_arrondi(
     tertiary1_reserve_down_not_supplied_cost : Optional[float] = 0,
     tertiary2_reserve_up_not_supplied_cost : Optional[float] = 0,
     tertiary2_reserve_down_not_supplied_cost : Optional[float] = 0,
+) -> int:
+    
+    nbr_on = ceil(round(nbr_on_float,12))
+    return(nbr_on)
+
+def old_arrondi_eteint_off(
+    nbr_on_float : float,
+    nbr_units_max : float,
+    nbr_off_float : float,
+) -> int:
+    
+    nbr_on = ceil(round(nbr_on_float,12))
+    nbr_off = ceil(round(nbr_off_float,12))
+
+    if nbr_off + nbr_on > nbr_units_max:
+        nbr_off -= 1
+
+    return(nbr_off)
+
+def old_arrondi_eteint_on(
+    nbr_on_float : float,
+    nbr_units_max : float,
 ) -> int:
     
     nbr_on = ceil(round(nbr_on_float,12))
