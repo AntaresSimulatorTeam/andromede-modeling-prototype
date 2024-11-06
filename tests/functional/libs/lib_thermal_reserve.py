@@ -279,6 +279,14 @@ NODE_WITH_RESERVE_MODEL = model(
         float_parameter("tertiary1_reserve_down_not_supplied_cost"),
         float_parameter("tertiary2_reserve_up_not_supplied_cost"),
         float_parameter("tertiary2_reserve_down_not_supplied_cost"),
+        float_parameter("primary_reserve_up_oversupplied_cost"),
+        float_parameter("primary_reserve_down_oversupplied_cost"),
+        float_parameter("secondary_reserve_up_oversupplied_cost"),
+        float_parameter("secondary_reserve_down_oversupplied_cost"),
+        float_parameter("tertiary1_reserve_up_oversupplied_cost"),
+        float_parameter("tertiary1_reserve_down_oversupplied_cost"),
+        float_parameter("tertiary2_reserve_up_oversupplied_cost"),
+        float_parameter("tertiary2_reserve_down_oversupplied_cost"),
     ],
     variables=[
         float_variable("spillage_energy", lower_bound=literal(0)),
@@ -291,6 +299,14 @@ NODE_WITH_RESERVE_MODEL = model(
         float_variable("unsupplied_down_reserve_tertiary1", lower_bound=literal(0)),
         float_variable("unsupplied_up_reserve_tertiary2", lower_bound=literal(0)),
         float_variable("unsupplied_down_reserve_tertiary2", lower_bound=literal(0)),
+        float_variable("oversupplied_up_reserve_primary", lower_bound=literal(0)),
+        float_variable("oversupplied_down_reserve_primary", lower_bound=literal(0)),
+        float_variable("oversupplied_up_reserve_secondary", lower_bound=literal(0)),
+        float_variable("oversupplied_down_reserve_secondary", lower_bound=literal(0)),
+        float_variable("oversupplied_up_reserve_tertiary1", lower_bound=literal(0)),
+        float_variable("oversupplied_down_reserve_tertiary1", lower_bound=literal(0)),
+        float_variable("oversupplied_up_reserve_tertiary2", lower_bound=literal(0)),
+        float_variable("oversupplied_down_reserve_tertiary2", lower_bound=literal(0)),
     ],
     ports=[
         ModelPort(port_type=RESERVE_PORT_TYPE, port_name="balance_port"),
@@ -304,42 +320,42 @@ NODE_WITH_RESERVE_MODEL = model(
         Constraint(
             name="Balance primary reserve up",
             expression=port_field("balance_port", "primary_reserve_up").sum_connections()
-            == -var("unsupplied_up_reserve_primary"),
+            == var("oversupplied_up_reserve_primary")-var("unsupplied_up_reserve_primary"),
         ),
         Constraint(
             name="Balance primary reserve down",
             expression=port_field("balance_port", "primary_reserve_down").sum_connections()
-            == -var("unsupplied_down_reserve_primary"),
+            == var("oversupplied_down_reserve_primary")-var("unsupplied_down_reserve_primary"),
         ),
         Constraint(
             name="Balance secondary reserve up",
             expression=port_field("balance_port", "secondary_reserve_up").sum_connections()
-            == -var("unsupplied_up_reserve_secondary"),
+            == var("oversupplied_up_reserve_secondary")-var("unsupplied_up_reserve_secondary"),
         ),
         Constraint(
             name="Balance secondary reserve down",
             expression=port_field("balance_port", "secondary_reserve_down").sum_connections()
-            == -var("unsupplied_down_reserve_secondary"),
+            == var("oversupplied_down_reserve_secondary")-var("unsupplied_down_reserve_secondary"),
         ),
         Constraint(
             name="Balance tertiary1 reserve up",
             expression=port_field("balance_port", "tertiary1_reserve_up").sum_connections()
-            == -var("unsupplied_up_reserve_tertiary1"),
+            == var("oversupplied_up_reserve_tertiary1")-var("unsupplied_up_reserve_tertiary1"),
         ),
         Constraint(
             name="Balance tertiary1 reserve down",
             expression=port_field("balance_port", "tertiary1_reserve_down").sum_connections()
-            == -var("unsupplied_down_reserve_tertiary1"),
+            == var("oversupplied_down_reserve_tertiary1")-var("unsupplied_down_reserve_tertiary1"),
         ),
         Constraint(
             name="Balance tertiary2 reserve up",
             expression=port_field("balance_port", "tertiary2_reserve_up").sum_connections()
-            == -var("unsupplied_up_reserve_tertiary2"),
+            == var("oversupplied_up_reserve_tertiary2")-var("unsupplied_up_reserve_tertiary2"),
         ),
         Constraint(
             name="Balance tertiary2 reserve down",
             expression=port_field("balance_port", "tertiary2_reserve_down").sum_connections()
-            == -var("unsupplied_down_reserve_tertiary2"),
+            == var("oversupplied_down_reserve_tertiary2")-var("unsupplied_down_reserve_tertiary2"),
         ),
     ],
     objective_operational_contribution=(
@@ -353,6 +369,14 @@ NODE_WITH_RESERVE_MODEL = model(
         + param("tertiary1_reserve_down_not_supplied_cost") * var("unsupplied_down_reserve_tertiary1")
         + param("tertiary2_reserve_up_not_supplied_cost") * var("unsupplied_up_reserve_tertiary2")
         + param("tertiary2_reserve_down_not_supplied_cost") * var("unsupplied_down_reserve_tertiary2")
+        + param("primary_reserve_up_oversupplied_cost") * var("oversupplied_up_reserve_primary")
+        + param("primary_reserve_down_oversupplied_cost") * var("oversupplied_down_reserve_primary")
+        + param("secondary_reserve_up_oversupplied_cost") * var("oversupplied_up_reserve_secondary")
+        + param("secondary_reserve_down_oversupplied_cost") * var("oversupplied_down_reserve_secondary")
+        + param("tertiary1_reserve_up_oversupplied_cost") * var("oversupplied_up_reserve_tertiary1")
+        + param("tertiary1_reserve_down_oversupplied_cost") * var("oversupplied_down_reserve_tertiary1")
+        + param("tertiary2_reserve_up_oversupplied_cost") * var("oversupplied_up_reserve_tertiary2")
+        + param("tertiary2_reserve_down_oversupplied_cost") * var("oversupplied_down_reserve_tertiary2")
     )
     .sum()
     .expec(),
@@ -424,6 +448,10 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         float_parameter("fixed_cost", CONSTANT),
         int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
         int_parameter("nb_units_max", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_max_invisible", TIME_AND_SCENARIO_FREE),
+        float_parameter("nb_units_off_invisible", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_off_min", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_off_max", TIME_AND_SCENARIO_FREE),
         float_parameter("min_generating", TIME_AND_SCENARIO_FREE),
         float_parameter("max_generating", TIME_AND_SCENARIO_FREE),
         int_parameter("max_failure", TIME_AND_SCENARIO_FREE),
@@ -440,13 +468,17 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         float_parameter("participation_max_tertiary2_reserve_up_on",TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_tertiary2_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("participation_max_tertiary2_reserve_down",TIME_AND_SCENARIO_FREE),
-        float_parameter("cost_participation_primary_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_primary_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_primary_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("cost_participation_primary_reserve_down",TIME_AND_SCENARIO_FREE),
-        float_parameter("cost_participation_secondary_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_secondary_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_secondary_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("cost_participation_secondary_reserve_down",TIME_AND_SCENARIO_FREE),
-        float_parameter("cost_participation_tertiary1_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary1_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary1_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("cost_participation_tertiary1_reserve_down",TIME_AND_SCENARIO_FREE),
-        float_parameter("cost_participation_tertiary2_reserve_up",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary2_reserve_up_on",TIME_AND_SCENARIO_FREE),
+        float_parameter("cost_participation_tertiary2_reserve_up_off",TIME_AND_SCENARIO_FREE),
         float_parameter("cost_participation_tertiary2_reserve_down",TIME_AND_SCENARIO_FREE),
     ],
     variables=[
@@ -522,8 +554,9 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         int_variable(
-            "nb_off_reserve_up",
-            lower_bound=literal(0),
+            "nb_off_reserve",
+            lower_bound=param("nb_units_off_min"),
+            upper_bound=param("nb_units_off_max"),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
         int_variable(
@@ -604,9 +637,26 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             - var("generation_reserve_down_tertiary1") - var("generation_reserve_down_tertiary2") >= param("p_min") * var("nb_on"),
         ),
         Constraint(
-            "Min generation primary reserve up off",
-            var("generation_reserve_up_primary_off") >= param("p_min") * var("nb_off_reserve_up"),
+            "Max generation reserve off",
+            var("generation_reserve_up_primary_off") + var("generation_reserve_up_secondary_off")
+            + var("generation_reserve_up_tertiary1_off") + var("generation_reserve_up_tertiary2_off") <= param("p_max") * var("nb_off_reserve"),
         ),
+        Constraint(
+            "Min generation primary reserve up off",
+            var("generation_reserve_up_primary_off") >= param("p_min") * var("nb_off_reserve"),
+        ),
+        # Constraint(
+        #     "Min generation secondary reserve up off",
+        #     var("generation_reserve_up_secondary_off") >= param("p_min"),
+        # ),
+        # Constraint(
+        #     "Min generation tertiary1 reserve up off",
+        #     var("generation_reserve_up_tertiary1_off") >= param("p_min"),
+        # ),
+        # Constraint(
+        #     "Min generation tertiary2 reserve up off",
+        #     var("generation_reserve_up_tertiary2_off") >= param("p_min"),
+        # ),
         Constraint(
             "Limite participation primary reserve up on",
             var("generation_reserve_up_primary_on")
@@ -615,7 +665,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation primary reserve up off",
             var("generation_reserve_up_primary_off")
-            <= param("participation_max_primary_reserve_up_off") * var("nb_off_reserve_up"),
+            <= param("participation_max_primary_reserve_up_off") * var("nb_off_reserve"),
         ),
         Constraint(
             "Limite participation primary reserve down",
@@ -630,7 +680,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation secondary reserve up off",
             var("generation_reserve_up_secondary_off")
-            <= param("participation_max_secondary_reserve_up_off") * var("nb_off_reserve_up"),
+            <= param("participation_max_secondary_reserve_up_off") * var("nb_off_reserve"),
         ),
         Constraint(
             "Limite participation secondary reserve down",
@@ -645,7 +695,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation tertiary1 reserve up off",
             var("generation_reserve_up_tertiary1_off")
-            <= param("participation_max_tertiary1_reserve_up_off") * var("nb_off_reserve_up"),
+            <= param("participation_max_tertiary1_reserve_up_off") * var("nb_off_reserve"),
         ),
         Constraint(
             "Limite participation tertiary1 reserve down",
@@ -660,7 +710,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation tertiary2 reserve up off",
             var("generation_reserve_up_tertiary2_off")
-            <= param("participation_max_tertiary2_reserve_up_off") * var("nb_off_reserve_up"),
+            <= param("participation_max_tertiary2_reserve_up_off") * var("nb_off_reserve"),
         ),
         Constraint(
             "Limite participation tertiary2 reserve down",
@@ -673,7 +723,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         ),
         Constraint(
             "On/Off balance",
-            var("nb_off_reserve_up") <= param("nb_units_max") - var("nb_on"),
+            var("nb_off_reserve") <= param("nb_units_max_invisible") - var("nb_on"),
         ),
         Constraint(
             "Max failures",
@@ -702,13 +752,17 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         param("cost") * var("energy_generation")
         + param("startup_cost") * var("nb_start")
         + param("fixed_cost") * var("nb_on")
-        + param("cost_participation_primary_reserve_up") * (var("generation_reserve_up_primary_on") + var("generation_reserve_up_primary_off"))
+        + param("cost_participation_primary_reserve_up_on") * var("generation_reserve_up_primary_on")
+        + param("cost_participation_primary_reserve_up_off") * var("generation_reserve_up_primary_off")
         + param("cost_participation_primary_reserve_down") * var("generation_reserve_down_primary")
-        + param("cost_participation_secondary_reserve_up") * (var("generation_reserve_up_secondary_on") + var("generation_reserve_up_secondary_off"))
+        + param("cost_participation_secondary_reserve_up_on") * var("generation_reserve_up_secondary_on")
+        + param("cost_participation_secondary_reserve_up_off") * var("generation_reserve_up_secondary_off")
         + param("cost_participation_secondary_reserve_down") * var("generation_reserve_down_secondary")
-        + param("cost_participation_tertiary1_reserve_up") * (var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary1_off"))
+        + param("cost_participation_tertiary1_reserve_up_on") * var("generation_reserve_up_tertiary1_on")
+        + param("cost_participation_tertiary1_reserve_up_off") * var("generation_reserve_up_tertiary1_off")
         + param("cost_participation_tertiary1_reserve_down") * var("generation_reserve_down_tertiary1")
-        + param("cost_participation_tertiary2_reserve_up") * (var("generation_reserve_up_tertiary2_on") + var("generation_reserve_up_tertiary2_off"))
+        + param("cost_participation_tertiary2_reserve_up_on") * var("generation_reserve_up_tertiary2_on")
+        + param("cost_participation_tertiary2_reserve_up_off") * var("generation_reserve_up_tertiary2_off")
         + param("cost_participation_tertiary2_reserve_down") * var("generation_reserve_down_tertiary2")
     )
     .sum()
