@@ -134,13 +134,40 @@ study:
         - name: nb_units_max_invisible
           type: timeseries
           timeseries: nb_units_max-ts
-        - name: nb_units_off_invisible
-          type: timeseries
-          timeseries: nb_units_max-ts
-        - name: nb_units_off_min
+        - name: nb_units_off_primary_min
           type: constant
           value: 0
-        - name: nb_units_off_max
+        - name: nb_units_off_primary_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_primary_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_secondary_min
+          type: constant
+          value: 0
+        - name: nb_units_off_secondary_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_secondary_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary1_min
+          type: constant
+          value: 0
+        - name: nb_units_off_tertiary1_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary1_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary2_min
+          type: constant
+          value: 0
+        - name: nb_units_off_tertiary2_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary2_invisible
           type: timeseries
           timeseries: nb_units_max-ts
         - name: max_failure

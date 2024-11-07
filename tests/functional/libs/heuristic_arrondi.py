@@ -357,7 +357,7 @@ def old_arrondi_eteint_off(
     nbr_on = ceil(round(nbr_on_float,12))
     nbr_off = ceil(round(nbr_off_float,12))
 
-    if nbr_off + nbr_on > nbr_units_max:
+    while nbr_off + nbr_on > nbr_units_max:
         nbr_off -= 1
 
     return(nbr_off)
