@@ -168,11 +168,36 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_1),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_off_invisible"],
-        var_to_read=["nb_off_reserve"],
+        param_to_update= ["nb_units_off_primary_invisible"],
+        var_to_read=["nb_off_primary"],
+        fn_to_apply= changement_invisible,
+    )
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_1),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update= ["nb_units_off_secondary_invisible"],
+        var_to_read=["nb_off_secondary"],
+        fn_to_apply= changement_invisible,
+    )
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_1),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update= ["nb_units_off_tertiary1_invisible"],
+        var_to_read=["nb_off_tertiary1"],
+        fn_to_apply= changement_invisible,
+    )
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_1),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update= ["nb_units_off_tertiary2_invisible"],
+        var_to_read=["nb_off_tertiary2"],
         fn_to_apply= changement_invisible,
     )
     
+    b = thermal_problem_builder.database
 
     # Solve heuristic problem
     resolution_step_accurate_heuristic = (
@@ -189,13 +214,38 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_off_min","nb_units_off_max"],
+        param_to_update= ["nb_units_off_primary_min","nb_units_off_primary_max"],
         var_to_read=["nb_on"],
         fn_to_apply= old_heuristique_eteint_off,
-        param_needed_to_compute=["nb_units_max","nb_units_off_invisible"],
+        param_needed_to_compute=["nb_units_max","nb_units_off_primary_invisible"],
     )
-
- 
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_accurate_heuristic),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update= ["nb_units_off_secondary_min","nb_units_off_secondary_max"],
+        var_to_read=["nb_on"],
+        fn_to_apply= old_heuristique_eteint_off,
+        param_needed_to_compute=["nb_units_max","nb_units_off_secondary_invisible"],
+    )
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_accurate_heuristic),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update= ["nb_units_off_tertiary1_min","nb_units_off_tertiary1_max"],
+        var_to_read=["nb_on"],
+        fn_to_apply= old_heuristique_eteint_off,
+        param_needed_to_compute=["nb_units_max","nb_units_off_tertiary1_invisible"],
+    )
+    thermal_problem_builder.update_database_heuristic(
+        OutputValues(resolution_step_accurate_heuristic),
+        week_scenario_index,
+        heuristic_components,
+        param_to_update= ["nb_units_off_tertiary2_min","nb_units_off_tertiary2_max"],
+        var_to_read=["nb_on"],
+        fn_to_apply= old_heuristique_eteint_off,
+        param_needed_to_compute=["nb_units_max","nb_units_off_tertiary2_invisible"],
+    )
     thermal_problem_builder.update_database_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
@@ -217,30 +267,29 @@ def test_accurate_heuristic(
     result_step2 = OutputValues(resolution_step_2)
 
     nbr_on_accurate_step1 = result_step1._components['G']._variables['nb_on'].value
-    nbr_off_accurate_step1 = result_step1._components['G']._variables['nb_off_reserve'].value
+    nbr_off_accurate_step1 = result_step1._components['G']._variables['nb_off_primary'].value
     energy_production_accurate_step1 = result_step1._components['G']._variables['energy_generation'].value
     reserve_up_on_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_primary_on'].value
     reserve_up_off_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_primary_off'].value
     reserve_down_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_down_primary'].value   
     
     nbr_on_accurate_step2 = result_step2._components['G']._variables['nb_on'].value
-    nbr_off_accurate_step2 = result_step2._components['G']._variables['nb_off_reserve'].value
+    nbr_off_accurate_step2 = result_step2._components['G']._variables['nb_off_primary'].value
     energy_production_accurate_step2 = result_step2._components['G']._variables['energy_generation'].value
     reserve_up_on_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_primary_on'].value
     reserve_up_off_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_primary_off'].value
     reserve_down_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_down_primary'].value  
 
     de_accurate_step1 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step1[0],"nbr_on": nbr_on_accurate_step1[0],"nbr_off": nbr_off_accurate_step1[0],
-                                             "reserve_up_on":reserve_up_on_production_accurate_step1[0],"reserve_up_off":reserve_up_off_production_accurate_step1[0],"reserve down":reserve_down_production_accurate_step1[0],
+                                             "reserve_up_on":reserve_up_on_production_accurate_step1[0],"reserve_up_off":reserve_up_off_production_accurate_step1[0],"reserve_down":reserve_down_production_accurate_step1[0],
                                              "Fonction_objectif":resolution_step_1.solver.Objective().Value()})
     de_accurate_step1.to_csv("result_accurate_step1.csv",index=False)
     de_accurate_step2 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step2[0],"nbr_on": nbr_on_accurate_step2[0],"nbr_off": nbr_off_accurate_step2[0],
-                                             "reserve_up_on":reserve_up_on_production_accurate_step2[0],"reserve_up_off":reserve_up_off_production_accurate_step2[0],"reserve down":reserve_down_production_accurate_step2[0],
+                                             "reserve_up_on":reserve_up_on_production_accurate_step2[0],"reserve_up_off":reserve_up_off_production_accurate_step2[0],"reserve_down":reserve_down_production_accurate_step2[0],
                                              "Fonction_objectif":resolution_step_2.solver.Objective().Value()})
     de_accurate_step2.to_csv("result_accurate_step2.csv",index=False)
 
     # assert nbr_on_accurate_step1 == nbr_on_accurate_step2
-    # assert nbr_on_milp == nbr_on_accurate_step2
 
 
 def test_difference_milp_accurate(
