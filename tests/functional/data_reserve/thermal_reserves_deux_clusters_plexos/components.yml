@@ -19,7 +19,7 @@ study:
         value: 0
       - name: ens_cost
         type: constant
-        value: 100
+        value: 3000
       - name: primary_reserve_up_not_supplied_cost
         type: constant
         value: 1000
@@ -77,14 +77,14 @@ study:
           type: timeseries
           timeseries: demand_energy-ts
         - name: demand_primary_reserve_up
-          type: timeseries
-          timeseries: demand_primary_reserve_up-ts
+          type: constant
+          value: 0
         - name: demand_primary_reserve_down
-          type: timeseries
-          timeseries: demand_primary_reserve_down-ts
+          type: constant
+          value: 0
         - name: demand_secondary_reserve_up
-          type: timeseries
-          timeseries: demand_secondary_reserve_up-ts
+          type: constant
+          value: 0
         - name: demand_secondary_reserve_down
           type: constant
           value: 0
@@ -101,39 +101,39 @@ study:
           type: constant
           value: 0
 
-    - id: G
+    - id: BASE
       model: GEN
       parameters:
         - name: p_max
           type: constant
-          value: 100
+          value: 900
         - name: p_min
           type: constant
-          value: 30
+          value: 450
         - name: cost
           type: constant
-          value: 35
+          value: 5.02
         - name: startup_cost
           type: constant
-          value: 100
+          value: 24478.2
         - name: fixed_cost
           type: constant
-          value: 1000
+          value: 100
         - name: d_min_up
           type: constant
-          value: 3
+          value: 12
         - name: d_min_down
           type: constant
-          value: 3
+          value: 12
         - name: nb_units_min
           type: constant
           value: 0
         - name: nb_units_max
-          type: timeseries
-          timeseries: nb_units_max-ts
+          type: constant
+          value: 5
         - name: nb_units_max_invisible
-          type: timeseries
-          timeseries: nb_units_max-ts
+          type: constant
+          value: 5
         - name: nb_units_off_primary_min
           type: constant
           value: 0
@@ -178,25 +178,25 @@ study:
           value: 0
         - name: max_generating
           type: constant
-          value: 8000
+          value: 4500
         - name: nb_units_max_min_down_time
           type: constant
-          value: 8
+          value: 5
         - name: participation_max_primary_reserve_up_on
           type: constant
-          value: 27
+          value: 270
         - name: participation_max_primary_reserve_up_off
           type: constant
-          value: 90
+          value: 0
         - name: participation_max_primary_reserve_down
           type: constant
-          value: 27
+          value: 270
         - name: participation_max_secondary_reserve_up_on
           type: constant
           value: 27
         - name: participation_max_secondary_reserve_up_off
           type: constant
-          value: 90
+          value: 0
         - name: participation_max_secondary_reserve_down
           type: constant
           value: 27
@@ -229,10 +229,164 @@ study:
           value : 1
         - name : cost_participation_secondary_reserve_up_on
           type : constant
-          value : 2.1
+          value : 0
         - name : cost_participation_secondary_reserve_up_off
           type : constant
-          value : 3
+          value : 0
+        - name : cost_participation_secondary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_up_on
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_up_off
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_up_on
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_up_off
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_down
+          type : constant
+          value : 0
+
+    - id: PEAK
+      model: GEN
+      parameters:
+        - name: p_max
+          type: constant
+          value: 300
+        - name: p_min
+          type: constant
+          value: 90
+        - name: cost
+          type: constant
+          value: 57.51
+        - name: startup_cost
+          type: constant
+          value: 26758.4
+        - name: fixed_cost
+          type: constant
+          value: 100
+        - name: d_min_up
+          type: constant
+          value: 2
+        - name: d_min_down
+          type: constant
+          value: 2
+        - name: nb_units_min
+          type: constant
+          value: 0
+        - name: nb_units_max
+          type: constant
+          value: 8
+        - name: nb_units_max_invisible
+          type: constant
+          value: 8
+        - name: nb_units_off_primary_min
+          type: constant
+          value: 0
+        - name: nb_units_off_primary_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_primary_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_secondary_min
+          type: constant
+          value: 0
+        - name: nb_units_off_secondary_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_secondary_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary1_min
+          type: constant
+          value: 0
+        - name: nb_units_off_tertiary1_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary1_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary2_min
+          type: constant
+          value: 0
+        - name: nb_units_off_tertiary2_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary2_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: max_failure
+          type: constant
+          value: 0
+        - name: min_generating
+          type: constant
+          value: 0
+        - name: max_generating
+          type: constant
+          value: 2400
+        - name: nb_units_max_min_down_time
+          type: constant
+          value: 8
+        - name: participation_max_primary_reserve_up_on
+          type: constant
+          value: 23
+        - name: participation_max_primary_reserve_up_off
+          type: constant
+          value: 0
+        - name: participation_max_primary_reserve_down
+          type: constant
+          value: 25
+        - name: participation_max_secondary_reserve_up_on
+          type: constant
+          value: 23
+        - name: participation_max_secondary_reserve_up_off
+          type: constant
+          value: 0
+        - name: participation_max_secondary_reserve_down
+          type: constant
+          value: 23
+        - name: participation_max_tertiary1_reserve_up_on
+          type: constant
+          value: 23
+        - name: participation_max_tertiary1_reserve_up_off
+          type: constant
+          value: 0
+        - name: participation_max_tertiary1_reserve_down
+          type: constant
+          value: 23
+        - name: participation_max_tertiary2_reserve_up_on
+          type: constant
+          value: 23
+        - name: participation_max_tertiary2_reserve_up_off
+          type: constant
+          value: 0
+        - name: participation_max_tertiary2_reserve_down
+          type: constant
+          value: 23
+        - name : cost_participation_primary_reserve_up_on
+          type : constant
+          value : 1
+        - name : cost_participation_primary_reserve_up_off
+          type : constant
+          value : 2
+        - name : cost_participation_primary_reserve_down
+          type : constant
+          value : 1
+        - name : cost_participation_secondary_reserve_up_on
+          type : constant
+          value : 0
+        - name : cost_participation_secondary_reserve_up_off
+          type : constant
+          value : 0
         - name : cost_participation_secondary_reserve_down
           type : constant
           value : 0
@@ -263,8 +417,14 @@ study:
 
       - component1: N
         port_1: balance_port
-        component2: G
+        component2: BASE
         port_2: balance_port
+
+      - component1: N
+        port_1: balance_port
+        component2: PEAK
+        port_2: balance_port
+
 
 
 
