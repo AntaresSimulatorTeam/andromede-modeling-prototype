@@ -144,60 +144,68 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_1),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_min"],
-        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary_on","generation_reserve_down_primary",
-                     "generation_reserve_up_secondary_on","generation_reserve_down_secondary","generation_reserve_up_tertiary1_on",
-                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_down_tertiary2"],
+        param_to_update= [["nb_units_min"],["nb_units_off_primary_invisible"],["nb_units_off_secondary_invisible"],["nb_units_off_tertiary1_invisible"],["nb_units_off_tertiary2_invisible"]],
+        var_to_read=["nb_on","energy_generation","generation_reserve_up_primary_on","generation_reserve_up_primary_off",
+                     "generation_reserve_down_primary","generation_reserve_up_secondary_on","generation_reserve_up_secondary_off",
+                     "generation_reserve_down_secondary","generation_reserve_up_tertiary1_on","generation_reserve_up_tertiary1_off",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_up_tertiary2_off",
+                     "generation_reserve_down_tertiary2","nb_off_primary","nb_off_secondary","nb_off_tertiary1","nb_off_tertiary2"],
         fn_to_apply= old_heuristique,
-        param_needed_to_compute=["p_max","p_min","participation_max_primary_reserve_up_on","participation_max_primary_reserve_down",
-                                 "participation_max_secondary_reserve_up_on","participation_max_secondary_reserve_down",
-                                 "participation_max_tertiary1_reserve_up_on","participation_max_tertiary1_reserve_down",
-                                 "participation_max_tertiary2_reserve_up_on","participation_max_tertiary2_reserve_down",
+        param_needed_to_compute=["p_max","p_min","nb_units_max_invisible",
+                                 "participation_max_primary_reserve_up_on","participation_max_primary_reserve_up_off",
+                                 "participation_max_primary_reserve_down","participation_max_secondary_reserve_up_on",
+                                 "participation_max_secondary_reserve_up_off","participation_max_secondary_reserve_down",
+                                 "participation_max_tertiary1_reserve_up_on","participation_max_tertiary1_reserve_up_off",
+                                 "participation_max_tertiary1_reserve_down","participation_max_tertiary2_reserve_up_on",
+                                 "participation_max_tertiary2_reserve_up_off","participation_max_tertiary2_reserve_down",
                                  "cost","startup_cost","fixed_cost",
                                  "cost_participation_primary_reserve_up_on","cost_participation_primary_reserve_up_off","cost_participation_primary_reserve_down",
                                  "cost_participation_secondary_reserve_up_on","cost_participation_secondary_reserve_up_off","cost_participation_secondary_reserve_down",
                                  "cost_participation_tertiary1_reserve_up_on","cost_participation_tertiary1_reserve_up_off","cost_participation_tertiary1_reserve_down",
-                                 "cost_participation_tertiary2_reserve_up_on","cost_participation_tertiary2_reserve_up_on","cost_participation_tertiary2_reserve_down"],
+                                 "cost_participation_tertiary2_reserve_up_on","cost_participation_tertiary2_reserve_up_off","cost_participation_tertiary2_reserve_down"],
         param_node_needed_to_compute=["spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
                                       "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
                                       "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
-                                      "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost"],
+                                      "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost",
+                                      "primary_reserve_up_oversupplied_cost","primary_reserve_down_oversupplied_cost",
+                                      "secondary_reserve_up_oversupplied_cost","secondary_reserve_down_oversupplied_cost",
+                                      "tertiary1_reserve_up_oversupplied_cost","tertiary1_reserve_down_oversupplied_cost",
+                                      "tertiary2_reserve_up_oversupplied_cost","tertiary2_reserve_down_oversupplied_cost"],
     )
 
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_1),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= ["nb_units_off_primary_invisible"],
-        var_to_read=["nb_off_primary"],
-        fn_to_apply= changement_invisible,
-    )
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_1),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= ["nb_units_off_secondary_invisible"],
-        var_to_read=["nb_off_secondary"],
-        fn_to_apply= changement_invisible,
-    )
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_1),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= ["nb_units_off_tertiary1_invisible"],
-        var_to_read=["nb_off_tertiary1"],
-        fn_to_apply= changement_invisible,
-    )
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_1),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= ["nb_units_off_tertiary2_invisible"],
-        var_to_read=["nb_off_tertiary2"],
-        fn_to_apply= changement_invisible,
-    )
+    # thermal_problem_builder.update_database_heuristic(
+    #     OutputValues(resolution_step_1),
+    #     week_scenario_index,
+    #     heuristic_components,
+    #     param_to_update= [["nb_units_off_primary_invisible"]],
+    #     var_to_read=["nb_off_primary"],
+    #     fn_to_apply= changement_invisible,
+    # )
+    # thermal_problem_builder.update_database_heuristic(
+    #     OutputValues(resolution_step_1),
+    #     week_scenario_index,
+    #     heuristic_components,
+    #     param_to_update= [["nb_units_off_secondary_invisible"]],
+    #     var_to_read=["nb_off_secondary"],
+    #     fn_to_apply= changement_invisible,
+    # )
+    # thermal_problem_builder.update_database_heuristic(
+    #     OutputValues(resolution_step_1),
+    #     week_scenario_index,
+    #     heuristic_components,
+    #     param_to_update= [["nb_units_off_tertiary1_invisible"]],
+    #     var_to_read=["nb_off_tertiary1"],
+    #     fn_to_apply= changement_invisible,
+    # )
+    # thermal_problem_builder.update_database_heuristic(
+    #     OutputValues(resolution_step_1),
+    #     week_scenario_index,
+    #     heuristic_components,
+    #     param_to_update= [["nb_units_off_tertiary2_invisible"]],
+    #     var_to_read=["nb_off_tertiary2"],
+    #     fn_to_apply= changement_invisible,
+    # )
     
-    b = thermal_problem_builder.database
 
     # Solve heuristic problem
     resolution_step_accurate_heuristic = (
@@ -214,7 +222,7 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_off_primary_min","nb_units_off_primary_max"],
+        param_to_update= [["nb_units_off_primary_min","nb_units_off_primary_max"]],
         var_to_read=["nb_on"],
         fn_to_apply= old_heuristique_eteint_off,
         param_needed_to_compute=["nb_units_max","nb_units_off_primary_invisible"],
@@ -223,7 +231,7 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_off_secondary_min","nb_units_off_secondary_max"],
+        param_to_update= [["nb_units_off_secondary_min","nb_units_off_secondary_max"]],
         var_to_read=["nb_on"],
         fn_to_apply= old_heuristique_eteint_off,
         param_needed_to_compute=["nb_units_max","nb_units_off_secondary_invisible"],
@@ -232,7 +240,7 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_off_tertiary1_min","nb_units_off_tertiary1_max"],
+        param_to_update= [["nb_units_off_tertiary1_min","nb_units_off_tertiary1_max"]],
         var_to_read=["nb_on"],
         fn_to_apply= old_heuristique_eteint_off,
         param_needed_to_compute=["nb_units_max","nb_units_off_tertiary1_invisible"],
@@ -241,7 +249,7 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_off_tertiary2_min","nb_units_off_tertiary2_max"],
+        param_to_update= [["nb_units_off_tertiary2_min","nb_units_off_tertiary2_max"]],
         var_to_read=["nb_on"],
         fn_to_apply= old_heuristique_eteint_off,
         param_needed_to_compute=["nb_units_max","nb_units_off_tertiary2_invisible"],
@@ -250,7 +258,7 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
-        param_to_update= ["nb_units_min","nb_units_max"],
+        param_to_update= [["nb_units_min","nb_units_max"]],
         var_to_read=["nb_on"],
         fn_to_apply= old_heuristique_eteint_on,
         param_needed_to_compute=["nb_units_max"],
@@ -267,25 +275,35 @@ def test_accurate_heuristic(
     result_step2 = OutputValues(resolution_step_2)
 
     nbr_on_accurate_step1 = result_step1._components['G']._variables['nb_on'].value
-    nbr_off_accurate_step1 = result_step1._components['G']._variables['nb_off_primary'].value
+    nbr_off_primary_accurate_step1 = result_step1._components['G']._variables['nb_off_primary'].value
     energy_production_accurate_step1 = result_step1._components['G']._variables['energy_generation'].value
-    reserve_up_on_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_primary_on'].value
-    reserve_up_off_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_primary_off'].value
-    reserve_down_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_down_primary'].value   
+    reserve_primary_up_on_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_primary_on'].value
+    reserve_primary_up_off_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_primary_off'].value   
+    reserve_primary_down_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_down_primary'].value   
+    nbr_off_secondary_accurate_step1 = result_step1._components['G']._variables['nb_off_secondary'].value
+    reserve_secondary_up_on_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_secondary_on'].value
+    reserve_secondary_up_off_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_up_secondary_off'].value
+    reserve_secondary_down_production_accurate_step1 = result_step1._components['G']._variables['generation_reserve_down_secondary'].value   
     
     nbr_on_accurate_step2 = result_step2._components['G']._variables['nb_on'].value
-    nbr_off_accurate_step2 = result_step2._components['G']._variables['nb_off_primary'].value
+    nbr_off_primary_accurate_step2 = result_step2._components['G']._variables['nb_off_primary'].value
     energy_production_accurate_step2 = result_step2._components['G']._variables['energy_generation'].value
-    reserve_up_on_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_primary_on'].value
-    reserve_up_off_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_primary_off'].value
-    reserve_down_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_down_primary'].value  
+    reserve_primary_up_on_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_primary_on'].value
+    reserve_primary_up_off_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_primary_off'].value
+    reserve_primary_down_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_down_primary'].value  
+    nbr_off_secondary_accurate_step2 = result_step2._components['G']._variables['nb_off_secondary'].value
+    reserve_secondary_up_on_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_secondary_on'].value
+    reserve_secondary_up_off_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_up_secondary_off'].value
+    reserve_secondary_down_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_down_secondary'].value  
 
-    de_accurate_step1 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step1[0],"nbr_on": nbr_on_accurate_step1[0],"nbr_off": nbr_off_accurate_step1[0],
-                                             "reserve_up_on":reserve_up_on_production_accurate_step1[0],"reserve_up_off":reserve_up_off_production_accurate_step1[0],"reserve_down":reserve_down_production_accurate_step1[0],
+    de_accurate_step1 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step1[0],"nbr_on": nbr_on_accurate_step1[0],"nbr_off_primary": nbr_off_primary_accurate_step1[0],
+                                             "reserve_primary_up_on":reserve_primary_up_on_production_accurate_step1[0],"reserve_primary_up_off":reserve_primary_up_off_production_accurate_step1[0], "reserve_primary_down":reserve_primary_down_production_accurate_step1[0],
+                                              "nbr_off_secondary": nbr_off_secondary_accurate_step1[0],"reserve_secondary_up_on":reserve_secondary_up_on_production_accurate_step1[0],"reserve_secondary_up_off":reserve_secondary_up_off_production_accurate_step1[0], "reserve_secondary_down":reserve_secondary_down_production_accurate_step1[0],
                                              "Fonction_objectif":resolution_step_1.solver.Objective().Value()})
     de_accurate_step1.to_csv("result_accurate_step1.csv",index=False)
-    de_accurate_step2 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step2[0],"nbr_on": nbr_on_accurate_step2[0],"nbr_off": nbr_off_accurate_step2[0],
-                                             "reserve_up_on":reserve_up_on_production_accurate_step2[0],"reserve_up_off":reserve_up_off_production_accurate_step2[0],"reserve_down":reserve_down_production_accurate_step2[0],
+    de_accurate_step2 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step2[0],"nbr_on": nbr_on_accurate_step2[0],"nbr_off_primary": nbr_off_primary_accurate_step2[0],
+                                             "reserve_primary_up_on":reserve_primary_up_on_production_accurate_step2[0],"reserve_primary_up_off":reserve_primary_up_off_production_accurate_step2[0], "reserve_primary_down":reserve_primary_down_production_accurate_step2[0],
+                                              "nbr_off_secondary": nbr_off_secondary_accurate_step2[0],"reserve_secondary_up_on":reserve_secondary_up_on_production_accurate_step2[0],"reserve_secondary_up_off":reserve_secondary_up_off_production_accurate_step2[0], "reserve_secondary_down":reserve_secondary_down_production_accurate_step2[0],
                                              "Fonction_objectif":resolution_step_2.solver.Objective().Value()})
     de_accurate_step2.to_csv("result_accurate_step2.csv",index=False)
 

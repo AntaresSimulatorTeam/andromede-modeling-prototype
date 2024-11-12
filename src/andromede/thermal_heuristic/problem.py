@@ -71,25 +71,26 @@ class ThermalProblemBuilder:
         output: OutputValues,
         index: BlockScenarioIndex,
         list_cluster_id: List[str],
-        param_to_update: List[str],
+        param_to_update: List[List[str]],
         var_to_read: List[str],
         fn_to_apply: Callable,
         param_needed_to_compute: Optional[List[str]] = None,
         param_node_needed_to_compute : Optional[List[str]] = None,
     ) -> None:
         for cluster in list_cluster_id:
-            for param_update in param_to_update:
-                if (
-                    ComponentParameterIndex(cluster, param_update)
-                    not in self.database.__dict__.keys()
-                ):
-                    self.database.add_data(cluster, param_update, ConstantData(0))
-                self.database.convert_to_time_scenario_series_data(
-                    ComponentParameterIndex(cluster, param_update),
-                    self.time_scenario_hour_parameter.hour
-                    * self.time_scenario_hour_parameter.week,
-                    self.time_scenario_hour_parameter.scenario,
-                )
+            for list_param_update in param_to_update:
+                for param_update in list_param_update:
+                    if (
+                        ComponentParameterIndex(cluster, param_update)
+                        not in self.database.__dict__.keys()
+                    ):
+                        self.database.add_data(cluster, param_update, ConstantData(0))
+                    self.database.convert_to_time_scenario_series_data(
+                        ComponentParameterIndex(cluster, param_update),
+                        self.time_scenario_hour_parameter.hour
+                        * self.time_scenario_hour_parameter.week,
+                        self.time_scenario_hour_parameter.scenario,
+                    )
             sol = {}
             for variable in var_to_read:
                 sol[variable] = output.component(cluster).var(variable).value[0] # type:ignore
@@ -122,13 +123,15 @@ class ThermalProblemBuilder:
                                            [s for s in sol.values()], [p for p in param.values()])
                                       
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                for param_update in param_to_update:
-                    self.database.set_value(
-                        ComponentParameterIndex(cluster, param_update),
-                        result_heuristic[i],  # type:ignore
-                        t,
-                        index.scenario,
-                    )
+                results_heuristic = result_heuristic[i]
+                for p,list_param_update in enumerate(param_to_update):
+                    for param_update in list_param_update:
+                        self.database.set_value(
+                            ComponentParameterIndex(cluster, param_update),
+                            results_heuristic[p],  # type:ignore
+                            t,
+                            index.scenario,
+                        )
 
 
 
