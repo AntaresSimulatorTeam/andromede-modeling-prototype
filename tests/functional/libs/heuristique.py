@@ -14,6 +14,15 @@ def old_heuristique(
     arrondi_final = [ old_arrondi(*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
     return arrondi_final
 
+def heuristique_optis_avec_start_up(
+        horaire : List[str],
+        variable: List[List[str]],
+        params: Optional[List[List[str]]] = None,
+    ) -> List[List[str]]:
+    
+    arrondi_final = [ arrondi_optis_avec_start_up(*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
+    return arrondi_final
+
 def heuristique_opti_avec_start_up(
         horaire : List[str],
         variable: List[List[str]],
@@ -55,22 +64,13 @@ def heuristique_mix(
             arrondi_final[t] = arrondi_opti_avec_start_up(*[s[t] for s in variable],*[p[t] for p in params])        
     return arrondi_final
 
-def old_heuristique_eteint_off(
+def old_heuristique_eteint(
         horaire : List[str],
         variable: List[List[str]],
         params: Optional[List[List[str]]] = None,
     ) -> List[List[str]]:
 
-    arrondi_final = [ old_arrondi_eteint_off(*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
-    return arrondi_final
-
-def old_heuristique_eteint_on(
-        horaire : List[str],
-        variable: List[List[str]],
-        params: Optional[List[List[str]]] = None,
-    ) -> List[List[str]]:
-
-    arrondi_final = [ old_arrondi_eteint_on(*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
+    arrondi_final = [ old_arrondi_eteint(*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
     return arrondi_final
 
 def changement_invisible(

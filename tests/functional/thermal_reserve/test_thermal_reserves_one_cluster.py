@@ -150,7 +150,7 @@ def test_accurate_heuristic(
                      "generation_reserve_down_secondary","generation_reserve_up_tertiary1_on","generation_reserve_up_tertiary1_off",
                      "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_up_tertiary2_off",
                      "generation_reserve_down_tertiary2","nb_off_primary","nb_off_secondary","nb_off_tertiary1","nb_off_tertiary2"],
-        fn_to_apply= old_heuristique,
+        fn_to_apply= heuristique_optis_avec_start_up,
         param_needed_to_compute=["p_max","p_min","nb_units_max_invisible",
                                  "participation_max_primary_reserve_up_on","participation_max_primary_reserve_up_off",
                                  "participation_max_primary_reserve_down","participation_max_secondary_reserve_up_on",
@@ -222,48 +222,14 @@ def test_accurate_heuristic(
         OutputValues(resolution_step_accurate_heuristic),
         week_scenario_index,
         heuristic_components,
-        param_to_update= [["nb_units_off_primary_min","nb_units_off_primary_max"]],
+        param_to_update= [["nb_units_min","nb_units_max"],["nb_units_off_primary_min","nb_units_off_primary_max"],["nb_units_off_secondary_min","nb_units_off_secondary_max"]
+                          ,["nb_units_off_tertiary1_min","nb_units_off_tertiary1_max"],["nb_units_off_tertiary2_min","nb_units_off_tertiary2_max"]],
         var_to_read=["nb_on"],
-        fn_to_apply= old_heuristique_eteint_off,
-        param_needed_to_compute=["nb_units_max","nb_units_off_primary_invisible"],
+        fn_to_apply= old_heuristique_eteint,
+        param_needed_to_compute=["nb_units_max_invisible","nb_units_off_primary_invisible"
+                                 ,"nb_units_off_secondary_invisible","nb_units_off_tertiary1_invisible","nb_units_off_tertiary2_invisible"],
     )
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_accurate_heuristic),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= [["nb_units_off_secondary_min","nb_units_off_secondary_max"]],
-        var_to_read=["nb_on"],
-        fn_to_apply= old_heuristique_eteint_off,
-        param_needed_to_compute=["nb_units_max","nb_units_off_secondary_invisible"],
-    )
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_accurate_heuristic),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= [["nb_units_off_tertiary1_min","nb_units_off_tertiary1_max"]],
-        var_to_read=["nb_on"],
-        fn_to_apply= old_heuristique_eteint_off,
-        param_needed_to_compute=["nb_units_max","nb_units_off_tertiary1_invisible"],
-    )
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_accurate_heuristic),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= [["nb_units_off_tertiary2_min","nb_units_off_tertiary2_max"]],
-        var_to_read=["nb_on"],
-        fn_to_apply= old_heuristique_eteint_off,
-        param_needed_to_compute=["nb_units_max","nb_units_off_tertiary2_invisible"],
-    )
-    thermal_problem_builder.update_database_heuristic(
-        OutputValues(resolution_step_accurate_heuristic),
-        week_scenario_index,
-        heuristic_components,
-        param_to_update= [["nb_units_min","nb_units_max"]],
-        var_to_read=["nb_on"],
-        fn_to_apply= old_heuristique_eteint_on,
-        param_needed_to_compute=["nb_units_max"],
-    )
-    
+ 
     # Second optimization with lower bound modified
     resolution_step_2 = thermal_problem_builder.main_resolution_step(
         week_scenario_index
