@@ -1,0 +1,44 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+library:
+  id: basic
+  description: Basic library
+
+  port-types:
+    - id: flow
+      description: A port which transfers power flow
+      fields:
+        - name: flow
+
+  models:
+    - id: thermal-cluster
+      parameters:
+        - name: p_max
+        - name: cost
+        ...
+      variables:
+        - name: nb_units_on
+          lower-bound: 0
+          upper-bound: nb_units_max
+          variable-type: integer
+          time-dependent: true
+          scenario-dependent: false
+        ...
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: production
+      constraints:
+        ...
+        - name: min up time
+          expression: sum(nb_starting[-d_min_up + 1 .. 0]) <= nb_units_on
+      objective_operational: expec(sum(cost * production))
