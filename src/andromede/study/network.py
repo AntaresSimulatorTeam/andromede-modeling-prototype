@@ -19,7 +19,8 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Dict, Iterable, List, cast
 
 from andromede.model import PortField, PortType
-from andromede.model.model import Model, PortFieldId
+from andromede.model.model import Model
+from andromede.model.port import PortFieldId
 from andromede.utils import require_not_none
 
 
@@ -31,6 +32,9 @@ class Component:
 
     model: Model
     id: str
+
+    def is_variable_in_model(self, var_id: str) -> bool:
+        return var_id in self.model.variables.keys()
 
     def replicate(self, /, **changes: Any) -> "Component":
         return replace(self, **changes)
@@ -172,6 +176,9 @@ class Network:
 
     def get_connection(self, idx: int) -> PortsConnection:
         return self._connections[idx]
+
+    def is_empty(self) -> bool:
+        return (not self._nodes) and (not self._components) and (not self._connections)
 
     def replicate(self, /, **changes: Any) -> "Network":
         replica = replace(self, **changes)

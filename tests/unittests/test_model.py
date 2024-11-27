@@ -22,8 +22,8 @@ from andromede.expression.expression import (
     port_field,
     var,
 )
-from andromede.model import Constraint, float_parameter, float_variable, model
-from andromede.model.model import PortFieldDefinition, port_field_def
+from andromede.model import Constraint, float_variable, model
+from andromede.model.port import port_field_def
 
 
 @pytest.mark.parametrize(

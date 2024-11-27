@@ -12,17 +12,18 @@
 
 import pytest
 
-from andromede.expression import literal, var
+from andromede.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
     NODE_WITH_SPILL_AND_ENS,
-    THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA,
 )
 from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
-from andromede.model.model import model
+from andromede.model.model import ModelPort, model
+from andromede.model.parameter import float_parameter
+from andromede.model.port import PortField, PortFieldDefinition, PortFieldId, PortType
 from andromede.model.variable import float_variable
 from andromede.simulation import (
     BendersSolution,
@@ -46,10 +47,60 @@ def generator() -> Component:
     return generator
 
 
+CONSTANT = IndexingStructure(False, False)
+BALANCE_PORT_TYPE = PortType(id="balance", fields=[PortField("flow")])
+
+
 @pytest.fixture
 def candidate() -> Component:
     candidate = create_component(
-        model=THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA, id="CAND"
+        model=model(
+            id="GEN_WITH_INSTALLED_CAPA",
+            parameters=[
+                float_parameter("op_cost", CONSTANT),
+                float_parameter("invest_cost", CONSTANT),
+                float_parameter("max_invest", CONSTANT),
+                float_parameter("installed_capa", CONSTANT),
+            ],
+            variables=[
+                float_variable("generation", lower_bound=literal(0)),
+                float_variable(
+                    "invested_capa",
+                    lower_bound=literal(0),
+                    structure=CONSTANT,
+                    context=ProblemContext.COUPLING,
+                ),
+                float_variable(
+                    "delta_invest",
+                    lower_bound=literal(0),
+                    upper_bound=param("max_invest"),
+                    structure=CONSTANT,
+                    context=ProblemContext.INVESTMENT,
+                ),
+            ],
+            ports=[
+                ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port"),
+            ],
+            port_fields_definitions=[
+                PortFieldDefinition(
+                    port_field=PortFieldId("balance_port", "flow"),
+                    definition=var("generation"),
+                ),
+            ],
+            constraints=[
+                Constraint(
+                    name="Max generation",
+                    expression=var("generation")
+                    <= param("installed_capa") + var("invested_capa"),
+                )
+            ],
+            objective_operational_contribution=(param("op_cost") * var("generation"))
+            .sum()
+            .expec(),
+            objective_investment_contribution=param("invest_cost")
+            * var("delta_invest"),
+        ),
+        id="CAND",
     )
     return candidate
 
@@ -121,7 +172,7 @@ def test_investment_pathway_on_sequential_nodes(
     )
 
     database.add_data("CAND", "op_cost", ConstantData(10))
-    database.add_data("CAND", "already_installed_capa", ConstantData(100))
+    database.add_data("CAND", "installed_capa", ConstantData(100))
 
     database.add_data(
         "CAND",
@@ -145,56 +196,7 @@ def test_investment_pathway_on_sequential_nodes(
         ),
     )
 
-    # === Coupling model ===
-    # Used between nodes in the decision tree
-    COUPLING_MODEL = model(
-        id="COUPLING",
-        variables=[
-            float_variable(
-                "parent_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "parent_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "child_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "child_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-        constraints=[
-            Constraint(
-                name="Max investment on parent",
-                expression=var("parent_CAND_invested_capa")
-                == var("parent_CAND_delta_invest"),
-                context=ProblemContext.INVESTMENT,
-            ),
-            Constraint(
-                name="Max investment on child",
-                expression=var("child_CAND_invested_capa")
-                == var("child_CAND_delta_invest") + var("parent_CAND_invested_capa"),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-    )
-
     # === Network ===
-    network_coupling = Network("coupling_test")
-    network_coupling.add_component(create_component(model=COUPLING_MODEL, id=""))
-
     demand_par = demand.replicate()
     candidate_par = candidate.replicate()
 
@@ -231,10 +233,24 @@ def test_investment_pathway_on_sequential_nodes(
         "child", config, network_chd, parent=decision_tree_par
     )
 
-    # === Build problem ===
-    xpansion = build_benders_decomposed_problem(
-        decision_tree_par, database, coupling_network=network_coupling
+    # === Coupling model ===
+    decision_tree_par.define_coupling_constraint(
+        candidate_par,
+        "invested_capa",
+        candidate_par,
+        "invested_capa",
+        "delta_invest",
     )
+    decision_tree_chd.define_coupling_constraint(
+        candidate_par,
+        "invested_capa",
+        candidate_chd,
+        "invested_capa",
+        "delta_invest",
+    )
+
+    # === Build problem ===
+    xpansion = build_benders_decomposed_problem(decision_tree_par, database)
 
     data = {
         "solution": {
@@ -348,6 +364,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         - 100 in child B
     """
 
+    # === Populating Database ===
     database = DataBase()
     database.add_data("N", "spillage_cost", ConstantData(10))
     database.add_data("N", "ens_cost", ConstantData(10_000))
@@ -365,7 +382,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     )
 
     database.add_data("CAND", "op_cost", ConstantData(10))
-    database.add_data("CAND", "already_installed_capa", ConstantData(200))
+    database.add_data("CAND", "installed_capa", ConstantData(200))
     database.add_data(
         "CAND",
         "invest_cost",
@@ -392,71 +409,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     database.add_data("BASE", "p_max", ConstantData(200))
     database.add_data("BASE", "cost", ConstantData(5))
 
-    COUPLING_MODEL = model(
-        id="COUPLING",
-        variables=[
-            float_variable(
-                "root_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "root_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childA_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childA_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childB_CAND_delta_invest",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-            float_variable(
-                "childB_CAND_invested_capa",
-                lower_bound=literal(0),
-                structure=IndexingStructure(False, False),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-        constraints=[
-            Constraint(
-                name="Max investment on root",
-                expression=var("root_CAND_invested_capa")
-                == var("root_CAND_delta_invest"),
-                context=ProblemContext.INVESTMENT,
-            ),
-            Constraint(
-                name="Max investment on child A",
-                expression=var("childA_CAND_invested_capa")
-                == var("childA_CAND_delta_invest") + var("root_CAND_invested_capa"),
-                context=ProblemContext.INVESTMENT,
-            ),
-            Constraint(
-                name="Max investment on child B",
-                expression=var("childB_CAND_invested_capa")
-                == var("childB_CAND_delta_invest") + var("root_CAND_invested_capa"),
-                context=ProblemContext.INVESTMENT,
-            ),
-        ],
-    )
-
-    network_coupler = Network("coupling_test")
-    network_coupler.add_component(create_component(model=COUPLING_MODEL, id=""))
-
+    # === Network ===
     network_root = Network("root_network")
     network_root.add_node(node)
     network_root.add_component(demand)
@@ -474,10 +427,8 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
 
     network_childB = network_root.replicate(id="childB_network")
 
-    scenarios = 1
-    time_scenario_config = InterDecisionTimeScenarioConfig(
-        [TimeBlock(0, [0])], scenarios
-    )
+    # === Decision tree creation ===
+    time_scenario_config = InterDecisionTimeScenarioConfig([TimeBlock(0, [0])], 1)
 
     dt_root = DecisionTreeNode("root", time_scenario_config, network_root)
     dt_child_A = DecisionTreeNode(
@@ -487,9 +438,31 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
         "childB", time_scenario_config, network_childB, parent=dt_root, prob=0.2
     )
 
-    xpansion = build_benders_decomposed_problem(
-        dt_root, database, coupling_network=network_coupler
+    # === Coupling model ===
+    dt_root.define_coupling_constraint(
+        candidate,
+        "invested_capa",
+        candidate,
+        "invested_capa",
+        "delta_invest",
     )
+    dt_child_A.define_coupling_constraint(
+        candidate,
+        "invested_capa",
+        candidate,
+        "invested_capa",
+        "delta_invest",
+    )
+    dt_child_B.define_coupling_constraint(
+        candidate,
+        "invested_capa",
+        candidate,
+        "invested_capa",
+        "delta_invest",
+    )
+
+    # === Build problem ===
+    xpansion = build_benders_decomposed_problem(dt_root, database)
 
     data = {
         "solution": {
@@ -506,6 +479,7 @@ def test_investment_pathway_on_a_tree_with_one_root_two_children(
     }
     solution = BendersSolution(data)
 
+    # === Run ===
     assert xpansion.run()
     decomposed_solution = xpansion.solution
     if decomposed_solution is not None:  # For mypy only

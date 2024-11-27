@@ -222,7 +222,6 @@ def build_benders_decomposed_problem(
     *,
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "GLOP",
-    coupling_network: Network = Network(""),
     struct_filename: str = "structure.txt",
 ) -> BendersDecomposedProblem:
     """
@@ -232,15 +231,17 @@ def build_benders_decomposed_problem(
     """
 
     if not decision_tree_root.is_leaves_prob_sum_one():
-        raise RuntimeError("Decision tree must have leaves' probability sum equal one!")
+        raise ValueError("Decision tree leaves' probability must sum one!")
 
     null_time_block = TimeBlock(
         0, [0]
     )  # Not necessary for master, but list must be non-empty
     null_scenario = 0  # Not necessary for master
 
+    decision_tree_root._add_coupling_constraints()
+
     coupler = build_problem(
-        coupling_network,
+        decision_tree_root.coupling_network,
         database,
         null_time_block,
         null_scenario,
@@ -248,6 +249,7 @@ def build_benders_decomposed_problem(
         solver_id=solver_id,
         build_strategy=InvestmentProblemStrategy(),
         risk_strategy=ExpectedValue(0.0),
+        use_full_var_name=False,
     )
 
     masters = []  # Benders Decomposed Master Problem

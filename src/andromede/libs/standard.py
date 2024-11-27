@@ -18,9 +18,9 @@ from andromede.expression.expression import ExpressionRange, port_field
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model.common import ProblemContext
 from andromede.model.constraint import Constraint
-from andromede.model.model import ModelPort, PortFieldDefinition, PortFieldId, model
+from andromede.model.model import ModelPort, model
 from andromede.model.parameter import float_parameter, int_parameter
-from andromede.model.port import PortField, PortType
+from andromede.model.port import PortField, PortFieldDefinition, PortFieldId, PortType
 from andromede.model.variable import float_variable, int_variable
 
 CONSTANT = IndexingStructure(False, False)
@@ -475,15 +475,9 @@ THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA = model(
         float_variable(
             "invested_capa",
             lower_bound=literal(0),
-            structure=CONSTANT,
-            context=ProblemContext.COUPLING,
-        ),
-        float_variable(
-            "delta_invest",
-            lower_bound=literal(0),
             upper_bound=param("max_invest"),
             structure=CONSTANT,
-            context=ProblemContext.INVESTMENT,
+            context=ProblemContext.COUPLING,
         ),
     ],
     ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
@@ -503,5 +497,5 @@ THERMAL_CANDIDATE_WITH_ALREADY_INSTALLED_CAPA = model(
     objective_operational_contribution=(param("op_cost") * var("generation"))
     .sum()
     .expec(),
-    objective_investment_contribution=param("invest_cost") * var("delta_invest"),
+    objective_investment_contribution=param("invest_cost") * var("invested_capa"),
 )
