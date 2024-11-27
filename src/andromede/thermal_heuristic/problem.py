@@ -74,6 +74,8 @@ class ThermalProblemBuilder:
         param_to_update: List[List[str]],
         var_to_read: List[str],
         fn_to_apply: Callable,
+        version: Optional[str] = None,
+        option: Optional[str] = None,
         param_needed_to_compute: Optional[List[str]] = None,
         param_node_needed_to_compute : Optional[List[str]] = None,
     ) -> None:
@@ -119,9 +121,20 @@ class ThermalProblemBuilder:
                     param[p] = [self.database.get_data(node,p).value
                                 for t in timesteps(index, self.time_scenario_hour_parameter)]   
 
-            result_heuristic = fn_to_apply( [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+            if version is not None:
+                if option is not None:
+                    result_heuristic = fn_to_apply(version, option, [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
                                            [s for s in sol.values()], [p for p in param.values()])
-                                      
+                else:
+                    result_heuristic = fn_to_apply(version, [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                           [s for s in sol.values()], [p for p in param.values()])
+            elif option is not None:
+                result_heuristic = fn_to_apply(option, [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                           [s for s in sol.values()], [p for p in param.values()]) 
+            else:
+                result_heuristic = fn_to_apply( [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                           [s for s in sol.values()], [p for p in param.values()])            
+
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 results_heuristic = result_heuristic[i]
                 for p,list_param_update in enumerate(param_to_update):

@@ -83,8 +83,8 @@ study:
           type: timeseries
           timeseries: demand_primary_reserve_down-ts
         - name: demand_secondary_reserve_up
-          type: timeseries
-          timeseries: demand_secondary_reserve_up-ts
+          type: constant
+          value: 0
         - name: demand_secondary_reserve_down
           type: constant
           value: 0
@@ -109,7 +109,7 @@ study:
           value: 100
         - name: p_min
           type: constant
-          value: 80
+          value: 30
         - name: cost
           type: constant
           value: 35
@@ -175,7 +175,7 @@ study:
           value: 27
         - name: participation_max_primary_reserve_up_off
           type: constant
-          value: 90
+          value: 0
         - name: participation_max_primary_reserve_down
           type: constant
           value: 27
@@ -184,7 +184,7 @@ study:
           value: 27
         - name: participation_max_secondary_reserve_up_off
           type: constant
-          value: 95
+          value: 90
         - name: participation_max_secondary_reserve_down
           type: constant
           value: 27
