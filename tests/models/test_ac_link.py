@@ -40,10 +40,10 @@ def ac_lib(libs_dir: Path, std_lib: Library) -> Library:
     lib_file = libs_dir / "ac.yml"
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
-        return resolve_library(input_lib, preloaded_libraries=[std_lib])
+        return resolve_library([input_lib], preloaded_libs=[std_lib])
 
 
-def test_ac_network_no_links(ac_lib: Library):
+def test_ac_network_no_links(ac_lib: Library) -> None:
     """
     The network only has one AC node where a generator and a demand are connected.
 
@@ -87,7 +87,7 @@ def test_ac_network_no_links(ac_lib: Library):
     assert problem.solver.Objective().Value() == pytest.approx(3000, abs=0.01)
 
 
-def test_ac_network(ac_lib: Library):
+def test_ac_network(ac_lib: Library) -> None:
     """
     The network only has 2 AC nodes connected by 1 AC link.
 
@@ -148,7 +148,7 @@ def test_ac_network(ac_lib: Library):
     )
 
 
-def test_parallel_ac_links(ac_lib: Library):
+def test_parallel_ac_links(ac_lib: Library) -> None:
     """
     The network has 2 AC nodes connected by 2 parallel links,
     where reactance is 1 for line L1, and 2 for line L2.
@@ -220,7 +220,7 @@ def test_parallel_ac_links(ac_lib: Library):
     )
 
 
-def test_parallel_ac_links_with_pst(ac_lib: Library):
+def test_parallel_ac_links_with_pst(ac_lib: Library) -> None:
     """
     Same case as in parallel_ac_links but:
      - flow is restricted to 50 MW on line L1, so it cannot

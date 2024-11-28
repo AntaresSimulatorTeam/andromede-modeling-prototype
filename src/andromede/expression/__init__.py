@@ -28,7 +28,6 @@ from .expression import (
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
     VariableNode,
     literal,
     param,

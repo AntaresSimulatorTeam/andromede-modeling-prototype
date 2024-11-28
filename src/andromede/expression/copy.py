@@ -11,30 +11,27 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from typing import List, Union, cast
+from typing import List, cast
 
 from .expression import (
-    AdditionNode,
+    AllTimeSumNode,
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
-    DivisionNode,
     ExpressionNode,
-    ExpressionRange,
-    InstancesTimeIndex,
     LiteralNode,
-    MultiplicationNode,
-    NegationNode,
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     ScenarioOperatorNode,
-    SubstractionNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
     VariableNode,
 )
-from .visitor import ExpressionVisitor, ExpressionVisitorOperations, T, visit
+from .visitor import ExpressionVisitorOperations, visit
 
 
 @dataclass(frozen=True)
@@ -63,38 +60,31 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
         return ComponentParameterNode(node.component_id, node.name)
 
-    def copy_expression_range(
-        self, expression_range: ExpressionRange
-    ) -> ExpressionRange:
-        return ExpressionRange(
-            start=visit(expression_range.start, self),
-            stop=visit(expression_range.stop, self),
-            step=visit(expression_range.step, self)
-            if expression_range.step is not None
-            else None,
+    def pb_variable(self, node: ProblemVariableNode) -> ExpressionNode:
+        return ProblemVariableNode(
+            node.component_id, node.name, node.time_index, node.scenario_index
         )
 
-    def copy_instances_index(
-        self, instances_index: InstancesTimeIndex
-    ) -> InstancesTimeIndex:
-        expressions = instances_index.expressions
-        if isinstance(expressions, ExpressionRange):
-            return InstancesTimeIndex(self.copy_expression_range(expressions))
-        if isinstance(expressions, list):
-            expressions_list = cast(List[ExpressionNode], expressions)
-            copy = [visit(e, self) for e in expressions_list]
-            return InstancesTimeIndex(copy)
-        raise ValueError("Unexpected type in instances index")
+    def pb_parameter(self, node: ProblemParameterNode) -> ExpressionNode:
+        return ProblemParameterNode(
+            node.component_id, node.name, node.time_index, node.scenario_index
+        )
 
-    def time_operator(self, node: TimeOperatorNode) -> ExpressionNode:
-        return TimeOperatorNode(
+    def time_shift(self, node: TimeShiftNode) -> ExpressionNode:
+        return TimeShiftNode(visit(node.operand, self), visit(node.time_shift, self))
+
+    def time_eval(self, node: TimeEvalNode) -> ExpressionNode:
+        return TimeShiftNode(visit(node.operand, self), visit(node.eval_time, self))
+
+    def time_sum(self, node: TimeSumNode) -> ExpressionNode:
+        return TimeSumNode(
             visit(node.operand, self),
-            node.name,
-            self.copy_instances_index(node.instances_index),
+            visit(node.from_time, self),
+            visit(node.to_time, self),
         )
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> ExpressionNode:
-        return TimeAggregatorNode(visit(node.operand, self), node.name, node.stay_roll)
+    def all_time_sum(self, node: AllTimeSumNode) -> ExpressionNode:
+        return AllTimeSumNode(visit(node.operand, self))
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> ExpressionNode:
         return ScenarioOperatorNode(visit(node.operand, self), node.name)

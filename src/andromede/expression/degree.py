@@ -12,11 +12,16 @@
 
 import andromede.expression.scenario_operator
 from andromede.expression.expression import (
+    AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
-    TimeOperatorNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 
 from .expression import (
@@ -29,8 +34,6 @@ from .expression import (
     NegationNode,
     ParameterNode,
     ScenarioOperatorNode,
-    SubstractionNode,
-    TimeAggregatorNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, T, visit
@@ -49,10 +52,8 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
 
     # TODO: Take into account simplification that can occur with literal coefficient for add, sub, mult, div
     def addition(self, node: AdditionNode) -> int:
-        return max(visit(node.left, self), visit(node.right, self))
-
-    def substraction(self, node: SubstractionNode) -> int:
-        return max(visit(node.left, self), visit(node.right, self))
+        degrees = [visit(o, self) for o in node.operands]
+        return max(degrees)
 
     def multiplication(self, node: MultiplicationNode) -> int:
         return visit(node.left, self) + visit(node.right, self)
@@ -78,17 +79,23 @@ class ExpressionDegreeVisitor(ExpressionVisitor[int]):
     def comp_parameter(self, node: ComponentParameterNode) -> int:
         return 0
 
-    def time_operator(self, node: TimeOperatorNode) -> int:
-        if node.name in ["TimeShift", "TimeEvaluation"]:
-            return visit(node.operand, self)
-        else:
-            return NotImplemented
+    def pb_variable(self, node: ProblemVariableNode) -> int:
+        return 1
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> int:
-        if node.name in ["TimeSum"]:
-            return visit(node.operand, self)
-        else:
-            return NotImplemented
+    def pb_parameter(self, node: ProblemParameterNode) -> int:
+        return 0
+
+    def time_shift(self, node: TimeShiftNode) -> int:
+        return visit(node.operand, self)
+
+    def time_eval(self, node: TimeEvalNode) -> int:
+        return visit(node.operand, self)
+
+    def time_sum(self, node: TimeSumNode) -> int:
+        return visit(node.operand, self)
+
+    def all_time_sum(self, node: AllTimeSumNode) -> int:
+        return visit(node.operand, self)
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> int:
         scenario_operator_cls = getattr(

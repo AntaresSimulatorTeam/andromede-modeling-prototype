@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from andromede.model.parsing import parse_yaml_library
-from andromede.model.resolve_library import resolve_library
+from andromede.model.resolve_library import Library, resolve_library
 
 
 @pytest.fixture(scope="session")
@@ -23,11 +23,11 @@ def libs_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
-def lib(libs_dir: Path):
+def lib(libs_dir: Path) -> Library:
     lib_file = libs_dir / "lib.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
 
-    lib = resolve_library(input_lib)
+    lib = resolve_library([input_lib])
     return lib

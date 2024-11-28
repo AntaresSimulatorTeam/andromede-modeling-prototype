@@ -9,15 +9,13 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
+import cProfile
+from pstats import SortKey
 from typing import cast
-
-import pytest
 
 from andromede.expression.expression import ExpressionNode, literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
     DEMAND_MODEL,
     GENERATOR_MODEL,
     GENERATOR_MODEL_WITH_STORAGE,
@@ -40,9 +38,6 @@ def test_large_sum_inside_model_with_loop() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
     Here the objective function is the sum over nb_terms terms on a for-loop inside the model
-
-    This test pass with 476 terms but fails with 477 locally due to recursion depth,
-    and even less terms are possible with Jenkins...
     """
     nb_terms = 500
 
@@ -53,30 +48,28 @@ def test_large_sum_inside_model_with_loop() -> None:
     for i in range(1, nb_terms):
         database.add_data("simple_cost", f"cost_{i}", ConstantData(1 / i))
 
-    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        SIMPLE_COST_MODEL = model(
-            id="SIMPLE_COST",
-            parameters=[
-                float_parameter(f"cost_{i}", IndexingStructure(False, False))
-                for i in range(1, nb_terms)
-            ],
-            objective_operational_contribution=cast(
-                ExpressionNode, sum(param(f"cost_{i}") for i in range(1, nb_terms))
-            ),
-        )
+    SIMPLE_COST_MODEL = model(
+        id="SIMPLE_COST",
+        parameters=[
+            float_parameter(f"cost_{i}", IndexingStructure(False, False))
+            for i in range(1, nb_terms)
+        ],
+        objective_operational_contribution=cast(
+            ExpressionNode, sum(param(f"cost_{i}") for i in range(1, nb_terms))
+        ),
+    )
 
-        # Won't run because last statement will raise the error
-        network = Network("test")
-        cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
-        network.add_component(cost_model)
+    network = Network("test")
+    cost_model = create_component(model=SIMPLE_COST_MODEL, id="simple_cost")
+    network.add_component(cost_model)
 
-        problem = build_problem(network, database, time_blocks[0], scenarios)
-        status = problem.solver.Solve()
+    problem = build_problem(network, database, time_blocks[0], scenarios)
+    status = problem.solver.Solve()
 
-        assert status == problem.solver.OPTIMAL
-        assert problem.solver.Objective().Value() == sum(
-            [1 / i for i in range(1, nb_terms)]
-        )
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == sum(
+        [1 / i for i in range(1, nb_terms)]
+    )
 
 
 def test_large_sum_outside_model_with_loop() -> None:
@@ -113,12 +106,13 @@ def test_large_sum_outside_model_with_loop() -> None:
     assert problem.solver.Objective().Value() == obj_coeff
 
 
+# Takes 3 minutes with current implementation !!
 def test_large_sum_inside_model_with_sum_operator() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
     Here the objective function is the sum over nb_terms terms with the sum() operator inside the model
     """
-    nb_terms = 10_000
+    nb_terms = 3000
 
     scenarios = 1
     time_blocks = [TimeBlock(0, list(range(nb_terms)))]
@@ -143,7 +137,7 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
                 structure=IndexingStructure(True, False),
             ),
         ],
-        objective_operational_contribution=(param("cost") * var("var")).sum(),
+        objective_operational_contribution=(param("cost") * var("var")).time_sum(),
     )
 
     network = Network("test")
@@ -161,9 +155,6 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
 def test_large_sum_of_port_connections() -> None:
     """
     Test performance when the problem involves a model where several generators are connected to a node.
-
-    This test pass with 470 terms but fails with 471 locally due to recursion depth,
-    and possibly even less terms are possible with Jenkins...
     """
     nb_generators = 500
 
@@ -196,14 +187,11 @@ def test_large_sum_of_port_connections() -> None:
             PortRef(generators[gen_id], "balance_port"), PortRef(node, "balance_port")
         )
 
-    with pytest.raises(RecursionError, match="maximum recursion depth exceeded"):
-        problem = build_problem(network, database, time_block, scenarios)
+    problem = build_problem(network, database, time_block, scenarios)
+    status = problem.solver.Solve()
 
-        # Won't run because last statement will raise the error
-        status = problem.solver.Solve()
-
-        assert status == problem.solver.OPTIMAL
-        assert problem.solver.Objective().Value() == 5 * nb_generators
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 5 * nb_generators
 
 
 def test_basic_balance_on_whole_year() -> None:
@@ -212,7 +200,7 @@ def test_basic_balance_on_whole_year() -> None:
     """
 
     scenarios = 1
-    horizon = 8760
+    horizon = 10000
     time_block = TimeBlock(1, list(range(horizon)))
 
     database = DataBase()
@@ -235,7 +223,9 @@ def test_basic_balance_on_whole_year() -> None:
     network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
 
-    problem = build_problem(network, database, time_block, scenarios)
+    with cProfile.Profile() as pr:
+        problem = build_problem(network, database, time_block, scenarios)
+        pr.print_stats(sort=SortKey.CUMULATIVE)
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL

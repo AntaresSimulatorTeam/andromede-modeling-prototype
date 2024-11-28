@@ -23,18 +23,21 @@ from andromede.expression import (
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
     VariableNode,
 )
 from andromede.expression.expression import (
+    AllTimeSumNode,
     BinaryOperatorNode,
-    ExpressionRange,
-    InstancesTimeIndex,
+    ComponentParameterNode,
+    ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     ScenarioOperatorNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 
 
@@ -62,8 +65,6 @@ class EqualityVisitor:
             return self.negation(left, right)
         if isinstance(left, AdditionNode) and isinstance(right, AdditionNode):
             return self.addition(left, right)
-        if isinstance(left, SubstractionNode) and isinstance(right, SubstractionNode):
-            return self.substraction(left, right)
         if isinstance(left, DivisionNode) and isinstance(right, DivisionNode):
             return self.division(left, right)
         if isinstance(left, MultiplicationNode) and isinstance(
@@ -76,12 +77,30 @@ class EqualityVisitor:
             return self.variable(left, right)
         if isinstance(left, ParameterNode) and isinstance(right, ParameterNode):
             return self.parameter(left, right)
-        if isinstance(left, TimeOperatorNode) and isinstance(right, TimeOperatorNode):
-            return self.time_operator(left, right)
-        if isinstance(left, TimeAggregatorNode) and isinstance(
-            right, TimeAggregatorNode
+        if isinstance(left, ComponentVariableNode) and isinstance(
+            right, ComponentVariableNode
         ):
-            return self.time_aggregator(left, right)
+            return self.comp_variable(left, right)
+        if isinstance(left, ComponentParameterNode) and isinstance(
+            right, ComponentParameterNode
+        ):
+            return self.comp_parameter(left, right)
+        if isinstance(left, ProblemVariableNode) and isinstance(
+            right, ProblemVariableNode
+        ):
+            return self.problem_variable(left, right)
+        if isinstance(left, ProblemParameterNode) and isinstance(
+            right, ProblemParameterNode
+        ):
+            return self.problem_parameter(left, right)
+        if isinstance(left, TimeShiftNode) and isinstance(right, TimeShiftNode):
+            return self.time_shift(left, right)
+        if isinstance(left, TimeEvalNode) and isinstance(right, TimeEvalNode):
+            return self.time_eval(left, right)
+        if isinstance(left, TimeSumNode) and isinstance(right, TimeSumNode):
+            return self.time_sum(left, right)
+        if isinstance(left, AllTimeSumNode) and isinstance(right, AllTimeSumNode):
+            return self.all_time_sum(left, right)
         if isinstance(left, ScenarioOperatorNode) and isinstance(
             right, ScenarioOperatorNode
         ):
@@ -108,10 +127,11 @@ class EqualityVisitor:
         return self.visit(left.operand, right.operand)
 
     def addition(self, left: AdditionNode, right: AdditionNode) -> bool:
-        return self._visit_operands(left, right)
-
-    def substraction(self, left: SubstractionNode, right: SubstractionNode) -> bool:
-        return self._visit_operands(left, right)
+        left_ops = left.operands
+        right_ops = right.operands
+        return len(left_ops) == len(right_ops) and all(
+            self.visit(l, r) for l, r in zip(left_ops, right_ops)
+        )
 
     def multiplication(
         self, left: MultiplicationNode, right: MultiplicationNode
@@ -130,41 +150,55 @@ class EqualityVisitor:
     def parameter(self, left: ParameterNode, right: ParameterNode) -> bool:
         return left.name == right.name
 
-    def expression_range(self, left: ExpressionRange, right: ExpressionRange) -> bool:
-        if not self.visit(left.start, right.start):
-            return False
-        if not self.visit(left.stop, right.stop):
-            return False
-        if left.step is not None and right.step is not None:
-            return self.visit(left.step, right.step)
-        return left.step is None and right.step is None
+    def comp_variable(
+        self, left: ComponentVariableNode, right: ComponentVariableNode
+    ) -> bool:
+        return left.name == right.name and left.component_id == right.component_id
 
-    def instances_index(self, lhs: InstancesTimeIndex, rhs: InstancesTimeIndex) -> bool:
-        if isinstance(lhs.expressions, ExpressionRange) and isinstance(
-            rhs.expressions, ExpressionRange
-        ):
-            return self.expression_range(lhs.expressions, rhs.expressions)
-        if isinstance(lhs.expressions, list) and isinstance(rhs.expressions, list):
-            return len(lhs.expressions) == len(rhs.expressions) and all(
-                self.visit(l, r) for l, r in zip(lhs.expressions, rhs.expressions)
-            )
-        return False
+    def comp_parameter(
+        self, left: ComponentParameterNode, right: ComponentParameterNode
+    ) -> bool:
+        return left.name == right.name and left.component_id == right.component_id
 
-    def time_operator(self, left: TimeOperatorNode, right: TimeOperatorNode) -> bool:
-        return (
-            left.name == right.name
-            and self.instances_index(left.instances_index, right.instances_index)
-            and self.visit(left.operand, right.operand)
-        )
-
-    def time_aggregator(
-        self, left: TimeAggregatorNode, right: TimeAggregatorNode
+    def problem_variable(
+        self, left: ProblemVariableNode, right: ProblemVariableNode
     ) -> bool:
         return (
             left.name == right.name
-            and left.stay_roll == right.stay_roll
+            and left.component_id == right.component_id
+            and left.time_index == right.time_index
+            and left.scenario_index == right.scenario_index
+        )
+
+    def problem_parameter(
+        self, left: ProblemParameterNode, right: ProblemParameterNode
+    ) -> bool:
+        return (
+            left.name == right.name
+            and left.component_id == right.component_id
+            and left.time_index == right.time_index
+            and left.scenario_index == right.scenario_index
+        )
+
+    def time_shift(self, left: TimeShiftNode, right: TimeShiftNode) -> bool:
+        return self.visit(left.time_shift, right.time_shift) and self.visit(
+            left.operand, right.operand
+        )
+
+    def time_eval(self, left: TimeEvalNode, right: TimeEvalNode) -> bool:
+        return self.visit(left.eval_time, right.eval_time) and self.visit(
+            left.operand, right.operand
+        )
+
+    def time_sum(self, left: TimeSumNode, right: TimeSumNode) -> bool:
+        return (
+            self.visit(left.from_time, right.from_time)
+            and self.visit(left.to_time, right.to_time)
             and self.visit(left.operand, right.operand)
         )
+
+    def all_time_sum(self, left: AllTimeSumNode, right: AllTimeSumNode) -> bool:
+        return self.visit(left.operand, right.operand)
 
     def scenario_operator(
         self, left: ScenarioOperatorNode, right: ScenarioOperatorNode

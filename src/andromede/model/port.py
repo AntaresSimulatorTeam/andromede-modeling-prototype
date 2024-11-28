@@ -23,18 +23,21 @@ from andromede.expression import (
     MultiplicationNode,
     NegationNode,
     ParameterNode,
-    SubstractionNode,
     VariableNode,
 )
 from andromede.expression.expression import (
+    AllTimeSumNode,
     BinaryOperatorNode,
     ComponentParameterNode,
     ComponentVariableNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     ScenarioOperatorNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
 from andromede.expression.visitor import visit
 
@@ -106,10 +109,8 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
         visit(node.right, self)
 
     def addition(self, node: AdditionNode) -> None:
-        self._visit_binary_op(node)
-
-    def substraction(self, node: SubstractionNode) -> None:
-        self._visit_binary_op(node)
+        for n in node.operands:
+            visit(n, self)
 
     def multiplication(self, node: MultiplicationNode) -> None:
         self._visit_binary_op(node)
@@ -136,10 +137,26 @@ class _PortFieldExpressionChecker(ExpressionVisitor[None]):
             "Port definition must not contain a variable associated to a component."
         )
 
-    def time_operator(self, node: TimeOperatorNode) -> None:
+    def pb_parameter(self, node: ProblemParameterNode) -> None:
+        raise ValueError(
+            "Port definition must not contain a parameter associated to a component."
+        )
+
+    def pb_variable(self, node: ProblemVariableNode) -> None:
+        raise ValueError(
+            "Port definition must not contain a variable associated to a component."
+        )
+
+    def time_shift(self, node: TimeShiftNode) -> None:
         visit(node.operand, self)
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> None:
+    def time_eval(self, node: TimeEvalNode) -> None:
+        visit(node.operand, self)
+
+    def time_sum(self, node: TimeSumNode) -> None:
+        visit(node.operand, self)
+
+    def all_time_sum(self, node: AllTimeSumNode) -> None:
         visit(node.operand, self)
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> None:

@@ -38,12 +38,10 @@ class ScenarioIndex:
 @dataclass(frozen=True)
 class AbstractDataStructure(ABC):
     @abstractmethod
-    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
-        """
-        Get the data value for a given timestep and scenario at a given node
-        Implement this method in subclasses as needed.
-        """
-        pass
+    def get_value(
+        self, timestep: Optional[int], scenario: Optional[int], node_id: str = ""
+    ) -> float:
+        raise NotImplementedError()
 
     @abstractmethod
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -58,7 +56,9 @@ class AbstractDataStructure(ABC):
 class ConstantData(AbstractDataStructure):
     value: float
 
-    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
+    def get_value(
+        self, timestep: Optional[int], scenario: Optional[int], node_id: str = ""
+    ) -> float:
         return self.value
 
     # ConstantData can be used for time varying or constant models
@@ -78,7 +78,11 @@ class TimeSeriesData(AbstractDataStructure):
 
     time_series: Mapping[TimeIndex, float]
 
-    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
+    def get_value(
+        self, timestep: Optional[int], scenario: Optional[int], node_id: str = ""
+    ) -> float:
+        if timestep is None:
+            raise KeyError("Time series data requires a time index.")
         return self.time_series[TimeIndex(timestep)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -98,7 +102,11 @@ class ScenarioSeriesData(AbstractDataStructure):
 
     scenario_series: Mapping[ScenarioIndex, float]
 
-    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
+    def get_value(
+        self, timestep: Optional[int], scenario: Optional[int], node_id: str = ""
+    ) -> float:
+        if scenario is None:
+            raise KeyError("Scenario series data requires a scenario index.")
         return self.scenario_series[ScenarioIndex(scenario)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -116,8 +124,24 @@ def load_ts_from_txt(
         ts_path = path_to_file / timeseries_with_extension
     try:
         return pd.read_csv(ts_path, header=None, sep=r"\s+")
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File '{timeseries_name}' does not exist")
     except Exception:
         raise Exception(f"An error has arrived when processing '{ts_path}'")
+
+
+@dataclass(frozen=True)
+class Scenarization:
+    _scenarization: Dict[int, int]
+
+    def get_scenario_for_year(self, year: int) -> int:
+        return self._scenarization[year]
+
+    def add_year(self, year: int, scenario: int) -> None:
+        if year in self._scenarization:
+            raise ValueError(f"the year {year} is already defined")
+        self._scenarization[year] = scenario
 
 
 @dataclass(frozen=True)
@@ -129,8 +153,17 @@ class TimeScenarioSeriesData(AbstractDataStructure):
     """
 
     time_scenario_series: pd.DataFrame
+    scenarization: Optional[Scenarization] = None
 
-    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
+    def get_value(
+        self, timestep: Optional[int], scenario: Optional[int], node_id: str = ""
+    ) -> float:
+        if timestep is None:
+            raise KeyError("Time scenario data requires a time index.")
+        if scenario is None:
+            raise KeyError("Time scenario data requires a scenario index.")
+        if self.scenarization:
+            scenario = self.scenarization.get_scenario_for_year(scenario)
         value = str(self.time_scenario_series.iloc[timestep, scenario])
         return float(value)
 
@@ -145,7 +178,9 @@ class TimeScenarioSeriesData(AbstractDataStructure):
 class TreeData(AbstractDataStructure):
     data: Mapping[str, AbstractDataStructure]
 
-    def get_value(self, timestep: int, scenario: int, node_id: str = "") -> float:
+    def get_value(
+        self, timestep: Optional[int], scenario: Optional[int], node_id: str = ""
+    ) -> float:
         return self.data[node_id].get_value(timestep, scenario)
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:

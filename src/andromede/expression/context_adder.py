@@ -18,6 +18,8 @@ from .expression import (
     ComponentVariableNode,
     ExpressionNode,
     ParameterNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     VariableNode,
 )
 from .visitor import visit
@@ -44,6 +46,16 @@ class ContextAdder(CopyVisitor):
         )
 
     def comp_parameter(self, node: ComponentParameterNode) -> ExpressionNode:
+        raise ValueError(
+            "This expression has already been associated to another component."
+        )
+
+    def pb_variable(self, node: ProblemVariableNode) -> ExpressionNode:
+        raise ValueError(
+            "This expression has already been associated to another component."
+        )
+
+    def pb_parameter(self, node: ProblemParameterNode) -> ExpressionNode:
         raise ValueError(
             "This expression has already been associated to another component."
         )

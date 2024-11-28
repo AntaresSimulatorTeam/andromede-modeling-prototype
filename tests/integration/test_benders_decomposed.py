@@ -57,8 +57,6 @@ from andromede.study import (
     create_component,
 )
 
-CONSTANT = IndexingStructure(False, False)
-
 INVESTMENT = ProblemContext.INVESTMENT
 OPERATIONAL = ProblemContext.OPERATIONAL
 COUPLING = ProblemContext.COUPLING
@@ -95,7 +93,7 @@ def thermal_candidate() -> Model:
             )
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
         objective_investment_contribution=param("invest_cost") * var("p_max"),
     )
@@ -146,7 +144,7 @@ def discrete_candidate() -> Model:
             ),
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
         objective_investment_contribution=param("invest_cost") * var("p_max"),
     )
@@ -296,8 +294,8 @@ def test_benders_decomposed_multi_time_block_single_scenario(
     """
 
     data = {}
-    data[TimeIndex(0)] = 200
-    data[TimeIndex(1)] = 300
+    data[TimeIndex(0)] = 200.0
+    data[TimeIndex(1)] = 300.0
 
     demand_data = TimeSeriesData(time_series=data)
 
@@ -336,7 +334,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
 
     xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
-    data = {
+    data_output = {
         "solution": {
             "overall_cost": 62_000,
             "values": {
@@ -344,7 +342,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
             },
         }
     }
-    solution = BendersSolution(data)
+    solution = BendersSolution(data_output)
 
     assert xpansion.run()
     decomposed_solution = xpansion.solution
@@ -423,7 +421,7 @@ def test_benders_decomposed_single_time_block_multi_scenario(
 
     xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
-    data = {
+    data_output = {
         "solution": {
             "overall_cost": 55_000,
             "values": {
@@ -431,7 +429,7 @@ def test_benders_decomposed_single_time_block_multi_scenario(
             },
         }
     }
-    solution = BendersSolution(data)
+    solution = BendersSolution(data_output)
 
     assert xpansion.run()
     decomposed_solution = xpansion.solution
@@ -517,7 +515,7 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
 
     xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
-    data = {
+    data_output = {
         "solution": {
             "overall_cost": 58_000,
             "values": {
@@ -525,7 +523,7 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
             },
         }
     }
-    solution = BendersSolution(data)
+    solution = BendersSolution(data_output)
 
     assert xpansion.run()
     decomposed_solution = xpansion.solution

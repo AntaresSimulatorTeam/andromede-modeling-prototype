@@ -14,7 +14,6 @@ import pytest
 
 from andromede.expression.expression import (
     ExpressionNode,
-    ExpressionRange,
     comp_param,
     comp_var,
     literal,
@@ -172,7 +171,7 @@ def test_writing_min_up_constraint_should_represent_all_expected_constraints() -
 
         _ = Constraint(
             "min_up_time",
-            off_on <= on.shift(ExpressionRange(literal(1), d_min_up)).sum(),
+            off_on <= on.time_sum(literal(1), d_min_up),
         )
 
         # Later on, the goal is to assert that when this constraint is sent to the solver, it correctly builds: for all t, for all t' in [t+1, t+d_min_up], off_on[k,t,w] <= on[k,t',w]
@@ -208,7 +207,7 @@ def test_invalid_port_field_definition_should_raise(expression: ExpressionNode) 
         port_field_def(port_name="p", field_name="f", definition=expression)
 
 
-def test_constraint_equals():
+def test_constraint_equals() -> None:
     # checks in particular that expressions are correctly compared
     assert Constraint(name="c", expression=var("x") <= param("p")) == Constraint(
         name="c", expression=var("x") <= param("p")

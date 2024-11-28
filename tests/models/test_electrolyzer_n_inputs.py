@@ -50,7 +50,7 @@ we always have:
 """
 
 
-def test_electrolyzer_n_inputs_1():
+def test_electrolyzer_n_inputs_1() -> None:
     """
     Test with an electrolyzer for each input
 
@@ -133,15 +133,15 @@ def test_electrolyzer_n_inputs_1():
     print(ep2_gen)
     print(gp_gen)
 
-    assert math.isclose(ep1_gen, 70)
-    assert math.isclose(ep2_gen, 42)
-    assert math.isclose(gp_gen, 30)
+    assert math.isclose(ep1_gen, 70)  # type:ignore
+    assert math.isclose(ep2_gen, 42)  # type:ignore
+    assert math.isclose(gp_gen, 30)  # type:ignore
 
     assert status == problem.solver.OPTIMAL
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_2():
+def test_electrolyzer_n_inputs_2() -> None:
     """
     Test with one electrolyzer that has two inputs
 
@@ -222,15 +222,15 @@ def test_electrolyzer_n_inputs_2():
     print(ep2_gen)
     print(gp_gen)
 
-    assert math.isclose(ep1_gen, 70)
-    assert math.isclose(ep2_gen, 42)
-    assert math.isclose(gp_gen, 30)
+    assert math.isclose(ep1_gen, 70)  # type:ignore
+    assert math.isclose(ep2_gen, 42)  # type:ignore
+    assert math.isclose(gp_gen, 30)  # type:ignore
 
     assert status == problem.solver.OPTIMAL
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_3():
+def test_electrolyzer_n_inputs_3() -> None:
     """
     Test with a consumption_electrolyzer with two inputs
 
@@ -317,15 +317,15 @@ def test_electrolyzer_n_inputs_3():
     ep2_gen = output.component("ep2").var("generation").value
     gp_gen = output.component("gp").var("generation").value
 
-    assert math.isclose(ep1_gen, 70)
-    assert math.isclose(ep2_gen, 30)
-    assert math.isclose(gp_gen, 30)
+    assert math.isclose(ep1_gen, 70)  # type:ignore
+    assert math.isclose(ep2_gen, 30)  # type:ignore
+    assert math.isclose(gp_gen, 30)  # type:ignore
 
     assert status == problem.solver.OPTIMAL
     assert math.isclose(problem.solver.Objective().Value(), 1750)
 
 
-def test_electrolyzer_n_inputs_4():
+def test_electrolyzer_n_inputs_4() -> None:
     """
     Test with one electrolyzer with one input that takes every inputs
 
@@ -405,9 +405,9 @@ def test_electrolyzer_n_inputs_4():
     ep2_gen = output.component("ep2").var("generation").value
     gp_gen = output.component("gp").var("generation").value
 
-    assert math.isclose(ep1_gen, 70)
-    assert math.isclose(ep2_gen, 30)
-    assert math.isclose(gp_gen, 30)
+    assert math.isclose(ep1_gen, 70)  # type:ignore
+    assert math.isclose(ep2_gen, 30)  # type:ignore
+    assert math.isclose(gp_gen, 30)  # type:ignore
 
     assert status == problem.solver.OPTIMAL
     assert math.isclose(problem.solver.Objective().Value(), 1750)

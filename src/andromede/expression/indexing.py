@@ -12,12 +12,13 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import List
 
-import andromede.expression.time_operator
 from andromede.expression.indexing_structure import IndexingStructure
 
 from .expression import (
     AdditionNode,
+    AllTimeSumNode,
     ComparisonNode,
     ComponentParameterNode,
     ComponentVariableNode,
@@ -29,10 +30,12 @@ from .expression import (
     ParameterNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
     ScenarioOperatorNode,
-    SubstractionNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, T, visit
@@ -74,20 +77,32 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
     def negation(self, node: NegationNode) -> IndexingStructure:
         return visit(node.operand, self)
 
-    def addition(self, node: AdditionNode) -> IndexingStructure:
-        return visit(node.left, self) | visit(node.right, self)
+    def _combine(self, operands: List[ExpressionNode]) -> IndexingStructure:
+        if not operands:
+            return IndexingStructure(False, False)
+        res = visit(operands[0], self)
+        if res.is_time_scenario_varying():
+            return res
+        for o in operands[1:]:
+            res = res | visit(o, self)
+            if res.is_time_scenario_varying():
+                return res
+        return res
 
-    def substraction(self, node: SubstractionNode) -> IndexingStructure:
-        return visit(node.left, self) | visit(node.right, self)
+    def addition(self, node: AdditionNode) -> IndexingStructure:
+        # performance note:
+        # here we don't need to visit all nodes, we can stop as soon as
+        # index is true/true
+        return self._combine(node.operands)
 
     def multiplication(self, node: MultiplicationNode) -> IndexingStructure:
-        return visit(node.left, self) | visit(node.right, self)
+        return self._combine([node.left, node.right])
 
     def division(self, node: DivisionNode) -> IndexingStructure:
-        return visit(node.left, self) | visit(node.right, self)
+        return self._combine([node.left, node.right])
 
     def comparison(self, node: ComparisonNode) -> IndexingStructure:
-        return visit(node.left, self) | visit(node.right, self)
+        return self._combine([node.left, node.right])
 
     def variable(self, node: VariableNode) -> IndexingStructure:
         time = self.context.get_variable_structure(node.name).time == True
@@ -109,18 +124,27 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
             node.component_id, node.name
         )
 
-    def time_operator(self, node: TimeOperatorNode) -> IndexingStructure:
-        time_operator_cls = getattr(andromede.expression.time_operator, node.name)
-        if time_operator_cls.rolling():
-            return visit(node.operand, self)
-        else:
-            return IndexingStructure(False, visit(node.operand, self).scenario)
+    def pb_variable(self, node: ProblemVariableNode) -> IndexingStructure:
+        raise ValueError(
+            "Not relevant to compute indexation on already instantiated problem variables."
+        )
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> IndexingStructure:
-        if node.stay_roll:
-            return visit(node.operand, self)
-        else:
-            return IndexingStructure(False, visit(node.operand, self).scenario)
+    def pb_parameter(self, node: ProblemParameterNode) -> IndexingStructure:
+        raise ValueError(
+            "Not relevant to compute indexation on already instantiated problem parameters."
+        )
+
+    def time_shift(self, node: TimeShiftNode) -> IndexingStructure:
+        return visit(node.operand, self)
+
+    def time_eval(self, node: TimeEvalNode) -> IndexingStructure:
+        return visit(node.operand, self)
+
+    def time_sum(self, node: TimeSumNode) -> IndexingStructure:
+        return visit(node.operand, self)
+
+    def all_time_sum(self, node: AllTimeSumNode) -> IndexingStructure:
+        return IndexingStructure(False, visit(node.operand, self).scenario)
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> IndexingStructure:
         return IndexingStructure(visit(node.operand, self).time, False)

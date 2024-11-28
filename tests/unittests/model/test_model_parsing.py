@@ -9,7 +9,6 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-import io
 from pathlib import Path
 
 import pytest
@@ -27,12 +26,12 @@ from andromede.model import (
     float_variable,
     model,
 )
+from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
-from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.model.resolve_library import resolve_library
 
 
-def test_library_parsing(data_dir: Path):
+def test_library_parsing(data_dir: Path) -> None:
     lib_file = data_dir / "lib.yml"
 
     with lib_file.open() as f:
@@ -41,7 +40,7 @@ def test_library_parsing(data_dir: Path):
     assert len(input_lib.models) == 7
     assert len(input_lib.port_types) == 1
 
-    lib = resolve_library(input_lib)
+    lib = resolve_library([input_lib])
     assert len(lib.models) == 7
     assert len(lib.port_types) == 1
     port_type = lib.port_types["flow"]
@@ -66,7 +65,7 @@ def test_library_parsing(data_dir: Path):
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
     )
     short_term_storage = lib.models["short-term-storage"]
@@ -117,7 +116,7 @@ def test_library_parsing(data_dir: Path):
     )
 
 
-def test_library_error_parsing(data_dir: Path):
+def test_library_error_parsing(data_dir: Path) -> None:
     lib_file = data_dir / "model_port_definition_ko.yml"
 
     with lib_file.open() as f:
@@ -127,17 +126,17 @@ def test_library_error_parsing(data_dir: Path):
         AntaresParseException,
         match=r"An error occurred during parsing: ParseCancellationException",
     ):
-        resolve_library(input_lib)
+        resolve_library([input_lib])
 
 
-def test_library_port_model_ok_parsing(data_dir: Path):
+def test_library_port_model_ok_parsing(data_dir: Path) -> None:
     lib_file = data_dir / "model_port_definition_ok.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
     assert input_lib.id == "basic"
 
-    lib = resolve_library(input_lib)
+    lib = resolve_library([input_lib])
     port_type = lib.port_types["flow"]
     assert port_type == PortType(id="flow", fields=[PortField(name="flow")])
     short_term_storage = lib.models["short-term-storage-2"]

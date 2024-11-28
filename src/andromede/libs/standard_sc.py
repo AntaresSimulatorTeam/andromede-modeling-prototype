@@ -170,11 +170,11 @@ C02_POWER_MODEL = model(
             definition=var("p") * param("emission_rate"),
         ),
     ],
-    objective_operational_contribution=(param("cost") * var("p")).sum().expec(),
+    objective_operational_contribution=(param("cost") * var("p")).time_sum().expec(),
 )
 
 """
-Model of the CO² quota. 
+Model of the CO² quota.
 It takes a set a CO² emissions as input. It forces the sum of those emissions to be smaller than a predefined quota. 
 """
 QUOTA_CO2_MODEL = model(
@@ -286,6 +286,6 @@ SHORT_TERM_STORAGE_COMPLEX = model(
         + param("Pgrad+s_penality") * var("Pgrad+s")
         + param("Pgrad-s_penality") * var("Pgrad-s")
     )
-    .sum()
+    .time_sum()
     .expec(),
 )

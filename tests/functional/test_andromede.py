@@ -19,22 +19,14 @@ from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     DEMAND_MODEL,
     GENERATOR_MODEL,
-    GENERATOR_MODEL_WITH_PMIN,
-    LINK_MODEL,
     NODE_BALANCE_MODEL,
     SHORT_TERM_STORAGE_SIMPLE,
     SPILLAGE_MODEL,
-    THERMAL_CLUSTER_MODEL_HD,
     UNSUPPLIED_ENERGY_MODEL,
 )
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
 from andromede.model.port import PortFieldDefinition, PortFieldId
-from andromede.simulation import (
-    BlockBorderManagement,
-    OutputValues,
-    TimeBlock,
-    build_problem,
-)
+from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
     DataBase,
@@ -45,6 +37,43 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
+
+
+def test_basic_balance() -> None:
+    """
+    Balance on one node with one fixed demand and one generation, on 1 timestep.
+    """
+
+    database = DataBase()
+    database.add_data("D", "demand", ConstantData(100))
+
+    database.add_data("G", "p_max", ConstantData(100))
+    database.add_data("G", "cost", ConstantData(30))
+
+    node = Node(model=NODE_BALANCE_MODEL, id="N")
+    demand = create_component(
+        model=DEMAND_MODEL,
+        id="D",
+    )
+
+    gen = create_component(
+        model=GENERATOR_MODEL,
+        id="G",
+    )
+
+    network = Network("test")
+    network.add_node(node)
+    network.add_component(demand)
+    network.add_component(gen)
+    network.connect(PortRef(demand, "balance_port"), PortRef(node, "balance_port"))
+    network.connect(PortRef(gen, "balance_port"), PortRef(node, "balance_port"))
+
+    scenarios = 1
+    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    status = problem.solver.Solve()
+
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 3000
 
 
 def test_timeseries() -> None:
@@ -155,7 +184,7 @@ def test_variable_bound() -> None:
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
     )
 
@@ -197,7 +226,7 @@ def generate_data(
     for scenario in range(scenarios):
         for absolute_timestep in range(horizon):
             if absolute_timestep == 0:
-                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18
+                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18.0
             else:
                 data[TimeScenarioIndex(absolute_timestep, scenario)] = 2 * efficiency
 

@@ -14,13 +14,18 @@ from dataclasses import dataclass
 from typing import Dict
 
 from andromede.expression.expression import (
+    AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
     ExpressionNode,
     PortFieldAggregatorNode,
     PortFieldNode,
+    ProblemParameterNode,
+    ProblemVariableNode,
+    TimeEvalNode,
+    TimeShiftNode,
+    TimeSumNode,
 )
-from andromede.expression.visitor import T
 
 from .expression import (
     AdditionNode,
@@ -32,9 +37,6 @@ from .expression import (
     NegationNode,
     ParameterNode,
     ScenarioOperatorNode,
-    SubstractionNode,
-    TimeAggregatorNode,
-    TimeOperatorNode,
     VariableNode,
 )
 from .visitor import ExpressionVisitor, visit
@@ -61,14 +63,15 @@ class PrinterVisitor(ExpressionVisitor[str]):
         return f"-({visit(node.operand, self)})"
 
     def addition(self, node: AdditionNode) -> str:
-        left_value = visit(node.left, self)
-        right_value = visit(node.right, self)
-        return f"({left_value} + {right_value})"
-
-    def substraction(self, node: SubstractionNode) -> str:
-        left_value = visit(node.left, self)
-        right_value = visit(node.right, self)
-        return f"({left_value} - {right_value})"
+        if len(node.operands) == 0:
+            return ""
+        res = visit(node.operands[0], self)
+        for o in node.operands[1:]:
+            if isinstance(o, NegationNode):
+                res += f" - {visit(o.operand, self)}"
+            else:
+                res += f" + {visit(o, self)}"
+        return f"({res})"
 
     def multiplication(self, node: MultiplicationNode) -> str:
         left_value = visit(node.left, self)
@@ -98,12 +101,25 @@ class PrinterVisitor(ExpressionVisitor[str]):
     def comp_parameter(self, node: ComponentParameterNode) -> str:
         return f"{node.component_id}.{node.name}"
 
-    # TODO: Add pretty print for node.instances_index
-    def time_operator(self, node: TimeOperatorNode) -> str:
-        return f"({visit(node.operand, self)}.{str(node.name)}({node.instances_index}))"
+    def pb_variable(self, node: ProblemVariableNode) -> str:
+        # TODO
+        return f"{node.component_id}.{node.name}"
 
-    def time_aggregator(self, node: TimeAggregatorNode) -> str:
-        return f"({visit(node.operand, self)}.{str(node.name)}({node.stay_roll}))"
+    def pb_parameter(self, node: ProblemParameterNode) -> str:
+        # TODO
+        return f"{node.component_id}.{node.name}"
+
+    def time_shift(self, node: TimeShiftNode) -> str:
+        return f"({visit(node.operand, self)}.shift({visit(node.time_shift, self)}))"
+
+    def time_eval(self, node: TimeEvalNode) -> str:
+        return f"({visit(node.operand, self)}.eval({visit(node.eval_time, self)}))"
+
+    def time_sum(self, node: TimeSumNode) -> str:
+        return f"({visit(node.operand, self)}.time_sum({visit(node.from_time, self)}, {visit(node.to_time, self)}))"
+
+    def all_time_sum(self, node: AllTimeSumNode) -> str:
+        return f"({visit(node.operand, self)}.time_sum())"
 
     def scenario_operator(self, node: ScenarioOperatorNode) -> str:
         return f"({visit(node.operand, self)}.{str(node.name)})"

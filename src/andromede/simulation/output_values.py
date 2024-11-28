@@ -121,7 +121,11 @@ class OutputValues:
 
             self._size = (size_s, size_t)
 
-        def _set(self, timestep: int, scenario: int, value: float) -> None:
+        def _set(
+            self, timestep: Optional[int], scenario: Optional[int], value: float
+        ) -> None:
+            timestep = 0 if timestep is None else timestep
+            scenario = 0 if scenario is None else scenario
             key = TimeScenarioIndex(timestep, scenario)
             if key not in self._value:
                 size_s = max(self._size[0], scenario + 1)
@@ -200,9 +204,6 @@ class OutputValues:
             return
 
         for key, value in self.problem.context.get_all_component_variables().items():
-            if (key.block_timestep is None) or (key.scenario is None):
-                continue
-
             (
                 self.component(key.component_id)
                 .var(str(key.variable_name))

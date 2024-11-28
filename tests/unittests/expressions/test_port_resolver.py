@@ -19,7 +19,7 @@ from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.model.port import PortFieldId
 
 
-def test_port_field_resolution():
+def test_port_field_resolution() -> None:
     ports_expressions: Dict[PortFieldKey, List[ExpressionNode]] = {}
 
     key = PortFieldKey("com_id", PortFieldId(field_name="field", port_name="port"))
@@ -34,7 +34,7 @@ def test_port_field_resolution():
     )
 
 
-def test_port_field_resolution_sum():
+def test_port_field_resolution_sum() -> None:
     ports_expressions: Dict[PortFieldKey, List[ExpressionNode]] = {}
 
     key = PortFieldKey("com_id", PortFieldId(field_name="field", port_name="port"))

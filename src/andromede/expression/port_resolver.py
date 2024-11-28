@@ -10,15 +10,12 @@
 #
 # This file is part of the Antares project.
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List
 
 from andromede.expression import CopyVisitor, sum_expressions, visit
 from andromede.expression.expression import (
-    AdditionNode,
     ExpressionNode,
-    LiteralNode,
     PortFieldAggregatorNode,
     PortFieldNode,
 )

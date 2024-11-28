@@ -15,17 +15,13 @@ Defines the model for generic expressions.
 """
 import enum
 import inspect
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Sequence, Union
 
 import andromede.expression.port_operator
 import andromede.expression.scenario_operator
-import andromede.expression.time_operator
 
-
-class Instances(enum.Enum):
-    SIMPLE = "SIMPLE"
-    MULTIPLE = "MULTIPLE"
+AnyExpression = Union[int, float, "ExpressionNode"]
 
 
 @dataclass(frozen=True)
@@ -40,22 +36,33 @@ class ExpressionNode:
         >>> expr = -var('x') + 5 / param('p')
     """
 
-    instances: Instances = field(init=False, default=Instances.SIMPLE)
-
     def __neg__(self) -> "ExpressionNode":
         return NegationNode(self)
 
     def __add__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: AdditionNode(self, x))
+        lhs = self
+        operands = []
+        rhs = _wrap_in_node(rhs)
+        operands.extend(lhs.operands if isinstance(lhs, AdditionNode) else [lhs])
+        operands.extend(rhs.operands if isinstance(rhs, AdditionNode) else [rhs])
+        return AdditionNode(operands)
 
     def __radd__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: AdditionNode(x, self))
+        lhs = _wrap_in_node(lhs)
+        return lhs + self
 
     def __sub__(self, rhs: Any) -> "ExpressionNode":
-        return _apply_if_node(rhs, lambda x: SubstractionNode(self, x))
+        lhs = self
+        operands = []
+        rhs = _wrap_in_node(rhs)
+        operands.extend(lhs.operands if isinstance(lhs, AdditionNode) else [lhs])
+        right_operands = rhs.operands if isinstance(rhs, AdditionNode) else [rhs]
+        operands.extend([-o for o in right_operands])
+        return AdditionNode(operands)
 
     def __rsub__(self, lhs: Any) -> "ExpressionNode":
-        return _apply_if_node(lhs, lambda x: SubstractionNode(x, self))
+        lhs = _wrap_in_node(lhs)
+        return lhs + self
 
     def __mul__(self, rhs: Any) -> "ExpressionNode":
         return _apply_if_node(rhs, lambda x: MultiplicationNode(self, x))
@@ -82,13 +89,20 @@ class ExpressionNode:
     def __eq__(self, rhs: Any) -> "ExpressionNode":  # type: ignore
         return _apply_if_node(rhs, lambda x: ComparisonNode(self, x, Comparator.EQUAL))
 
-    def sum(self) -> "ExpressionNode":
-        if isinstance(self, TimeOperatorNode):
-            return TimeAggregatorNode(self, "TimeSum", stay_roll=True)
-        else:
-            return _apply_if_node(
-                self, lambda x: TimeAggregatorNode(x, "TimeSum", stay_roll=False)
-            )
+    def time_sum(
+        self,
+        from_shift: Optional[AnyExpression] = None,
+        to_shift: Optional[AnyExpression] = None,
+    ) -> "ExpressionNode":
+        if from_shift is None and to_shift is None:
+            return AllTimeSumNode(self)
+        if from_shift is None or to_shift is None:
+            raise ValueError("Both time bounds of a time sum must be defined.")
+        return TimeSumNode(
+            operand=self,
+            from_time=_wrap_in_node(from_shift),
+            to_time=_wrap_in_node(to_shift),
+        )
 
     def sum_connections(self) -> "ExpressionNode":
         if isinstance(self, PortFieldNode):
@@ -97,29 +111,11 @@ class ExpressionNode:
             f"sum_connections() applies only for PortFieldNode, whereas the current node is of type {type(self)}."
         )
 
-    def shift(
-        self,
-        expressions: Union[
-            int, "ExpressionNode", List["ExpressionNode"], "ExpressionRange"
-        ],
-    ) -> "ExpressionNode":
-        return _apply_if_node(
-            self,
-            lambda x: TimeOperatorNode(x, "TimeShift", InstancesTimeIndex(expressions)),
-        )
+    def shift(self, shift: AnyExpression) -> "ExpressionNode":
+        return TimeShiftNode(self, _wrap_in_node(shift))
 
-    def eval(
-        self,
-        expressions: Union[
-            int, "ExpressionNode", List["ExpressionNode"], "ExpressionRange"
-        ],
-    ) -> "ExpressionNode":
-        return _apply_if_node(
-            self,
-            lambda x: TimeOperatorNode(
-                x, "TimeEvaluation", InstancesTimeIndex(expressions)
-            ),
-        )
+    def eval(self, time: AnyExpression) -> "ExpressionNode":
+        return TimeEvalNode(self, _wrap_in_node(time))
 
     def expec(self) -> "ExpressionNode":
         return _apply_if_node(self, lambda x: ScenarioOperatorNode(x, "Expectation"))
@@ -195,6 +191,102 @@ def comp_param(component_id: str, name: str) -> ComponentParameterNode:
     return ComponentParameterNode(component_id, name)
 
 
+@dataclass(frozen=True)
+class TimeIndex:
+    pass
+
+
+@dataclass(frozen=True)
+class NoTimeIndex(TimeIndex):
+    """
+    Some values do not depend on the timestep, this index should be used for them
+    (think one variable for all timesteps).
+    """
+
+    pass
+
+
+@dataclass(frozen=True)
+class TimeShift(TimeIndex):
+    """
+    Represents the current timestep + a shift.
+
+    This should only be used for nodes that actually depend on the timestep,
+    never for time-independent nodes (constant parameters ...).
+    """
+
+    timeshift: int
+
+
+@dataclass(frozen=True)
+class TimeStep(TimeIndex):
+    """
+    Represents a given timestep, independently of the current timestep.
+
+    This should only be used for nodes that actually depend on the timestep,
+    never for time-independent nodes (constant parameters ...).
+    """
+
+    timestep: int
+
+
+@dataclass(frozen=True)
+class ScenarioIndex:
+    pass
+
+
+@dataclass(frozen=True)
+class NoScenarioIndex(ScenarioIndex):
+    """
+    Some values do not depend on the scenario, this index should be used for them
+    (think one variable for all timesteps).
+    """
+
+    pass
+
+
+@dataclass(frozen=True)
+class CurrentScenarioIndex(ScenarioIndex):
+    """
+    Represents the current scenario.
+
+    This should only be used for nodes that actually depend on the scenario,
+    never for scenario-independent nodes (constant parameters ...).
+    """
+
+    pass
+
+
+@dataclass(frozen=True)
+class OneScenarioIndex(ScenarioIndex):
+    """
+    Represents a given scenario out of all scenarios.
+
+    This should only be used for nodes that actually depend on the scenario,
+    never for scenario-independent nodes (constant parameters ...).
+    """
+
+    scenario: int
+
+
+@dataclass(frozen=True, eq=False)
+class ProblemParameterNode(ExpressionNode):
+    """
+    Represents one parameter of the optimization problem
+    """
+
+    component_id: str
+    name: str
+    time_index: TimeIndex
+    scenario_index: ScenarioIndex
+
+
+def problem_param(
+    component_id: str, name: str, time_index: TimeIndex, scenario_index: ScenarioIndex
+) -> ProblemParameterNode:
+    return ProblemParameterNode(component_id, name, time_index, scenario_index)
+
+
 @dataclass(frozen=True, eq=False)
 class ComponentVariableNode(ExpressionNode):
     """
@@ -211,6 +303,24 @@ class ComponentVariableNode(ExpressionNode):
 
 def comp_var(component_id: str, name: str) -> ComponentVariableNode:
     return ComponentVariableNode(component_id, name)
+
+
+@dataclass(frozen=True, eq=False)
+class ProblemVariableNode(ExpressionNode):
+    """
+    Represents one variable of the optimization problem
+    """
+
+    component_id: str
+    name: str
+    time_index: TimeIndex
+    scenario_index: ScenarioIndex
+
+
+def problem_var(
+    component_id: str, name: str, time_index: TimeIndex, scenario_index: ScenarioIndex
+) -> ProblemVariableNode:
+    return ProblemVariableNode(component_id, name, time_index, scenario_index)
 
 
 @dataclass(frozen=True, eq=False)
@@ -233,9 +343,6 @@ def is_non_negative(expr: ExpressionNode) -> bool:
 @dataclass(frozen=True, eq=False)
 class UnaryOperatorNode(ExpressionNode):
     operand: ExpressionNode
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "instances", self.operand.instances)
 
 
 @dataclass(frozen=True, eq=False)
@@ -266,18 +373,6 @@ class BinaryOperatorNode(ExpressionNode):
     left: ExpressionNode
     right: ExpressionNode
 
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "apply binary operation with")
-
-
-def binary_operator_post_init(node: BinaryOperatorNode, operation: str) -> None:
-    if node.left.instances != node.right.instances:
-        raise ValueError(
-            f"Cannot {operation} {node.left} and {node.right} as they do not have the same number of instances."
-        )
-    else:
-        object.__setattr__(node, "instances", node.left.instances)
-
 
 class Comparator(enum.Enum):
     LESS_THAN = "LESS_THAN"
@@ -289,148 +384,46 @@ class Comparator(enum.Enum):
 class ComparisonNode(BinaryOperatorNode):
     comparator: Comparator
 
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "compare")
-
 
 @dataclass(frozen=True, eq=False)
-class AdditionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "add")
-
-
-@dataclass(frozen=True, eq=False)
-class SubstractionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "substract")
+class AdditionNode(ExpressionNode):
+    operands: List[ExpressionNode]
 
 
 @dataclass(frozen=True, eq=False)
 class MultiplicationNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "multiply")
+    pass
 
 
 @dataclass(frozen=True, eq=False)
 class DivisionNode(BinaryOperatorNode):
-    def __post_init__(self) -> None:
-        binary_operator_post_init(self, "divide")
+    pass
 
 
 @dataclass(frozen=True, eq=False)
-class ExpressionRange:
-    start: ExpressionNode
-    stop: ExpressionNode
-    step: Optional[ExpressionNode] = None
-
-    def __post_init__(self) -> None:
-        for attribute in self.__dict__:
-            value = getattr(self, attribute)
-            object.__setattr__(
-                self, attribute, _wrap_in_node(value) if value is not None else value
-            )
+class TimeShiftNode(UnaryOperatorNode):
+    time_shift: ExpressionNode
 
 
-IntOrExpr = Union[int, ExpressionNode]
+@dataclass(frozen=True, eq=False)
+class TimeEvalNode(UnaryOperatorNode):
+    eval_time: ExpressionNode
 
 
-def expression_range(
-    start: IntOrExpr, stop: IntOrExpr, step: Optional[IntOrExpr] = None
-) -> ExpressionRange:
-    return ExpressionRange(
-        start=_wrap_in_node(start),
-        stop=_wrap_in_node(stop),
-        step=None if step is None else _wrap_in_node(step),
-    )
+@dataclass(frozen=True, eq=False)
+class TimeSumNode(UnaryOperatorNode):
+    from_time: ExpressionNode
+    to_time: ExpressionNode
 
 
-@dataclass
-class InstancesTimeIndex:
+@dataclass(frozen=True, eq=False)
+class AllTimeSumNode(UnaryOperatorNode):
     """
-    Defines a set of time indices on which a time operator operates.
-
-    In particular, it defines time indices created by the shift operator.
-
-    The actual indices can either be defined as a time range defined by
-    2 expression, or as a list of expressions.
+    Separate from time sum node because it's actually a quite different operation:
+    In particular, this changes the time indexing.
     """
 
-    expressions: Union[List[ExpressionNode], ExpressionRange]
-
-    def __init__(
-        self,
-        expressions: Union[int, ExpressionNode, List[ExpressionNode], ExpressionRange],
-    ) -> None:
-        if not isinstance(expressions, (int, ExpressionNode, list, ExpressionRange)):
-            raise TypeError(
-                f"{expressions} must be of type among {{int, ExpressionNode, List[ExpressionNode], ExpressionRange}}"
-            )
-        if isinstance(expressions, list) and not all(
-            isinstance(x, ExpressionNode) for x in expressions
-        ):
-            raise TypeError(
-                f"All elements of {expressions} must be of type ExpressionNode"
-            )
-
-        if isinstance(expressions, (int, ExpressionNode)):
-            self.expressions = [_wrap_in_node(expressions)]
-        else:
-            self.expressions = expressions
-
-    def is_simple(self) -> bool:
-        if isinstance(self.expressions, list):
-            return len(self.expressions) == 1
-        else:
-            # TODO: We could also check that if a range only includes literal nodes, compute the length of the range, if it's one return True. This is more complicated, I do not know if we want to do this
-            return False
-
-
-@dataclass(frozen=True, eq=False)
-class TimeOperatorNode(UnaryOperatorNode):
-    name: str
-    instances_index: InstancesTimeIndex
-
-    def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.time_operator, inspect.isclass
-            )
-            if issubclass(cls, andromede.expression.time_operator.TimeOperator)
-        ]
-        if self.name not in valid_names:
-            raise ValueError(
-                f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
-            )
-        if self.operand.instances == Instances.SIMPLE:
-            if self.instances_index.is_simple():
-                object.__setattr__(self, "instances", Instances.SIMPLE)
-            else:
-                object.__setattr__(self, "instances", Instances.MULTIPLE)
-        else:
-            raise ValueError(
-                "Cannot apply time operator on an expression that already represents multiple instances"
-            )
-
-
-@dataclass(frozen=True, eq=False)
-class TimeAggregatorNode(UnaryOperatorNode):
-    name: str
-    stay_roll: bool
-
-    def __post_init__(self) -> None:
-        valid_names = [
-            cls.__name__
-            for _, cls in inspect.getmembers(
-                andromede.expression.time_operator, inspect.isclass
-            )
-            if issubclass(cls, andromede.expression.time_operator.TimeAggregator)
-        ]
-        if self.name not in valid_names:
-            raise ValueError(
-                f"{self.name} is not a valid time aggregator, valid time aggregators are {valid_names}"
-            )
-        object.__setattr__(self, "instances", Instances.SIMPLE)
+    pass
 
 
 @dataclass(frozen=True, eq=False)
@@ -449,7 +442,6 @@ class ScenarioOperatorNode(UnaryOperatorNode):
             raise ValueError(
                 f"{self.name} is not a valid scenario operator, valid scenario operators are {valid_names}"
             )
-        object.__setattr__(self, "instances", Instances.SIMPLE)
 
 
 def sum_expressions(expressions: Sequence[ExpressionNode]) -> ExpressionNode:
@@ -457,4 +449,4 @@ def sum_expressions(expressions: Sequence[ExpressionNode]) -> ExpressionNode:
         return LiteralNode(0)
     if len(expressions) == 1:
         return expressions[0]
-    return expressions[0] + sum_expressions(expressions[1:])
+    return AdditionNode([e for e in expressions])

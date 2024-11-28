@@ -89,7 +89,7 @@ def mock_generator_with_fixed_scenario_time_varying_param() -> Model:
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
     )
     return fixed_scenario_time_varying_param_generator
@@ -117,7 +117,7 @@ def mock_generator_with_scenario_varying_fixed_time_param() -> Model:
             )
         ],
         objective_operational_contribution=(param("cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
     )
     return scenario_varying_fixed_time_generator
@@ -333,7 +333,7 @@ def test_requirements_consistency_scenario_varying_parameter_with_correct_data_p
     database.requirements_consistency(network)
 
 
-def test_load_data_from_txt(data_dir: Path):
+def test_load_data_from_txt(data_dir: Path) -> None:
     txt_file = "gen-costs"
 
     gen_costs = load_ts_from_txt(txt_file, data_dir)

@@ -21,7 +21,6 @@ from andromede.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
     NODE_BALANCE_MODEL,
-    THERMAL_CANDIDATE,
 )
 from andromede.model import (
     Constraint,
@@ -51,12 +50,49 @@ from andromede.study import (
     create_component,
 )
 
-CONSTANT = IndexingStructure(False, False)
 FREE = IndexingStructure(True, True)
 
 INVESTMENT = ProblemContext.INVESTMENT
 OPERATIONAL = ProblemContext.OPERATIONAL
 COUPLING = ProblemContext.COUPLING
+
+
+@pytest.fixture
+def thermal_candidate() -> Model:
+    THERMAL_CANDIDATE = model(
+        id="GEN",
+        parameters=[
+            float_parameter("op_cost", CONSTANT),
+            float_parameter("invest_cost", CONSTANT),
+        ],
+        variables=[
+            float_variable("generation", lower_bound=literal(0)),
+            float_variable(
+                "p_max",
+                lower_bound=literal(0),
+                upper_bound=literal(1000),
+                structure=CONSTANT,
+                context=COUPLING,
+            ),
+        ],
+        ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
+        port_fields_definitions=[
+            PortFieldDefinition(
+                port_field=PortFieldId("balance_port", "flow"),
+                definition=var("generation"),
+            )
+        ],
+        constraints=[
+            Constraint(
+                name="Max generation", expression=var("generation") <= var("p_max")
+            )
+        ],
+        objective_operational_contribution=(param("op_cost") * var("generation"))
+        .time_sum()
+        .expec(),
+        objective_investment_contribution=param("invest_cost") * var("p_max"),
+    )
+    return THERMAL_CANDIDATE
 
 
 @pytest.fixture
@@ -102,7 +138,7 @@ def discrete_candidate() -> Model:
             ),
         ],
         objective_operational_contribution=(param("op_cost") * var("generation"))
-        .sum()
+        .time_sum()
         .expec(),
         objective_investment_contribution=param("invest_cost") * var("p_max"),
     )
@@ -119,8 +155,8 @@ def generator() -> Component:
 
 
 @pytest.fixture
-def candidate() -> Component:
-    candidate = create_component(model=THERMAL_CANDIDATE, id="CAND")
+def candidate(thermal_candidate: Model) -> Component:
+    candidate = create_component(model=thermal_candidate, id="CAND")
     return candidate
 
 
@@ -352,8 +388,14 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
 
     output = OutputValues(problem)
     expected_output = OutputValues()
-    expected_output.component("G1").var("generation").value = [[0, 200], [0, 100]]
-    expected_output.component("CAND").var("generation").value = [[300, 300], [200, 300]]
+    expected_output.component("G1").var("generation").value = [
+        [0.0, 200.0],
+        [0.0, 100.0],
+    ]
+    expected_output.component("CAND").var("generation").value = [
+        [300.0, 300.0],
+        [200.0, 300.0],
+    ]
     expected_output.component("CAND").var("p_max").value = 300.0
 
     assert output == expected_output, f"Output differs from expected: {output}"
