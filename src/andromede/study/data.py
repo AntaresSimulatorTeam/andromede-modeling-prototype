@@ -191,7 +191,7 @@ class TreeData(AbstractDataStructure):
 
 
 @dataclass(frozen=True)
-class DatabaseIndex:
+class ComponentParameterIndex:
     component_id: str
     parameter_name: str
 
@@ -204,20 +204,22 @@ class DataBase:
     Data can have different structure : constant, varying in time or scenarios.
     """
 
-    _data: Dict[DatabaseIndex, AbstractDataStructure]
+    _data: Dict[ComponentParameterIndex, AbstractDataStructure]
 
     def __init__(self) -> None:
-        self._data: Dict[DatabaseIndex, AbstractDataStructure] = {}
+        self._data: Dict[ComponentParameterIndex, AbstractDataStructure] = {}
 
     def get_data(self, component_id: str, parameter_name: str) -> AbstractDataStructure:
-        return self._data[DatabaseIndex(component_id, parameter_name)]
+        return self._data[ComponentParameterIndex(component_id, parameter_name)]
 
     def add_data(
         self, component_id: str, parameter_name: str, data: AbstractDataStructure
     ) -> None:
-        self._data[DatabaseIndex(component_id, parameter_name)] = data
+        self._data[ComponentParameterIndex(component_id, parameter_name)] = data
 
-    def get_value(self, index: DatabaseIndex, timestep: int, scenario: int) -> float:
+    def get_value(
+        self, index: ComponentParameterIndex, timestep: int, scenario: int
+    ) -> float:
         if index in self._data:
             return self._data[index].get_value(timestep, scenario)
         else:

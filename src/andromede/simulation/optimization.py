@@ -623,8 +623,12 @@ class OptimizationProblem:
             if (self.context.full_var_name and self.context.tree_node)
             else ""
         )
-        scenario_suffix = f"_s{s}" if s is not None else ""
-        block_suffix = f"_t{t}" if t is not None else ""
+        scenario_suffix = (
+            f"_s{s}" if (s is not None and self.context.scenarios > 1) else ""
+        )
+        block_suffix = (
+            f"_t{t}" if (t is not None and self.context.block_length() > 1) else ""
+        )
 
         # Set solver var name
         # Externally, for the Solver, this variable will have a full name
@@ -653,10 +657,11 @@ class OptimizationProblem:
                     )
 
                 time_indices: Iterable[Optional[int]] = [None]
-                if var_indexing.time:
+                if var_indexing.is_time_varying():
                     time_indices = self.context.get_time_indices(var_indexing)
+
                 scenario_indices: Iterable[Optional[int]] = [None]
-                if var_indexing.scenario:
+                if var_indexing.is_scenario_varying():
                     scenario_indices = self.context.get_scenario_indices(var_indexing)
 
                 for t, s in itertools.product(time_indices, scenario_indices):
