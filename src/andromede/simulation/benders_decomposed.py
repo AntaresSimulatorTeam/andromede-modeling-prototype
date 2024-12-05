@@ -38,7 +38,6 @@ from andromede.simulation.strategy import (
 )
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
-from andromede.study.network import Network
 from andromede.utils import read_json, serialize, serialize_json
 
 

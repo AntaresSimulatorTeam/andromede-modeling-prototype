@@ -14,7 +14,6 @@ import pandas as pd
 import pytest
 
 from andromede.expression.expression import literal, param, var
-from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
@@ -29,7 +28,6 @@ from andromede.model import (
     ProblemContext,
     float_parameter,
     float_variable,
-    int_variable,
     model,
 )
 from andromede.model.port import PortFieldDefinition, PortFieldId

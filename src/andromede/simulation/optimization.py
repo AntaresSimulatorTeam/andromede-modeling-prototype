@@ -746,7 +746,7 @@ class OptimizationProblem:
                         self.solver,
                         self.context,
                         component,
-                        objective,
+                        self.context.risk_strategy(objective),
                     )
 
     def export_as_mps(self) -> str:
