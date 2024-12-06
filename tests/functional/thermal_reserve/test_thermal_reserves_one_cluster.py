@@ -48,7 +48,7 @@ from tests.functional.libs.heuristique import *
 
 @pytest.fixture
 def data_path() -> Path:
-    return Path(__file__).parent.parent / "data_reserve/thermal_reserves_one_cluster_base"
+    return Path(__file__).parent.parent / "data_reserve/thermal_reserves_one_cluster"
 
 
 def test_milp_version(
@@ -151,9 +151,9 @@ def test_accurate_heuristic(
                      "generation_reserve_down_secondary","generation_reserve_up_tertiary1_on","generation_reserve_up_tertiary1_off",
                      "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_up_tertiary2_off",
                      "generation_reserve_down_tertiary2","nb_off_primary","nb_off_secondary","nb_off_tertiary1","nb_off_tertiary2"],
-        fn_to_apply= heuristique_opti_defaillance,
-        version = "choix",
-        # option = "taille",
+        fn_to_apply= heuristique_opti_entier,
+        version = "perte",
+        # option = "quantité",
         param_needed_to_compute=["p_max","p_min","nb_units_max_invisible",
                                  "participation_max_primary_reserve_up_on","participation_max_primary_reserve_up_off",
                                  "participation_max_primary_reserve_down","participation_max_secondary_reserve_up_on",
@@ -210,7 +210,7 @@ def test_accurate_heuristic(
                      "generation_reserve_down_tertiary2","nb_off_primary","nb_off_secondary","nb_off_tertiary1","nb_off_tertiary2"],
         fn_to_apply= heuristique_eteint,
         version = " ", #reduction ou non
-        option = "taille",
+        option = "opti",
         param_needed_to_compute=["nb_units_max","p_max","p_min","nb_units_max_invisible",
                                  "participation_max_primary_reserve_up_on","participation_max_primary_reserve_up_off",
                                  "participation_max_primary_reserve_down","participation_max_secondary_reserve_up_on",
@@ -234,6 +234,7 @@ def test_accurate_heuristic(
     )
 
 
+    result_step1 = OutputValues(resolution_step_1)
 
     # nbr_on = OutputValues(resolution_step_accurate_heuristic)._components['G']._variables['nb_on'].value
     # nbr_off_primary = OutputValues(resolution_step_1)._components['G']._variables['nb_off_primary'].value
@@ -249,7 +250,6 @@ def test_accurate_heuristic(
     status = resolution_step_2.solver.Solve()
     assert status == pywraplp.Solver.OPTIMAL
 
-    result_step1 = OutputValues(resolution_step_1)
     result_step2 = OutputValues(resolution_step_2)
 
     nbr_on_accurate_step1 = result_step1._components['G']._variables['nb_on'].value
@@ -275,19 +275,19 @@ def test_accurate_heuristic(
     reserve_secondary_down_production_accurate_step2 = result_step2._components['G']._variables['generation_reserve_down_secondary'].value  
 
     de_accurate_step1 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step1[0],"nbr_on": nbr_on_accurate_step1[0],
-                                            #  "nbr_off_primary": nbr_off_primary_accurate_step1[0],
+                                             "nbr_off_primary": nbr_off_primary_accurate_step1[0],
                                              "reserve_primary_up_on":reserve_primary_up_on_production_accurate_step1[0],
-                                            #  "reserve_primary_up_off":reserve_primary_up_off_production_accurate_step1[0],
+                                             "reserve_primary_up_off":reserve_primary_up_off_production_accurate_step1[0],
                                              "reserve_primary_down":reserve_primary_down_production_accurate_step1[0],
-                                            #  "nbr_off_secondary": nbr_off_secondary_accurate_step1[0],"reserve_secondary_up_on":reserve_secondary_up_on_production_accurate_step1[0],"reserve_secondary_up_off":reserve_secondary_up_off_production_accurate_step1[0], "reserve_secondary_down":reserve_secondary_down_production_accurate_step1[0],
+                                             "nbr_off_secondary": nbr_off_secondary_accurate_step1[0],"reserve_secondary_up_on":reserve_secondary_up_on_production_accurate_step1[0],"reserve_secondary_up_off":reserve_secondary_up_off_production_accurate_step1[0], "reserve_secondary_down":reserve_secondary_down_production_accurate_step1[0],
                                              "Fonction_objectif":resolution_step_1.solver.Objective().Value()})
     de_accurate_step1.to_csv("result_accurate_step1.csv",index=False)
     de_accurate_step2 = pd.DataFrame(data = {"energy_production": energy_production_accurate_step2[0],"nbr_on": nbr_on_accurate_step2[0],
-                                            #   "nbr_off_primary": nbr_off_primary_accurate_step2[0],
+                                              "nbr_off_primary": nbr_off_primary_accurate_step2[0],
                                               "reserve_primary_up_on":reserve_primary_up_on_production_accurate_step2[0],
-                                            #   "reserve_primary_up_off":reserve_primary_up_off_production_accurate_step2[0],
+                                              "reserve_primary_up_off":reserve_primary_up_off_production_accurate_step2[0],
                                               "reserve_primary_down":reserve_primary_down_production_accurate_step2[0],
-                                            #   "nbr_off_secondary": nbr_off_secondary_accurate_step2[0],"reserve_secondary_up_on":reserve_secondary_up_on_production_accurate_step2[0],"reserve_secondary_up_off":reserve_secondary_up_off_production_accurate_step2[0], "reserve_secondary_down":reserve_secondary_down_production_accurate_step2[0],
+                                             "nbr_off_secondary": nbr_off_secondary_accurate_step2[0],"reserve_secondary_up_on":reserve_secondary_up_on_production_accurate_step2[0],"reserve_secondary_up_off":reserve_secondary_up_off_production_accurate_step2[0], "reserve_secondary_down":reserve_secondary_down_production_accurate_step2[0],
                                               "Fonction_objectif":resolution_step_2.solver.Objective().Value()})
     de_accurate_step2.to_csv("result_accurate_step2.csv",index=False)
 
