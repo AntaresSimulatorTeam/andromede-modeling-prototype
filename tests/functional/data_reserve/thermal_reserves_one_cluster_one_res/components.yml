@@ -175,7 +175,7 @@ study:
           value: 27
         - name: participation_max_primary_reserve_up_off
           type: constant
-          value: 0
+          value: 90
         - name: participation_max_primary_reserve_down
           type: constant
           value: 27
