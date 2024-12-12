@@ -172,7 +172,7 @@ def _evaluate_param_type(
             load_ts_from_txt(timeseries_name, timeseries_dir), scenarization
         )
 
-    raise ValueError(f"Data should be either constant or timeseries ")
+    raise ValueError("Data should be either constant or timeseries ")
 
 
 def _resolve_scenarization(

@@ -13,7 +13,7 @@
 import pandas as pd
 import pytest
 
-from andromede.expression.expression import literal, param, port_field, var
+from andromede.expression.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.libs.standard import (
     BALANCE_PORT_TYPE,
@@ -21,7 +21,6 @@ from andromede.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
     NODE_BALANCE_MODEL,
-    NODE_WITH_SPILL_AND_ENS_MODEL,
 )
 from andromede.model import (
     Constraint,
@@ -33,12 +32,11 @@ from andromede.model import (
     int_variable,
     model,
 )
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
     MergedProblemStrategy,
     OutputValues,
     TimeBlock,
-    build_benders_decomposed_problem,
     build_problem,
 )
 from andromede.study import (
@@ -52,7 +50,6 @@ from andromede.study import (
     create_component,
 )
 
-CONSTANT = IndexingStructure(False, False)
 FREE = IndexingStructure(True, True)
 
 INVESTMENT = ProblemContext.INVESTMENT
@@ -169,9 +166,16 @@ def cluster_candidate(discrete_candidate: Model) -> Component:
     return cluster
 
 
+@pytest.fixture
+def demand() -> Component:
+    demand = create_component(model=DEMAND_MODEL, id="D")
+    return demand
+
+
 def test_generation_xpansion_single_time_step_single_scenario(
     generator: Component,
     candidate: Component,
+    demand: Component,
 ) -> None:
     """
     Simple generation expansion problem on one node. One timestep, one scenario, one thermal cluster candidate.
@@ -199,11 +203,7 @@ def test_generation_xpansion_single_time_step_single_scenario(
 
     database.add_data("CAND", "op_cost", ConstantData(10))
     database.add_data("CAND", "invest_cost", ConstantData(490))
-
-    demand = create_component(
-        model=DEMAND_MODEL,
-        id="D",
-    )
+    database.add_data("CAND", "max_invest", ConstantData(1000))
 
     node = Node(model=NODE_BALANCE_MODEL, id="N")
     network = Network("test")
@@ -221,7 +221,7 @@ def test_generation_xpansion_single_time_step_single_scenario(
         database,
         TimeBlock(1, [0]),
         scenarios,
-        problem_strategy=MergedProblemStrategy(),
+        build_strategy=MergedProblemStrategy(),
     )
     status = problem.solver.Solve()
 
@@ -243,6 +243,7 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
     generator: Component,
     candidate: Component,
     cluster_candidate: Component,
+    demand: Component,
 ) -> None:
     """
     As before, simple generation expansion problem on one node, one timestep and one scenario
@@ -273,12 +274,11 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
 
     database.add_data("CAND", "op_cost", ConstantData(10))
     database.add_data("CAND", "invest_cost", ConstantData(490))
+    database.add_data("CAND", "max_invest", ConstantData(1000))
 
     database.add_data("DISCRETE", "op_cost", ConstantData(10))
     database.add_data("DISCRETE", "invest_cost", ConstantData(200))
     database.add_data("DISCRETE", "p_max_per_unit", ConstantData(10))
-
-    demand = create_component(model=DEMAND_MODEL, id="D")
 
     node = Node(model=NODE_BALANCE_MODEL, id="N")
     network = Network("test")
@@ -319,6 +319,7 @@ def test_two_candidates_xpansion_single_time_step_single_scenario(
 def test_generation_xpansion_two_time_steps_two_scenarios(
     generator: Component,
     candidate: Component,
+    demand: Component,
 ) -> None:
     """
     Same as previous example but with two timesteps and two scenarios, in order to test the correct instantiation of the objective function
@@ -359,8 +360,7 @@ def test_generation_xpansion_two_time_steps_two_scenarios(
 
     database.add_data("CAND", "op_cost", ConstantData(10))
     database.add_data("CAND", "invest_cost", ConstantData(490))
-
-    demand = create_component(model=DEMAND_MODEL, id="D")
+    database.add_data("CAND", "max_invest", ConstantData(1000))
 
     node = Node(model=NODE_BALANCE_MODEL, id="N")
     network = Network("test")

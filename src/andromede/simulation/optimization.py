@@ -14,6 +14,7 @@
 The optimization module contains the logic to translate the input model
 into a mathematical optimization problem.
 """
+
 import itertools
 import math
 from dataclasses import dataclass
@@ -30,10 +31,15 @@ from andromede.expression.operators_expansion import ProblemDimensions, expand_o
 from andromede.expression.port_resolver import PortFieldKey, resolve_port
 from andromede.model.common import ValueType
 from andromede.model.constraint import Constraint
-from andromede.model.model import PortFieldId
+from andromede.model.port import PortFieldId
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import ParameterGetter, linearize_expression
-from andromede.simulation.strategy import MergedProblemStrategy, ModelSelectionStrategy
+from andromede.simulation.strategy import (
+    MergedProblemStrategy,
+    ModelSelectionStrategy,
+    RiskManagementStrategy,
+    UniformRisk,
+)
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.data import DataBase
 from andromede.study.network import Component, Network
@@ -61,7 +67,7 @@ def _get_parameter_value(
 ) -> float:
     data = context.database.get_data(component_id, name)
     absolute_timestep = context.block_timestep_to_absolute_timestep(block_timestep)
-    return data.get_value(absolute_timestep, scenario)
+    return data.get_value(absolute_timestep, scenario, context.tree_node)
 
 
 def _make_value_provider(
@@ -160,14 +166,23 @@ class OptimizationContext:
         block: TimeBlock,
         scenarios: int,
         border_management: BlockBorderManagement,
+        build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+        risk_strategy: RiskManagementStrategy = UniformRisk(),
+        decision_tree_node: str = "",
+        use_full_var_name: bool = True,
     ):
         self._network = network
         self._database = database
         self._block = block
         self._scenarios = scenarios
         self._border_management = border_management
+        self._build_strategy = build_strategy
+        self._risk_strategy = risk_strategy
+        self._tree_node = decision_tree_node
+        self._full_var_name = use_full_var_name
+
         self._component_variables: Dict[TimestepComponentVariableKey, lp.Variable] = {}
-        self._solver_variables: Dict[lp.Variable, SolverVariableInfo] = {}
+        self._solver_variables: Dict[str, SolverVariableInfo] = {}
         self._connection_fields_expressions: Dict[
             PortFieldKey, List[ExpressionNode]
         ] = {}
@@ -183,6 +198,22 @@ class OptimizationContext:
     @property
     def scenarios(self) -> int:
         return self._scenarios
+
+    @property
+    def tree_node(self) -> str:
+        return self._tree_node
+
+    @property
+    def build_strategy(self) -> ModelSelectionStrategy:
+        return self._build_strategy
+
+    @property
+    def risk_strategy(self) -> RiskManagementStrategy:
+        return self._risk_strategy
+
+    @property
+    def full_var_name(self) -> bool:
+        return self._full_var_name
 
     def block_length(self) -> int:
         return len(self._block.timesteps)
@@ -249,14 +280,14 @@ class OptimizationContext:
         block_timestep: Optional[int],
         scenario: Optional[int],
         component_id: str,
-        variable_name: str,
+        model_var_name: str,
         variable: lp.Variable,
     ) -> None:
         key = TimestepComponentVariableKey(
-            component_id, variable_name, block_timestep, scenario
+            component_id, model_var_name, block_timestep, scenario
         )
         if key not in self._component_variables:
-            self._solver_variables[variable] = SolverVariableInfo(
+            self._solver_variables[variable.name()] = SolverVariableInfo(
                 variable.name(), len(self._solver_variables), False
             )
         self._component_variables[key] = variable
@@ -475,7 +506,7 @@ def _create_objective(
             term,
             opt_context,
         )
-        opt_context._solver_variables[solver_var].is_in_objective = True
+        opt_context._solver_variables[solver_var.name()].is_in_objective = True
         obj.SetCoefficient(
             solver_var,
             obj.GetCoefficient(solver_var) + term.coefficient,
@@ -537,19 +568,16 @@ class OptimizationProblem:
     name: str
     solver: lp.Solver
     context: OptimizationContext
-    strategy: ModelSelectionStrategy
 
     def __init__(
         self,
         name: str,
         solver: lp.Solver,
         opt_context: OptimizationContext,
-        build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
     ) -> None:
         self.name = name
         self.solver = solver
         self.context = opt_context
-        self.strategy = build_strategy
 
         self._register_connection_fields_definitions()
         self._create_variables()
@@ -587,20 +615,34 @@ class OptimizationProblem:
     def _solver_variable_name(
         self, component_id: str, var_name: str, t: Optional[int], s: Optional[int]
     ) -> str:
-        scenario_suffix = f"_s{s}" if s is not None else ""
-        block_suffix = f"_t{t}" if t is not None else ""
+        component_prefix = (
+            f"{component_id}_" if (self.context.full_var_name and component_id) else ""
+        )
+        tree_prefix = (
+            f"{self.context.tree_node}_"
+            if (self.context.full_var_name and self.context.tree_node)
+            else ""
+        )
+        scenario_suffix = (
+            f"_s{s}" if (s is not None and self.context.scenarios > 1) else ""
+        )
+        block_suffix = (
+            f"_t{t}" if (t is not None and self.context.block_length() > 1) else ""
+        )
 
         # Set solver var name
         # Externally, for the Solver, this variable will have a full name
         # Internally, it will be indexed by a structure that into account
         # the component id, variable name, timestep and scenario separately
-        return f"{component_id}_{var_name}{block_suffix}{scenario_suffix}"
+        return (
+            f"{tree_prefix}{component_prefix}{var_name}{block_suffix}{scenario_suffix}"
+        )
 
     def _create_variables(self) -> None:
         for component in self.context.network.all_components:
             model = component.model
 
-            for model_var in self.strategy.get_variables(model):
+            for model_var in self.context.build_strategy.get_variables(model):
                 var_indexing = model_var.structure
                 instantiated_lb_expr = None
                 instantiated_ub_expr = None
@@ -615,10 +657,11 @@ class OptimizationProblem:
                     )
 
                 time_indices: Iterable[Optional[int]] = [None]
-                if var_indexing.time:
+                if var_indexing.is_time_varying():
                     time_indices = self.context.get_time_indices(var_indexing)
+
                 scenario_indices: Iterable[Optional[int]] = [None]
-                if var_indexing.scenario:
+                if var_indexing.is_scenario_varying():
                     scenario_indices = self.context.get_scenario_indices(var_indexing)
 
                 for t, s in itertools.product(time_indices, scenario_indices):
@@ -668,7 +711,9 @@ class OptimizationProblem:
 
     def _create_constraints(self) -> None:
         for component in self.context.network.all_components:
-            for constraint in self.strategy.get_constraints(component.model):
+            for constraint in self.context.build_strategy.get_constraints(
+                component.model
+            ):
                 instantiated_expr = _instantiate_model_expression(
                     constraint.expression, component.id, self.context
                 )
@@ -694,13 +739,14 @@ class OptimizationProblem:
     def _create_objectives(self) -> None:
         for component in self.context.network.all_components:
             model = component.model
-            for objective in self.strategy.get_objectives(model):
+
+            for objective in self.context.build_strategy.get_objectives(model):
                 if objective is not None:
                     _create_objective(
                         self.solver,
                         self.context,
                         component,
-                        objective,
+                        self.context.risk_strategy(objective),
                     )
 
     def export_as_mps(self) -> str:
@@ -719,7 +765,10 @@ def build_problem(
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
     solver_id: str = "SCIP",
-    problem_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+    build_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
+    risk_strategy: RiskManagementStrategy = UniformRisk(),
+    decision_tree_node: str = "",
+    use_full_var_name: bool = True,
 ) -> OptimizationProblem:
     """
     Entry point to build the optimization problem for a time period.
@@ -729,7 +778,77 @@ def build_problem(
     database.requirements_consistency(network)
 
     opt_context = OptimizationContext(
-        network, database, block, scenarios, border_management
+        network,
+        database,
+        block,
+        scenarios,
+        border_management,
+        build_strategy,
+        risk_strategy,
+        decision_tree_node,
+        use_full_var_name,
     )
 
-    return OptimizationProblem(problem_name, solver, opt_context, problem_strategy)
+    return OptimizationProblem(problem_name, solver, opt_context)
+
+
+def fusion_problems(
+    masters: List[OptimizationProblem], coupler: OptimizationProblem
+) -> OptimizationProblem:
+    if len(masters) == 1:
+        # Nothing to fusion. Just past down the master
+        return masters[0]
+
+    root_master = coupler
+    root_master.name = "master"
+
+    root_vars: Dict[str, lp.Variable] = dict()
+    root_constraints: Dict[str, lp.Constraint] = dict()
+    root_objective = root_master.solver.Objective()
+
+    # We stock the coupler's variables to check for
+    # same name variables in the masters
+    for var in root_master.solver.variables():
+        root_vars[var.name()] = var
+
+    for master in masters:
+        context = master.context
+        objective = master.solver.Objective()
+
+        for var in master.solver.variables():
+            # If variable not already in coupler, we add it
+            # Otherwise we update its upper and lower bounds
+            if var.name() not in root_vars:
+                root_var = root_master.solver.NumVar(var.lb(), var.ub(), var.name())
+                root_master.context._solver_variables[var.name()] = SolverVariableInfo(
+                    var.name(),
+                    len(root_master.context._solver_variables),
+                    context._solver_variables[var.name()].is_in_objective,
+                )
+            else:
+                root_var = root_vars[var.name()]
+                root_var.SetLb(var.lb())
+                root_var.SetUb(var.ub())
+                root_master.context._solver_variables[
+                    var.name()
+                ].is_in_objective = context._solver_variables[
+                    var.name()
+                ].is_in_objective
+
+            for cstr in master.solver.constraints():
+                coeff = cstr.GetCoefficient(var)
+                # If variable present in constraint, we add the constraint to root
+                if coeff != 0:
+                    key = f"{master.name}_{cstr.name()}"
+                    if key not in root_constraints:
+                        root_constraints[key] = root_master.solver.Constraint(
+                            cstr.Lb(), cstr.Ub(), key
+                        )
+                    root_cstr = root_constraints[key]
+                    root_cstr.SetCoefficient(root_var, coeff)
+
+            obj_coeff = objective.GetCoefficient(var)
+            if obj_coeff != 0:
+                root_objective.SetCoefficient(root_var, obj_coeff)
+
+    return root_master

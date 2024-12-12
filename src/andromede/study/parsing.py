@@ -12,17 +12,16 @@
 
 import argparse
 import os
-import typing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, TextIO
 
 import pandas as pd
 from pydantic import BaseModel, Field
 from yaml import safe_load
 
 
-def parse_yaml_components(input_components: typing.TextIO) -> "InputComponents":
+def parse_yaml_components(input_components: TextIO) -> "InputComponents":
     tree = safe_load(input_components)
     return InputComponents.model_validate(tree["study"])
 

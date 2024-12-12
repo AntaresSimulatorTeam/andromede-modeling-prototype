@@ -15,11 +15,12 @@ The network module defines the data model for an instance of network,
 including nodes, links, and components (model instantations).
 """
 import itertools
-from dataclasses import dataclass
-from typing import Dict, Iterable, List
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, Iterable, List, cast
 
 from andromede.model import PortField, PortType
-from andromede.model.model import Model, PortFieldId
+from andromede.model.model import Model
+from andromede.model.port import PortFieldId
 from andromede.utils import require_not_none
 
 
@@ -31,6 +32,12 @@ class Component:
 
     model: Model
     id: str
+
+    def is_variable_in_model(self, var_id: str) -> bool:
+        return var_id in self.model.variables.keys()
+
+    def replicate(self, /, **changes: Any) -> "Component":
+        return replace(self, **changes)
 
 
 def create_component(model: Model, id: str) -> Component:
@@ -46,6 +53,10 @@ class Node(Component):
     pass
 
 
+def create_node(model: Model, id: str) -> Node:
+    return Node(model=model, id=id)
+
+
 @dataclass(frozen=True)
 class PortRef:
     component: Component
@@ -56,12 +67,9 @@ class PortRef:
 class PortsConnection:
     port1: PortRef
     port2: PortRef
-    master_port: Dict[PortField, PortRef]
+    master_port: Dict[PortField, PortRef] = field(init=False, default_factory=dict)
 
-    def __init__(self, port1: PortRef, port2: PortRef):
-        self.port1 = port1
-        self.port2 = port2
-        self.master_port = {}
+    def __post_init__(self) -> None:
         self.__validate_ports()
 
     def __validate_ports(self) -> None:
@@ -106,6 +114,10 @@ class PortsConnection:
             raise ValueError(f"Missing port: {port_1}")
         return port_1.port_type
 
+    def replicate(self, /, **changes: Any) -> "PortsConnection":
+        # Shallow copy
+        return replace(self, **changes)
+
 
 @dataclass
 class Network:
@@ -113,11 +125,10 @@ class Network:
     Network model: simply nodes, links, and components.
     """
 
-    def __init__(self, id: str):
-        self.id: str = id
-        self._nodes: Dict[str, Node] = {}
-        self._components: Dict[str, Component] = {}
-        self._connections: List[PortsConnection] = []
+    id: str
+    _nodes: Dict[str, Node] = field(init=False, default_factory=dict)
+    _components: Dict[str, Component] = field(init=False, default_factory=dict)
+    _connections: List[PortsConnection] = field(init=False, default_factory=list)
 
     def _check_node_exists(self, node_id: str) -> None:
         if node_id not in self._nodes:
@@ -162,3 +173,23 @@ class Network:
     @property
     def connections(self) -> Iterable[PortsConnection]:
         return self._connections
+
+    def get_connection(self, idx: int) -> PortsConnection:
+        return self._connections[idx]
+
+    def is_empty(self) -> bool:
+        return (not self._nodes) and (not self._components) and (not self._connections)
+
+    def replicate(self, /, **changes: Any) -> "Network":
+        replica = replace(self, **changes)
+
+        for node in self.nodes:
+            replica.add_node(cast(Node, node.replicate()))
+
+        for component in self.components:
+            replica.add_component(component.replicate())
+
+        for connection in self.connections:
+            replica._connections.append(connection.replicate())
+
+        return replica
