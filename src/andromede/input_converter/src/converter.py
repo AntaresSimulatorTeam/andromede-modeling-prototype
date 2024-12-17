@@ -30,7 +30,6 @@ class StudyConverter:
         self.study_path = resolve_path(study_path) if study_path else None
         self.study: Study = None
 
-
     def convert_study_to_input_components(self) -> BaseModel:
         areas = self.study.read_areas()
         return convert_area_to_components(areas)
