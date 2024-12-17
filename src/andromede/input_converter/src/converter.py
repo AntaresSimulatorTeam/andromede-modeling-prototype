@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 from pathlib import Path
-from antares.model.study import read_study_local, Study
+from antares.model.study import Study
 from typing import Optional
 from pydantic import BaseModel
 from andromede.study.parsing import InputComponents
@@ -30,8 +30,6 @@ class StudyConverter:
         self.study_path = resolve_path(study_path) if study_path else None
         self.study: Study = None
 
-    def load_study(self) -> Study:
-        return read_study_local(self.study_path)
 
     def convert_study_to_input_components(self) -> BaseModel:
         areas = self.study.read_areas()
