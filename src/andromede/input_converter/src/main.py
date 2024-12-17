@@ -20,6 +20,7 @@ from andromede.input_converter.src.converter import StudyConverter
 
 DEFAULT: dict = {}
 
+
 class PathType:
     """file or directory path type for `argparse` parser
 
@@ -106,6 +107,7 @@ class PathType:
         else:  # pragma: no cover
             raise NotImplementedError((self.file_ok, self.dir_ok))
 
+
 def parse_commandline() -> argparse.Namespace:
     # Parse command-line arguments using argparse to specify configuration file paths,
     # logging options, and version display. Returns the parsed arguments.
@@ -124,6 +126,7 @@ def parse_commandline() -> argparse.Namespace:
         version=__version__,
     )
     return parser.parse_args()
+
 
 def handle_env(config_parser) -> dict:
     # Read configuration items from the config parser and set them as environment variables.

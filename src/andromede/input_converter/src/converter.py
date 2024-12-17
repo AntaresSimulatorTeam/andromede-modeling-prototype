@@ -13,8 +13,14 @@
 from antares.model.study import read_study_local, Study
 from typing import Optional
 from pydantic import BaseModel
+from andromede.study.parsing import InputComponents
 import yaml
-from andromede.input_converter.src.utils import resolve_path, convert_area_to_components
+from andromede.input_converter.src.utils import (
+    resolve_path,
+    convert_renewable_to_components,
+    convert_area_to_components,
+)
+
 
 class StudyConverter:
     def __init__(self, study_path: Optional[str]):
@@ -22,7 +28,7 @@ class StudyConverter:
         Initialize processor
         """
         self.study_path = resolve_path(study_path) if study_path else None
-        self.study = None 
+        self.study = None
 
     def load_study(self) -> Study:
         return read_study_local(self.study_path)
@@ -30,7 +36,6 @@ class StudyConverter:
     def convert_study_to_input_components(self):
         areas = self.study.read_areas()
         convert_area_to_components(areas)
-
 
     def validate_with_pydantic(self, data, model_class) -> BaseModel:
         return model_class(**data)

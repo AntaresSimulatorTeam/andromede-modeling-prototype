@@ -20,12 +20,11 @@ class TestConverter:
         areas = local_study_w_areas.read_areas()
         area_components = convert_area_to_components(areas)
         expected_area_components = InputComponents(
-        nodes=[
-            InputComponent(id="it", model="area", parameters=None),
-            InputComponent(id="fr", model="area", parameters=None),
-        ],
-        components=[],
-        connections=[]
+            nodes=[
+                InputComponent(id="it", model="area", parameters=None),
+                InputComponent(id="fr", model="area", parameters=None),
+            ],
+            components=[],
+            connections=[],
         )
         assert area_components == expected_area_components
-
