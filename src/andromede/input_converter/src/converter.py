@@ -37,7 +37,9 @@ class StudyConverter:
         areas = self.study.read_areas()
         return convert_area_to_components(areas)
 
-    def validate_with_pydantic(self, data: dict, model_class: type[BaseModel]) -> BaseModel:
+    def validate_with_pydantic(
+        self, data: dict, model_class: type[BaseModel]
+    ) -> BaseModel:
         return model_class(**data)
 
     def transform_to_yaml(self, data: dict, output_path: str) -> None:
