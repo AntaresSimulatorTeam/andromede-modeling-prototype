@@ -8,7 +8,7 @@ from andromede.study.parsing import (
 from pydantic import BaseModel
 
 
-def resolve_path(path_str):
+def resolve_path(path_str: Path) -> Path:
     path = Path(path_str)
     if not path.exists():
         raise FileNotFoundError

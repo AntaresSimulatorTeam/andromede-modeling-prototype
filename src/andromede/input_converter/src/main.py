@@ -128,7 +128,7 @@ def parse_commandline() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def handle_env(config_parser) -> dict:
+def handle_env(config_parser: configparser.ConfigParser) -> dict:
     # Read configuration items from the config parser and set them as environment variables.
     # Return a dictionary of the environment variables that were set.
     config_env = {}
@@ -139,7 +139,7 @@ def handle_env(config_parser) -> dict:
                 os.environ[env_name] = value
                 config_env.update({env_name: value})
             else:
-                config_env.update({env_name: os.environ.get(env_name)})
+                config_env.update({env_name: os.environ.get(env_name, "")})
     return config_env
 
 
@@ -160,5 +160,5 @@ if __name__ == "__main__":
             config_parser.read(args.conf)
 
     env_cfg = handle_env(config_parser)
-    processor = StudyConverter()
+    processor = StudyConverter(study_path=None)
     processor.process_all()
