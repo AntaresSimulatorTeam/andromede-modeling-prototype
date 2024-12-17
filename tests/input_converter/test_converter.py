@@ -14,8 +14,8 @@
 from andromede.input_converter.src.utils import convert_area_to_components
 from andromede.study.parsing import InputComponent, InputComponents
 
-class TestConverter:
 
+class TestConverter:
     def test_convert_area_to_input_components(self, local_study_w_areas):
         areas = local_study_w_areas.read_areas()
         area_components = convert_area_to_components(areas)
