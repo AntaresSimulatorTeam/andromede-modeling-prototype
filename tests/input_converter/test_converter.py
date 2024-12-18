@@ -11,14 +11,16 @@
 # This file is part of the Antares project.
 
 
-from andromede.input_converter.src.utils import convert_area_to_components
+from andromede.input_converter.src.utils import convert_area_to_components 
+from andromede.input_converter.src.converter import StudyConverter
 from andromede.study.parsing import InputComponent, InputComponents
 
 
 class TestConverter:
     def test_convert_area_to_input_components(self, local_study_w_areas):
-        areas = local_study_w_areas.read_areas()
-        area_components = convert_area_to_components(areas)
+        converter = StudyConverter(study_path=None)
+        converter.study = local_study_w_areas
+        area_components = converter.convert_study_to_input_components()
         expected_area_components = InputComponents(
             nodes=[
                 InputComponent(id="it", model="area", parameters=None),
@@ -27,4 +29,5 @@ class TestConverter:
             components=[],
             connections=[],
         )
+
         assert area_components == expected_area_components
