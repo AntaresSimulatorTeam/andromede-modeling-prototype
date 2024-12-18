@@ -10,16 +10,15 @@
 #
 # This file is part of the Antares project.
 from pathlib import Path
-from antares.model.study import Study  # type: ignore
 from typing import Optional
-from pydantic import BaseModel
-from andromede.study.parsing import InputComponents
+
 import yaml
+from antares.model.study import Study  # type: ignore
+from pydantic import BaseModel
+
 from andromede.input_converter.src.utils import (
-    resolve_path,
-    convert_renewable_to_components,
-    convert_area_to_components,
-)
+    convert_area_to_components, convert_renewable_to_components, resolve_path)
+from andromede.study.parsing import InputComponents
 
 
 class StudyConverter:

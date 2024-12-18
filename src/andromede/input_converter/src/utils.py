@@ -1,11 +1,10 @@
 from pathlib import Path
+
 from antares.model.area import Area  # type: ignore
-from andromede.study.parsing import (
-    InputComponent,
-    InputComponents,
-    InputComponentParameter,
-)
 from pydantic import BaseModel
+
+from andromede.study.parsing import (InputComponent, InputComponentParameter,
+                                     InputComponents)
 
 
 def resolve_path(path_str: Path) -> Path:
