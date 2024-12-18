@@ -11,7 +11,6 @@
 # This file is part of the Antares project.
 
 
-from andromede.input_converter.src.utils import convert_area_to_components 
 from andromede.input_converter.src.converter import StudyConverter
 from andromede.study.parsing import InputComponent, InputComponents
 
