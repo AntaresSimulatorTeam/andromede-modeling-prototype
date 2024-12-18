@@ -17,7 +17,10 @@ from antares.model.study import Study  # type: ignore
 from pydantic import BaseModel
 
 from andromede.input_converter.src.utils import (
-    convert_area_to_components, convert_renewable_to_components, resolve_path)
+    convert_area_to_components,
+    convert_renewable_to_components,
+    resolve_path,
+)
 from andromede.study.parsing import InputComponents
 
 
