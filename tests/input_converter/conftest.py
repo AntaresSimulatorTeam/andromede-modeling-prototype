@@ -11,8 +11,8 @@
 # This file is part of the Antares project.
 import pandas as pd
 import pytest
-from antares.model.area import Area
-from antares.model.binding_constraint import (
+from antares.model.area import Area # type: ignore
+from antares.model.binding_constraint import ( # type: ignore
     BindingConstraint,
     BindingConstraintFrequency,
     BindingConstraintOperator,
