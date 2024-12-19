@@ -19,7 +19,7 @@ def resolve_path(path_str: Path) -> Path:
     return absolute_path
 
 
-def convert_area_to_components(areas: list[Area]) -> list[InputComponent]:
+def convert_area_to_component_list(areas: list[Area]) -> list[InputComponent]:
     return [InputComponent(id=area.id, model="area") for area in areas]
 
 

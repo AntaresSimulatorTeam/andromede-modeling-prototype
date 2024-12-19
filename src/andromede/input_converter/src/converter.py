@@ -17,8 +17,7 @@ from antares.model.study import Study  # type: ignore
 from pydantic import BaseModel
 
 from andromede.input_converter.src.utils import (
-    convert_area_to_components,
-    convert_renewable_to_components,
+    convert_area_to_component_list,
     resolve_path,
 )
 from andromede.study.parsing import InputComponents
@@ -34,7 +33,7 @@ class StudyConverter:
 
     def convert_study_to_input_components(self) -> InputComponents:
         areas = self.study.read_areas()
-        area_components = convert_area_to_components(areas)
+        area_components = convert_area_to_component_list(areas)
         return InputComponents(nodes=area_components)
 
     def validate_with_pydantic(
