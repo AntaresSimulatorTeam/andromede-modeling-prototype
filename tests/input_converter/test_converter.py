@@ -22,11 +22,12 @@ class TestConverter:
         area_components = converter.convert_study_to_input_components()
         expected_area_components = InputComponents(
             nodes=[
-                InputComponent(id="it", model="area", parameters=None),
                 InputComponent(id="fr", model="area", parameters=None),
+                InputComponent(id="it", model="area", parameters=None),
             ],
             components=[],
             connections=[],
         )
-
+        area_components.nodes.sort(key=lambda x: x.id)
+        expected_area_components.nodes.sort(key=lambda x: x.id)
         assert area_components == expected_area_components
