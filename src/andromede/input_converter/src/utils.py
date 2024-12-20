@@ -23,7 +23,7 @@ def convert_area_to_component_list(areas: list[Area]) -> list[InputComponent]:
     return [InputComponent(id=area.id, model="area") for area in areas]
 
 
-def convert_renewable_to_components(area: Area) -> list[InputComponent]:
+def convert_renewable_to_component_list(area: Area) -> list[InputComponent]:
     renewables = area.read_renewables()
     return [
         InputComponent(
@@ -51,33 +51,33 @@ def convert_renewable_to_components(area: Area) -> list[InputComponent]:
     ]
 
 
-def convert_hydro_to_components(area: Area) -> list[InputComponent]:
+def convert_hydro_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
 
 
-def convert_st_storages_to_components(area: Area) -> list[InputComponent]:
+def convert_st_storages_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
 
 
-def convert_thermals_to_components(area: Area) -> list[InputComponent]:
+def convert_thermals_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
 
 
-def convert_load_matrix_to_components(area: Area) -> list[InputComponent]:
+def convert_load_matrix_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
 
 
-def convert_misc_gen_to_components(area: Area) -> list[InputComponent]:
+def convert_misc_gen_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
 
 
-def convert_reserves_matrix_to_components(area: Area) -> list[InputComponent]:
+def convert_reserves_matrix_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
 
 
-def convert_wind_matrix_to_components(area: Area) -> list[InputComponent]:
+def convert_wind_matrix_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
 
 
-def convert_solar_matrix_to_components(area: Area) -> list[InputComponent]:
+def convert_solar_matrix_to_component_list(area: Area) -> list[InputComponent]:
     raise NotImplementedError
