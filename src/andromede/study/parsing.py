@@ -22,9 +22,9 @@ from pydantic import BaseModel, Field
 from yaml import safe_load
 
 
-def parse_yaml_components(input_components: typing.TextIO) -> "InputComponents":
-    tree = safe_load(input_components)
-    return InputComponents.model_validate(tree["study"])
+def parse_yaml_components(input_study: typing.TextIO) -> "InputStudy":
+    tree = safe_load(input_study)
+    return InputStudy.model_validate(tree["study"])
 
 
 def parse_scenario_builder(file: Path) -> pd.DataFrame:
@@ -66,7 +66,7 @@ class InputComponent(BaseModel):
         alias_generator = _to_kebab
 
 
-class InputComponents(BaseModel):
+class InputStudy(BaseModel):
     nodes: List[InputComponent] = Field(default_factory=list)
     components: List[InputComponent] = Field(default_factory=list)
     connections: List[InputPortConnections] = Field(default_factory=list)

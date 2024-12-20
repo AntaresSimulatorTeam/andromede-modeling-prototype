@@ -20,11 +20,10 @@ from andromede.input_converter.src.utils import (
     convert_area_to_component_list,
     resolve_path,
 )
+from andromede.study.parsing import InputStudy
 
-from andromede.study.parsing import InputComponents
 
-
-class StudyConverter:
+class AntaresStudyConverter:
     def __init__(self, study_path: Optional[Path]):
         """
         Initialize processor
@@ -32,10 +31,10 @@ class StudyConverter:
         self.study_path = resolve_path(study_path) if study_path else None
         self.study: Study = read_study_local(self.study_path) if self.study_path else None  # type: ignore
 
-    def convert_study_to_input_components(self) -> InputComponents:
+    def convert_study_to_input_study(self) -> InputStudy:
         areas = self.study.read_areas()
         area_components = convert_area_to_component_list(areas)
-        return InputComponents(nodes=area_components)
+        return InputStudy(nodes=area_components)
 
     def validate_with_pydantic(
         self, data: dict, model_class: type[BaseModel]

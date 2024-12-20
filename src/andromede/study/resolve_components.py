@@ -32,11 +32,7 @@ from andromede.study.data import (
     TimeScenarioSeriesData,
     load_ts_from_txt,
 )
-from andromede.study.parsing import (
-    InputComponent,
-    InputComponents,
-    InputPortConnections,
-)
+from andromede.study.parsing import InputComponent, InputPortConnections, InputStudy
 
 
 @dataclass(frozen=True)
@@ -59,7 +55,7 @@ def network_components(
 
 
 def resolve_components_and_cnx(
-    input_comp: InputComponents, library: Library
+    input_comp: InputStudy, library: Library
 ) -> NetworkComponents:
     """
     Resolves:
@@ -111,14 +107,14 @@ def _get_component_by_id(
 
 
 def consistency_check(
-    input_components: Dict[str, Component], input_models: Dict[str, Model]
+    input_study: Dict[str, Component], input_models: Dict[str, Model]
 ) -> bool:
     """
     Checks if all components in the Components instances have a valid model from the library.
     Returns True if all components are consistent, raises ValueError otherwise.
     """
     model_ids_set = input_models.keys()
-    for component_id, component in input_components.items():
+    for component_id, component in input_study.items():
         if component.model.id not in model_ids_set:
             raise ValueError(
                 f"Error: Component {component_id} has invalid model ID: {component.model.id}"
@@ -141,9 +137,7 @@ def build_network(comp_network: NetworkComponents) -> Network:
     return network
 
 
-def build_data_base(
-    input_comp: InputComponents, timeseries_dir: Optional[Path]
-) -> DataBase:
+def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> DataBase:
     database = DataBase()
 
     for comp in input_comp.components:
@@ -188,7 +182,7 @@ def _resolve_scenarization(
 
 
 def build_scenarized_data_base(
-    input_comp: InputComponents,
+    input_comp: InputStudy,
     scenario_builder_data: pd.DataFrame,
     timeseries_dir: Optional[Path],
 ) -> DataBase:

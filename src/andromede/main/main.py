@@ -55,7 +55,7 @@ def input_database(study_path: Path, timeseries_path: Optional[Path]) -> DataBas
         return build_data_base(parse_yaml_components(comp), timeseries_path)
 
 
-def input_components(study_path: Path, model: Library) -> NetworkComponents:
+def input_study(study_path: Path, model: Library) -> NetworkComponents:
     with study_path.open() as comp:
         return resolve_components_and_cnx(parse_yaml_components(comp), model)
 
@@ -64,8 +64,8 @@ def main_cli() -> None:
     parsed_args = parse_cli()
 
     models = input_models(parsed_args.models_path)
-    components = input_components(parsed_args.components_path, models)
-    consistency_check(components.components, models.models)
+    study = input_study(parsed_args.components_path, models)
+    consistency_check(study.components, models.models)
 
     try:
         database = input_database(
@@ -77,7 +77,7 @@ def main_cli() -> None:
             f"An error occurred while importing time series."
         )
 
-    network = build_network(components)
+    network = build_network(study)
 
     timeblock = TimeBlock(1, list(range(parsed_args.duration)))
     scenario = parsed_args.nb_scenarios
