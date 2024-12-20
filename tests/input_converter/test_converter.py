@@ -12,15 +12,15 @@
 
 
 from andromede.input_converter.src.converter import StudyConverter
-from andromede.study.parsing import InputComponent, InputComponents
+from andromede.study.parsing import InputComponent, InputStudy
 
 
 class TestConverter:
-    def test_convert_area_to_input_components(self, local_study_w_areas):
+    def test_convert_area_to_input_study(self, local_study_w_areas):
         converter = StudyConverter(study_path=None)
         converter.study = local_study_w_areas
-        area_components = converter.convert_study_to_input_components()
-        expected_area_components = InputComponents(
+        area_components = converter.convert_study_to_input_study()
+        expected_area_components = InputStudy(
             nodes=[
                 InputComponent(id="fr", model="area", parameters=None),
                 InputComponent(id="it", model="area", parameters=None),

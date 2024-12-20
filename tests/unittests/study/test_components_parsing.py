@@ -7,7 +7,7 @@ from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
 from andromede.study import TimeScenarioIndex, TimeScenarioSeriesData
-from andromede.study.parsing import InputComponents, parse_yaml_components
+from andromede.study.parsing import InputStudy, parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
     build_network,
@@ -19,7 +19,7 @@ from andromede.study.resolve_components import (
 @pytest.fixture
 def input_component(
     data_dir: Path,
-) -> InputComponents:
+) -> InputStudy:
     compo_file = data_dir / "components.yml"
 
     with compo_file.open() as c:
@@ -37,7 +37,7 @@ def input_library(
 
 
 def test_parsing_components_ok(
-    input_component: InputComponents, input_library: InputLibrary
+    input_component: InputStudy, input_library: InputLibrary
 ) -> None:
     assert len(input_component.components) == 2
     assert len(input_component.nodes) == 1
@@ -51,7 +51,7 @@ def test_parsing_components_ok(
 
 
 def test_consistency_check_ok(
-    input_component: InputComponents, input_library: InputLibrary
+    input_component: InputStudy, input_library: InputLibrary
 ) -> None:
     result_lib = resolve_library([input_library])
     result_comp = resolve_components_and_cnx(input_component, result_lib)
@@ -59,7 +59,7 @@ def test_consistency_check_ok(
 
 
 def test_consistency_check_ko(
-    input_component: InputComponents, input_library: InputLibrary
+    input_component: InputStudy, input_library: InputLibrary
 ) -> None:
     result_lib = resolve_library([input_library])
     result_comp = resolve_components_and_cnx(input_component, result_lib)
@@ -72,7 +72,7 @@ def test_consistency_check_ko(
 
 
 def test_basic_balance_using_yaml(
-    input_component: InputComponents, input_library: InputLibrary
+    input_component: InputStudy, input_library: InputLibrary
 ) -> None:
     result_lib = resolve_library([input_library])
     components_input = resolve_components_and_cnx(input_component, result_lib)
