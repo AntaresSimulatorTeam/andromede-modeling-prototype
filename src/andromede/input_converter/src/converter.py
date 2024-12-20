@@ -19,6 +19,13 @@ from pydantic import BaseModel
 from andromede.input_converter.src.utils import (
     convert_area_to_component_list,
     resolve_path,
+    convert_renewable_to_component_list,
+    convert_thermals_to_component_list,
+    convert_load_matrix_to_component_list,
+    convert_misc_gen_to_component_list,
+    convert_reserves_matrix_to_component_list,
+    convert_wind_matrix_to_component_list,
+    convert_solar_matrix_to_component_list,
 )
 
 from andromede.study.parsing import InputComponents
@@ -35,6 +42,14 @@ class StudyConverter:
     def convert_study_to_input_components(self) -> InputComponents:
         areas = self.study.read_areas()
         area_components = convert_area_to_component_list(areas)
+        # renewable_components = convert_renewable_to_component_list(areas)
+        # root_path = self.study.service.config.study_path
+        # thermals = convert_thermals_to_component_list(areas)
+        # loads = convert_load_matrix_to_component_list(areas, root_path)
+        # misc_gens = convert_misc_gen_to_component_list(areas, root_path)
+        # reserves = convert_reserves_matrix_to_component_list(areas, root_path)
+        # winds = convert_wind_matrix_to_component_list(areas, root_path)
+        # solars = convert_solar_matrix_to_component_list(areas, root_path)
         return InputComponents(nodes=area_components)
 
     def validate_with_pydantic(
