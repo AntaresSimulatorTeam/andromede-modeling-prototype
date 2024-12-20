@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from antares.model.area import Area  # type: ignore
+from antares.craft.model.area import Area
 from pydantic import BaseModel
 
 from andromede.study.parsing import (
