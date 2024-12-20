@@ -23,7 +23,7 @@ from andromede.input_converter.src.utils import (
 from andromede.study.parsing import InputStudy
 
 
-class StudyConverter:
+class AntaresStudyConverter:
     def __init__(self, study_path: Optional[Path]):
         """
         Initialize processor

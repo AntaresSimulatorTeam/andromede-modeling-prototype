@@ -11,13 +11,13 @@
 # This file is part of the Antares project.
 
 
-from andromede.input_converter.src.converter import StudyConverter
+from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.study.parsing import InputComponent, InputStudy
 
 
 class TestConverter:
     def test_convert_area_to_input_study(self, local_study_w_areas):
-        converter = StudyConverter(study_path=None)
+        converter = AntaresStudyConverter(study_path=None)
         converter.study = local_study_w_areas
         area_components = converter.convert_study_to_input_study()
         expected_area_components = InputStudy(
