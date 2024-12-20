@@ -52,13 +52,22 @@ library:
 
     - id: link
       parameters:
-        - name: capacity
-          time-dependent: false
-          scenario-dependent: false
+        - name: capacity_direct
+          time-dependent: true
+          scenario-dependent: true
+        - name: capacity_indirect
+          time-dependent: true
+          scenario-dependent: true
       variables:
-        - name: input
-          lower-bound: -capacity
-          upper-bound: capacity
+        - name: flow_direct
+          lower-bound: 0
+          upper-bound: capacity_direct
+        - name: flow_indirect
+          lower-bound: 0
+          upper-bound: capacity_indirect
+        - name: flow
+          lower-bound: -capacity_indirect
+          upper-bound: capacity_indirect
       ports:
         - name: out_port
           type: flow
@@ -67,10 +76,13 @@ library:
       port-field-definitions:
         - port: out_port
           field: flow
-          definition: input
+          definition: flow
         - port: in_port
           field: flow
-          definition: -input
+          definition: -flow
+      constraints:
+        - name: flow_direct_indirect
+          expression: flow = flow_direct - flow_indirect
 
     - id: renewable
       parameters:
@@ -94,19 +106,28 @@ library:
     - id: thermal_cluster
       parameters:
         - name: p_min_cluster
-        - name: p_max_cluster
+          scenario-dependent: false
+        - name: p_max_cluster # timeseries that takes outages into account
         - name: p_min_unit
+          scenario-dependent: false
         - name: p_max_unit
+          scenario-dependent: false
         - name: generation_cost
+          scenario-dependent: false
         - name: startup_cost
+          scenario-dependent: false
         - name: fixed_cost
+          scenario-dependent: false
         - name: d_min_up
           type: integer
+          scenario-dependent: false
         - name: d_min_down
           type: integer
-        - name: nb_units_min
+          scenario-dependent: false
+        - name: nb_units_min # Equals to ceil(p_min_cluster/p_max_unit), to be done in preprocessing
           type: integer
-        - name: nb_units_max
+          scenario-dependent: false
+        - name: nb_units_max # Equals to ceil(p_max_cluster/p_max_unit), to be done in preprocessing
           type: integer
       variables:
         - name: generation
@@ -122,11 +143,9 @@ library:
           variable-type: integer
         - name: nb_stopping
           lower-bound: 0
-          upper-bound: nb_units_max
           variable-type: integer
         - name: nb_failing
           lower-bound: 0
-          upper-bound: nb_stopping
       ports:
         - name: balance_port
           type: flow
@@ -141,7 +160,9 @@ library:
           expression: generation >= nb_units_on * p_min_unit
         - name: on_units_dynamics
           expression: nb_units_on = nb_units_on[t-1] + nb_starting - nb_stopping
-        - name: nb_failing_bounds
+        - name: nb_failing_lower_than_stopping
+          expression: nb_failing <= nb_stopping
+        - name: nb_failing_lower_than_max_variation
           expression: nb_failing <= max(0, nb_units_max[t-1] - nb_units_max)
         - name: min_up_duration
           expression: sum(t-d_min_up + 1 .. t, nb_starting - nb_failing) <= nb_units_on
