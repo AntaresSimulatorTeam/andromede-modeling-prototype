@@ -20,6 +20,7 @@ from andromede.input_converter.src.utils import (
     convert_area_to_component_list,
     resolve_path,
 )
+
 from andromede.study.parsing import InputComponents
 
 
@@ -29,7 +30,7 @@ class StudyConverter:
         Initialize processor
         """
         self.study_path = resolve_path(study_path) if study_path else None
-        self.study: Study = read_study_local(self.study_path) if self.study_path else None # type: ignore
+        self.study: Study = read_study_local(self.study_path) if self.study_path else None  # type: ignore
 
     def convert_study_to_input_components(self) -> InputComponents:
         areas = self.study.read_areas()
