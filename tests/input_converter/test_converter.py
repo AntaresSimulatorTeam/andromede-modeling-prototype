@@ -28,8 +28,8 @@ class TestConverter:
             components=[],
             connections=[],
         )
-        #To ensure that the comparison between the actual and expected results is not affected by the order of the nodes, 
-        # both the area_components.nodes and expected_area_components.nodes lists are sorted by the id attribute of each node. 
+        # To ensure that the comparison between the actual and expected results is not affected by the order of the nodes,
+        # both the area_components.nodes and expected_area_components.nodes lists are sorted by the id attribute of each node.
         # This sorting step ensures that the test checks only the presence and validity of the nodes, not their order.
         area_components.nodes.sort(key=lambda x: x.id)
         expected_area_components.nodes.sort(key=lambda x: x.id)
