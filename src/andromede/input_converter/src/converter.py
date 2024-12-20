@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-from antares.model.study import Study  # type: ignore
+from antares.craft.model.study import Study
 from pydantic import BaseModel
 
 from andromede.input_converter.src.utils import (

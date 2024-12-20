@@ -28,6 +28,9 @@ class TestConverter:
             components=[],
             connections=[],
         )
+        # We add a sort because we want to check only presence and validity of area_components node.
+        # Not position
         area_components.nodes.sort(key=lambda x: x.id)
         expected_area_components.nodes.sort(key=lambda x: x.id)
+
         assert area_components == expected_area_components
