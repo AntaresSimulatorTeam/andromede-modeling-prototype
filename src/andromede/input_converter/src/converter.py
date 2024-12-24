@@ -19,7 +19,9 @@ from pydantic import BaseModel
 from andromede.input_converter.src.utils import (
     convert_area_to_component_list,
     resolve_path,
+    convert_renewable_to_component_list,
 )
+
 from andromede.study.parsing import InputStudy
 
 
@@ -29,21 +31,25 @@ class AntaresStudyConverter:
         Initialize processor
         """
         self.study_path = resolve_path(study_path) if study_path else None
-        self.study: Study = read_study_local(self.study_path) if self.study_path else None  # type: ignore
+        self.study: Study = (
+            read_study_local(self.study_path) if self.study_path else None  # type: ignore
+        )
 
     def convert_study_to_input_study(self) -> InputStudy:
         areas = self.study.read_areas()
         area_components = convert_area_to_component_list(areas)
-        return InputStudy(nodes=area_components)
+        root_path = self.study.service.config.study_path  # type: ignore
+        renewable_components = convert_renewable_to_component_list(areas, root_path)
+        return InputStudy(nodes=area_components, components=renewable_components)
 
-    def validate_with_pydantic(
-        self, data: dict, model_class: type[BaseModel]
-    ) -> BaseModel:
-        return model_class(**data)
-
-    def transform_to_yaml(self, data: dict, output_path: str) -> None:
-        with open(output_path, "w") as yaml_file:
-            yaml.dump(data, yaml_file)
+    @staticmethod
+    def transform_to_yaml(model: BaseModel, output_path: str) -> None:
+        with open(output_path, "w", encoding="utf-8") as yaml_file:
+            yaml.dump(
+                {"study": model.model_dump(by_alias=True, exclude_unset=True)},
+                yaml_file,
+                allow_unicode=True,
+            )
 
     def process_all(self) -> None:
         raise NotImplementedError
