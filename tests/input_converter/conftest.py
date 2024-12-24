@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 import pandas as pd
 import pytest
-from antares.craft.model.area import Area
+from antares.craft.model.area import Area, AreaPropertiesLocal
 from antares.craft.model.binding_constraint import (
     BindingConstraint,
     BindingConstraintFrequency,
@@ -47,7 +47,10 @@ def local_study(tmp_path) -> Study:
 def local_study_w_areas(tmp_path, local_study) -> Study:
     areas_to_create = ["fr", "it"]
     for area in areas_to_create:
-        local_study.create_area(area)
+        area_properties = AreaPropertiesLocal(
+            energy_cost_spilled="1.0", energy_cost_unsupplied="1.5"
+        )
+        local_study.create_area(area, properties=area_properties)
     return local_study
 
 
@@ -138,8 +141,15 @@ def actual_adequacy_patch_ini(local_study_w_areas) -> IniFile:
 @pytest.fixture
 def local_study_with_renewable(local_study_w_thermal) -> Study:
     renewable_cluster_name = "renewable cluster"
+    time_serie = pd.DataFrame(
+        [
+            [-9999999980506447872, 0, 9999999980506447872],
+            [0, "fr", 0],
+        ],
+        dtype="object",
+    )
     local_study_w_thermal.get_areas()["fr"].create_renewable_cluster(
-        renewable_cluster_name, RenewableClusterProperties(), None
+        renewable_cluster_name, RenewableClusterProperties(), series=time_serie
     )
     return local_study_w_thermal
 
