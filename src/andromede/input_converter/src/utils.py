@@ -68,6 +68,5 @@ def convert_renewable_to_component_list(
     return components
 
 
-def convert_hydro_to_component_list(area: Area) -> list[InputComponent]:
+def convert_hydro_to_component_list(areas: Area) -> list[InputComponent]:
     raise NotImplementedError
-
