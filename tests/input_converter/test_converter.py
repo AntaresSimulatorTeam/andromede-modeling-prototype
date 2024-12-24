@@ -15,8 +15,7 @@ from andromede.input_converter.src.utils import (
     convert_area_to_component_list,
     convert_renewable_to_component_list,
 )
-from andromede.study.parsing import InputComponent, InputStudy
-from andromede.study.parsing import parse_yaml_components
+from andromede.study.parsing import InputComponent, InputStudy, parse_yaml_components
 
 
 class TestConverter:
