@@ -18,8 +18,8 @@ from andromede.input_converter.src.utils import (
 )
 from andromede.study.parsing import (
     InputComponent,
-    InputStudy,
     InputComponentParameter,
+    InputStudy,
     parse_yaml_components,
 )
 
