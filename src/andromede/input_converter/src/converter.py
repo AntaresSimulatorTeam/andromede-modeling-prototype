@@ -20,6 +20,7 @@ from andromede.input_converter.src.utils import (
     convert_area_to_component_list,
     resolve_path,
     convert_renewable_to_component_list,
+    convert_thermals_to_component_list,
 )
 
 from andromede.study.parsing import InputStudy
@@ -39,8 +40,10 @@ class AntaresStudyConverter:
         areas = self.study.read_areas()
         area_components = convert_area_to_component_list(areas)
         root_path = self.study.service.config.study_path  # type: ignore
-        renewable_components = convert_renewable_to_component_list(areas, root_path)
-        return InputStudy(nodes=area_components, components=renewable_components)
+        list_components = []
+        list_components.extend(convert_renewable_to_component_list(areas, root_path))
+        list_components.extend(convert_thermals_to_component_list(areas, root_path))
+        return InputStudy(nodes=area_components, components=list_components)
 
     @staticmethod
     def transform_to_yaml(model: BaseModel, output_path: str) -> None:
