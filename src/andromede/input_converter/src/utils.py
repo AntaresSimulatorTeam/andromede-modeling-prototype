@@ -105,24 +105,6 @@ def convert_thermals_to_component_list(
                 / Path(thermal.name)
                 / "series.txt"
             )
-            prepro_data_path = (
-                root_path
-                / "input"
-                / "thermal"
-                / "prepro"
-                / Path(area.id)
-                / Path(thermal.name)
-                / "data.txt"
-            )
-            prepro_modulation_path = (
-                root_path
-                / "input"
-                / "thermal"
-                / "prepro"
-                / Path(area.id)
-                / Path(thermal.name)
-                / "modulation.txt"
-            )
             components.extend(
                 [
                     InputComponent(
@@ -145,19 +127,9 @@ def convert_thermals_to_component_list(
                                 value=thermal.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
-                                name=f"{thermal.id}_series",
+                                name="p_max_cluster",
                                 type="timeseries",
                                 timeseries=str(series_path),
-                            ),
-                            InputComponentParameter(
-                                name=f"{thermal.id}_prepro_data",
-                                type="timeseries",
-                                timeseries=str(prepro_data_path),
-                            ),
-                            InputComponentParameter(
-                                name=f"{thermal.id}_prepro_modulation",
-                                type="timeseries",
-                                timeseries=str(prepro_modulation_path),
                             ),
                         ],
                     )

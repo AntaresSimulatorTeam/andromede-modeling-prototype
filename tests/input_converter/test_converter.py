@@ -272,20 +272,9 @@ class TestConverter:
         assert thermals_components[0].parameters[2].name == "nominal_capacity"
         assert thermals_components[0].parameters[2].type == "constant"
         assert (
-            thermals_components[0].parameters[3].name == "test thermal cluster_series"
+            thermals_components[0].parameters[3].name == "p_max_cluster"
         )
         assert thermals_components[0].parameters[3].type == "timeseries"
-        assert (
-            thermals_components[0].parameters[4].name
-            == "test thermal cluster_prepro_data"
-        )
-        assert thermals_components[0].parameters[4].type == "timeseries"
-        assert (
-            thermals_components[0].parameters[5].name
-            == "test thermal cluster_prepro_modulation"
-        )
-        assert thermals_components[0].parameters[5].type == "timeseries"
-        assert thermals_components[0].parameters[5].timeseries == prepro_modulation_path
 
         # To ensure that the comparison between the actual and expected results is not affected by the order of the nodes,
         # both the area_components.nodes and expected_area_components.nodes lists are sorted by the id attribute of each node.
