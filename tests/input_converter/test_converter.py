@@ -10,12 +10,14 @@
 #
 # This file is part of the Antares project.
 
-from antares.craft.model.study import Study
-
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.utils import transform_to_yaml
-from andromede.study.parsing import (InputComponent, InputComponentParameter,
-                                     InputStudy, parse_yaml_components)
+from andromede.study.parsing import (
+    InputComponent,
+    InputComponentParameter,
+    InputStudy,
+    parse_yaml_components,
+)
 
 
 class TestConverter:
