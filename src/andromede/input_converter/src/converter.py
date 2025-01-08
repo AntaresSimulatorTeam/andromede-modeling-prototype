@@ -16,8 +16,7 @@ from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 
 from andromede.input_converter.src.utils import resolve_path
-from andromede.study.parsing import (InputComponent, InputComponentParameter,
-                                     InputStudy)
+from andromede.study.parsing import InputComponent, InputComponentParameter, InputStudy
 
 
 class AntaresStudyConverter:
