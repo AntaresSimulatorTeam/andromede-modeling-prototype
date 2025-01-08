@@ -67,7 +67,7 @@ def local_study_w_links(tmp_path, local_study_w_areas):
 
 @pytest.fixture
 def local_study_w_thermal(tmp_path, local_study_w_links) -> Study:
-    thermal_name = "test thermal cluster"
+    thermal_name = "gaz"
     local_study_w_links.get_areas()["fr"].create_thermal_cluster(thermal_name)
     return local_study_w_links
 
@@ -140,7 +140,7 @@ def actual_adequacy_patch_ini(local_study_w_areas) -> IniFile:
 
 @pytest.fixture
 def local_study_with_renewable(local_study_w_thermal) -> Study:
-    renewable_cluster_name = "renewable cluster"
+    renewable_cluster_name = "generation"
     time_serie = pd.DataFrame(
         [
             [-9999999980506447872, 0, 9999999980506447872],

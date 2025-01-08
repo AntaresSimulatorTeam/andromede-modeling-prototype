@@ -12,18 +12,12 @@
 from pathlib import Path
 from typing import Optional
 
-import yaml
+from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
-from pydantic import BaseModel
 
-from andromede.input_converter.src.utils import (
-    convert_area_to_component_list,
-    resolve_path,
-    convert_renewable_to_component_list,
-    convert_thermals_to_component_list,
-)
-
-from andromede.study.parsing import InputStudy
+from andromede.input_converter.src.utils import resolve_path
+from andromede.study.parsing import (InputComponent, InputComponentParameter,
+                                     InputStudy)
 
 
 class AntaresStudyConverter:
@@ -36,23 +30,147 @@ class AntaresStudyConverter:
             read_study_local(self.study_path) if self.study_path else None  # type: ignore
         )
 
+    def _convert_area_to_component_list(
+        self, areas: list[Area]
+    ) -> list[InputComponent]:
+        components = []
+        for area in areas:
+            components.append(
+                InputComponent(
+                    id=area.id,
+                    model="area",
+                    parameters=[
+                        InputComponentParameter(
+                            name="energy_cost_unsupplied",
+                            type="constant",
+                            value=area.properties.energy_cost_unsupplied,
+                        ),
+                        InputComponentParameter(
+                            name="energy_cost_spilled",
+                            type="constant",
+                            value=area.properties.energy_cost_spilled,
+                        ),
+                    ],
+                )
+            )
+        return components
+
+    def _convert_renewable_to_component_list(
+        self, areas: list[Area], root_path: Path
+    ) -> list[InputComponent]:
+        components = []
+        for area in areas:
+            renewables = area.read_renewables()
+            for renewable in renewables:
+                series_path = (
+                    root_path
+                    / "input"
+                    / "renewables"
+                    / "series"
+                    / Path(area.id)
+                    / Path(renewable.id)
+                    / "series.txt"
+                )
+                components.append(
+                    InputComponent(
+                        id=renewable.id,
+                        model="renewable",
+                        parameters=[
+                            InputComponentParameter(
+                                name="unit_count",
+                                type="constant",
+                                value=renewable.properties.unit_count,
+                            ),
+                            InputComponentParameter(
+                                name="nominal_capacity",
+                                type="constant",
+                                value=renewable.properties.nominal_capacity,
+                            ),
+                            InputComponentParameter(
+                                name="generation",
+                                type="timeseries",
+                                timeseries=str(series_path),
+                            ),
+                        ],
+                    )
+                )
+
+        return components
+
+    def _convert_thermals_to_component_list(
+        self, areas: list[Area], root_path: Path
+    ) -> list[InputComponent]:
+        components = []
+        # Add thermal components for each area
+        for area in areas:
+            thermals = area.read_thermal_clusters()
+            for thermal in thermals:
+                series_path = (
+                    root_path
+                    / "input"
+                    / "thermal"
+                    / "series"
+                    / Path(area.id)
+                    / Path(thermal.name)
+                    / "series.txt"
+                )
+                components.append(
+                    InputComponent(
+                        id=thermal.id,
+                        model="thermal",
+                        parameters=[
+                            InputComponentParameter(
+                                name="unit_count",
+                                type="constant",
+                                value=thermal.properties.unit_count,
+                            ),
+                            InputComponentParameter(
+                                name="efficiency",
+                                type="constant",
+                                value=thermal.properties.efficiency,
+                            ),
+                            InputComponentParameter(
+                                name="nominal_capacity",
+                                type="constant",
+                                value=thermal.properties.nominal_capacity,
+                            ),
+                            InputComponentParameter(
+                                name="marginal_cost",
+                                type="constant",
+                                value=thermal.properties.marginal_cost,
+                            ),
+                            InputComponentParameter(
+                                name="fixed_cost",
+                                type="constant",
+                                value=thermal.properties.fixed_cost,
+                            ),
+                            InputComponentParameter(
+                                name="startup_cost",
+                                type="constant",
+                                value=thermal.properties.startup_cost,
+                            ),
+                            InputComponentParameter(
+                                name="p_max_cluster",
+                                type="timeseries",
+                                timeseries=str(series_path),
+                            ),
+                        ],
+                    )
+                )
+        return components
+
     def convert_study_to_input_study(self) -> InputStudy:
         areas = self.study.read_areas()
-        area_components = convert_area_to_component_list(areas)
         root_path = self.study.service.config.study_path  # type: ignore
+        area_components = self._convert_area_to_component_list(areas)
         list_components = []
-        list_components.extend(convert_renewable_to_component_list(areas, root_path))
-        list_components.extend(convert_thermals_to_component_list(areas, root_path))
+        list_components.extend(
+            self._convert_renewable_to_component_list(areas, root_path)
+        )
+        list_components.extend(
+            self._convert_thermals_to_component_list(areas, root_path)
+        )
         return InputStudy(nodes=area_components, components=list_components)
-
-    @staticmethod
-    def transform_to_yaml(model: BaseModel, output_path: str) -> None:
-        with open(output_path, "w", encoding="utf-8") as yaml_file:
-            yaml.dump(
-                {"study": model.model_dump(by_alias=True, exclude_unset=True)},
-                yaml_file,
-                allow_unicode=True,
-            )
 
     def process_all(self) -> None:
         raise NotImplementedError
