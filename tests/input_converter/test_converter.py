@@ -271,9 +271,7 @@ class TestConverter:
         assert thermals_components[0].parameters[1].type == "constant"
         assert thermals_components[0].parameters[2].name == "nominal_capacity"
         assert thermals_components[0].parameters[2].type == "constant"
-        assert (
-            thermals_components[0].parameters[3].name == "p_max_cluster"
-        )
+        assert thermals_components[0].parameters[3].name == "p_max_cluster"
         assert thermals_components[0].parameters[3].type == "timeseries"
 
         # To ensure that the comparison between the actual and expected results is not affected by the order of the nodes,
