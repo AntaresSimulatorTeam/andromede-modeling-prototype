@@ -10,24 +10,27 @@
 #
 # This file is part of the Antares project.
 from pathlib import Path
-from typing import Optional
+from typing import Union
 
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 
 from andromede.input_converter.src.utils import resolve_path
-from andromede.study.parsing import InputComponent, InputComponentParameter, InputStudy
+from andromede.study.parsing import (InputComponent, InputComponentParameter,
+                                     InputStudy)
 
 
 class AntaresStudyConverter:
-    def __init__(self, study_path: Optional[Path]):
+    def __init__(self, study_input: Union[Path, Study]):
         """
         Initialize processor
         """
-        self.study_path = resolve_path(study_path) if study_path else None
-        self.study: Study = (
-            read_study_local(self.study_path) if self.study_path else None  # type: ignore
-        )
+        if isinstance(study_input, Study):
+            self.study = study_input
+            self.study_path = study_input.service.config.study_path # type: ignore
+        else:
+            self.study = read_study_local(self.study_path)
+            self.study_path = resolve_path(study_input)
 
     def _convert_area_to_component_list(
         self, areas: list[Area]
@@ -55,14 +58,14 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, areas: list[Area], root_path: Path
+        self, areas: list[Area]
     ) -> list[InputComponent]:
         components = []
         for area in areas:
             renewables = area.read_renewables()
             for renewable in renewables:
                 series_path = (
-                    root_path
+                    self.study_path
                     / "input"
                     / "renewables"
                     / "series"
@@ -96,8 +99,8 @@ class AntaresStudyConverter:
 
         return components
 
-    def _convert_thermals_to_component_list(
-        self, areas: list[Area], root_path: Path
+    def _convert_thermal_to_component_list(
+        self, areas: list[Area]
     ) -> list[InputComponent]:
         components = []
         # Add thermal components for each area
@@ -105,7 +108,7 @@ class AntaresStudyConverter:
             thermals = area.read_thermal_clusters()
             for thermal in thermals:
                 series_path = (
-                    root_path
+                    self.study_path
                     / "input"
                     / "thermal"
                     / "series"
@@ -160,15 +163,11 @@ class AntaresStudyConverter:
 
     def convert_study_to_input_study(self) -> InputStudy:
         areas = self.study.read_areas()
-        root_path = self.study.service.config.study_path  # type: ignore
         area_components = self._convert_area_to_component_list(areas)
         list_components = []
-        list_components.extend(
-            self._convert_renewable_to_component_list(areas, root_path)
-        )
-        list_components.extend(
-            self._convert_thermals_to_component_list(areas, root_path)
-        )
+        list_components.extend(self._convert_renewable_to_component_list(areas))
+        list_components.extend(self._convert_thermal_to_component_list(areas))
+
         return InputStudy(nodes=area_components, components=list_components)
 
     def process_all(self) -> None:
