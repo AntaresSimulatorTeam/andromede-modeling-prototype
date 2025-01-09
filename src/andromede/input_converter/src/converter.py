@@ -16,8 +16,7 @@ from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 
 from andromede.input_converter.src.utils import resolve_path
-from andromede.study.parsing import (InputComponent, InputComponentParameter,
-                                     InputStudy)
+from andromede.study.parsing import InputComponent, InputComponentParameter, InputStudy
 
 
 class AntaresStudyConverter:
@@ -27,7 +26,7 @@ class AntaresStudyConverter:
         """
         if isinstance(study_input, Study):
             self.study = study_input
-            self.study_path = study_input.service.config.study_path # type: ignore
+            self.study_path = study_input.service.config.study_path  # type: ignore
         else:
             self.study = read_study_local(self.study_path)
             self.study_path = resolve_path(study_input)
