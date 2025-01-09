@@ -27,9 +27,11 @@ class AntaresStudyConverter:
         if isinstance(study_input, Study):
             self.study = study_input
             self.study_path = study_input.service.config.study_path  # type: ignore
-        else:
-            self.study = read_study_local(self.study_path)
+        elif isinstance(study_input, Path):
             self.study_path = resolve_path(study_input)
+            self.study = read_study_local(self.study_path)
+        else:
+            raise TypeError("Invalid input type")
 
     def _convert_area_to_component_list(
         self, areas: list[Area]
@@ -166,7 +168,11 @@ class AntaresStudyConverter:
         list_components = []
         list_components.extend(self._convert_renewable_to_component_list(areas))
         list_components.extend(self._convert_thermal_to_component_list(areas))
+        # loads = convert_load_matrix_to_component_list(areas, root_path)
 
+        # winds = convert_wind_matrix_to_component_list(areas, root_path)
+        # solars = convert_solar_matrix_to_component_list(areas, root_path)
+        # misc_gens = convert_misc_gen_to_component_list(areas, root_path)
         return InputStudy(nodes=area_components, components=list_components)
 
     def process_all(self) -> None:
