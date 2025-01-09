@@ -169,7 +169,7 @@ class TestConverter:
         assert input_study == expected_input_study
 
     def test_convert_area_to_component(self, local_study_w_areas):
-        converter, areas = self._init_area_reading(local_study_w_areas)
+        areas, converter = self._init_area_reading(local_study_w_areas)
         area_components = converter._convert_area_to_component_list(areas)
 
         expected_area_components = [
