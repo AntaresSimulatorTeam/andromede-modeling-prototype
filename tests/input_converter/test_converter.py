@@ -402,4 +402,7 @@ class TestConverter:
             components=[],
             connections=[],
         )
+
+        expected_validated_data.nodes.sort(key=lambda x: x.id)
+        validated_data.nodes.sort(key=lambda x: x.id)
         assert validated_data == expected_validated_data
