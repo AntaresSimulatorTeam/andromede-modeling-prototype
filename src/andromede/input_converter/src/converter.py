@@ -162,6 +162,84 @@ class AntaresStudyConverter:
                 )
         return components
 
+    def _convert_wind_matrix_to_component_list(
+        self, areas: list[Area]
+    ) -> list[InputComponent]:
+        components = []
+
+        for area in areas:
+            series_path = (
+                self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
+            )
+            components.append(
+                InputComponent(
+                    id=area.id,
+                    model="wind",
+                    parameters=[
+                        InputComponentParameter(
+                            name="wind",
+                            type="timeseries",
+                            timeseries=str(series_path),
+                        )
+                    ],
+                )
+            )
+
+        return components
+
+    def _convert_solar_matrix_to_component_list(
+        self, areas: list[Area]
+    ) -> list[InputComponent]:
+        components = []
+
+        for area in areas:
+            series_path = (
+                self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
+            )
+            components.extend(
+                [
+                    InputComponent(
+                        id=area.id,
+                        model="solar",
+                        parameters=[
+                            InputComponentParameter(
+                                name="solar",
+                                type="timeseries",
+                                timeseries=str(series_path),
+                            )
+                        ],
+                    )
+                ]
+            )
+
+        return components
+
+    def _convert_load_matrix_to_component_list(
+        self, areas: list[Area]
+    ) -> list[InputComponent]:
+        components = []
+        for area in areas:
+            series_path = (
+                self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
+            )
+            components.extend(
+                [
+                    InputComponent(
+                        id=area.id,
+                        model="load",
+                        parameters=[
+                            InputComponentParameter(
+                                name="load",
+                                type="timeseries",
+                                timeseries=str(series_path),
+                            )
+                        ],
+                    )
+                ]
+            )
+
+        return components
+
     def convert_study_to_input_study(self) -> InputStudy:
         areas = self.study.read_areas()
         area_components = self._convert_area_to_component_list(areas)

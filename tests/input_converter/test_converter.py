@@ -226,7 +226,7 @@ class TestConverter:
         area_components.sort(key=lambda x: x.id)
         assert area_components == expected_area_components
 
-    def test_convert_renewables_to_input_study(self, local_study_with_renewable):
+    def test_convert_renewables_to_component(self, local_study_with_renewable):
         areas, converter = self._init_area_reading(local_study_with_renewable)
         study_path = converter.study_path
         renewables_components = converter._convert_renewable_to_component_list(areas)
@@ -272,7 +272,7 @@ class TestConverter:
         ]
         assert renewables_components == expected_renewable_component
 
-    def test_convert_thermals_to_input_study(self, local_study_w_thermal):
+    def test_convert_thermals_to_component(self, local_study_w_thermal):
         areas, converter = self._init_area_reading(local_study_w_thermal)
 
         thermals_components = converter._convert_thermal_to_component_list(areas)
@@ -406,3 +406,80 @@ class TestConverter:
         expected_validated_data.nodes.sort(key=lambda x: x.id)
         validated_data.nodes.sort(key=lambda x: x.id)
         assert validated_data == expected_validated_data
+
+    def test_convert_wind_to_component(self, local_study_w_areas, fr_wind):
+        areas, converter = self._init_area_reading(local_study_w_areas)
+
+        wind_components = converter._convert_wind_matrix_to_component_list(areas)
+        study_path = converter.study_path
+
+        wind_timeserie = str(study_path / "input" / "wind" / "series" / f"wind_fr.txt")
+        expected_wind_components = InputComponent(
+            id="fr",
+            model="wind",
+            scenario_group=None,
+            parameters=[
+                InputComponentParameter(
+                    name="wind",
+                    type="timeseries",
+                    scenario_group=None,
+                    value=None,
+                    timeseries=f"{wind_timeserie}",
+                ),
+            ],
+        )
+
+        wind_components.sort(key=lambda x: x.id)
+        assert wind_components[1] == expected_wind_components
+
+    def test_convert_solar_to_component(self, local_study_w_areas, fr_solar):
+        areas, converter = self._init_area_reading(local_study_w_areas)
+
+        solar_components = converter._convert_solar_matrix_to_component_list(areas)
+        study_path = converter.study_path
+
+        solar_timeserie = str(
+            study_path / "input" / "solar" / "series" / f"solar_fr.txt"
+        )
+        expected_solar_components = InputComponent(
+            id="fr",
+            model="solar",
+            scenario_group=None,
+            parameters=[
+                InputComponentParameter(
+                    name="solar",
+                    type="timeseries",
+                    scenario_group=None,
+                    value=None,
+                    timeseries=f"{solar_timeserie}",
+                ),
+            ],
+        )
+
+        solar_components.sort(key=lambda x: x.id)
+        assert solar_components[1] == expected_solar_components
+
+    def test_convert_load_to_component(self, local_study_w_areas, fr_load):
+        areas, converter = self._init_area_reading(local_study_w_areas)
+
+        load_components = converter._convert_load_matrix_to_component_list(areas)
+        study_path = converter.study_path
+
+        load_timeserie = str(study_path / "input" / "load" / "series" / f"load_fr.txt")
+        expected_load_components = InputComponent(
+            id="fr",
+            model="load",
+            scenario_group=None,
+            parameters=[
+                InputComponentParameter(
+                    name="load",
+                    type="timeseries",
+                    scenario_group=None,
+                    value=None,
+                    timeseries=f"{load_timeserie}",
+                ),
+            ],
+        )
+
+        load_components.sort(key=lambda x: x.id)
+        assert load_components[1] == expected_load_components
