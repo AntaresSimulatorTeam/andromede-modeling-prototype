@@ -108,6 +108,7 @@ class AntaresStudyConverter:
         for area in areas:
             thermals = area.read_thermal_clusters()
             for thermal in thermals:
+                # TODO tous les objets thermal ici sont connectés à l'area area.id
                 series_path = (
                     self.study_path
                     / "input"
@@ -162,81 +163,106 @@ class AntaresStudyConverter:
                 )
         return components
 
-    def _convert_wind_matrix_to_component_list(
+    def _convert_wind_to_component_list(
         self, areas: list[Area]
     ) -> list[InputComponent]:
         components = []
 
         for area in areas:
-            series_path = (
-                self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
-            )
-            components.append(
-                InputComponent(
-                    id=area.id,
-                    model="wind",
-                    parameters=[
-                        InputComponentParameter(
-                            name="wind",
-                            type="timeseries",
-                            timeseries=str(series_path),
+            try:
+                if area.get_wind_matrix().any:
+                    series_path = (
+                        self.study_path
+                        / "input"
+                        / "wind"
+                        / "series"
+                        / f"wind_{area.id}.txt"
+                    )
+
+                    components.append(
+                        InputComponent(
+                            id=area.id,
+                            model="wind",
+                            parameters=[
+                                InputComponentParameter(
+                                    name="wind",
+                                    type="timeseries",
+                                    timeseries=str(series_path),
+                                )
+                            ],
                         )
-                    ],
-                )
-            )
+                    )
+            except FileNotFoundError:
+                pass
 
         return components
 
-    def _convert_solar_matrix_to_component_list(
+    def _convert_solar_to_component_list(
         self, areas: list[Area]
     ) -> list[InputComponent]:
         components = []
 
         for area in areas:
-            series_path = (
-                self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
-            )
-            components.extend(
-                [
-                    InputComponent(
-                        id=area.id,
-                        model="solar",
-                        parameters=[
-                            InputComponentParameter(
-                                name="solar",
-                                type="timeseries",
-                                timeseries=str(series_path),
-                            )
-                        ],
+            try:
+                if area.get_solar_matrix().any:
+                    series_path = (
+                        self.study_path
+                        / "input"
+                        / "solar"
+                        / "series"
+                        / f"solar_{area.id}.txt"
                     )
-                ]
-            )
+                    components.extend(
+                        [
+                            InputComponent(
+                                id=area.id,
+                                model="solar",
+                                parameters=[
+                                    InputComponentParameter(
+                                        name="solar",
+                                        type="timeseries",
+                                        timeseries=str(series_path),
+                                    )
+                                ],
+                            )
+                        ]
+                    )
+            except FileNotFoundError:
+                pass
 
         return components
 
-    def _convert_load_matrix_to_component_list(
+    def _convert_load_to_component_list(
         self, areas: list[Area]
     ) -> list[InputComponent]:
         components = []
         for area in areas:
-            series_path = (
-                self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
-            )
-            components.extend(
-                [
-                    InputComponent(
-                        id=area.id,
-                        model="load",
-                        parameters=[
-                            InputComponentParameter(
-                                name="load",
-                                type="timeseries",
-                                timeseries=str(series_path),
-                            )
-                        ],
+            try:
+                if area.get_load_matrix().any:
+                    series_path = (
+                        self.study_path
+                        / "input"
+                        / "load"
+                        / "series"
+                        / f"load_{area.id}.txt"
                     )
-                ]
-            )
+                    components.extend(
+                        [
+                            InputComponent(
+                                id=area.id,
+                                model="load",
+                                parameters=[
+                                    InputComponentParameter(
+                                        name="load",
+                                        type="timeseries",
+                                        timeseries=str(series_path),
+                                    )
+                                ],
+                            )
+                        ]
+                    )
+            except FileNotFoundError:
+                pass
 
         return components
 
@@ -246,11 +272,10 @@ class AntaresStudyConverter:
         list_components = []
         list_components.extend(self._convert_renewable_to_component_list(areas))
         list_components.extend(self._convert_thermal_to_component_list(areas))
-        # loads = convert_load_matrix_to_component_list(areas, root_path)
+        list_components.extend(self._convert_load_to_component_list(areas))
+        list_components.extend(self._convert_wind_to_component_list(areas))
+        list_components.extend(self._convert_solar_to_component_list(areas))
 
-        # winds = convert_wind_matrix_to_component_list(areas, root_path)
-        # solars = convert_solar_matrix_to_component_list(areas, root_path)
-        # misc_gens = convert_misc_gen_to_component_list(areas, root_path)
         return InputStudy(nodes=area_components, components=list_components)
 
     def process_all(self) -> None:
