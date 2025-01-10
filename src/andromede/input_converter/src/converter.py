@@ -170,28 +170,28 @@ class AntaresStudyConverter:
 
         for area in areas:
             try:
-                if area.get_wind_matrix().any:
-                    series_path = (
-                        self.study_path
-                        / "input"
-                        / "wind"
-                        / "series"
-                        / f"wind_{area.id}.txt"
-                    )
+                area.get_wind_matrix()
+                series_path = (
+                    self.study_path
+                    / "input"
+                    / "wind"
+                    / "series"
+                    / f"wind_{area.id}.txt"
+                )
 
-                    components.append(
-                        InputComponent(
-                            id=area.id,
-                            model="wind",
-                            parameters=[
-                                InputComponentParameter(
-                                    name="wind",
-                                    type="timeseries",
-                                    timeseries=str(series_path),
-                                )
-                            ],
-                        )
+                components.append(
+                    InputComponent(
+                        id=area.id,
+                        model="wind",
+                        parameters=[
+                            InputComponentParameter(
+                                name="wind",
+                                type="timeseries",
+                                timeseries=str(series_path),
+                            )
+                        ],
                     )
+                )
             except FileNotFoundError:
                 pass
 
@@ -204,29 +204,29 @@ class AntaresStudyConverter:
 
         for area in areas:
             try:
-                if area.get_solar_matrix().any:
-                    series_path = (
-                        self.study_path
-                        / "input"
-                        / "solar"
-                        / "series"
-                        / f"solar_{area.id}.txt"
-                    )
-                    components.extend(
-                        [
-                            InputComponent(
-                                id=area.id,
-                                model="solar",
-                                parameters=[
-                                    InputComponentParameter(
-                                        name="solar",
-                                        type="timeseries",
-                                        timeseries=str(series_path),
-                                    )
-                                ],
-                            )
-                        ]
-                    )
+                area.get_solar_matrix()
+                series_path = (
+                    self.study_path
+                    / "input"
+                    / "solar"
+                    / "series"
+                    / f"solar_{area.id}.txt"
+                )
+                components.extend(
+                    [
+                        InputComponent(
+                            id=area.id,
+                            model="solar",
+                            parameters=[
+                                InputComponentParameter(
+                                    name="solar",
+                                    type="timeseries",
+                                    timeseries=str(series_path),
+                                )
+                            ],
+                        )
+                    ]
+                )
             except FileNotFoundError:
                 pass
 
@@ -238,29 +238,29 @@ class AntaresStudyConverter:
         components = []
         for area in areas:
             try:
-                if area.get_load_matrix().any:
-                    series_path = (
-                        self.study_path
-                        / "input"
-                        / "load"
-                        / "series"
-                        / f"load_{area.id}.txt"
-                    )
-                    components.extend(
-                        [
-                            InputComponent(
-                                id=area.id,
-                                model="load",
-                                parameters=[
-                                    InputComponentParameter(
-                                        name="load",
-                                        type="timeseries",
-                                        timeseries=str(series_path),
-                                    )
-                                ],
-                            )
-                        ]
-                    )
+                area.get_load_matrix()
+                series_path = (
+                    self.study_path
+                    / "input"
+                    / "load"
+                    / "series"
+                    / f"load_{area.id}.txt"
+                )
+                components.extend(
+                    [
+                        InputComponent(
+                            id=area.id,
+                            model="load",
+                            parameters=[
+                                InputComponentParameter(
+                                    name="load",
+                                    type="timeseries",
+                                    timeseries=str(series_path),
+                                )
+                            ],
+                        )
+                    ]
+                )
             except FileNotFoundError:
                 pass
 
