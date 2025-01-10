@@ -108,7 +108,6 @@ class AntaresStudyConverter:
         for area in areas:
             thermals = area.read_thermal_clusters()
             for thermal in thermals:
-                # TODO tous les objets thermal ici sont connectés à l'area area.id
                 series_path = (
                     self.study_path
                     / "input"
