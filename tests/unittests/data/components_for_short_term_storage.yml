@@ -57,10 +57,10 @@ study:
 
 
   connections:
-      - component1: N # thermal.id
-        port_1: injection_port # balance_port
-        component2: D # area.id
-        port_2: injection_port #  balance_port
+      - component1: N
+        port_1: injection_port
+        component2: D
+        port_2: injection_port
 
       - component1: N
         port_1: injection_port
