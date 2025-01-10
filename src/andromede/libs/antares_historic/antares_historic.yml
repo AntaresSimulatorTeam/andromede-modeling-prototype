@@ -124,10 +124,10 @@ library:
         - name: d_min_down
           type: integer
           scenario-dependent: false
-        - name: nb_units_min # Equals to ceil(p_min_cluster/p_max_unit), to be done in preprocessing (in timeseries)
+        - name: nb_units_min # Equals to ceil(p_min_cluster/p_max_unit), to be done in preprocessing
           type: integer
           scenario-dependent: false
-        - name: nb_units_max # Equals to ceil(p_max_cluster/p_max_unit), to be done in preprocessing (in timeseries)
+        - name: nb_units_max # Equals to ceil(p_max_cluster/p_max_unit), to be done in preprocessing
           type: integer
       variables:
         - name: generation
