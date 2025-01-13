@@ -38,6 +38,22 @@ class AntaresStudyConverter:
         else:
             raise TypeError("Invalid input type")
 
+    def _validate_matrix(self, df):
+        """
+        Check and validate the following conditions:
+        1. The dataframe from this path is not empty.
+        2. The dataframe does not contains only zero values.
+
+        :param df: dataframe to validate.
+        """
+        if df.empty:
+            return False
+
+        if (df == 0).all().all():
+            return False
+
+        return True
+
     def _convert_area_to_component_list(
         self, areas: list[Area]
     ) -> list[InputComponent]:
@@ -191,40 +207,32 @@ class AntaresStudyConverter:
         components = []
         connections = []
         for area in areas:
-            try:
-                series_path = (
-                    self.study_path
-                    / "input"
-                    / "wind"
-                    / "series"
-                    / f"wind_{area.id}.txt"
-                )
-                area.get_wind_matrix()
-            except FileNotFoundError:
-                print(f"File {series_path} not found")
-                continue
-
-            components.append(
-                InputComponent(
-                    id=area.id,
-                    model="wind",
-                    parameters=[
-                        InputComponentParameter(
-                            name="wind",
-                            type="timeseries",
-                            timeseries=str(series_path),
+            series_path = (
+                self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
+            )
+            if series_path.exists():
+                if self._validate_matrix(area.get_wind_matrix()):
+                    components.append(
+                        InputComponent(
+                            id=area.id,
+                            model="wind",
+                            parameters=[
+                                InputComponentParameter(
+                                    name="wind",
+                                    type="timeseries",
+                                    timeseries=str(series_path),
+                                )
+                            ],
                         )
-                    ],
-                )
-            )
-            connections.append(
-                InputPortConnections(
-                    component1="wind",
-                    port_1="balance_port",
-                    component2=area.id,
-                    port_2="balance_port",
-                )
-            )
+                    )
+                    connections.append(
+                        InputPortConnections(
+                            component1="wind",
+                            port_1="balance_port",
+                            component2=area.id,
+                            port_2="balance_port",
+                        )
+                    )
 
         return components, connections
 
@@ -234,42 +242,35 @@ class AntaresStudyConverter:
         components = []
         connections = []
         for area in areas:
-            try:
-                series_path = (
-                    self.study_path
-                    / "input"
-                    / "solar"
-                    / "series"
-                    / f"solar_{area.id}.txt"
-                )
-                area.get_solar_matrix()
-            except FileNotFoundError:
-                print(f"File {series_path} not found")
-                continue
+            series_path = (
+                self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
+            )
 
-            components.extend(
-                [
-                    InputComponent(
-                        id=area.id,
-                        model="solar",
-                        parameters=[
-                            InputComponentParameter(
-                                name="solar",
-                                type="timeseries",
-                                timeseries=str(series_path),
+            if series_path.exists():
+                if self._validate_matrix(area.get_solar_matrix()):
+                    components.extend(
+                        [
+                            InputComponent(
+                                id=area.id,
+                                model="solar",
+                                parameters=[
+                                    InputComponentParameter(
+                                        name="solar",
+                                        type="timeseries",
+                                        timeseries=str(series_path),
+                                    )
+                                ],
                             )
-                        ],
+                        ]
                     )
-                ]
-            )
-            connections.append(
-                InputPortConnections(
-                    component1="solar",
-                    port_1="balance_port",
-                    component2=area.id,
-                    port_2="balance_port",
-                )
-            )
+                    connections.append(
+                        InputPortConnections(
+                            component1="solar",
+                            port_1="balance_port",
+                            component2=area.id,
+                            port_2="balance_port",
+                        )
+                    )
 
         return components, connections
 
@@ -279,42 +280,34 @@ class AntaresStudyConverter:
         components = []
         connections = []
         for area in areas:
-            try:
-                series_path = (
-                    self.study_path
-                    / "input"
-                    / "load"
-                    / "series"
-                    / f"load_{area.id}.txt"
-                )
-                area.get_load_matrix()
-            except FileNotFoundError:
-                print(f"File {series_path} not found")
-                continue
-
-            components.extend(
-                [
-                    InputComponent(
-                        id=area.id,
-                        model="load",
-                        parameters=[
-                            InputComponentParameter(
-                                name="load",
-                                type="timeseries",
-                                timeseries=str(series_path),
+            series_path = (
+                self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
+            )
+            if series_path.exists():
+                if self._validate_matrix(area.get_load_matrix()):
+                    components.extend(
+                        [
+                            InputComponent(
+                                id=area.id,
+                                model="load",
+                                parameters=[
+                                    InputComponentParameter(
+                                        name="load",
+                                        type="timeseries",
+                                        timeseries=str(series_path),
+                                    )
+                                ],
                             )
-                        ],
+                        ]
                     )
-                ]
-            )
-            connections.append(
-                InputPortConnections(
-                    component1="load",
-                    port_1="balance_port",
-                    component2=area.id,
-                    port_2="balance_port",
-                )
-            )
+                    connections.append(
+                        InputPortConnections(
+                            component1="load",
+                            port_1="balance_port",
+                            component2=area.id,
+                            port_2="balance_port",
+                        )
+                    )
 
         return components, connections
 

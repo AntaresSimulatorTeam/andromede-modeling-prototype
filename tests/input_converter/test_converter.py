@@ -19,6 +19,7 @@ from andromede.study.parsing import (
     InputStudy,
     parse_yaml_components,
 )
+import pytest
 
 
 class TestConverter:
@@ -438,41 +439,6 @@ class TestConverter:
         validated_data.nodes.sort(key=lambda x: x.id)
         assert validated_data == expected_validated_data
 
-    def test_convert_wind_to_component(self, local_study_w_areas, fr_wind):
-        areas, converter = self._init_area_reading(local_study_w_areas)
-
-        wind_components, wind_connection = converter._convert_wind_to_component_list(
-            areas
-        )
-        study_path = converter.study_path
-
-        wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr.txt")
-        expected_wind_connection = [
-            InputPortConnections(
-                component1="wind",
-                port_1="balance_port",
-                component2="fr",
-                port_2="balance_port",
-            )
-        ]
-        expected_wind_components = InputComponent(
-            id="fr",
-            model="wind",
-            scenario_group=None,
-            parameters=[
-                InputComponentParameter(
-                    name="wind",
-                    type="timeseries",
-                    scenario_group=None,
-                    value=None,
-                    timeseries=f"{wind_timeseries}",
-                ),
-            ],
-        )
-
-        assert wind_components[0] == expected_wind_components
-        assert wind_connection == expected_wind_connection
-
     def test_convert_solar_to_component(self, local_study_w_areas, fr_solar):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
@@ -544,3 +510,75 @@ class TestConverter:
 
         assert load_components[0] == expected_load_components
         assert load_connection == expected_load_connection
+
+    @pytest.mark.parametrize(
+        "fr_wind",
+        [
+            [1, 1, 1],  # Dataframe filled with 1
+        ],
+        indirect=True,
+    )
+    def test_convert_wind_to_component_not_empty_file(
+        self, local_study_w_areas, fr_wind
+    ):
+        areas, converter = self._init_area_reading(local_study_w_areas)
+
+        wind_components, wind_connection = converter._convert_wind_to_component_list(
+            areas
+        )
+        study_path = converter.study_path
+
+        wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr.txt")
+        expected_wind_connection = [
+            InputPortConnections(
+                component1="wind",
+                port_1="balance_port",
+                component2="fr",
+                port_2="balance_port",
+            )
+        ]
+        expected_wind_components = InputComponent(
+            id="fr",
+            model="wind",
+            scenario_group=None,
+            parameters=[
+                InputComponentParameter(
+                    name="wind",
+                    type="timeseries",
+                    scenario_group=None,
+                    value=None,
+                    timeseries=f"{wind_timeseries}",
+                ),
+            ],
+        )
+
+        assert wind_components[0] == expected_wind_components
+        assert wind_connection == expected_wind_connection
+
+    @pytest.mark.parametrize(
+        "fr_wind",
+        [
+            [],  # DataFrame empty
+        ],
+        indirect=True,
+    )
+    def test_convert_wind_to_component_empty_file(self, local_study_w_areas, fr_wind):
+        areas, converter = self._init_area_reading(local_study_w_areas)
+
+        wind_components, _ = converter._convert_wind_to_component_list(areas)
+
+        assert wind_components == []
+
+    @pytest.mark.parametrize(
+        "fr_wind",
+        [
+            [0, 0, 0],  # DataFrame full of 0
+        ],
+        indirect=True,
+    )
+    def test_convert_wind_to_component_zero_values(self, local_study_w_areas, fr_wind):
+        areas, converter = self._init_area_reading(local_study_w_areas)
+
+        wind_components, _ = converter._convert_wind_to_component_list(areas)
+
+        assert wind_components == []
