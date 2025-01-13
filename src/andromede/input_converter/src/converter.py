@@ -39,7 +39,7 @@ class AntaresStudyConverter:
         else:
             raise TypeError("Invalid input type")
 
-    def _validate_matrix(self, df: DataFrame)-> bool:
+    def _validate_matrix(self, df: DataFrame) -> bool:
         """
         Check and validate the following conditions:
         1. The dataframe from this path is not empty.
