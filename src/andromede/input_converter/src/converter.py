@@ -22,6 +22,7 @@ from andromede.study.parsing import (
     InputStudy,
     InputPortConnections,
 )
+from pandas import DataFrame
 
 
 class AntaresStudyConverter:
@@ -38,7 +39,7 @@ class AntaresStudyConverter:
         else:
             raise TypeError("Invalid input type")
 
-    def _validate_matrix(self, df):
+    def _validate_matrix(self, df: DataFrame)-> bool:
         """
         Check and validate the following conditions:
         1. The dataframe from this path is not empty.
