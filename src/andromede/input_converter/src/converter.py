@@ -192,7 +192,6 @@ class AntaresStudyConverter:
         connections = []
         for area in areas:
             try:
-                area.get_wind_matrix()
                 series_path = (
                     self.study_path
                     / "input"
@@ -200,30 +199,32 @@ class AntaresStudyConverter:
                     / "series"
                     / f"wind_{area.id}.txt"
                 )
-
-                components.append(
-                    InputComponent(
-                        id=area.id,
-                        model="wind",
-                        parameters=[
-                            InputComponentParameter(
-                                name="wind",
-                                type="timeseries",
-                                timeseries=str(series_path),
-                            )
-                        ],
-                    )
-                )
-                connections.append(
-                    InputPortConnections(
-                        component1="wind",
-                        port_1="balance_port",
-                        component2=area.id,
-                        port_2="balance_port",
-                    )
-                )
+                area.get_wind_matrix()
             except FileNotFoundError:
-                pass
+                print(f"File {series_path} not found")
+                continue
+
+            components.append(
+                InputComponent(
+                    id=area.id,
+                    model="wind",
+                    parameters=[
+                        InputComponentParameter(
+                            name="wind",
+                            type="timeseries",
+                            timeseries=str(series_path),
+                        )
+                    ],
+                )
+            )
+            connections.append(
+                InputPortConnections(
+                    component1="wind",
+                    port_1="balance_port",
+                    component2=area.id,
+                    port_2="balance_port",
+                )
+            )
 
         return components, connections
 
@@ -234,7 +235,6 @@ class AntaresStudyConverter:
         connections = []
         for area in areas:
             try:
-                area.get_solar_matrix()
                 series_path = (
                     self.study_path
                     / "input"
@@ -242,31 +242,34 @@ class AntaresStudyConverter:
                     / "series"
                     / f"solar_{area.id}.txt"
                 )
-                components.extend(
-                    [
-                        InputComponent(
-                            id=area.id,
-                            model="solar",
-                            parameters=[
-                                InputComponentParameter(
-                                    name="solar",
-                                    type="timeseries",
-                                    timeseries=str(series_path),
-                                )
-                            ],
-                        )
-                    ]
-                )
-                connections.append(
-                    InputPortConnections(
-                        component1="solar",
-                        port_1="balance_port",
-                        component2=area.id,
-                        port_2="balance_port",
-                    )
-                )
+                area.get_solar_matrix()
             except FileNotFoundError:
-                pass
+                print(f"File {series_path} not found")
+                continue
+
+            components.extend(
+                [
+                    InputComponent(
+                        id=area.id,
+                        model="solar",
+                        parameters=[
+                            InputComponentParameter(
+                                name="solar",
+                                type="timeseries",
+                                timeseries=str(series_path),
+                            )
+                        ],
+                    )
+                ]
+            )
+            connections.append(
+                InputPortConnections(
+                    component1="solar",
+                    port_1="balance_port",
+                    component2=area.id,
+                    port_2="balance_port",
+                )
+            )
 
         return components, connections
 
@@ -277,7 +280,6 @@ class AntaresStudyConverter:
         connections = []
         for area in areas:
             try:
-                area.get_load_matrix()
                 series_path = (
                     self.study_path
                     / "input"
@@ -285,31 +287,34 @@ class AntaresStudyConverter:
                     / "series"
                     / f"load_{area.id}.txt"
                 )
-                components.extend(
-                    [
-                        InputComponent(
-                            id=area.id,
-                            model="load",
-                            parameters=[
-                                InputComponentParameter(
-                                    name="load",
-                                    type="timeseries",
-                                    timeseries=str(series_path),
-                                )
-                            ],
-                        )
-                    ]
-                )
-                connections.append(
-                    InputPortConnections(
-                        component1="load",
-                        port_1="balance_port",
-                        component2=area.id,
-                        port_2="balance_port",
-                    )
-                )
+                area.get_load_matrix()
             except FileNotFoundError:
-                pass
+                print(f"File {series_path} not found")
+                continue
+
+            components.extend(
+                [
+                    InputComponent(
+                        id=area.id,
+                        model="load",
+                        parameters=[
+                            InputComponentParameter(
+                                name="load",
+                                type="timeseries",
+                                timeseries=str(series_path),
+                            )
+                        ],
+                    )
+                ]
+            )
+            connections.append(
+                InputPortConnections(
+                    component1="load",
+                    port_1="balance_port",
+                    component2=area.id,
+                    port_2="balance_port",
+                )
+            )
 
         return components, connections
 
