@@ -9,6 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+import pytest
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.utils import transform_to_yaml
@@ -19,7 +20,6 @@ from andromede.study.parsing import (
     InputStudy,
     parse_yaml_components,
 )
-import pytest
 
 
 class TestConverter:
