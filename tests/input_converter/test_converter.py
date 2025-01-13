@@ -15,6 +15,7 @@ from andromede.input_converter.src.utils import transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
+    InputPortConnections,
     InputStudy,
     parse_yaml_components,
 )
@@ -161,7 +162,7 @@ class TestConverter:
                     ],
                 )
             ],
-            connections=[],
+            connections=[InputPortConnections(component1='gaz', port_1='balance_port', component2='fr', port_2='balance_port')],
         )
 
         # To ensure that the comparison between the actual and expected results is not affected by the order of the nodes,
@@ -169,7 +170,6 @@ class TestConverter:
         # This sorting step ensures that the test checks only the presence and validity of the nodes, not their order.
         input_study.nodes.sort(key=lambda x: x.id)
         expected_input_study.nodes.sort(key=lambda x: x.id)
-
         assert input_study == expected_input_study
 
     def test_convert_area_to_component(self, local_study_w_areas):
@@ -229,7 +229,7 @@ class TestConverter:
     def test_convert_renewables_to_component(self, local_study_with_renewable):
         areas, converter = self._init_area_reading(local_study_with_renewable)
         study_path = converter.study_path
-        renewables_components = converter._convert_renewable_to_component_list(areas)
+        renewables_components, renewable_connections = converter._convert_renewable_to_component_list(areas)
 
         timeserie_path = str(
             study_path
@@ -240,6 +240,7 @@ class TestConverter:
             / "generation"
             / "series.txt"
         )
+        expected_renewable_connections = [InputPortConnections(component1='generation', port_1='balance_port', component2='fr', port_2='balance_port')]
         expected_renewable_component = [
             InputComponent(
                 id="generation",
@@ -271,16 +272,18 @@ class TestConverter:
             )
         ]
         assert renewables_components == expected_renewable_component
+        assert renewable_connections == expected_renewable_connections
 
     def test_convert_thermals_to_component(self, local_study_w_thermal):
         areas, converter = self._init_area_reading(local_study_w_thermal)
 
-        thermals_components = converter._convert_thermal_to_component_list(areas)
+        thermals_components, thermals_connections= converter._convert_thermal_to_component_list(areas)
 
         study_path = converter.study_path
         p_max_timeserie = str(
             study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "series.txt"
         )
+        expected_thermals_connections = [InputPortConnections(component1='gaz', port_1='balance_port', component2='fr', port_2='balance_port')]
         expected_thermals_components = [
             InputComponent(
                 id="gaz",
@@ -340,6 +343,7 @@ class TestConverter:
             )
         ]
         assert thermals_components == expected_thermals_components
+        assert thermals_connections == expected_thermals_connections
 
     def test_convert_area_to_yaml(self, local_study_w_areas):
         areas, converter = self._init_area_reading(local_study_w_areas)
@@ -410,10 +414,11 @@ class TestConverter:
     def test_convert_wind_to_component(self, local_study_w_areas, fr_wind):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        wind_components = converter._convert_wind_to_component_list(areas)
+        wind_components, wind_connection = converter._convert_wind_to_component_list(areas)
         study_path = converter.study_path
 
         wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr.txt")
+        expected_wind_connection = [InputPortConnections(component1='wind', port_1='balance_port', component2='fr', port_2='balance_port')]
         expected_wind_components = InputComponent(
             id="fr",
             model="wind",
@@ -430,16 +435,18 @@ class TestConverter:
         )
 
         assert wind_components[0] == expected_wind_components
+        assert wind_connection == expected_wind_connection
 
     def test_convert_solar_to_component(self, local_study_w_areas, fr_solar):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        solar_components = converter._convert_solar_to_component_list(areas)
+        solar_components, solar_connection = converter._convert_solar_to_component_list(areas)
         study_path = converter.study_path
 
         solar_timeseries = str(
             study_path / "input" / "solar" / "series" / f"solar_fr.txt"
         )
+        expected_solar_connection = [InputPortConnections(component1='solar', port_1='balance_port', component2='fr', port_2='balance_port')]
         expected_solar_components = InputComponent(
             id="fr",
             model="solar",
@@ -456,14 +463,16 @@ class TestConverter:
         )
 
         assert solar_components[0] == expected_solar_components
+        assert solar_connection == expected_solar_connection
 
     def test_convert_load_to_component(self, local_study_w_areas, fr_load):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        load_components = converter._convert_load_to_component_list(areas)
+        load_components, load_connection = converter._convert_load_to_component_list(areas)
         study_path = converter.study_path
 
         load_timeseries = str(study_path / "input" / "load" / "series" / f"load_fr.txt")
+        expected_load_connection = [InputPortConnections(component1='load', port_1='balance_port', component2='fr', port_2='balance_port')]
         expected_load_components = InputComponent(
             id="fr",
             model="load",
@@ -480,3 +489,4 @@ class TestConverter:
         )
 
         assert load_components[0] == expected_load_components
+        assert load_connection == expected_load_connection

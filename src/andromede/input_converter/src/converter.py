@@ -16,7 +16,12 @@ from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 
 from andromede.input_converter.src.utils import resolve_path
-from andromede.study.parsing import InputComponent, InputComponentParameter, InputStudy
+from andromede.study.parsing import (
+    InputComponent,
+    InputComponentParameter,
+    InputStudy,
+    InputPortConnections,
+)
 
 
 class AntaresStudyConverter:
@@ -60,8 +65,9 @@ class AntaresStudyConverter:
 
     def _convert_renewable_to_component_list(
         self, areas: list[Area]
-    ) -> list[InputComponent]:
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
+        connections = []
         for area in areas:
             renewables = area.read_renewables()
             for renewable in renewables:
@@ -97,13 +103,22 @@ class AntaresStudyConverter:
                         ],
                     )
                 )
+                connections.append(
+                    InputPortConnections(
+                        component1=renewable.id,
+                        port_1="balance_port",
+                        component2=area.id,
+                        port_2="balance_port",
+                    )
+                )
 
-        return components
+        return components, connections
 
     def _convert_thermal_to_component_list(
         self, areas: list[Area]
-    ) -> list[InputComponent]:
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
+        connections = []
         # Add thermal components for each area
         for area in areas:
             thermals = area.read_thermal_clusters()
@@ -160,13 +175,21 @@ class AntaresStudyConverter:
                         ],
                     )
                 )
-        return components
+                connections.append(
+                    InputPortConnections(
+                        component1=thermal.id,
+                        port_1="balance_port",
+                        component2=area.id,
+                        port_2="balance_port",
+                    )
+                )
+        return components, connections
 
     def _convert_wind_to_component_list(
         self, areas: list[Area]
-    ) -> list[InputComponent]:
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
-
+        connections = []
         for area in areas:
             try:
                 area.get_wind_matrix()
@@ -191,16 +214,24 @@ class AntaresStudyConverter:
                         ],
                     )
                 )
+                connections.append(
+                    InputPortConnections(
+                        component1="wind",
+                        port_1="balance_port",
+                        component2=area.id,
+                        port_2="balance_port",
+                    )
+                )
             except FileNotFoundError:
                 pass
 
-        return components
+        return components, connections
 
     def _convert_solar_to_component_list(
         self, areas: list[Area]
-    ) -> list[InputComponent]:
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
-
+        connections = []
         for area in areas:
             try:
                 area.get_solar_matrix()
@@ -226,15 +257,24 @@ class AntaresStudyConverter:
                         )
                     ]
                 )
+                connections.append(
+                    InputPortConnections(
+                        component1="solar",
+                        port_1="balance_port",
+                        component2=area.id,
+                        port_2="balance_port",
+                    )
+                )
             except FileNotFoundError:
                 pass
 
-        return components
+        return components, connections
 
     def _convert_load_to_component_list(
         self, areas: list[Area]
-    ) -> list[InputComponent]:
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
+        connections = []
         for area in areas:
             try:
                 area.get_load_matrix()
@@ -260,22 +300,46 @@ class AntaresStudyConverter:
                         )
                     ]
                 )
+                connections.append(
+                    InputPortConnections(
+                        component1="load",
+                        port_1="balance_port",
+                        component2=area.id,
+                        port_2="balance_port",
+                    )
+                )
             except FileNotFoundError:
                 pass
 
-        return components
+        return components, connections
 
     def convert_study_to_input_study(self) -> InputStudy:
         areas = self.study.read_areas()
         area_components = self._convert_area_to_component_list(areas)
-        list_components = []
-        list_components.extend(self._convert_renewable_to_component_list(areas))
-        list_components.extend(self._convert_thermal_to_component_list(areas))
-        list_components.extend(self._convert_load_to_component_list(areas))
-        list_components.extend(self._convert_wind_to_component_list(areas))
-        list_components.extend(self._convert_solar_to_component_list(areas))
 
-        return InputStudy(nodes=area_components, components=list_components)
+        conversion_methods = [
+            self._convert_renewable_to_component_list,
+            self._convert_thermal_to_component_list,
+            self._convert_load_to_component_list,
+            self._convert_wind_to_component_list,
+            self._convert_solar_to_component_list,
+        ]
+
+        list_components: list[InputComponent] = []
+        list_connections: list[InputPortConnections] = []
+
+        for method in conversion_methods:
+            components, connections = method(areas)
+            if components:
+                list_components.extend(components)
+            if connections:
+                list_connections.extend(connections)
+
+        return InputStudy(
+            nodes=area_components,
+            components=list_components,
+            connections=list_connections,
+        )
 
     def process_all(self) -> None:
         raise NotImplementedError
