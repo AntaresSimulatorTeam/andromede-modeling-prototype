@@ -162,7 +162,14 @@ class TestConverter:
                     ],
                 )
             ],
-            connections=[InputPortConnections(component1='gaz', port_1='balance_port', component2='fr', port_2='balance_port')],
+            connections=[
+                InputPortConnections(
+                    component1="gaz",
+                    port_1="balance_port",
+                    component2="fr",
+                    port_2="balance_port",
+                )
+            ],
         )
 
         # To ensure that the comparison between the actual and expected results is not affected by the order of the nodes,
@@ -229,7 +236,10 @@ class TestConverter:
     def test_convert_renewables_to_component(self, local_study_with_renewable):
         areas, converter = self._init_area_reading(local_study_with_renewable)
         study_path = converter.study_path
-        renewables_components, renewable_connections = converter._convert_renewable_to_component_list(areas)
+        (
+            renewables_components,
+            renewable_connections,
+        ) = converter._convert_renewable_to_component_list(areas)
 
         timeserie_path = str(
             study_path
@@ -240,7 +250,14 @@ class TestConverter:
             / "generation"
             / "series.txt"
         )
-        expected_renewable_connections = [InputPortConnections(component1='generation', port_1='balance_port', component2='fr', port_2='balance_port')]
+        expected_renewable_connections = [
+            InputPortConnections(
+                component1="generation",
+                port_1="balance_port",
+                component2="fr",
+                port_2="balance_port",
+            )
+        ]
         expected_renewable_component = [
             InputComponent(
                 id="generation",
@@ -277,13 +294,23 @@ class TestConverter:
     def test_convert_thermals_to_component(self, local_study_w_thermal):
         areas, converter = self._init_area_reading(local_study_w_thermal)
 
-        thermals_components, thermals_connections= converter._convert_thermal_to_component_list(areas)
+        (
+            thermals_components,
+            thermals_connections,
+        ) = converter._convert_thermal_to_component_list(areas)
 
         study_path = converter.study_path
         p_max_timeserie = str(
             study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "series.txt"
         )
-        expected_thermals_connections = [InputPortConnections(component1='gaz', port_1='balance_port', component2='fr', port_2='balance_port')]
+        expected_thermals_connections = [
+            InputPortConnections(
+                component1="gaz",
+                port_1="balance_port",
+                component2="fr",
+                port_2="balance_port",
+            )
+        ]
         expected_thermals_components = [
             InputComponent(
                 id="gaz",
@@ -414,11 +441,20 @@ class TestConverter:
     def test_convert_wind_to_component(self, local_study_w_areas, fr_wind):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        wind_components, wind_connection = converter._convert_wind_to_component_list(areas)
+        wind_components, wind_connection = converter._convert_wind_to_component_list(
+            areas
+        )
         study_path = converter.study_path
 
         wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr.txt")
-        expected_wind_connection = [InputPortConnections(component1='wind', port_1='balance_port', component2='fr', port_2='balance_port')]
+        expected_wind_connection = [
+            InputPortConnections(
+                component1="wind",
+                port_1="balance_port",
+                component2="fr",
+                port_2="balance_port",
+            )
+        ]
         expected_wind_components = InputComponent(
             id="fr",
             model="wind",
@@ -440,13 +476,22 @@ class TestConverter:
     def test_convert_solar_to_component(self, local_study_w_areas, fr_solar):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        solar_components, solar_connection = converter._convert_solar_to_component_list(areas)
+        solar_components, solar_connection = converter._convert_solar_to_component_list(
+            areas
+        )
         study_path = converter.study_path
 
         solar_timeseries = str(
             study_path / "input" / "solar" / "series" / f"solar_fr.txt"
         )
-        expected_solar_connection = [InputPortConnections(component1='solar', port_1='balance_port', component2='fr', port_2='balance_port')]
+        expected_solar_connection = [
+            InputPortConnections(
+                component1="solar",
+                port_1="balance_port",
+                component2="fr",
+                port_2="balance_port",
+            )
+        ]
         expected_solar_components = InputComponent(
             id="fr",
             model="solar",
@@ -468,11 +513,20 @@ class TestConverter:
     def test_convert_load_to_component(self, local_study_w_areas, fr_load):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        load_components, load_connection = converter._convert_load_to_component_list(areas)
+        load_components, load_connection = converter._convert_load_to_component_list(
+            areas
+        )
         study_path = converter.study_path
 
         load_timeseries = str(study_path / "input" / "load" / "series" / f"load_fr.txt")
-        expected_load_connection = [InputPortConnections(component1='load', port_1='balance_port', component2='fr', port_2='balance_port')]
+        expected_load_connection = [
+            InputPortConnections(
+                component1="load",
+                port_1="balance_port",
+                component2="fr",
+                port_2="balance_port",
+            )
+        ]
         expected_load_components = InputComponent(
             id="fr",
             model="load",
