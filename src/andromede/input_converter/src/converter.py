@@ -322,8 +322,8 @@ class AntaresStudyConverter:
 
         for method in conversion_methods:
             components, connections = method(areas)
-            list_components.extend(components or [])
-            list_connections.extend(connections or [])
+            list_components.extend(components)
+            list_connections.extend(connections)
 
         return InputStudy(
             nodes=area_components,
