@@ -245,17 +245,19 @@ def area_fr(local_study_with_hydro) -> Area:
 
 @pytest.fixture
 def fr_solar(area_fr) -> None:
-    return area_fr.create_solar(pd.DataFrame())
+    return area_fr.create_solar(pd.DataFrame([1, 1, 1]))
 
 
 @pytest.fixture
-def fr_wind(area_fr) -> None:
-    return area_fr.create_wind(pd.DataFrame())
+def fr_wind(area_fr, request) -> None:
+    command = request.param if hasattr(request, "param") else [1, 1, 1]
+    data = pd.DataFrame(command)
+    return area_fr.create_wind(data)
 
 
 @pytest.fixture
 def fr_load(area_fr) -> None:
-    return area_fr.create_load(pd.DataFrame())
+    return area_fr.create_load(pd.DataFrame([1, 1, 1]))
 
 
 @pytest.fixture
