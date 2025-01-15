@@ -246,7 +246,7 @@ class AntaresStudyConverter:
 
             if series_path.exists():
                 if self._check_dataframe_validity(area.get_solar_matrix()):
-                    components.extend(
+                    components.append(
                         [
                             InputComponent(
                                 id=area.id,
@@ -283,7 +283,7 @@ class AntaresStudyConverter:
             )
             if series_path.exists():
                 if self._check_dataframe_validity(area.get_load_matrix()):
-                    components.extend(
+                    components.append(
                         [
                             InputComponent(
                                 id=area.id,
