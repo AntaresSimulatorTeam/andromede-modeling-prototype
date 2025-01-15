@@ -199,6 +199,66 @@ class AntaresStudyConverter:
                 )
         return components, connections
 
+    def _convert_link_to_component_list(
+        self,
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
+        components = []
+        connections = []
+        # Add links components for each area
+        links = self.study.read_links()
+        for link in links:
+            capacity_direct_path = (
+                self.study_path
+                / "input"
+                / "links"
+                / Path(link.area_from_id)
+                / "capacities"
+                / f"{link.area_to_id}_direct.txt"
+            )
+            capacity_indirect_path = (
+                self.study_path
+                / "input"
+                / "links"
+                / Path(link.area_from_id)
+                / "capacities"
+                / f"{link.area_to_id}_indirect.txt"
+            )
+            components.append(
+                InputComponent(
+                    id=link.id,
+                    model="link",
+                    parameters=[
+                        InputComponentParameter(
+                            name="capacity_direct",
+                            type="timeseries",
+                            timeseries=str(capacity_direct_path),
+                        ),
+                        InputComponentParameter(
+                            name="capacity_indirect",
+                            type="timeseries",
+                            timeseries=str(capacity_indirect_path),
+                        ),
+                    ],
+                )
+            )
+            connections.append(
+                InputPortConnections(
+                    component1=link.id,
+                    port_1="in_port",
+                    component2=link.area_from_id,
+                    port_2="balance_port",
+                )
+            )
+            connections.append(
+                InputPortConnections(
+                    component1=link.id,
+                    port_1="out_port",
+                    component2=link.area_to_id,
+                    port_2="balance_port",
+                ),
+            )
+        return components, connections
+
     def _convert_wind_to_component_list(
         self, areas: list[Area]
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
@@ -312,6 +372,9 @@ class AntaresStudyConverter:
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
 
+        components, connections = self._convert_link_to_component_list()
+        list_components.extend(components)
+        list_connections.extend(connections)
         conversion_methods = [
             self._convert_renewable_to_component_list,
             self._convert_thermal_to_component_list,

@@ -28,24 +28,16 @@ class TestConverter:
         areas = converter.study.read_areas()
         return areas, converter
 
-    def test_convert_study_to_input_study(self, local_study_w_thermal):
-        converter = AntaresStudyConverter(study_input=local_study_w_thermal)
+    def test_convert_study_to_input_study(self, local_study_w_areas):
+        converter = AntaresStudyConverter(study_input=local_study_w_areas)
         input_study = converter.convert_study_to_input_study()
 
-        p_max_thermal_timeserie = str(
-            converter.study_path
-            / "input"
-            / "thermal"
-            / "series"
-            / "fr"
-            / "gaz"
-            / "series.txt"
-        )
         expected_input_study = InputStudy(
             nodes=[
                 InputComponent(
                     id="fr",
                     model="area",
+                    scenario_group=None,
                     parameters=[
                         InputComponentParameter(
                             name="energy_cost_unsupplied",
@@ -66,6 +58,7 @@ class TestConverter:
                 InputComponent(
                     id="it",
                     model="area",
+                    scenario_group=None,
                     parameters=[
                         InputComponentParameter(
                             name="energy_cost_unsupplied",
@@ -83,94 +76,9 @@ class TestConverter:
                         ),
                     ],
                 ),
-                InputComponent(
-                    id="at",
-                    model="area",
-                    scenario_group=None,
-                    parameters=[
-                        InputComponentParameter(
-                            name="energy_cost_unsupplied",
-                            type="constant",
-                            scenario_group=None,
-                            value=0.0,
-                            timeseries=None,
-                        ),
-                        InputComponentParameter(
-                            name="energy_cost_spilled",
-                            type="constant",
-                            scenario_group=None,
-                            value=0.0,
-                            timeseries=None,
-                        ),
-                    ],
-                ),
             ],
-            components=[
-                InputComponent(
-                    id="gaz",
-                    model="thermal",
-                    scenario_group=None,
-                    parameters=[
-                        InputComponentParameter(
-                            name="unit_count",
-                            type="constant",
-                            scenario_group=None,
-                            value=1.0,
-                            timeseries=None,
-                        ),
-                        InputComponentParameter(
-                            name="efficiency",
-                            type="constant",
-                            scenario_group=None,
-                            value=100.0,
-                            timeseries=None,
-                        ),
-                        InputComponentParameter(
-                            name="nominal_capacity",
-                            type="constant",
-                            scenario_group=None,
-                            value=0.0,
-                            timeseries=None,
-                        ),
-                        InputComponentParameter(
-                            name="marginal_cost",
-                            type="constant",
-                            scenario_group=None,
-                            value=0.0,
-                            timeseries=None,
-                        ),
-                        InputComponentParameter(
-                            name="fixed_cost",
-                            type="constant",
-                            scenario_group=None,
-                            value=0.0,
-                            timeseries=None,
-                        ),
-                        InputComponentParameter(
-                            name="startup_cost",
-                            type="constant",
-                            scenario_group=None,
-                            value=0.0,
-                            timeseries=None,
-                        ),
-                        InputComponentParameter(
-                            name="p_max_cluster",
-                            type="timeseries",
-                            scenario_group=None,
-                            value=None,
-                            timeseries=f"{p_max_thermal_timeserie}",
-                        ),
-                    ],
-                )
-            ],
-            connections=[
-                InputPortConnections(
-                    component1="gaz",
-                    port_1="balance_port",
-                    component2="fr",
-                    port_2="balance_port",
-                )
-            ],
+            components=[],
+            connections=[],
         )
 
         # To ensure that the comparison between the actual and expected results is not affected by the order of the nodes,
@@ -178,6 +86,7 @@ class TestConverter:
         # This sorting step ensures that the test checks only the presence and validity of the nodes, not their order.
         input_study.nodes.sort(key=lambda x: x.id)
         expected_input_study.nodes.sort(key=lambda x: x.id)
+
         assert input_study == expected_input_study
 
     def test_convert_area_to_component(self, local_study_w_areas):
@@ -582,3 +491,136 @@ class TestConverter:
         wind_components, _ = converter._convert_wind_to_component_list(areas)
 
         assert wind_components == []
+
+    def test_convert_links_to_component(self, local_study_w_links):
+        _, converter = self._init_area_reading(local_study_w_links)
+        study_path = converter.study_path
+        (
+            links_components,
+            links_connections,
+        ) = converter._convert_link_to_component_list()
+
+        fr_it_direct_links_timeseries = str(
+            study_path / "input" / "links" / "fr" / "capacities" / "it_direct.txt"
+        )
+        fr_it_indirect_links_timeseries = str(
+            study_path / "input" / "links" / "fr" / "capacities" / "it_indirect.txt"
+        )
+        at_fr_direct_links_timeseries = str(
+            study_path / "input" / "links" / "at" / "capacities" / "fr_direct.txt"
+        )
+        at_fr_indirect_links_timeseries = str(
+            study_path / "input" / "links" / "at" / "capacities" / "fr_indirect.txt"
+        )
+        at_it_direct_links_timeseries = str(
+            study_path / "input" / "links" / "at" / "capacities" / "it_direct.txt"
+        )
+        at_it_indirect_links_timeseries = str(
+            study_path / "input" / "links" / "at" / "capacities" / "it_indirect.txt"
+        )
+        expected_link_component = [
+            InputComponent(
+                id="fr / it",
+                model="link",
+                scenario_group=None,
+                parameters=[
+                    InputComponentParameter(
+                        name="capacity_direct",
+                        type="timeseries",
+                        scenario_group=None,
+                        value=None,
+                        timeseries=f"{fr_it_direct_links_timeseries}",
+                    ),
+                    InputComponentParameter(
+                        name="capacity_indirect",
+                        type="timeseries",
+                        scenario_group=None,
+                        value=None,
+                        timeseries=f"{fr_it_indirect_links_timeseries}",
+                    ),
+                ],
+            ),
+            InputComponent(
+                id="at / fr",
+                model="link",
+                scenario_group=None,
+                parameters=[
+                    InputComponentParameter(
+                        name="capacity_direct",
+                        type="timeseries",
+                        scenario_group=None,
+                        value=None,
+                        timeseries=f"{at_fr_direct_links_timeseries}",
+                    ),
+                    InputComponentParameter(
+                        name="capacity_indirect",
+                        type="timeseries",
+                        scenario_group=None,
+                        value=None,
+                        timeseries=f"{at_fr_indirect_links_timeseries}",
+                    ),
+                ],
+            ),
+            InputComponent(
+                id="at / it",
+                model="link",
+                scenario_group=None,
+                parameters=[
+                    InputComponentParameter(
+                        name="capacity_direct",
+                        type="timeseries",
+                        scenario_group=None,
+                        value=None,
+                        timeseries=f"{at_it_direct_links_timeseries}",
+                    ),
+                    InputComponentParameter(
+                        name="capacity_indirect",
+                        type="timeseries",
+                        scenario_group=None,
+                        value=None,
+                        timeseries=f"{at_it_indirect_links_timeseries}",
+                    ),
+                ],
+            ),
+        ]
+        expected_link_connections = [
+            InputPortConnections(
+                component1="fr / it",
+                port_1="in_port",
+                component2="fr",
+                port_2="balance_port",
+            ),
+            InputPortConnections(
+                component1="fr / it",
+                port_1="out_port",
+                component2="it",
+                port_2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / fr",
+                port_1="in_port",
+                component2="at",
+                port_2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / fr",
+                port_1="out_port",
+                component2="fr",
+                port_2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / it",
+                port_1="in_port",
+                component2="at",
+                port_2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / it",
+                port_1="out_port",
+                component2="it",
+                port_2="balance_port",
+            ),
+        ]
+
+        assert links_components == expected_link_component
+        assert links_connections == expected_link_connections
