@@ -208,6 +208,7 @@ class AntaresStudyConverter:
                 self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
             )
             if series_path.exists():
+                if self._check_dataframe_validity(area.get_wind_matrix()):
                     components.append(
                         InputComponent(
                             id=area.id,
@@ -243,6 +244,7 @@ class AntaresStudyConverter:
             )
 
             if series_path.exists():
+                if self._check_dataframe_validity(area.get_solar_matrix()):
                     components.extend(
                         [
                             InputComponent(
@@ -279,6 +281,7 @@ class AntaresStudyConverter:
                 self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
             )
             if series_path.exists():
+                if self._check_dataframe_validity(area.get_load_matrix()):
                     components.extend(
                         [
                             InputComponent(
