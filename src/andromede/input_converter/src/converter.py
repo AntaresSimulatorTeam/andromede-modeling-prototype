@@ -196,6 +196,7 @@ class AntaresStudyConverter:
                         component2=area.id,
                         port_2="balance_port",
                     )
+                )
         return components, connections
 
     def _convert_wind_to_component_list(
@@ -312,6 +313,12 @@ class AntaresStudyConverter:
         areas = self.study.read_areas()
         area_components = self._convert_area_to_component_list(areas)
 
+        list_components: list[InputComponent] = []
+        list_connections: list[InputPortConnections] = []
+
+        components, connections = self._convert_link_to_component_list()
+        list_components.extend(components)
+        list_connections.extend(connections)
         conversion_methods = [
             self._convert_renewable_to_component_list,
             self._convert_thermal_to_component_list,
@@ -319,8 +326,8 @@ class AntaresStudyConverter:
             self._convert_wind_to_component_list,
             self._convert_solar_to_component_list,
         ]
-        list_components: list[InputComponent] = []
-        list_connections: list[InputPortConnections] = []
+
+
 
         for method in conversion_methods:
             components, connections = method(areas)
