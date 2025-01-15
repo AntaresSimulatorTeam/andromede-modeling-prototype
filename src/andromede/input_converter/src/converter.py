@@ -39,7 +39,7 @@ class AntaresStudyConverter:
         else:
             raise TypeError("Invalid input type")
 
-    def _validate_matrix(self, df: DataFrame) -> bool:
+    def _check_dataframe_validity(self, df: DataFrame) -> bool:
         """
         Check and validate the following conditions:
         1. The dataframe from this path is not empty.
@@ -47,10 +47,7 @@ class AntaresStudyConverter:
 
         :param df: dataframe to validate.
         """
-        if df.empty:
-            return False
-
-        if (df == 0).all().all():
+        if df.empty or (df == 0).all().all():
             return False
 
         return True
@@ -199,7 +196,6 @@ class AntaresStudyConverter:
                         component2=area.id,
                         port_2="balance_port",
                     )
-                )
         return components, connections
 
     def _convert_wind_to_component_list(
@@ -212,7 +208,6 @@ class AntaresStudyConverter:
                 self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
             )
             if series_path.exists():
-                if self._validate_matrix(area.get_wind_matrix()):
                     components.append(
                         InputComponent(
                             id=area.id,
@@ -248,7 +243,6 @@ class AntaresStudyConverter:
             )
 
             if series_path.exists():
-                if self._validate_matrix(area.get_solar_matrix()):
                     components.extend(
                         [
                             InputComponent(
@@ -285,7 +279,6 @@ class AntaresStudyConverter:
                 self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
             )
             if series_path.exists():
-                if self._validate_matrix(area.get_load_matrix()):
                     components.extend(
                         [
                             InputComponent(
@@ -323,16 +316,13 @@ class AntaresStudyConverter:
             self._convert_wind_to_component_list,
             self._convert_solar_to_component_list,
         ]
-
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
 
         for method in conversion_methods:
             components, connections = method(areas)
-            if components:
-                list_components.extend(components)
-            if connections:
-                list_connections.extend(connections)
+            list_components.extend(components or [])
+            list_connections.extend(connections or [])
 
         return InputStudy(
             nodes=area_components,
