@@ -5,6 +5,499 @@ from ortools.linear_solver import pywraplp
 import ortools.linear_solver.pywraplp as lp
 from ortools.sat.python import cp_model
 
+def changement_arrondi(
+    version : str,
+    nbr_on_float : float,
+    energy_generation : float,
+    generation_reserve_up_primary_on : float,
+    generation_reserve_up_primary_off : float,
+    generation_reserve_down_primary : float,
+    generation_reserve_up_secondary_on : float,
+    generation_reserve_up_secondary_off : float,
+    generation_reserve_down_secondary : float,
+    generation_reserve_up_tertiary1_on : float,
+    generation_reserve_up_tertiary1_off : float,
+    generation_reserve_down_tertiary1 : float,
+    generation_reserve_up_tertiary2_on : float,
+    generation_reserve_up_tertiary2_off : float,
+    generation_reserve_down_tertiary2 : float,
+    nbr_off_primary_float : float,
+    nbr_off_secondary_float: float,
+    nbr_off_tertiary1_float : float,
+    nbr_off_tertiary2_float : float,
+    p_max : float,
+    p_min : float,
+    nbr_units_max : float,
+    participation_max_primary_reserve_up_on : float,
+    participation_max_primary_reserve_up_off : float,
+    participation_max_primary_reserve_down : float,
+    participation_max_secondary_reserve_up_on : float,
+    participation_max_secondary_reserve_up_off : float,
+    participation_max_secondary_reserve_down : float,
+    participation_max_tertiary1_reserve_up_on : float,
+    participation_max_tertiary1_reserve_up_off : float,
+    participation_max_tertiary1_reserve_down : float,
+    participation_max_tertiary2_reserve_up_on : float,
+    participation_max_tertiary2_reserve_up_off : float,
+    participation_max_tertiary2_reserve_down : float,
+    cost : float,
+    startup_cost : float,
+    fixed_cost : float,
+    cost_participation_primary_reserve_up_on : float,
+    cost_participation_primary_reserve_up_off : float,
+    cost_participation_primary_reserve_down : float,
+    cost_participation_secondary_reserve_up_on : float,
+    cost_participation_secondary_reserve_up_off : float,
+    cost_participation_secondary_reserve_down : float,
+    cost_participation_tertiary1_reserve_up_on : float,
+    cost_participation_tertiary1_reserve_up_off : float,
+    cost_participation_tertiary1_reserve_down : float,
+    cost_participation_tertiary2_reserve_up_on : float,   
+    cost_participation_tertiary2_reserve_up_off : float,        
+    cost_participation_tertiary2_reserve_down : float,
+    spillage_cost : float,
+    ens_cost : float,
+    primary_reserve_up_not_supplied_cost : float,
+    primary_reserve_down_not_supplied_cost : float,
+    secondary_reserve_up_not_supplied_cost : float,
+    secondary_reserve_down_not_supplied_cost : float,
+    tertiary1_reserve_up_not_supplied_cost : float,
+    tertiary1_reserve_down_not_supplied_cost : float,
+    tertiary2_reserve_up_not_supplied_cost : float,
+    tertiary2_reserve_down_not_supplied_cost : float,
+    primary_reserve_up_oversupplied_cost : float,
+    primary_reserve_down_oversupplied_cost : float,
+    secondary_reserve_up_oversupplied_cost : float,
+    secondary_reserve_down_oversupplied_cost : float,
+    tertiary1_reserve_up_oversupplied_cost : float,
+    tertiary1_reserve_down_oversupplied_cost : float,
+    tertiary2_reserve_up_oversupplied_cost : float,
+    tertiary2_reserve_down_oversupplied_cost : float,
+    ) -> List[float] :
+
+    
+    solver = pywraplp.Solver.CreateSolver("SCIP")
+    infinity = solver.infinity()
+    
+
+    fixed_cost += 1     #pour arrondir à l'inférieur en cas de solutions équivalentes
+
+    nbr_on_supérieur = ceil(round(nbr_on_float,12))
+    nbr_on_inférieur = floor(round(nbr_on_float,12))
+    # nbr_off_primary = ceil(round(nbr_off_primary_float,12))
+    # nbr_off_secondary = ceil(round(nbr_off_secondary_float,12))
+    # nbr_off_tertiary1 = ceil(round(nbr_off_tertiary1_float,12))
+    # nbr_off_tertiary2 = ceil(round(nbr_off_tertiary2_float,12))
+
+
+    
+    nbr_off_max = nbr_units_max - nbr_on_supérieur
+
+    na = solver.NumVar(0, nbr_units_max, "nbr_primary")
+    nb = solver.NumVar(0, nbr_units_max, "nbr_secondary")
+    nc = solver.NumVar(0, nbr_units_max, "nbr_tertiary1")
+    nd = solver.NumVar(0, nbr_units_max, "nbr_tertiary2")
+
+
+    generation_reserve_up_primary = generation_reserve_up_primary_on + generation_reserve_up_primary_off
+    generation_reserve_up_secondary = generation_reserve_up_secondary_on + generation_reserve_up_secondary_off
+    generation_reserve_up_tertiary1 = generation_reserve_up_tertiary1_on + generation_reserve_up_tertiary1_off
+    generation_reserve_up_tertiary2 = generation_reserve_up_tertiary2_on + generation_reserve_up_tertiary2_off
+
+    x = solver.NumVar(0, energy_generation, "x") #Prod energie
+    SPILL_x = solver.NumVar(0, infinity, "spillx")
+    yaon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_yaon = solver.NumVar(0, infinity, "spillyaon")
+    yaoff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_off
+    SPILL_yaoff = solver.NumVar(0, infinity, "spillyaoff")
+    ybon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_ybon = solver.NumVar(0, infinity, "spillybon")
+    yboff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_on
+    SPILL_yboff = solver.NumVar(0, infinity, "spillyboff")
+    ycon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_ycon = solver.NumVar(0, infinity, "spillycon")
+    ycoff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_off
+    SPILL_ycoff = solver.NumVar(0, infinity, "spillycoff")
+    ydon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_ydon = solver.NumVar(0, infinity, "spillydon")
+    ydoff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_off
+    SPILL_ydoff = solver.NumVar(0, infinity, "spillydoff")
+    za = solver.NumVar(0, generation_reserve_down_primary, "za")    #Prod_res-
+    SPILL_za = solver.NumVar(0, infinity, "spillza")
+    zb = solver.NumVar(0, generation_reserve_down_secondary, "zb")    #Prod_res-
+    SPILL_zb = solver.NumVar(0, infinity, "spillzb")
+    zc = solver.NumVar(0, generation_reserve_down_tertiary1, "zc")    #Prod_res-
+    SPILL_zc = solver.NumVar(0, infinity, "spillzc")
+    zd = solver.NumVar(0, generation_reserve_down_tertiary2, "zd")    #Prod_res-
+    SPILL_zd = solver.NumVar(0, infinity, "spillzd")
+        
+    borne_max_on = nbr_on_supérieur * p_max
+    borne_max_off = nbr_off_max * p_max
+    borne_min = nbr_on_supérieur * p_min
+    participation_max_primary_off = na * participation_max_primary_reserve_up_off
+    participation_max_secondary_off = nb * participation_max_secondary_reserve_up_off
+    participation_max_tertiary1_off = nc * participation_max_tertiary1_reserve_up_off
+    participation_max_tertiary2_off = nd * participation_max_tertiary2_reserve_up_off
+    participation_max_primary_on = nbr_on_supérieur* participation_max_primary_reserve_up_on
+    participation_max_secondary_on = nbr_on_supérieur * participation_max_secondary_reserve_up_on
+    participation_max_tertiary1_on = nbr_on_supérieur * participation_max_tertiary1_reserve_up_on
+    participation_max_tertiary2_on = nbr_on_supérieur * participation_max_tertiary2_reserve_up_on
+    participation_max_primary_down = nbr_on_supérieur * participation_max_primary_reserve_down
+    participation_max_secondary_down = nbr_on_supérieur * participation_max_secondary_reserve_down
+    participation_max_tertiary1_down = nbr_on_supérieur * participation_max_tertiary1_reserve_down
+    participation_max_tertiary2_down = nbr_on_supérieur * participation_max_tertiary2_reserve_down
+    borne_min_primary_off = na * p_min
+    borne_min_secondary_off = nb * p_min
+    borne_min_tertiary1_off = nc * p_min
+    borne_min_tertiary2_off = nd * p_min
+        
+
+    
+    solver.Add( p_min * na + p_min * nb + p_min * nc + p_min * nd <= p_max * (nbr_units_max - nbr_on_supérieur))
+    solver.Add( na <= nbr_units_max - nbr_on_supérieur)
+    solver.Add( nb <= nbr_units_max - nbr_on_supérieur)
+    solver.Add( nc <= nbr_units_max - nbr_on_supérieur)
+    solver.Add( nd <= nbr_units_max - nbr_on_supérieur)
+
+    solver.Add(1 * x + 1 * SPILL_x + 1 * yaon + 1 * SPILL_yaon + 1 * ybon + 1 * SPILL_ybon + 1 * ycon + 1 * SPILL_ycon + 1 * ydon + 1 * SPILL_ydon <= borne_max_on)
+    solver.Add(1 * x + 1 * SPILL_x - 1 * za - 1 * SPILL_za - 1 * zb - 1 * SPILL_zb - 1 * zc - 1 * SPILL_zc - 1 * zd - 1 * SPILL_zd >= borne_min)
+    solver.Add(1 * yaoff  + 1 * SPILL_yaoff + 1 * yboff  + 1 * SPILL_yboff + 1 * ycoff  + 1 * SPILL_ycoff + 1 * ydoff  + 1 * SPILL_ydoff <= borne_max_off)
+    solver.Add(1 * yaoff + 1 * SPILL_yaoff <= participation_max_primary_off)
+    solver.Add(1 * yboff + 1 * SPILL_yboff <= participation_max_secondary_off)
+    solver.Add(1 * ycoff + 1 * SPILL_ycoff <= participation_max_tertiary1_off)
+    solver.Add(1 * ydoff + 1 * SPILL_ydoff <= participation_max_tertiary2_off)
+    solver.Add(1 * yaon + 1 * SPILL_yaon <= participation_max_primary_on)
+    solver.Add(1 * ybon + 1 * SPILL_ybon <= participation_max_secondary_on)
+    solver.Add(1 * ycon + 1 * SPILL_ycon <= participation_max_tertiary1_on)
+    solver.Add(1 * ydon + 1 * SPILL_ydon <= participation_max_tertiary2_on)
+    solver.Add(1 * za  + 1 * SPILL_za  <= participation_max_primary_down)
+    solver.Add(1 * zb  + 1 * SPILL_zb  <= participation_max_secondary_down)
+    solver.Add(1 * zc  + 1 * SPILL_zc  <= participation_max_tertiary1_down)
+    solver.Add(1 * zd  + 1 * SPILL_zd  <= participation_max_tertiary2_down)
+    solver.Add(1 * yaoff + 1 * SPILL_yaoff >= borne_min_primary_off)
+    solver.Add(1 * yboff + 1 * SPILL_yboff >= borne_min_secondary_off)
+    solver.Add(1 * ycoff + 1 * SPILL_ycoff >= borne_min_tertiary1_off)
+    solver.Add(1 * ydoff + 1 * SPILL_ydoff >= borne_min_tertiary2_off)
+    solver.Add(1 * yaoff + 1 * yaon <= generation_reserve_up_primary)
+    solver.Add(1 * yboff + 1 * ybon <= generation_reserve_up_secondary)
+    solver.Add(1 * ycoff + 1 * ycon <= generation_reserve_up_tertiary1)
+    solver.Add(1 * ydoff + 1 * ydon <= generation_reserve_up_tertiary2)
+
+    if version == "perte":
+        solver.Minimize(cost_participation_primary_reserve_up_on * (yaon + SPILL_yaon)
+                    + cost_participation_primary_reserve_up_off * (yaoff + SPILL_yaoff)
+                    + primary_reserve_up_not_supplied_cost * (generation_reserve_up_primary - yaon - yaoff)
+                    + cost_participation_secondary_reserve_up_on * (ybon + SPILL_ybon)
+                    + cost_participation_secondary_reserve_up_off * (yboff + SPILL_yboff)
+                    + secondary_reserve_up_not_supplied_cost * (generation_reserve_up_secondary - ybon - yboff)
+                    + cost_participation_tertiary1_reserve_up_on * (ycon + SPILL_ycon)
+                    + cost_participation_tertiary1_reserve_up_off * (ycoff + SPILL_ycoff)
+                    + tertiary1_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary1 - ycon - ycoff)
+                    + cost_participation_tertiary2_reserve_up_on * (ydon + SPILL_ydon)
+                    + cost_participation_tertiary2_reserve_up_off * (ydoff + SPILL_ydoff)
+                    + tertiary2_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary2 - ydon - ydoff)
+                    + cost_participation_primary_reserve_down * (za + SPILL_za)
+                    + primary_reserve_down_not_supplied_cost * (generation_reserve_down_primary - za)
+                    + cost_participation_secondary_reserve_down * (zb + SPILL_zb)
+                    + secondary_reserve_down_not_supplied_cost * (generation_reserve_down_secondary - zb)
+                    + cost_participation_tertiary1_reserve_down * (zc + SPILL_zc)
+                    + tertiary1_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary1 - zc)
+                    + cost_participation_tertiary2_reserve_down * (zd + SPILL_zd)
+                    + tertiary2_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary2 - zd)
+                    + cost * (x + SPILL_x)
+                    + ens_cost * (energy_generation - x)
+                    + spillage_cost * SPILL_x
+                    + primary_reserve_up_oversupplied_cost * (SPILL_yaon + SPILL_yaoff)
+                    + secondary_reserve_up_oversupplied_cost * (SPILL_ybon + SPILL_yboff)
+                    + tertiary1_reserve_up_oversupplied_cost * (SPILL_ycon + SPILL_ycoff)
+                    + tertiary2_reserve_up_oversupplied_cost * (SPILL_ydon + SPILL_ydoff)
+                    + primary_reserve_down_oversupplied_cost * SPILL_za
+                    + secondary_reserve_down_oversupplied_cost * SPILL_zb
+                    + tertiary1_reserve_down_oversupplied_cost * SPILL_zc
+                    + tertiary2_reserve_down_oversupplied_cost * SPILL_zd
+                    + startup_cost * nbr_on_supérieur)
+
+    if version == "sans":
+        solver.Minimize(cost_participation_primary_reserve_up_on * (yaon + SPILL_yaon)
+                    + cost_participation_primary_reserve_up_off * (yaoff + SPILL_yaoff)
+                    + primary_reserve_up_not_supplied_cost * (generation_reserve_up_primary - yaon - yaoff)
+                    + cost_participation_secondary_reserve_up_on * (ybon + SPILL_ybon)
+                    + cost_participation_secondary_reserve_up_off * (yboff + SPILL_yboff)
+                    + secondary_reserve_up_not_supplied_cost * (generation_reserve_up_secondary - ybon - yboff)
+                    + cost_participation_tertiary1_reserve_up_on * (ycon + SPILL_ycon)
+                    + cost_participation_tertiary1_reserve_up_off * (ycoff + SPILL_ycoff)
+                    + tertiary1_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary1 - ycon - ycoff)
+                    + cost_participation_tertiary2_reserve_up_on * (ydon + SPILL_ydon)
+                    + cost_participation_tertiary2_reserve_up_off * (ydoff + SPILL_ydoff)
+                    + tertiary2_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary2 - ydon - ydoff)
+                    + cost_participation_primary_reserve_down * (za + SPILL_za)
+                    + primary_reserve_down_not_supplied_cost * (generation_reserve_down_primary - za)
+                    + cost_participation_secondary_reserve_down * (zb + SPILL_zb)
+                    + secondary_reserve_down_not_supplied_cost * (generation_reserve_down_secondary - zb)
+                    + cost_participation_tertiary1_reserve_down * (zc + SPILL_zc)
+                    + tertiary1_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary1 - zc)
+                    + cost_participation_tertiary2_reserve_down * (zd + SPILL_zd)
+                    + tertiary2_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary2 - zd)
+                    + cost * (x + SPILL_x)
+                    + ens_cost * (energy_generation - x)
+                    + spillage_cost * SPILL_x
+                    + primary_reserve_up_oversupplied_cost * (SPILL_yaon + SPILL_yaoff)
+                    + secondary_reserve_up_oversupplied_cost * (SPILL_ybon + SPILL_yboff)
+                    + tertiary1_reserve_up_oversupplied_cost * (SPILL_ycon + SPILL_ycoff)
+                    + tertiary2_reserve_up_oversupplied_cost * (SPILL_ydon + SPILL_ydoff)
+                    + primary_reserve_down_oversupplied_cost * SPILL_za
+                    + secondary_reserve_down_oversupplied_cost * SPILL_zb
+                    + tertiary1_reserve_down_oversupplied_cost * SPILL_zc
+                    + tertiary2_reserve_down_oversupplied_cost * SPILL_zd
+                    )
+
+    if version == "gain":
+        solver.Minimize(cost_participation_primary_reserve_up_on * (yaon + SPILL_yaon)
+                    + cost_participation_primary_reserve_up_off * (yaoff + SPILL_yaoff)
+                    + primary_reserve_up_not_supplied_cost * (generation_reserve_up_primary - yaon - yaoff)
+                    + cost_participation_secondary_reserve_up_on * (ybon + SPILL_ybon)
+                    + cost_participation_secondary_reserve_up_off * (yboff + SPILL_yboff)
+                    + secondary_reserve_up_not_supplied_cost * (generation_reserve_up_secondary - ybon - yboff)
+                    + cost_participation_tertiary1_reserve_up_on * (ycon + SPILL_ycon)
+                    + cost_participation_tertiary1_reserve_up_off * (ycoff + SPILL_ycoff)
+                    + tertiary1_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary1 - ycon - ycoff)
+                    + cost_participation_tertiary2_reserve_up_on * (ydon + SPILL_ydon)
+                    + cost_participation_tertiary2_reserve_up_off * (ydoff + SPILL_ydoff)
+                    + tertiary2_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary2 - ydon - ydoff)
+                    + cost_participation_primary_reserve_down * (za + SPILL_za)
+                    + primary_reserve_down_not_supplied_cost * (generation_reserve_down_primary - za)
+                    + cost_participation_secondary_reserve_down * (zb + SPILL_zb)
+                    + secondary_reserve_down_not_supplied_cost * (generation_reserve_down_secondary - zb)
+                    + cost_participation_tertiary1_reserve_down * (zc + SPILL_zc)
+                    + tertiary1_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary1 - zc)
+                    + cost_participation_tertiary2_reserve_down * (zd + SPILL_zd)
+                    + tertiary2_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary2 - zd)
+                    + cost * (x + SPILL_x)
+                    + ens_cost * (energy_generation - x)
+                    + spillage_cost * SPILL_x
+                    + primary_reserve_up_oversupplied_cost * (SPILL_yaon + SPILL_yaoff)
+                    + secondary_reserve_up_oversupplied_cost * (SPILL_ybon + SPILL_yboff)
+                    + tertiary1_reserve_up_oversupplied_cost * (SPILL_ycon + SPILL_ycoff)
+                    + tertiary2_reserve_up_oversupplied_cost * (SPILL_ydon + SPILL_ydoff)
+                    + primary_reserve_down_oversupplied_cost * SPILL_za
+                    + secondary_reserve_down_oversupplied_cost * SPILL_zb
+                    + tertiary1_reserve_down_oversupplied_cost * SPILL_zc
+                    + tertiary2_reserve_down_oversupplied_cost * SPILL_zd
+                    + startup_cost * nbr_on_supérieur)
+
+
+
+    # Solve the system.
+    status = solver.Solve()
+
+    op_cost_supérieur = solver.Objective().Value()
+
+
+    nbr_off_max = nbr_units_max - nbr_on_inférieur
+
+    na = solver.NumVar(0, nbr_units_max, "nbr_primary")
+    nb = solver.NumVar(0, nbr_units_max, "nbr_secondary")
+    nc = solver.NumVar(0, nbr_units_max, "nbr_tertiary1")
+    nd = solver.NumVar(0, nbr_units_max, "nbr_tertiary2")
+
+
+    generation_reserve_up_primary = generation_reserve_up_primary_on + generation_reserve_up_primary_off
+    generation_reserve_up_secondary = generation_reserve_up_secondary_on + generation_reserve_up_secondary_off
+    generation_reserve_up_tertiary1 = generation_reserve_up_tertiary1_on + generation_reserve_up_tertiary1_off
+    generation_reserve_up_tertiary2 = generation_reserve_up_tertiary2_on + generation_reserve_up_tertiary2_off
+
+    x = solver.NumVar(0, energy_generation, "x") #Prod energie
+    SPILL_x = solver.NumVar(0, infinity, "spillx")
+    yaon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_yaon = solver.NumVar(0, infinity, "spillyaon")
+    yaoff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_off
+    SPILL_yaoff = solver.NumVar(0, infinity, "spillyaoff")
+    ybon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_ybon = solver.NumVar(0, infinity, "spillybon")
+    yboff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_on
+    SPILL_yboff = solver.NumVar(0, infinity, "spillyboff")
+    ycon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_ycon = solver.NumVar(0, infinity, "spillycon")
+    ycoff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_off
+    SPILL_ycoff = solver.NumVar(0, infinity, "spillycoff")
+    ydon = solver.NumVar(0, infinity, "yaon") #Prod_res+_on
+    SPILL_ydon = solver.NumVar(0, infinity, "spillydon")
+    ydoff = solver.NumVar(0, infinity, "yaoff") #Prod_res+_off
+    SPILL_ydoff = solver.NumVar(0, infinity, "spillydoff")
+    za = solver.NumVar(0, generation_reserve_down_primary, "za")    #Prod_res-
+    SPILL_za = solver.NumVar(0, infinity, "spillza")
+    zb = solver.NumVar(0, generation_reserve_down_secondary, "zb")    #Prod_res-
+    SPILL_zb = solver.NumVar(0, infinity, "spillzb")
+    zc = solver.NumVar(0, generation_reserve_down_tertiary1, "zc")    #Prod_res-
+    SPILL_zc = solver.NumVar(0, infinity, "spillzc")
+    zd = solver.NumVar(0, generation_reserve_down_tertiary2, "zd")    #Prod_res-
+    SPILL_zd = solver.NumVar(0, infinity, "spillzd")
+        
+    borne_max_on = nbr_on_inférieur * p_max
+    borne_max_off = nbr_off_max * p_max
+    borne_min = nbr_on_inférieur * p_min
+    participation_max_primary_off = na * participation_max_primary_reserve_up_off
+    participation_max_secondary_off = nb * participation_max_secondary_reserve_up_off
+    participation_max_tertiary1_off = nc * participation_max_tertiary1_reserve_up_off
+    participation_max_tertiary2_off = nd * participation_max_tertiary2_reserve_up_off
+    participation_max_primary_on = nbr_on_inférieur* participation_max_primary_reserve_up_on
+    participation_max_secondary_on = nbr_on_inférieur * participation_max_secondary_reserve_up_on
+    participation_max_tertiary1_on = nbr_on_inférieur * participation_max_tertiary1_reserve_up_on
+    participation_max_tertiary2_on = nbr_on_inférieur * participation_max_tertiary2_reserve_up_on
+    participation_max_primary_down = nbr_on_inférieur * participation_max_primary_reserve_down
+    participation_max_secondary_down = nbr_on_inférieur * participation_max_secondary_reserve_down
+    participation_max_tertiary1_down = nbr_on_inférieur * participation_max_tertiary1_reserve_down
+    participation_max_tertiary2_down = nbr_on_inférieur * participation_max_tertiary2_reserve_down
+    borne_min_primary_off = na * p_min
+    borne_min_secondary_off = nb * p_min
+    borne_min_tertiary1_off = nc * p_min
+    borne_min_tertiary2_off = nd * p_min
+        
+
+    
+    solver.Add( p_min * na + p_min * nb + p_min * nc + p_min * nd <= p_max * (nbr_units_max - nbr_on_inférieur))
+    solver.Add( na <= nbr_units_max - nbr_on_inférieur)
+    solver.Add( nb <= nbr_units_max - nbr_on_inférieur)
+    solver.Add( nc <= nbr_units_max - nbr_on_inférieur)
+    solver.Add( nd <= nbr_units_max - nbr_on_inférieur)
+
+    solver.Add(1 * x + 1 * SPILL_x + 1 * yaon + 1 * SPILL_yaon + 1 * ybon + 1 * SPILL_ybon + 1 * ycon + 1 * SPILL_ycon + 1 * ydon + 1 * SPILL_ydon <= borne_max_on)
+    solver.Add(1 * x + 1 * SPILL_x - 1 * za - 1 * SPILL_za - 1 * zb - 1 * SPILL_zb - 1 * zc - 1 * SPILL_zc - 1 * zd - 1 * SPILL_zd >= borne_min)
+    solver.Add(1 * yaoff  + 1 * SPILL_yaoff + 1 * yboff  + 1 * SPILL_yboff + 1 * ycoff  + 1 * SPILL_ycoff + 1 * ydoff  + 1 * SPILL_ydoff <= borne_max_off)
+    solver.Add(1 * yaoff + 1 * SPILL_yaoff <= participation_max_primary_off)
+    solver.Add(1 * yboff + 1 * SPILL_yboff <= participation_max_secondary_off)
+    solver.Add(1 * ycoff + 1 * SPILL_ycoff <= participation_max_tertiary1_off)
+    solver.Add(1 * ydoff + 1 * SPILL_ydoff <= participation_max_tertiary2_off)
+    solver.Add(1 * yaon + 1 * SPILL_yaon <= participation_max_primary_on)
+    solver.Add(1 * ybon + 1 * SPILL_ybon <= participation_max_secondary_on)
+    solver.Add(1 * ycon + 1 * SPILL_ycon <= participation_max_tertiary1_on)
+    solver.Add(1 * ydon + 1 * SPILL_ydon <= participation_max_tertiary2_on)
+    solver.Add(1 * za  + 1 * SPILL_za  <= participation_max_primary_down)
+    solver.Add(1 * zb  + 1 * SPILL_zb  <= participation_max_secondary_down)
+    solver.Add(1 * zc  + 1 * SPILL_zc  <= participation_max_tertiary1_down)
+    solver.Add(1 * zd  + 1 * SPILL_zd  <= participation_max_tertiary2_down)
+    solver.Add(1 * yaoff + 1 * SPILL_yaoff >= borne_min_primary_off)
+    solver.Add(1 * yboff + 1 * SPILL_yboff >= borne_min_secondary_off)
+    solver.Add(1 * ycoff + 1 * SPILL_ycoff >= borne_min_tertiary1_off)
+    solver.Add(1 * ydoff + 1 * SPILL_ydoff >= borne_min_tertiary2_off)
+    solver.Add(1 * yaoff + 1 * yaon <= generation_reserve_up_primary)
+    solver.Add(1 * yboff + 1 * ybon <= generation_reserve_up_secondary)
+    solver.Add(1 * ycoff + 1 * ycon <= generation_reserve_up_tertiary1)
+    solver.Add(1 * ydoff + 1 * ydon <= generation_reserve_up_tertiary2)
+
+    if version == "perte":
+        solver.Minimize(cost_participation_primary_reserve_up_on * (yaon + SPILL_yaon)
+                    + cost_participation_primary_reserve_up_off * (yaoff + SPILL_yaoff)
+                    + primary_reserve_up_not_supplied_cost * (generation_reserve_up_primary - yaon - yaoff)
+                    + cost_participation_secondary_reserve_up_on * (ybon + SPILL_ybon)
+                    + cost_participation_secondary_reserve_up_off * (yboff + SPILL_yboff)
+                    + secondary_reserve_up_not_supplied_cost * (generation_reserve_up_secondary - ybon - yboff)
+                    + cost_participation_tertiary1_reserve_up_on * (ycon + SPILL_ycon)
+                    + cost_participation_tertiary1_reserve_up_off * (ycoff + SPILL_ycoff)
+                    + tertiary1_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary1 - ycon - ycoff)
+                    + cost_participation_tertiary2_reserve_up_on * (ydon + SPILL_ydon)
+                    + cost_participation_tertiary2_reserve_up_off * (ydoff + SPILL_ydoff)
+                    + tertiary2_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary2 - ydon - ydoff)
+                    + cost_participation_primary_reserve_down * (za + SPILL_za)
+                    + primary_reserve_down_not_supplied_cost * (generation_reserve_down_primary - za)
+                    + cost_participation_secondary_reserve_down * (zb + SPILL_zb)
+                    + secondary_reserve_down_not_supplied_cost * (generation_reserve_down_secondary - zb)
+                    + cost_participation_tertiary1_reserve_down * (zc + SPILL_zc)
+                    + tertiary1_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary1 - zc)
+                    + cost_participation_tertiary2_reserve_down * (zd + SPILL_zd)
+                    + tertiary2_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary2 - zd)
+                    + cost * (x + SPILL_x)
+                    + ens_cost * (energy_generation - x)
+                    + spillage_cost * SPILL_x
+                    + primary_reserve_up_oversupplied_cost * (SPILL_yaon + SPILL_yaoff)
+                    + secondary_reserve_up_oversupplied_cost * (SPILL_ybon + SPILL_yboff)
+                    + tertiary1_reserve_up_oversupplied_cost * (SPILL_ycon + SPILL_ycoff)
+                    + tertiary2_reserve_up_oversupplied_cost * (SPILL_ydon + SPILL_ydoff)
+                    + primary_reserve_down_oversupplied_cost * SPILL_za
+                    + secondary_reserve_down_oversupplied_cost * SPILL_zb
+                    + tertiary1_reserve_down_oversupplied_cost * SPILL_zc
+                    + tertiary2_reserve_down_oversupplied_cost * SPILL_zd
+                    + startup_cost * nbr_on_inférieur)
+
+    if version == "sans":
+        solver.Minimize(cost_participation_primary_reserve_up_on * (yaon + SPILL_yaon)
+                    + cost_participation_primary_reserve_up_off * (yaoff + SPILL_yaoff)
+                    + primary_reserve_up_not_supplied_cost * (generation_reserve_up_primary - yaon - yaoff)
+                    + cost_participation_secondary_reserve_up_on * (ybon + SPILL_ybon)
+                    + cost_participation_secondary_reserve_up_off * (yboff + SPILL_yboff)
+                    + secondary_reserve_up_not_supplied_cost * (generation_reserve_up_secondary - ybon - yboff)
+                    + cost_participation_tertiary1_reserve_up_on * (ycon + SPILL_ycon)
+                    + cost_participation_tertiary1_reserve_up_off * (ycoff + SPILL_ycoff)
+                    + tertiary1_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary1 - ycon - ycoff)
+                    + cost_participation_tertiary2_reserve_up_on * (ydon + SPILL_ydon)
+                    + cost_participation_tertiary2_reserve_up_off * (ydoff + SPILL_ydoff)
+                    + tertiary2_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary2 - ydon - ydoff)
+                    + cost_participation_primary_reserve_down * (za + SPILL_za)
+                    + primary_reserve_down_not_supplied_cost * (generation_reserve_down_primary - za)
+                    + cost_participation_secondary_reserve_down * (zb + SPILL_zb)
+                    + secondary_reserve_down_not_supplied_cost * (generation_reserve_down_secondary - zb)
+                    + cost_participation_tertiary1_reserve_down * (zc + SPILL_zc)
+                    + tertiary1_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary1 - zc)
+                    + cost_participation_tertiary2_reserve_down * (zd + SPILL_zd)
+                    + tertiary2_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary2 - zd)
+                    + cost * (x + SPILL_x)
+                    + ens_cost * (energy_generation - x)
+                    + spillage_cost * SPILL_x
+                    + primary_reserve_up_oversupplied_cost * (SPILL_yaon + SPILL_yaoff)
+                    + secondary_reserve_up_oversupplied_cost * (SPILL_ybon + SPILL_yboff)
+                    + tertiary1_reserve_up_oversupplied_cost * (SPILL_ycon + SPILL_ycoff)
+                    + tertiary2_reserve_up_oversupplied_cost * (SPILL_ydon + SPILL_ydoff)
+                    + primary_reserve_down_oversupplied_cost * SPILL_za
+                    + secondary_reserve_down_oversupplied_cost * SPILL_zb
+                    + tertiary1_reserve_down_oversupplied_cost * SPILL_zc
+                    + tertiary2_reserve_down_oversupplied_cost * SPILL_zd
+                    )
+
+    if version == "gain":
+        solver.Minimize(cost_participation_primary_reserve_up_on * (yaon + SPILL_yaon)
+                    + cost_participation_primary_reserve_up_off * (yaoff + SPILL_yaoff)
+                    + primary_reserve_up_not_supplied_cost * (generation_reserve_up_primary - yaon - yaoff)
+                    + cost_participation_secondary_reserve_up_on * (ybon + SPILL_ybon)
+                    + cost_participation_secondary_reserve_up_off * (yboff + SPILL_yboff)
+                    + secondary_reserve_up_not_supplied_cost * (generation_reserve_up_secondary - ybon - yboff)
+                    + cost_participation_tertiary1_reserve_up_on * (ycon + SPILL_ycon)
+                    + cost_participation_tertiary1_reserve_up_off * (ycoff + SPILL_ycoff)
+                    + tertiary1_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary1 - ycon - ycoff)
+                    + cost_participation_tertiary2_reserve_up_on * (ydon + SPILL_ydon)
+                    + cost_participation_tertiary2_reserve_up_off * (ydoff + SPILL_ydoff)
+                    + tertiary2_reserve_up_not_supplied_cost * (generation_reserve_up_tertiary2 - ydon - ydoff)
+                    + cost_participation_primary_reserve_down * (za + SPILL_za)
+                    + primary_reserve_down_not_supplied_cost * (generation_reserve_down_primary - za)
+                    + cost_participation_secondary_reserve_down * (zb + SPILL_zb)
+                    + secondary_reserve_down_not_supplied_cost * (generation_reserve_down_secondary - zb)
+                    + cost_participation_tertiary1_reserve_down * (zc + SPILL_zc)
+                    + tertiary1_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary1 - zc)
+                    + cost_participation_tertiary2_reserve_down * (zd + SPILL_zd)
+                    + tertiary2_reserve_down_not_supplied_cost * (generation_reserve_down_tertiary2 - zd)
+                    + cost * (x + SPILL_x)
+                    + ens_cost * (energy_generation - x)
+                    + spillage_cost * SPILL_x
+                    + primary_reserve_up_oversupplied_cost * (SPILL_yaon + SPILL_yaoff)
+                    + secondary_reserve_up_oversupplied_cost * (SPILL_ybon + SPILL_yboff)
+                    + tertiary1_reserve_up_oversupplied_cost * (SPILL_ycon + SPILL_ycoff)
+                    + tertiary2_reserve_up_oversupplied_cost * (SPILL_ydon + SPILL_ydoff)
+                    + primary_reserve_down_oversupplied_cost * SPILL_za
+                    + secondary_reserve_down_oversupplied_cost * SPILL_zb
+                    + tertiary1_reserve_down_oversupplied_cost * SPILL_zc
+                    + tertiary2_reserve_down_oversupplied_cost * SPILL_zd
+                    + startup_cost * nbr_on_inférieur)
+
+
+
+    # Solve the system.
+    status = solver.Solve()
+
+    op_cost_inférieur = solver.Objective().Value()
+
+    if op_cost_inférieur <= op_cost_supérieur:
+        return [nbr_on_inférieur]
+    return [nbr_on_supérieur]
+
 
 
 def arrondi_opti_entier(
@@ -86,10 +579,10 @@ def arrondi_opti_entier(
 
     nbr_on = ceil(round(nbr_on_float,12))
     nbr_on_min = floor(round(nbr_on_float,12))
-    nbr_off_primary = ceil(round(nbr_off_primary_float,12))
-    nbr_off_secondary = ceil(round(nbr_off_secondary_float,12))
-    nbr_off_tertiary1 = ceil(round(nbr_off_tertiary1_float,12))
-    nbr_off_tertiary2 = ceil(round(nbr_off_tertiary2_float,12))
+    # nbr_off_primary = ceil(round(nbr_off_primary_float,12))
+    # nbr_off_secondary = ceil(round(nbr_off_secondary_float,12))
+    # nbr_off_tertiary1 = ceil(round(nbr_off_tertiary1_float,12))
+    # nbr_off_tertiary2 = ceil(round(nbr_off_tertiary2_float,12))
 
 
     n = solver.IntVar(nbr_on_min, nbr_on, "nbr_on")
@@ -650,10 +1143,10 @@ def arrondi_eteint(
 
         nbr_off_max = nbr_units_max - nbr_on
 
-        na = solver.IntVar(0, nbr_off_max, "nbr_primary")
-        nb = solver.IntVar(0, nbr_off_max, "nbr_secondary")
-        nc = solver.IntVar(0, nbr_off_max, "nbr_tertiary1")
-        nd = solver.IntVar(0, nbr_off_max, "nbr_tertiary2")
+        na = solver.NumVar(0, nbr_off_max, "nbr_primary")
+        nb = solver.NumVar(0, nbr_off_max, "nbr_secondary")
+        nc = solver.NumVar(0, nbr_off_max, "nbr_tertiary1")
+        nd = solver.NumVar(0, nbr_off_max, "nbr_tertiary2")
 
 
         generation_reserve_up_primary = generation_reserve_up_primary_on + generation_reserve_up_primary_off
@@ -1348,9 +1841,6 @@ def arrondi_opti_repartition(
     else :
         nbr_on_final = nbr_on_classic
 
-
-    if nbr_on > 10 and p_max < 100:
-        a = 0
     
     # generation_reserve_up_primary = generation_reserve_up_primary_off + generation_reserve_up_primary_on
     # generation_reserve_up_secondary = generation_reserve_up_secondary_off + generation_reserve_up_secondary_on

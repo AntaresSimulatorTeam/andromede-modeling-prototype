@@ -4,6 +4,67 @@ from typing import Callable, List, Optional
 from tests.functional.libs.heuristic_arrondi import *
 
 
+def nouvel_appel_heuristique(
+        fn_to_apply: Callable,
+        ensemble_valeur : dict[List[float]],
+        version: Optional[str] = None,
+        option: Optional[str] = None,
+) -> List[str]:
+    
+    parametres = ["nb_on","energy_generation","generation_reserve_up_primary_on","generation_reserve_up_primary_off",
+                     "generation_reserve_down_primary","generation_reserve_up_secondary_on","generation_reserve_up_secondary_off",
+                     "generation_reserve_down_secondary","generation_reserve_up_tertiary1_on","generation_reserve_up_tertiary1_off",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_up_tertiary2_off",
+                     "generation_reserve_down_tertiary2",
+                     "p_max","p_min","nbr_max",
+                     "participation_max_primary_reserve_up_on","participation_max_primary_reserve_up_off",
+                     "participation_max_primary_reserve_down","participation_max_secondary_reserve_up_on",
+                     "participation_max_secondary_reserve_up_off","participation_max_secondary_reserve_down",
+                     "participation_max_tertiary1_reserve_up_on","participation_max_tertiary1_reserve_up_off",
+                     "participation_max_tertiary1_reserve_down","participation_max_tertiary2_reserve_up_on",
+                     "participation_max_tertiary2_reserve_up_off","participation_max_tertiary2_reserve_down",
+                     "cost","startup_cost","fixed_cost",
+                     "cost_participation_primary_reserve_up_on","cost_participation_primary_reserve_up_off","cost_participation_primary_reserve_down",
+                     "cost_participation_secondary_reserve_up_on","cost_participation_secondary_reserve_up_off","cost_participation_secondary_reserve_down",
+                     "cost_participation_tertiary1_reserve_up_on","cost_participation_tertiary1_reserve_up_off","cost_participation_tertiary1_reserve_down",
+                     "cost_participation_tertiary2_reserve_up_on","cost_participation_tertiary2_reserve_up_off","cost_participation_tertiary2_reserve_down",
+                     "spillage_cost","ens_cost","primary_reserve_up_not_supplied_cost","primary_reserve_down_not_supplied_cost",
+                     "secondary_reserve_up_not_supplied_cost","secondary_reserve_down_not_supplied_cost",
+                     "tertiary1_reserve_up_not_supplied_cost","tertiary1_reserve_down_not_supplied_cost",
+                     "tertiary2_reserve_up_not_supplied_cost","tertiary2_reserve_down_not_supplied_cost",
+                     "primary_reserve_up_oversupplied_cost","primary_reserve_down_oversupplied_cost",
+                     "secondary_reserve_up_oversupplied_cost","secondary_reserve_down_oversupplied_cost",
+                     "tertiary1_reserve_up_oversupplied_cost","tertiary1_reserve_down_oversupplied_cost",
+                     "tertiary2_reserve_up_oversupplied_cost","tertiary2_reserve_down_oversupplied_cost"]
+    valeur = [[] for t in range (168)]
+    resultat = [ 0 for t in range(168)]
+    for t in range(168):
+        for i in range(len(parametres)):
+            valeur[t].append(float(ensemble_valeur[parametres[i]][t]))
+        resultat[t] = nouvel_old_heuristique(valeur[t])[0][0]
+    return(resultat)    
+
+        # if version is not None:
+        #     if option is not None:
+        #         result_heuristic = fn_to_apply(version, option, [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+        #                                 [s for s in sol.values()], [p for p in param.values()])
+        #     else:
+        #         result_heuristic = fn_to_apply(version, [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+        #                                 [s for s in sol.values()], [p for p in param.values()])
+        # elif option is not None:
+        #     result_heuristic = fn_to_apply(option, *[i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+        #                                 [s for s in sol.values()], [p for p in param.values()]) 
+        # else:
+        #     result_heuristic = fn_to_apply( [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+        #                                 [s for s in sol.values()], [p for p in param.values()]) 
+
+def nouvel_old_heuristique(
+        variable: List[float],
+    ) -> List[str]:
+    
+    arrondi_final = [old_arrondi(*[s for s in variable])]
+    return arrondi_final
+
 def old_heuristique(
         horaire : List[str],
         variable: List[List[str]],
@@ -23,16 +84,16 @@ def heuristique_opti_repartition(
     ) -> List[List[str]]:
     
     if version != "choix":
-        arrondi_final = [ arrondi_opti_repartition(version,option,*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
+        arrondi_final = [ changement_arrondi(version,*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
         return arrondi_final
 
-    arrondi_base = [ arrondi_opti_repartition("perte",option,*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
+    arrondi_base = [ changement_arrondi("perte",*[s[t] for s in variable],*[p[t] for p in params]) for t in horaire]
     arrondi_final = arrondi_base
     for t in range(1,len(horaire)-1):
         if arrondi_base[t-1] < arrondi_base[t] and arrondi_base[t] > arrondi_base[t+1]:
-            arrondi_final[t] = arrondi_opti_repartition("gain",option,*[s[t] for s in variable],*[p[t] for p in params])        
+            arrondi_final[t] = changement_arrondi("gain",*[s[t] for s in variable],*[p[t] for p in params])        
         elif arrondi_base[t-1] < arrondi_base[t] or arrondi_base[t] > arrondi_base[t+1]:
-            arrondi_final[t] = arrondi_opti_repartition("sans",option,*[s[t] for s in variable],*[p[t] for p in params])        
+            arrondi_final[t] = changement_arrondi("sans",*[s[t] for s in variable],*[p[t] for p in params])        
     return arrondi_final
 
  

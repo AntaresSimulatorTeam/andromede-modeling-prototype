@@ -558,36 +558,30 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             upper_bound=param("nb_units_max"),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
-        int_variable(
-            "nb_off",
-            lower_bound=literal(0),
-            upper_bound=param("nb_units_max"),
+        float_variable(
+            "nb_off_primary",
+            lower_bound=param("nb_units_off_primary_min"),
+            upper_bound=param("nb_units_off_primary_max"),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
-        # int_variable(
-        #     "nb_off_primary",
-        #     lower_bound=param("nb_units_off_primary_min"),
-        #     upper_bound=param("nb_units_off_primary_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
-        # int_variable(
-        #     "nb_off_secondary",
-        #     lower_bound=param("nb_units_off_secondary_min"),
-        #     upper_bound=param("nb_units_off_secondary_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
-        # int_variable(
-        #     "nb_off_tertiary1",
-        #     lower_bound=param("nb_units_off_tertiary1_min"),
-        #     upper_bound=param("nb_units_off_tertiary1_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
-        # int_variable(
-        #     "nb_off_tertiary2",
-        #     lower_bound=param("nb_units_off_tertiary2_min"),
-        #     upper_bound=param("nb_units_off_tertiary2_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
+        float_variable(
+            "nb_off_secondary",
+            lower_bound=param("nb_units_off_secondary_min"),
+            upper_bound=param("nb_units_off_secondary_max"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "nb_off_tertiary1",
+            lower_bound=param("nb_units_off_tertiary1_min"),
+            upper_bound=param("nb_units_off_tertiary1_max"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        float_variable(
+            "nb_off_tertiary2",
+            lower_bound=param("nb_units_off_tertiary2_min"),
+            upper_bound=param("nb_units_off_tertiary2_max"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
         int_variable(
             "nb_stop",
             lower_bound=literal(0),
@@ -668,29 +662,24 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Max somme generation reserve off",
             var("generation_reserve_up_primary_off") + var("generation_reserve_up_secondary_off")
-            + var("generation_reserve_up_tertiary1_off") + var("generation_reserve_up_tertiary2_off") <= param("p_max") *  var("nb_off"),
+            + var("generation_reserve_up_tertiary1_off") + var("generation_reserve_up_tertiary2_off") <= param("p_max") * (param("nb_units_max_invisible") - var("nb_on")),
         ),
         Constraint(
-            "Min somme generation reserve off",
-            var("generation_reserve_up_primary_off") + var("generation_reserve_up_secondary_off")
-            + var("generation_reserve_up_tertiary1_off") + var("generation_reserve_up_tertiary2_off") >= param("p_min") *  var("nb_off"),
+            "Min generation primary reserve up off",
+            var("generation_reserve_up_primary_off") >= param("p_min") * var("nb_off_primary"),
         ),
-        # Constraint(
-        #     "Min generation primary reserve up off",
-        #     var("generation_reserve_up_primary_off") >= param("p_min") * var("nb_off_primary"),
-        # ),
-        #  Constraint(
-        #      "Min generation secondary reserve up off",
-        #      var("generation_reserve_up_secondary_off") >= param("p_min") * var("nb_off_secondary"),
-        #  ),
-        #  Constraint(
-        #      "Min generation tertiary1 reserve up off",
-        #      var("generation_reserve_up_tertiary1_off") >= param("p_min") * var("nb_off_tertiary1"),
-        #  ),
-        #  Constraint(
-        #      "Min generation tertiary2 reserve up off",
-        #      var("generation_reserve_up_tertiary2_off") >= param("p_min") * var("nb_off_tertiary2"),
-        #  ),
+         Constraint(
+             "Min generation secondary reserve up off",
+             var("generation_reserve_up_secondary_off") >= param("p_min") * var("nb_off_secondary"),
+         ),
+         Constraint(
+             "Min generation tertiary1 reserve up off",
+             var("generation_reserve_up_tertiary1_off") >= param("p_min") * var("nb_off_tertiary1"),
+         ),
+         Constraint(
+             "Min generation tertiary2 reserve up off",
+             var("generation_reserve_up_tertiary2_off") >= param("p_min") * var("nb_off_tertiary2"),
+         ),
         Constraint(
             "Limite participation primary reserve up on",
             var("generation_reserve_up_primary_on")
@@ -699,7 +688,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation primary reserve up off",
             var("generation_reserve_up_primary_off")
-            <= param("participation_max_primary_reserve_up_off") * var("nb_off"),
+            <= param("participation_max_primary_reserve_up_off") * var("nb_off_primary"),
         ),
         Constraint(
             "Limite participation primary reserve down",
@@ -714,7 +703,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation secondary reserve up off",
             var("generation_reserve_up_secondary_off")
-            <= param("participation_max_secondary_reserve_up_off") * var("nb_off"),
+            <= param("participation_max_secondary_reserve_up_off") * var("nb_off_secondary"),
         ),
         Constraint(
             "Limite participation secondary reserve down",
@@ -729,7 +718,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation tertiary1 reserve up off",
             var("generation_reserve_up_tertiary1_off")
-            <= param("participation_max_tertiary1_reserve_up_off") * var("nb_off"),
+            <= param("participation_max_tertiary1_reserve_up_off") * var("nb_off_tertiary1"),
         ),
         Constraint(
             "Limite participation tertiary1 reserve down",
@@ -744,7 +733,7 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Limite participation tertiary2 reserve up off",
             var("generation_reserve_up_tertiary2_off")
-            <= param("participation_max_tertiary2_reserve_up_off") * var("nb_off"),
+            <= param("participation_max_tertiary2_reserve_up_off") * var("nb_off_tertiary2"),
         ),
         Constraint(
             "Limite participation tertiary2 reserve down",
@@ -756,25 +745,21 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
         ),
         Constraint(
-            "On/Off  balance",
-            var("nb_off") <= param("nb_units_max") - var("nb_on"),
+            "On/Off primary balance",
+            var("nb_off_primary") <= param("nb_units_max_invisible") - var("nb_on"),
         ),
-        # Constraint(
-        #     "On/Off primary balance",
-        #     var("nb_off_primary") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
-        # Constraint(
-        #     "On/Off secondary balance",
-        #     var("nb_off_secondary") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
-        # Constraint(
-        #     "On/Off tertiary1 balance",
-        #     var("nb_off_tertiary1") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
-        # Constraint(
-        #     "On/Off tertiary2 balance",
-        #     var("nb_off_tertiary2") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
+        Constraint(
+            "On/Off secondary balance",
+            var("nb_off_secondary") <= param("nb_units_max_invisible") - var("nb_on"),
+        ),
+        Constraint(
+            "On/Off tertiary1 balance",
+            var("nb_off_tertiary1") <= param("nb_units_max_invisible") - var("nb_on"),
+        ),
+        Constraint(
+            "On/Off tertiary2 balance",
+            var("nb_off_tertiary2") <= param("nb_units_max_invisible") - var("nb_on"),
+        ),
         Constraint(
             "Max failures",
             var("nb_failure") <= var("nb_stop"),
