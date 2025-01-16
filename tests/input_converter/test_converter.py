@@ -500,24 +500,14 @@ class TestConverter:
             links_connections,
         ) = converter._convert_link_to_component_list()
 
-        fr_it_direct_links_timeseries = str(
-            study_path / "input" / "links" / "fr" / "capacities" / "it_direct.txt"
-        )
-        fr_it_indirect_links_timeseries = str(
-            study_path / "input" / "links" / "fr" / "capacities" / "it_indirect.txt"
-        )
-        at_fr_direct_links_timeseries = str(
-            study_path / "input" / "links" / "at" / "capacities" / "fr_direct.txt"
-        )
-        at_fr_indirect_links_timeseries = str(
-            study_path / "input" / "links" / "at" / "capacities" / "fr_indirect.txt"
-        )
-        at_it_direct_links_timeseries = str(
-            study_path / "input" / "links" / "at" / "capacities" / "it_direct.txt"
-        )
-        at_it_indirect_links_timeseries = str(
-            study_path / "input" / "links" / "at" / "capacities" / "it_indirect.txt"
-        )
+        fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
+        at_prefix_path = study_path / "input" / "links" / "at" / "capacities"
+        fr_it_direct_links_timeseries = str(fr_prefix_path / "it_direct.txt")
+        fr_it_indirect_links_timeseries = str(fr_prefix_path / "it_indirect.txt")
+        at_fr_direct_links_timeseries = str(at_prefix_path / "fr_direct.txt")
+        at_fr_indirect_links_timeseries = str(at_prefix_path / "fr_indirect.txt")
+        at_it_direct_links_timeseries = str(at_prefix_path / "it_direct.txt")
+        at_it_indirect_links_timeseries = str(at_prefix_path / "it_indirect.txt")
         expected_link_component = [
             InputComponent(
                 id="fr / it",
