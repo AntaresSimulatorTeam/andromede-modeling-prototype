@@ -552,58 +552,6 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             lower_bound=literal(0),
             structure=ANTICIPATIVE_TIME_VARYING,
         ),
-        int_variable(
-            "nb_on",
-            lower_bound=param("nb_units_min"),
-            upper_bound=param("nb_units_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_off",
-            lower_bound=literal(0),
-            upper_bound=param("nb_units_max"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        # int_variable(
-        #     "nb_off_primary",
-        #     lower_bound=param("nb_units_off_primary_min"),
-        #     upper_bound=param("nb_units_off_primary_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
-        # int_variable(
-        #     "nb_off_secondary",
-        #     lower_bound=param("nb_units_off_secondary_min"),
-        #     upper_bound=param("nb_units_off_secondary_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
-        # int_variable(
-        #     "nb_off_tertiary1",
-        #     lower_bound=param("nb_units_off_tertiary1_min"),
-        #     upper_bound=param("nb_units_off_tertiary1_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
-        # int_variable(
-        #     "nb_off_tertiary2",
-        #     lower_bound=param("nb_units_off_tertiary2_min"),
-        #     upper_bound=param("nb_units_off_tertiary2_max"),
-        #     structure=ANTICIPATIVE_TIME_VARYING,
-        # ),
-        int_variable(
-            "nb_stop",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_failure",
-            lower_bound=literal(0),
-            upper_bound=param("max_failure"),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
-        int_variable(
-            "nb_start",
-            lower_bound=literal(0),
-            structure=ANTICIPATIVE_TIME_VARYING,
-        ),
     ],
     ports=[ModelPort(port_type=RESERVE_PORT_TYPE, port_name="balance_port")],
     port_fields_definitions=[
@@ -648,7 +596,9 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
         Constraint(
             "Max generation",
             var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
-            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on") <= param("max_generating"),
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on") <= param("max_generating")
+            - var("generation_reserve_up_primary_off") - var("generation_reserve_up_secondary_off")
+            - var("generation_reserve_up_tertiary1_off") - var("generation_reserve_up_tertiary2_off"),
         ),
         Constraint(
             "Min generation",
@@ -656,152 +606,76 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
             - var("generation_reserve_down_tertiary1") - var("generation_reserve_down_tertiary2") >= param("min_generating"),
         ),
         Constraint(
-            "Max generation with NODU",
-            var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
-            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on") <= param("p_max") * var("nb_on"),
-        ),
-        Constraint(
-            "Min generation with NODU",
-            var("energy_generation") - var("generation_reserve_down_primary") - var("generation_reserve_down_secondary")
-            - var("generation_reserve_down_tertiary1") - var("generation_reserve_down_tertiary2") >= param("p_min") * var("nb_on"),
-        ),
-        Constraint(
-            "Max somme generation reserve off",
-            var("generation_reserve_up_primary_off") + var("generation_reserve_up_secondary_off")
-            + var("generation_reserve_up_tertiary1_off") + var("generation_reserve_up_tertiary2_off") <= param("p_max") *  var("nb_off"),
-        ),
-        Constraint(
-            "Min somme generation reserve off",
-            var("generation_reserve_up_primary_off") + var("generation_reserve_up_secondary_off")
-            + var("generation_reserve_up_tertiary1_off") + var("generation_reserve_up_tertiary2_off") >= param("p_min") *  var("nb_off"),
-        ),
-        # Constraint(
-        #     "Min generation primary reserve up off",
-        #     var("generation_reserve_up_primary_off") >= param("p_min") * var("nb_off_primary"),
-        # ),
-        #  Constraint(
-        #      "Min generation secondary reserve up off",
-        #      var("generation_reserve_up_secondary_off") >= param("p_min") * var("nb_off_secondary"),
-        #  ),
-        #  Constraint(
-        #      "Min generation tertiary1 reserve up off",
-        #      var("generation_reserve_up_tertiary1_off") >= param("p_min") * var("nb_off_tertiary1"),
-        #  ),
-        #  Constraint(
-        #      "Min generation tertiary2 reserve up off",
-        #      var("generation_reserve_up_tertiary2_off") >= param("p_min") * var("nb_off_tertiary2"),
-        #  ),
-        Constraint(
             "Limite participation primary reserve up on",
-            var("generation_reserve_up_primary_on")
-            <= param("participation_max_primary_reserve_up_on") * var("nb_on"),
+            var("generation_reserve_up_primary_on") * (1 - param("participation_max_primary_reserve_up_on")/param("p_max"))
+            <= param("participation_max_primary_reserve_up_on") * (var("energy_generation") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on")) / param("p_max"),
         ),
         Constraint(
             "Limite participation primary reserve up off",
-            var("generation_reserve_up_primary_off")
-            <= param("participation_max_primary_reserve_up_off") * var("nb_off"),
+            var("generation_reserve_up_primary_off") 
+            <= param("participation_max_primary_reserve_up_off") * param("p_max"),
         ),
         Constraint(
             "Limite participation primary reserve down",
             var("generation_reserve_down_primary")
-            <= param("participation_max_primary_reserve_down") * var("nb_on"),
+            <= param("participation_max_primary_reserve_down") * (var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on")) / param("p_max"),
         ),
         Constraint(
             "Limite participation secondary reserve up on",
-            var("generation_reserve_up_secondary_on")
-            <= param("participation_max_secondary_reserve_up_on") * var("nb_on"),
+            var("generation_reserve_up_secondary_on") * (1 - param("participation_max_secondary_reserve_up_on")/param("p_max"))
+            <= param("participation_max_secondary_reserve_up_on") * (var("energy_generation") + var("generation_reserve_up_primary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on")) / param("p_max"),
         ),
         Constraint(
             "Limite participation secondary reserve up off",
-            var("generation_reserve_up_secondary_off")
-            <= param("participation_max_secondary_reserve_up_off") * var("nb_off"),
+            var("generation_reserve_up_secondary_on")
+            <= param("participation_max_secondary_reserve_up_off") * param("p_max"),
         ),
         Constraint(
             "Limite participation secondary reserve down",
             var("generation_reserve_down_secondary")
-            <= param("participation_max_secondary_reserve_down") * var("nb_on"),
+            <= param("participation_max_secondary_reserve_down") * (var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on")) / param("p_max"),
         ),
         Constraint(
             "Limite participation tertiary1 reserve up on",
-            var("generation_reserve_up_tertiary1_on")
-            <= param("participation_max_tertiary1_reserve_up_on") * var("nb_on"),
+            var("generation_reserve_up_tertiary1_on") * (1 - param("participation_max_tertiary1_reserve_up_on")/param("p_max"))
+            <= param("participation_max_tertiary1_reserve_up_on") * (var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary2_on")) / param("p_max"),
         ),
         Constraint(
             "Limite participation tertiary1 reserve up off",
-            var("generation_reserve_up_tertiary1_off")
-            <= param("participation_max_tertiary1_reserve_up_off") * var("nb_off"),
+            var("generation_reserve_up_tertiary1_on") 
+            <= param("participation_max_tertiary1_reserve_up_off") * param("p_max"),
         ),
         Constraint(
             "Limite participation tertiary1 reserve down",
             var("generation_reserve_down_tertiary1")
-            <= param("participation_max_tertiary1_reserve_down") * var("nb_on"),
+            <= param("participation_max_tertiary1_reserve_down") * (var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on")) / param("p_max"),
         ),
         Constraint(
             "Limite participation tertiary2 reserve up on",
-            var("generation_reserve_up_tertiary2_on")
-            <= param("participation_max_tertiary2_reserve_up_on") * var("nb_on"),
+            var("generation_reserve_up_tertiary2_on") * (1 - param("participation_max_tertiary2_reserve_up_on")/param("p_max"))
+            <= param("participation_max_tertiary2_reserve_up_on") * (var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on")) / param("p_max"),
         ),
         Constraint(
             "Limite participation tertiary2 reserve up off",
-            var("generation_reserve_up_tertiary2_off")
-            <= param("participation_max_tertiary2_reserve_up_off") * var("nb_off"),
+            var("generation_reserve_up_tertiary2_on") 
+            <= param("participation_max_tertiary2_reserve_up_off") * param("p_max"),
         ),
         Constraint(
             "Limite participation tertiary2 reserve down",
             var("generation_reserve_down_tertiary2")
-            <= param("participation_max_tertiary2_reserve_down") * var("nb_on"),
+            <= param("participation_max_tertiary2_reserve_down") * (var("energy_generation") + var("generation_reserve_up_primary_on") + var("generation_reserve_up_secondary_on")
+            + var("generation_reserve_up_tertiary1_on") + var("generation_reserve_up_tertiary2_on")) / param("p_max"),
         ),
-        Constraint(
-            "NODU balance",
-            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
-        ),
-        Constraint(
-            "On/Off  balance",
-            var("nb_off") <= param("nb_units_max") - var("nb_on"),
-        ),
-        # Constraint(
-        #     "On/Off primary balance",
-        #     var("nb_off_primary") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
-        # Constraint(
-        #     "On/Off secondary balance",
-        #     var("nb_off_secondary") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
-        # Constraint(
-        #     "On/Off tertiary1 balance",
-        #     var("nb_off_tertiary1") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
-        # Constraint(
-        #     "On/Off tertiary2 balance",
-        #     var("nb_off_tertiary2") <= param("nb_units_max_invisible") - var("nb_on"),
-        # ),
-        Constraint(
-            "Max failures",
-            var("nb_failure") <= var("nb_stop"),
-        ),
-        Constraint(
-            "Min up time",
-            var("nb_start")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            - var("nb_failure")
-            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
-            .sum()
-            <= var("nb_on"),
-        ),
-        Constraint(
-            "Min down time",
-            var("nb_stop")
-            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
-            .sum()
-            <= param("nb_units_max_min_down_time") - var("nb_on"),
-        ),
-        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
     ],
     objective_operational_contribution=(
         param("cost") * var("energy_generation")
-        + param("startup_cost") * var("nb_start")
-        + param("fixed_cost") * var("nb_on")
         + param("cost_participation_primary_reserve_up_on") * var("generation_reserve_up_primary_on")
         + param("cost_participation_primary_reserve_up_off") * var("generation_reserve_up_primary_off")
         + param("cost_participation_primary_reserve_down") * var("generation_reserve_down_primary")
