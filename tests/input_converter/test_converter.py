@@ -13,6 +13,7 @@ import pytest
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.utils import transform_to_yaml
+from andromede.input_converter.src.logger import Logger
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
@@ -21,17 +22,17 @@ from andromede.study.parsing import (
     parse_yaml_components,
 )
 
-
 class TestConverter:
     def _init_area_reading(self, local_study):
-        converter = AntaresStudyConverter(study_input=local_study)
+        logger = Logger(__name__, local_study.service.config.study_path)
+        converter = AntaresStudyConverter(study_input=local_study, logger=logger)
         areas = converter.study.read_areas()
         return areas, converter
 
     def test_convert_study_to_input_study(self, local_study_w_areas):
-        converter = AntaresStudyConverter(study_input=local_study_w_areas)
+        logger = Logger(__name__, local_study_w_areas.service.config.study_path)
+        converter = AntaresStudyConverter(study_input=local_study_w_areas, logger=logger)
         input_study = converter.convert_study_to_input_study()
-
         expected_input_study = InputStudy(
             nodes=[
                 InputComponent(
@@ -43,7 +44,7 @@ class TestConverter:
                             name="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
-                            value=1.5,
+                            value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(
@@ -64,7 +65,7 @@ class TestConverter:
                             name="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
-                            value=1.5,
+                            value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(
@@ -102,7 +103,7 @@ class TestConverter:
                         name="energy_cost_unsupplied",
                         type="constant",
                         scenario_group=None,
-                        value=1.5,
+                        value=0.5,
                         timeseries=None,
                     ),
                     InputComponentParameter(
@@ -122,7 +123,7 @@ class TestConverter:
                         name="energy_cost_unsupplied",
                         type="constant",
                         scenario_group=None,
-                        value=1.5,
+                        value=0.5,
                         timeseries=None,
                     ),
                     InputComponentParameter(
@@ -306,7 +307,7 @@ class TestConverter:
                             name="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
-                            value=1.5,
+                            value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(
@@ -327,7 +328,7 @@ class TestConverter:
                             name="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
-                            value=1.5,
+                            value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(

@@ -15,7 +15,7 @@ from typing import Union
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 
-from andromede.input_converter.src.utils import resolve_path
+from andromede.input_converter.src.utils import resolve_path, transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
@@ -23,13 +23,18 @@ from andromede.study.parsing import (
     InputPortConnections,
 )
 from pandas import DataFrame
+import logging
 
 
 class AntaresStudyConverter:
-    def __init__(self, study_input: Union[Path, Study]):
+    def __init__(
+        self, study_input: Union[Path, Study], logger: logging, output_path: Path = None
+    ):
         """
         Initialize processor
         """
+        self.logger = logger
+
         if isinstance(study_input, Study):
             self.study = study_input
             self.study_path = study_input.service.config.study_path  # type: ignore
@@ -38,6 +43,10 @@ class AntaresStudyConverter:
             self.study = read_study_local(self.study_path)
         else:
             raise TypeError("Invalid input type")
+
+        self.output_path = (
+            Path(output_path) if output_path else self.study_path / Path("output.yaml")
+        )
 
     def _check_dataframe_validity(self, df: DataFrame) -> bool:
         """
@@ -56,6 +65,7 @@ class AntaresStudyConverter:
         self, areas: list[Area]
     ) -> list[InputComponent]:
         components = []
+        self.logger.info("Converting areas to component list...")
         for area in areas:
             components.append(
                 InputComponent(
@@ -82,6 +92,7 @@ class AntaresStudyConverter:
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
+        self.logger.info("Converting renewables to component list...")
         for area in areas:
             renewables = area.read_renewables()
             for renewable in renewables:
@@ -133,6 +144,7 @@ class AntaresStudyConverter:
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
+        self.logger.info("Converting thermals to component list...")
         # Add thermal components for each area
         for area in areas:
             thermals = area.read_thermal_clusters()
@@ -204,6 +216,7 @@ class AntaresStudyConverter:
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
+        self.logger.info("Converting links to component list...")
         # Add links components for each area
         links = self.study.read_links()
         for link in links:
@@ -264,6 +277,7 @@ class AntaresStudyConverter:
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
+        self.logger.info("Converting wind to component list...")
         for area in areas:
             series_path = (
                 self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
@@ -299,6 +313,7 @@ class AntaresStudyConverter:
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
+        self.logger.info("Converting solar to component list...")
         for area in areas:
             series_path = (
                 self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
@@ -335,6 +350,7 @@ class AntaresStudyConverter:
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
+        self.logger.info("Converting load to component list...")
         for area in areas:
             series_path = (
                 self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
@@ -388,6 +404,9 @@ class AntaresStudyConverter:
             list_components.extend(components)
             list_connections.extend(connections)
 
+        self.logger.info(
+            "Converting node, components and connections into Input study..."
+        )
         return InputStudy(
             nodes=area_components,
             components=list_components,
@@ -395,4 +414,6 @@ class AntaresStudyConverter:
         )
 
     def process_all(self) -> None:
-        raise NotImplementedError
+        study = self.convert_study_to_input_study()
+        self.logger.info("Converting input study into yaml file...")
+        transform_to_yaml(model=study, output_path=self.output_path)

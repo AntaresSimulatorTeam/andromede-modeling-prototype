@@ -52,6 +52,7 @@ def local_study_w_areas(tmp_path, local_study) -> Study:
     return local_study
 
 
+
 @pytest.fixture
 def local_study_w_links(tmp_path, local_study_w_areas):
     local_study_w_areas.create_area("at")
