@@ -22,6 +22,7 @@ from andromede.study.parsing import (
     parse_yaml_components,
 )
 
+
 class TestConverter:
     def _init_area_reading(self, local_study):
         logger = Logger(__name__, local_study.service.config.study_path)
