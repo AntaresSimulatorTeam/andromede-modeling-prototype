@@ -12,8 +12,8 @@
 import pytest
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
-from andromede.input_converter.src.utils import transform_to_yaml
 from andromede.input_converter.src.logger import Logger
+from andromede.input_converter.src.utils import transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
