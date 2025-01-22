@@ -47,7 +47,9 @@ def local_study(tmp_path) -> Study:
 def local_study_w_areas(tmp_path, local_study) -> Study:
     areas_to_create = ["fr", "it"]
     for area in areas_to_create:
-        area_properties = AreaPropertiesLocal(energy_cost_spilled="1.000000", energy_cost_unsupplied="0.500000")
+        area_properties = AreaPropertiesLocal(
+            energy_cost_spilled="1.000000", energy_cost_unsupplied="0.500000"
+        )
         local_study.create_area(area, properties=area_properties)
     return local_study
 

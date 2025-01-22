@@ -24,11 +24,13 @@ from andromede.study.resolve_components import (
 def data_dir() -> Path:
     return Path(__file__).parent.parent.parent
 
+
 @pytest.fixture
-def study_component(local_study_with_constraint
-) -> InputStudy:
+def study_component(local_study_with_constraint) -> InputStudy:
     logger = Logger(__name__, local_study_with_constraint.service.config.study_path)
-    converter = AntaresStudyConverter(study_input=local_study_with_constraint, logger=logger)
+    converter = AntaresStudyConverter(
+        study_input=local_study_with_constraint, logger=logger
+    )
     converter.process_all()
     compo_file = converter.output_path
 
@@ -40,15 +42,22 @@ def study_component(local_study_with_constraint
 def input_library(
     data_dir: Path,
 ) -> InputLibrary:
-    library = data_dir / "src" / "andromede" / "libs" /  "antares_historic" / "antares_historic.yml"
+    library = (
+        data_dir
+        / "src"
+        / "andromede"
+        / "libs"
+        / "antares_historic"
+        / "antares_historic.yml"
+    )
     with library.open() as lib:
         return parse_yaml_library(lib)
 
+
 @pytest.skip("Missing max operator in modeleur to read thermal model")
 def test_basic_balance_using_yaml(
-   study_component: InputStudy, input_library: InputLibrary
+    study_component: InputStudy, input_library: InputLibrary
 ) -> None:
-
     result_lib = resolve_library([input_library])
 
     components_input = resolve_components_and_cnx(study_component, result_lib)

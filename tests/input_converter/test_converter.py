@@ -32,7 +32,9 @@ class TestConverter:
 
     def test_convert_study_to_input_study(self, local_study_w_areas):
         logger = Logger(__name__, local_study_w_areas.service.config.study_path)
-        converter = AntaresStudyConverter(study_input=local_study_w_areas, logger=logger)
+        converter = AntaresStudyConverter(
+            study_input=local_study_w_areas, logger=logger
+        )
         input_study = converter.convert_study_to_input_study()
         expected_input_study = InputStudy(
             nodes=[
