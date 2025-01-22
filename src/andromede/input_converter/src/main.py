@@ -1,13 +1,24 @@
-from argparse import ArgumentParser, Namespace, ArgumentTypeError
-from configparser import ConfigParser
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+import logging
 import os
 import sys
+from argparse import ArgumentParser, ArgumentTypeError, Namespace
+from configparser import ConfigParser
 from pathlib import Path
-from __init__ import __version__
-from converter import AntaresStudyConverter
 
-from logger import Logger
-
+from . import __version__
+from .converter import AntaresStudyConverter
+from .logger import Logger
 
 DEFAULT: dict = {}
 LOGGER_PATH: str = os.path.join(os.path.dirname(__file__), "../data/logging.log")
@@ -136,7 +147,7 @@ def parse_commandline() -> Namespace:
 if __name__ == "__main__":
     config: dict = {}
     args = parse_commandline()
-    logger = Logger(__name__, args.logging)
+    logger: logging.Logger = Logger(__name__, args.logging)
     config_parser = ConfigParser()
 
     # Load the default configuration dictionary into the config parser.

@@ -9,26 +9,29 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+import logging
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
+from pandas import DataFrame
 
 from andromede.input_converter.src.utils import resolve_path, transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
-    InputStudy,
     InputPortConnections,
+    InputStudy,
 )
-from pandas import DataFrame
-import logging
 
 
 class AntaresStudyConverter:
     def __init__(
-        self, study_input: Union[Path, Study], logger: logging, output_path: Path = None
+        self,
+        study_input: Union[Path, Study],
+        logger: logging.Logger,
+        output_path: Optional[Path] = None,
     ):
         """
         Initialize processor
