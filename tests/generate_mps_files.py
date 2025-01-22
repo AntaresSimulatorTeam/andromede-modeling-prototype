@@ -148,6 +148,10 @@ def change_lower_bound(solver, var_id: int, lb: float):
     var = solver.variables()
     var[var_id].SetLb(lb)
 
+def change_upper_bound(solver, var_id: int, ub: float):
+    var = solver.variables()
+    var[var_id].SetUb(ub)
+
 
 def get_ini_file(dir_study: str) -> ConfigParser:
     ini_file = ConfigParser()

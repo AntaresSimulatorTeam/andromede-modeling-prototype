@@ -437,3 +437,74 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
     .sum()
     .expec(),
 )
+
+THERMAL_CLUSTER_HEURISTIQUE_DMIN = model(
+    id="GEN",
+    parameters=[
+        float_parameter("p_max", TIME_AND_SCENARIO_FREE),  # p_max of a single unit
+        float_parameter("p_min", CONSTANT),
+        float_parameter("d_min_up", CONSTANT),
+        float_parameter("d_min_down", CONSTANT),
+        int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_max", TIME_AND_SCENARIO_FREE),
+        int_parameter("max_failure", TIME_AND_SCENARIO_FREE),
+        int_parameter("nb_units_max_min_down_time", TIME_AND_SCENARIO_FREE),
+    ],
+    variables=[
+        int_variable(
+            "nb_on",
+            lower_bound=param("nb_units_min"),
+            upper_bound=param("nb_units_max"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        int_variable(
+            "nb_stop",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        int_variable(
+            "nb_failure",
+            lower_bound=literal(0),
+            upper_bound=param("max_failure"),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+        int_variable(
+            "nb_start",
+            lower_bound=literal(0),
+            structure=ANTICIPATIVE_TIME_VARYING,
+        ),
+    ],
+    constraints=[
+        Constraint(
+            "NODU balance",
+            var("nb_on") == var("nb_on").shift(-1) + var("nb_start") - var("nb_stop"),
+        ),
+        Constraint(
+            "Max failures",
+            var("nb_failure") <= var("nb_stop"),
+        ),
+        Constraint(
+            "Min up time",
+            var("nb_start")
+            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            .sum()
+            - var("nb_failure")
+            .shift(ExpressionRange(-param("d_min_up") + 1, literal(0)))
+            .sum()
+            <= var("nb_on"),
+        ),
+        Constraint(
+            "Min down time",
+            var("nb_stop")
+            .shift(ExpressionRange(-param("d_min_down") + 1, literal(0)))
+            .sum()
+            <= param("nb_units_max_min_down_time") - var("nb_on"),
+        ),
+        # It also works by writing ExpressionRange(-param("d_min_down") + 1, 0) as ExpressionRange's __post_init__ wraps integers to literal nodes. However, MyPy does not seem to infer that ExpressionRange's attributes are necessarily of ExpressionNode type and raises an error if the arguments in the constructor are integer (whereas it runs correctly), this why we specify it here with literal(0) instead of 0.
+    ],
+    objective_operational_contribution=(
+        var("nb_on")
+    )
+    .sum()
+    .expec(),
+)

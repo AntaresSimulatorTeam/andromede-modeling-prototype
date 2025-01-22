@@ -22,28 +22,28 @@ study:
         value: 4000
       - name: primary_reserve_up_not_supplied_cost
         type: constant
-        value: 6000
+        value: 100
       - name: primary_reserve_down_not_supplied_cost
         type: constant
-        value: 6000
+        value: 100
       - name: secondary_reserve_up_not_supplied_cost
         type: constant
-        value: 1000
+        value: 100
       - name: secondary_reserve_down_not_supplied_cost
         type: constant
-        value: 1000
+        value: 100
       - name: tertiary1_reserve_up_not_supplied_cost
         type: constant
-        value: 1000
+        value: 100
       - name: tertiary1_reserve_down_not_supplied_cost
         type: constant
-        value: 1000
+        value: 100
       - name: tertiary2_reserve_up_not_supplied_cost
         type: constant
-        value: 1000
+        value: 100
       - name: tertiary2_reserve_down_not_supplied_cost
         type: constant
-        value: 1000
+        value: 100
       - name: primary_reserve_up_oversupplied_cost
         type: constant
         value: 0
@@ -78,16 +78,16 @@ study:
           timeseries: demand_energy-ts
         - name: demand_primary_reserve_up
           type: timeseries
-          timeseries: demand_primary_reserve-ts
+          timeseries: demand_tertiary_reserve_up-ts
         - name: demand_primary_reserve_down
           type: timeseries
-          timeseries: demand_primary_reserve-ts
-        - name: demand_secondary_reserve_up
-          type: timeseries
-          timeseries: demand_tertiary_reserve_up-ts
-        - name: demand_secondary_reserve_down
-          type: timeseries
           timeseries: demand_tertiary_reserve_down-ts
+        - name: demand_secondary_reserve_up
+          type: constant
+          value: 0
+        - name: demand_secondary_reserve_down
+          type: constant
+          value: 0
         - name: demand_tertiary1_reserve_up
           type: constant
           value: 0
@@ -140,6 +140,12 @@ study:
         - name: nb_units_off_primary_max
           type: timeseries
           timeseries: nb_units_max-ts
+        - name: nb_units_off_min
+          type: constant
+          value: 0
+        - name: nb_units_off_max
+          type: timeseries
+          timeseries: nb_units_max-ts
         - name: nb_units_off_secondary_min
           type: constant
           value: 0
@@ -165,8 +171,8 @@ study:
           type: constant
           value: 0
         - name: max_generating
-          type: timeseries
-          timeseries: max_generating
+          type: constant
+          value: 100000
         - name: nb_units_max_min_down_time
           type: constant
           value: 15
@@ -175,7 +181,7 @@ study:
           value: 270
         - name: participation_max_primary_reserve_up_off
           type: constant
-          value: 0
+          value: 650
         - name: participation_max_primary_reserve_down
           type: constant
           value: 270
@@ -184,7 +190,7 @@ study:
           value: 270
         - name: participation_max_secondary_reserve_up_off
           type: constant
-          value: 500
+          value: 0
         - name: participation_max_secondary_reserve_down
           type: constant
           value: 270
@@ -208,22 +214,22 @@ study:
           value: 27
         - name : cost_participation_primary_reserve_up_on
           type : constant
-          value : 15.683
+          value : 1
         - name : cost_participation_primary_reserve_up_off
           type : constant
-          value : 0
+          value : 2
         - name : cost_participation_primary_reserve_down
           type : constant
           value : 1
         - name : cost_participation_secondary_reserve_up_on
           type : constant
-          value : 15.683
+          value : 0
         - name : cost_participation_secondary_reserve_up_off
           type : constant
-          value : 20
+          value : 0
         - name : cost_participation_secondary_reserve_down
           type : constant
-          value : 1
+          value : 0
         - name : cost_participation_tertiary1_reserve_up_on
           type : constant
           value : 0
@@ -276,6 +282,12 @@ study:
         - name: nb_units_max_invisible
           type: constant
           value: 30
+        - name: nb_units_off_min
+          type: constant
+          value: 0
+        - name: nb_units_off_max
+          type: constant
+          value: 30
         - name: nb_units_off_primary_min
           type: constant
           value: 0
@@ -314,25 +326,25 @@ study:
           value: 30
         - name: participation_max_primary_reserve_up_on
           type: constant
-          value: 45
+          value: 23
         - name: participation_max_primary_reserve_up_off
           type: constant
-          value: 0
+          value: 85
         - name: participation_max_primary_reserve_down
           type: constant
-          value: 45
+          value: 25
         - name: participation_max_secondary_reserve_up_on
           type: constant
-          value: 45
+          value: 0
         - name: participation_max_secondary_reserve_up_off
           type: constant
-          value: 90
+          value: 0
         - name: participation_max_secondary_reserve_down
           type: constant
-          value: 45
+          value: 0
         - name: participation_max_tertiary1_reserve_up_on
           type: constant
-          value: 23
+          value: 0
         - name: participation_max_tertiary1_reserve_up_off
           type: constant
           value: 0
@@ -350,22 +362,22 @@ study:
           value: 23
         - name : cost_participation_primary_reserve_up_on
           type : constant
-          value : 50
+          value : 2
         - name : cost_participation_primary_reserve_up_off
           type : constant
-          value : 0
+          value : 3
         - name : cost_participation_primary_reserve_down
           type : constant
           value : 2
         - name : cost_participation_secondary_reserve_up_on
           type : constant
-          value : 50
+          value : 0
         - name : cost_participation_secondary_reserve_up_off
           type : constant
-          value : 54
+          value : 0
         - name : cost_participation_secondary_reserve_down
           type : constant
-          value : 2
+          value : 0
         - name : cost_participation_tertiary1_reserve_up_on
           type : constant
           value : 0

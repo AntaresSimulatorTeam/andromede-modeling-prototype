@@ -1,3 +1,7 @@
+# voir andromede/thermal_heuristic/data
+
+
+
 import ortools.linear_solver.pywraplp as pywraplp
 
 from andromede.simulation import OutputValues
@@ -18,7 +22,6 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
-from tests.functional.libs.lib_thermal_heuristic import THERMAL_CLUSTER_MODEL_MILP
 
 
 number_hours = 168

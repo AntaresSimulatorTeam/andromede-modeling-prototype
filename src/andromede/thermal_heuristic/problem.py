@@ -78,6 +78,7 @@ class ThermalProblemBuilder:
         param_node_needed_to_compute : Optional[List[str]] = None,
         version: Optional[str] = None,
         option: Optional[str] = None,
+        bonus: Optional[str] = None,
     ) -> None:
         for cluster in list_cluster_id:
             for list_param_update in param_to_update:
@@ -100,7 +101,7 @@ class ThermalProblemBuilder:
             param = {}
             if param_needed_to_compute is not None:
                 for p in param_needed_to_compute:
-                    param[p] = [
+                    sol[p] = [
                         self.database.get_value(
                             ComponentParameterIndex(cluster, p),
                             t,
@@ -118,22 +119,22 @@ class ThermalProblemBuilder:
                     if connection.port2.component.id == cluster:
                         node = connection.port1.component.id
                 for p in param_node_needed_to_compute:
-                    param[p] = [self.database.get_data(node,p).value
+                    sol[p] = [self.database.get_data(node,p).value
                                 for t in timesteps(index, self.time_scenario_hour_parameter)]   
 
             if version is not None:
                 if option is not None:
-                    result_heuristic = fn_to_apply(version, option, [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
-                                            [s for s in sol.values()], [p for p in param.values()])
+                    result_heuristic = fn_to_apply([i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                            sol,version,option,bonus)            
                 else:
-                    result_heuristic = fn_to_apply(version, [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
-                                            [s for s in sol.values()], [p for p in param.values()])
+                    result_heuristic = fn_to_apply([i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                            sol,version)            
             elif option is not None:
-                result_heuristic = fn_to_apply(option, *[i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
-                                            [s for s in sol.values()], [p for p in param.values()]) 
+                result_heuristic = fn_to_apply([i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                            sol,option,bonus)            
             else:
                 result_heuristic = fn_to_apply( [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
-                                            [s for s in sol.values()], [p for p in param.values()])            
+                                            sol)            
 
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
                 results_heuristic = result_heuristic[i]
