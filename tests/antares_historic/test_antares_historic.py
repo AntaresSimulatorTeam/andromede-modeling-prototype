@@ -4,10 +4,12 @@ import pytest
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.logger import Logger
-from andromede.model.parsing import (
-    InputLibrary,
+from andromede.study.parsing import (
     InputStudy,
     parse_yaml_components,
+)
+from andromede.model.parsing import (
+    InputLibrary,
     parse_yaml_library,
 )
 from andromede.model.resolve_library import resolve_library
@@ -54,7 +56,7 @@ def input_library(
         return parse_yaml_library(lib)
 
 
-@pytest.skip("Missing max operator in modeleur to read thermal model")
+@pytest.mark.skip("Missing max operator in modeleur to read thermal model")
 def test_basic_balance_using_yaml(
     study_component: InputStudy, input_library: InputLibrary
 ) -> None:
