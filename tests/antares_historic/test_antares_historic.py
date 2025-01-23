@@ -4,7 +4,6 @@ import pytest
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.logger import Logger
-
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
