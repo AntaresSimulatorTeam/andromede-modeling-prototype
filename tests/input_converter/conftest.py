@@ -125,7 +125,8 @@ def actual_thermal_list_ini(local_study_w_thermal) -> IniFile:
 @pytest.fixture
 def actual_thermal_areas_ini(local_study_w_thermal) -> IniFile:
     return IniFile(
-        local_study_w_thermal.service.config.study_path, InitializationFilesTypes.THERMAL_AREAS_INI
+        local_study_w_thermal.service.config.study_path,
+        InitializationFilesTypes.THERMAL_AREAS_INI,
     )
 
 
@@ -234,7 +235,8 @@ def default_hydro_properties() -> HydroProperties:
 @pytest.fixture
 def actual_hydro_ini(local_study_with_hydro) -> IniFile:
     return IniFile(
-        local_study_with_hydro.service.config.study_path, InitializationFilesTypes.HYDRO_INI
+        local_study_with_hydro.service.config.study_path,
+        InitializationFilesTypes.HYDRO_INI,
     )
 
 
