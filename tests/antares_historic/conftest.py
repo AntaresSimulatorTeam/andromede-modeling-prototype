@@ -33,8 +33,7 @@ from antares.craft.model.thermal import (
     ThermalClusterProperties,
     ThermalCostGeneration,
 )
-from antares.craft.tools.ini_tool import IniFile
-from antares.craft.tools.ini_tool import InitializationFilesTypes
+from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
 
 
 @pytest.fixture
