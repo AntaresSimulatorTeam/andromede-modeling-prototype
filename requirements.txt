@@ -8,7 +8,7 @@ absl-py==2.1.0
     # via ortools
 annotated-types==0.7.0
     # via pydantic
-antares-craft==0.1.4
+antares-craft==0.1.8rc1
     # via -r requirements.in
 antlr4-python3-runtime==4.13.1
     # via -r requirements.in
