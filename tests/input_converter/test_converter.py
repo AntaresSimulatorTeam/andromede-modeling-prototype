@@ -9,18 +9,17 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+import pandas as pd
 import pytest
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
+from andromede.input_converter.src.data_preprocessing.thermal import \
+    ThermalDataPreprocessing
 from andromede.input_converter.src.logger import Logger
 from andromede.input_converter.src.utils import transform_to_yaml
-from andromede.study.parsing import (
-    InputComponent,
-    InputComponentParameter,
-    InputPortConnections,
-    InputStudy,
-    parse_yaml_components,
-)
+from andromede.study.parsing import (InputComponent, InputComponentParameter,
+                                     InputPortConnections, InputStudy,
+                                     parse_yaml_components)
 
 
 class TestConverter:
@@ -618,3 +617,174 @@ class TestConverter:
 
         assert links_components == expected_link_component
         assert links_connections == expected_link_connections
+
+    def _generate_tdp_instance_parameter(self, areas, study_path):
+        modulation_timeseries = str(
+            study_path
+            / "input"
+            / "thermal"
+            / "prepro"
+            / "fr"
+            / "gaz"
+            / "modulation.txt"
+        )
+        series_path = (
+            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "series.txt"
+        )
+        data_p_max = [
+            [1, 1, 1, 2],
+            [2, 2, 2, 6],
+            [3, 3, 3, 1],
+        ]
+        data_series = [
+            [8],
+            [10],
+            [2],
+        ]
+        df = pd.DataFrame(data_p_max)
+        df.to_csv(modulation_timeseries, sep="\t", index=False, header=False)
+
+        df = pd.DataFrame(data_series)
+        df.to_csv(series_path, sep="\t", index=False, header=False)
+
+        for area in areas:
+            thermals = area.read_thermal_clusters()
+            for thermal in thermals:
+                if thermal.area_id == "fr":
+                    thermal.properties.unit_count = 1.5
+                    thermal.properties.nominal_capacity = 2
+                    tdp = ThermalDataPreprocessing(thermal, study_path)
+                    return tdp
+
+    def test_data_processing_to_p_min_cluster_parameter(self, local_study_w_thermal):
+        areas, converter = self._init_area_reading(local_study_w_thermal)
+        study_path = converter.study_path
+        instance = self._generate_tdp_instance_parameter(areas, study_path)
+
+        p_min_cluster_component = instance.get_p_min_cluster_parameter()
+
+        expected_path = (
+            study_path
+            / "input"
+            / "thermal"
+            / "prepro"
+            / "fr"
+            / "gaz"
+            / "p_min_cluster.txt"
+        )
+        expected_component = InputComponentParameter(
+            name="p_min_cluster",
+            type="series",
+            scenario_group=None,
+            value=None,
+            timeseries=f"{expected_path}",
+        )
+        current_df = pd.read_csv(expected_path, header=None)
+        # We expect this: min(min_gen_modulation*unit_count*nominalcapacity, p_max_cluster)
+        # for instance here min(2*1.5*2, 8) -> 6
+        expected_df = pd.DataFrame([[6.0], [10.0], [2.0]])
+
+        assert current_df.equals(expected_df)
+        assert p_min_cluster_component == expected_component
+
+    def test_data_processing_to_nb_units_min(self, local_study_w_thermal):
+        areas, converter = self._init_area_reading(local_study_w_thermal)
+        study_path = converter.study_path
+        instance = self._generate_tdp_instance_parameter(areas, study_path)
+        instance.get_p_min_cluster_parameter()
+
+        nb_units_min_component = instance.get_nb_units_min()
+
+        expected_path = (
+            study_path
+            / "input"
+            / "thermal"
+            / "prepro"
+            / "fr"
+            / "gaz"
+            / "nb_units_min.txt"
+        )
+        expected_component = InputComponentParameter(
+            name="nb_units_min",
+            type="series",
+            scenario_group=None,
+            value=None,
+            timeseries=f"{expected_path}",
+        )
+        current_df = pd.read_csv(nb_units_min_component.timeseries, header=None)
+        # We expect this: ceil(p_min_cluster/p_max_unit)
+        # for instance here ceil(6/2) -> 3
+        expected_df = pd.DataFrame([[3.0], [5.0], [1.0]])
+
+        assert current_df.equals(expected_df)
+
+        assert nb_units_min_component == expected_component
+
+    def test_data_processing_to_nb_units_max(self, local_study_w_thermal):
+        areas, converter = self._init_area_reading(local_study_w_thermal)
+        study_path = converter.study_path
+        instance = self._generate_tdp_instance_parameter(areas, study_path)
+        instance.get_p_min_cluster_parameter()
+
+        nb_units_max_component = instance.get_nb_units_max()
+
+        expected_path = (
+            study_path
+            / "input"
+            / "thermal"
+            / "prepro"
+            / "fr"
+            / "gaz"
+            / "nb_units_max.txt"
+        )
+        expected_component = InputComponentParameter(
+            name="nb_units_max",
+            type="series",
+            scenario_group=None,
+            value=None,
+            timeseries=f"{expected_path}",
+        )
+        current_df = pd.read_csv(nb_units_max_component.timeseries, header=None)
+        # We expect this: ceil(p_max_cluster/p_max_unit)
+        # for instance here ceil(8/2) -> 4
+        expected_df = pd.DataFrame([[4.0], [5.0], [1.0]])
+
+        assert current_df.equals(expected_df)
+
+        assert nb_units_max_component == expected_component
+
+    def test_data_processing_to_nb_units_max_variation(self, local_study_w_thermal):
+        areas, converter = self._init_area_reading(local_study_w_thermal)
+        study_path = converter.study_path
+        instance = self._generate_tdp_instance_parameter(areas, study_path)
+        instance.get_nb_units_max()
+
+        nb_units_max_variation_component = instance.get_nb_units_max_variation()
+
+        expected_path = (
+            study_path
+            / "input"
+            / "thermal"
+            / "prepro"
+            / "fr"
+            / "gaz"
+            / "nb_units_max_variation_output.txt"
+        )
+        expected_component = InputComponentParameter(
+            name="nb_units_max_variation",
+            type="series",
+            scenario_group=None,
+            value=None,
+            timeseries=f"{expected_path}",
+        )
+
+        current_df = pd.read_csv(
+            nb_units_max_variation_component.timeseries, header=None
+        )
+        # We expect this: max(0, self.nb_units_max_output[t-1] - self.nb_units_max_output[t])
+        # for instance here max(0, NaN-4) -> 0 max(0, 4-5) -> 0 max(0, 5-1) -> 4
+        expected_df = pd.DataFrame([[0.0], [0.0], [4.0]])
+
+        assert current_df.equals(expected_df)
+
+        assert nb_units_max_variation_component == expected_component
