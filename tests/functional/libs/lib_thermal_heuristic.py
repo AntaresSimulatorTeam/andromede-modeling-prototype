@@ -441,8 +441,6 @@ THERMAL_CLUSTER_WITH_RESERVE_MODEL_MILP = model(
 THERMAL_CLUSTER_HEURISTIQUE_DMIN = model(
     id="GEN",
     parameters=[
-        float_parameter("p_max", TIME_AND_SCENARIO_FREE),  # p_max of a single unit
-        float_parameter("p_min", CONSTANT),
         float_parameter("d_min_up", CONSTANT),
         float_parameter("d_min_down", CONSTANT),
         int_parameter("nb_units_min", TIME_AND_SCENARIO_FREE),

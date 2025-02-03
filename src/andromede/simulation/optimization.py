@@ -836,7 +836,7 @@ def build_problem(
     *,
     problem_name: str = "optimization_problem",
     border_management: BlockBorderManagement = BlockBorderManagement.CYCLE,
-    solver_id: str = "SCIP",
+    solver_id: str = "XPRESS",
     problem_strategy: ModelSelectionStrategy = MergedProblemStrategy(),
 ) -> OptimizationProblem:
     """

@@ -65,12 +65,12 @@ def heuristique_opti_repartition_sans_pmin(
         dictionnaire_valeur: dict[List[float]],
         version: str,
     ) -> List[List[int]]:
-    
+
     if version != "choix":
-        arrondi_final = [ repartition_sans_pmin(version,dictionnaire_valeur,t) for t in horaire]
+        arrondi_final = [ repartition_sans_pmin(version,dictionnaire_valeur,t)  for t in horaire]
         return arrondi_final
 
-    arrondi_base = [ repartition_sans_pmin("perte",dictionnaire_valeur,t) for t in horaire]
+    arrondi_base = [ repartition_sans_pmin("perte",dictionnaire_valeur,t)  for t in horaire]
     arrondi_final = arrondi_base
     for t in range(1,len(horaire)-1):
         if arrondi_base[t-1] < arrondi_base[t] and arrondi_base[t] > arrondi_base[t+1]:
