@@ -5,7 +5,6 @@ from ortools.linear_solver.python import model_builder
 import re
 import pandas as pd
 
-
 def generate_mps_file(study_path: str, antares_path: str) -> str:
     name_solver = antares_path.split("/")[-1]
     assert "solver" in name_solver
@@ -55,10 +54,9 @@ def delete_variable(model, hours_in_week: int, name_variable: str) -> None:
             model.Objective().SetCoefficient(var[i], 0)
 
 
-def delete_constraint(model, hours_in_week: int, name_constraint: str) -> None:
-    cons = model.constraints()
+def delete_constraint(cons, hours_in_week: int, name_constraint: str) -> None:
     cons_id = [
-        i for i in range(len(cons)) if re.search(name_constraint, cons[i].name())
+        i for i in range(len(cons)) if name_constraint in cons[i].name()
     ]
     assert len(cons_id) in [0, hours_in_week]
     if len(cons_id) == hours_in_week:
@@ -100,9 +98,8 @@ def inspect_variables(solver):
     return df_vars
 
 
-def find_thermal_var(solver,variable):
+def find_thermal_var(var,variable):
 
-    var = solver.variables()
     var_id = [
         i for i in range(len(var)) if re.search(variable, var[i].name())
     ]
@@ -144,12 +141,10 @@ def find_thermal_var(solver,variable):
     return df_vars
 
 
-def change_lower_bound(solver, var_id: int, lb: float):
-    var = solver.variables()
+def change_lower_bound(var, var_id: int, lb: float):
     var[var_id].SetLb(lb)
 
-def change_upper_bound(solver, var_id: int, ub: float):
-    var = solver.variables()
+def change_upper_bound(var, var_id: int, ub: float):
     var[var_id].SetUb(ub)
 
 
@@ -175,3 +170,19 @@ def milp_version(model):
     ]
     for i in interger_vars:
         vars[i].SetInteger()
+
+def get_basis(solver) -> tuple[list, list]:
+    var_basis = []
+    con_basis = []
+    for var in solver.variables():
+        var_basis.append(var.basis_status())
+    for con in solver.constraints():
+        con_basis.append(con.basis_status())
+    return var_basis, con_basis
+ 
+def load_basis(solver, basis) -> None:
+    len_cons = len(solver.constraints())
+    len_vars = len(solver.variables())
+    solver.SetStartingLpBasis(
+        basis[0][:len_vars], basis[1][:len_cons]
+    )

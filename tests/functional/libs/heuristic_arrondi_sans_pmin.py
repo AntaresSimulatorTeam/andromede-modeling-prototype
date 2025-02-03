@@ -346,6 +346,9 @@ def repartition_sans_pmin(
     p_min = dictionnaire_valeur["p_min"][t]
     min_generating = dictionnaire_valeur["min_generating"][t]
 
+    if t == 15 and p_min == 145.7372:
+        a = t
+
     if nbr_on * p_min < min_generating:
         return([nbr_on_classic])
 
