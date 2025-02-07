@@ -9,6 +9,8 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+import random
+
 import pandas as pd
 import pytest
 from antares.craft.model.area import Area, AreaPropertiesLocal
@@ -41,6 +43,27 @@ def local_study(tmp_path) -> Study:
     study_name = "studyTest"
     study_version = "880"
     return create_study_local(study_name, study_version, str(tmp_path.absolute()))
+
+
+@pytest.fixture
+def create_file(tmp_path):
+    def _create_file(path, filename: str, lines: int, columns: int = 1):
+        path = path / filename
+        data = {
+            f"col_{i+1}": [random.randint(1, 99) for _ in range(lines)]
+            for i in range(columns)
+        }
+        df = pd.DataFrame(data)
+        df.to_csv(
+            path.with_suffix(".txt"),
+            sep="\t",
+            index=False,
+            header=False,
+            encoding="utf-8",
+        )
+        return path
+
+    return _create_file
 
 
 @pytest.fixture

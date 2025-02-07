@@ -17,6 +17,9 @@ from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 from pandas import DataFrame
 
+from andromede.input_converter.src.data_preprocessing.thermal import (
+    ThermalDataPreprocessing,
+)
 from andromede.input_converter.src.utils import resolve_path, transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
@@ -76,12 +79,12 @@ class AntaresStudyConverter:
                     model="area",
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
+                            name="ens_cost",
                             type="constant",
                             value=area.properties.energy_cost_unsupplied,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
+                            name="spillage_cost",
                             type="constant",
                             value=area.properties.energy_cost_spilled,
                         ),
@@ -149,6 +152,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting thermals to component list...")
         # Add thermal components for each area
+
         for area in areas:
             thermals = area.read_thermal_clusters()
             for thermal in thermals:
@@ -157,19 +161,30 @@ class AntaresStudyConverter:
                     / "input"
                     / "thermal"
                     / "series"
-                    / Path(area.id)
-                    / Path(thermal.name)
+                    / Path(thermal.area_id)
+                    / Path(thermal.id)
                     / "series.txt"
                 )
+                tdp = ThermalDataPreprocessing(thermal, self.study_path)
                 components.append(
                     InputComponent(
                         id=thermal.id,
                         model="thermal",
                         parameters=[
+                            tdp.get_p_min_cluster_parameter(),
+                            tdp.get_nb_units_min(),
+                            tdp.get_nb_units_max(),
+                            tdp.get_nb_units_max_variation_forward(),
+                            tdp.get_nb_units_max_variation_backward(),
                             InputComponentParameter(
                                 name="unit_count",
                                 type="constant",
                                 value=thermal.properties.unit_count,
+                            ),
+                            InputComponentParameter(
+                                name="p_min_unit",
+                                type="constant",
+                                value=thermal.properties.min_stable_power,
                             ),
                             InputComponentParameter(
                                 name="efficiency",
@@ -177,12 +192,12 @@ class AntaresStudyConverter:
                                 value=thermal.properties.efficiency,
                             ),
                             InputComponentParameter(
-                                name="nominal_capacity",
+                                name="p_max_unit",
                                 type="constant",
                                 value=thermal.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
-                                name="marginal_cost",
+                                name="generation_cost",
                                 type="constant",
                                 value=thermal.properties.marginal_cost,
                             ),
@@ -197,13 +212,24 @@ class AntaresStudyConverter:
                                 value=thermal.properties.startup_cost,
                             ),
                             InputComponentParameter(
+                                name="d_min_up",
+                                type="constant",
+                                value=thermal.properties.min_up_time,
+                            ),
+                            InputComponentParameter(
+                                name="d_min_down",
+                                type="constant",
+                                value=thermal.properties.min_down_time,
+                            ),
+                            InputComponentParameter(
                                 name="p_max_cluster",
                                 type="timeseries",
-                                timeseries=str(series_path),
+                                timeseries=str(series_path).removesuffix(".txt"),
                             ),
                         ],
                     )
                 )
+
                 connections.append(
                     InputPortConnections(
                         component1=thermal.id,

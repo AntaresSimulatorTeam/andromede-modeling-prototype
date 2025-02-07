@@ -4,4 +4,4 @@ scipy==1.10.1
 antlr4-python3-runtime==4.13.1
 PyYAML~=6.0.1
 pydantic
-antares_craft==0.1.8rc1
+antares_craft==0.1.8rc2
