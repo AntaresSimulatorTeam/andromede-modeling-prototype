@@ -1,12 +1,9 @@
+import random
 from pathlib import Path
-<<<<<<< HEAD
+
 import pandas as pd
 import pytest
-=======
 
-import pytest
-
->>>>>>> origin/main
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import InputLibrary, parse_yaml_library
@@ -19,7 +16,6 @@ from andromede.study.resolve_components import (
     consistency_check,
     resolve_components_and_cnx,
 )
-import random
 
 
 def create_file(path, filename: str, lines: int, columns: int = 1):
