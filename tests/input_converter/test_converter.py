@@ -461,9 +461,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        solar_timeseries = str(
-            study_path / "input" / "solar" / "series" / f"solar_fr"
-        )
+        solar_timeseries = str(study_path / "input" / "solar" / "series" / f"solar_fr")
         expected_solar_connection = [
             InputPortConnections(
                 component1="solar",
