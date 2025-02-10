@@ -56,6 +56,7 @@ def fill_timeseries(study_path):
     create_file(links_path_at, "it_direct", 840, 4)
     create_file(links_path_at, "it_indirect", 840, 4)
 
+
 @pytest.fixture
 def study_component(local_study_w_thermal) -> InputStudy:
     logger = Logger(__name__, local_study_w_thermal.service.config.study_path)
