@@ -168,7 +168,7 @@ class TestConverter:
             / "series"
             / "fr"
             / "generation"
-            / "series.txt"
+            / "series"
         )
         expected_renewable_connections = [
             InputPortConnections(
@@ -462,7 +462,7 @@ class TestConverter:
         study_path = converter.study_path
 
         solar_timeseries = str(
-            study_path / "input" / "solar" / "series" / f"solar_fr.txt"
+            study_path / "input" / "solar" / "series" / f"solar_fr"
         )
         expected_solar_connection = [
             InputPortConnections(
@@ -498,7 +498,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        load_timeseries = str(study_path / "input" / "load" / "series" / f"load_fr.txt")
+        load_timeseries = str(study_path / "input" / "load" / "series" / f"load_fr")
         expected_load_connection = [
             InputPortConnections(
                 component1="load",
@@ -542,7 +542,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr.txt")
+        wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr")
         expected_wind_connection = [
             InputPortConnections(
                 component1="wind",
@@ -607,12 +607,12 @@ class TestConverter:
 
         fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
         at_prefix_path = study_path / "input" / "links" / "at" / "capacities"
-        fr_it_direct_links_timeseries = str(fr_prefix_path / "it_direct.txt")
-        fr_it_indirect_links_timeseries = str(fr_prefix_path / "it_indirect.txt")
-        at_fr_direct_links_timeseries = str(at_prefix_path / "fr_direct.txt")
-        at_fr_indirect_links_timeseries = str(at_prefix_path / "fr_indirect.txt")
-        at_it_direct_links_timeseries = str(at_prefix_path / "it_direct.txt")
-        at_it_indirect_links_timeseries = str(at_prefix_path / "it_indirect.txt")
+        fr_it_direct_links_timeseries = str(fr_prefix_path / "it_direct")
+        fr_it_indirect_links_timeseries = str(fr_prefix_path / "it_indirect")
+        at_fr_direct_links_timeseries = str(at_prefix_path / "fr_direct")
+        at_fr_indirect_links_timeseries = str(at_prefix_path / "fr_indirect")
+        at_it_direct_links_timeseries = str(at_prefix_path / "it_direct")
+        at_it_indirect_links_timeseries = str(at_prefix_path / "it_indirect")
         expected_link_component = [
             InputComponent(
                 id="fr / it",

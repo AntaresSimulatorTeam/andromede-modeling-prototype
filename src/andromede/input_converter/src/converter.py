@@ -129,7 +129,7 @@ class AntaresStudyConverter:
                             InputComponentParameter(
                                 name="generation",
                                 type="timeseries",
-                                timeseries=str(series_path),
+                                timeseries=str(series_path).removesuffix(".txt"),
                             ),
                         ],
                     )
@@ -255,7 +255,7 @@ class AntaresStudyConverter:
                 / "links"
                 / Path(link.area_from_id)
                 / "capacities"
-                / f"{link.area_to_id}_direct.txt"
+                / f"{link.area_to_id}_direct"
             )
             capacity_indirect_path = (
                 self.study_path
@@ -263,7 +263,7 @@ class AntaresStudyConverter:
                 / "links"
                 / Path(link.area_from_id)
                 / "capacities"
-                / f"{link.area_to_id}_indirect.txt"
+                / f"{link.area_to_id}_indirect"
             )
             components.append(
                 InputComponent(
@@ -321,7 +321,7 @@ class AntaresStudyConverter:
                                 InputComponentParameter(
                                     name="wind",
                                     type="timeseries",
-                                    timeseries=str(series_path),
+                                    timeseries=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
@@ -358,7 +358,7 @@ class AntaresStudyConverter:
                                 InputComponentParameter(
                                     name="solar",
                                     type="timeseries",
-                                    timeseries=str(series_path),
+                                    timeseries=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
@@ -394,7 +394,7 @@ class AntaresStudyConverter:
                                 InputComponentParameter(
                                     name="load",
                                     type="timeseries",
-                                    timeseries=str(series_path),
+                                    timeseries=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )

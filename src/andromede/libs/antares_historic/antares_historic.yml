@@ -27,10 +27,8 @@ library:
       variables:
         - name: spillage
           lower-bound: 0
-          type: float
         - name: unsupplied_energy
           lower-bound: 0
-          type: float
       ports:
         - name: balance_port
           type: flow
@@ -103,32 +101,47 @@ library:
           field: flow
           definition: generation
 
-    - id: thermal_cluster
+    - id: thermal
       parameters:
         - name: p_min_cluster
-          scenario-dependent: false
+          scenario-dependent: true
+          time-dependent: true
         - name: p_max_cluster # timeseries that takes outages into account
+          scenario-dependent: true 
+          time-dependent: true
         - name: p_min_unit
           scenario-dependent: false
+          time-dependent: false
         - name: p_max_unit
           scenario-dependent: false
+          time-dependent: false
         - name: generation_cost
           scenario-dependent: false
+          time-dependent: false
         - name: startup_cost
           scenario-dependent: false
+          time-dependent: false
         - name: fixed_cost
           scenario-dependent: false
+          time-dependent: false
         - name: d_min_up
-          type: integer
           scenario-dependent: false
+          time-dependent: false
         - name: d_min_down
-          type: integer
           scenario-dependent: false
+          time-dependent: false
         - name: nb_units_min # Equals to ceil(p_min_cluster/p_max_unit), to be done in preprocessing
-          type: integer
-          scenario-dependent: false
+          scenario-dependent: true
+          time-dependent: true
         - name: nb_units_max # Equals to ceil(p_max_cluster/p_max_unit), to be done in preprocessing
-          type: integer
+          scenario-dependent: true 
+          time-dependent: true
+        - name: nb_units_max_variation_forward
+          scenario-dependent: true
+          time-dependent: true
+        - name: nb_units_max_variation_backward
+          scenario-dependent: true
+          time-dependent: true
       variables:
         - name: generation
           lower-bound: p_min_cluster
@@ -163,9 +176,9 @@ library:
         - name: nb_failing_lower_than_stopping
           expression: nb_failing <= nb_stopping
         - name: nb_failing_lower_than_max_variation
-          expression: nb_failing <= max(0, nb_units_max[t-1] - nb_units_max)
+          expression: nb_failing <= nb_units_max_variation_forward
         - name: min_up_duration
           expression: sum(t-d_min_up + 1 .. t, nb_starting - nb_failing) <= nb_units_on
         - name: min_down_duration
-          expression: sum(t-d_min_down + 1 .. t, nb_stopping) <= nb_units_max[t-d_min_down] - nb_units_on + sum(t-d_min_down + 1 .. t, max(0, nb_units_max - nb_units_max[-1]))
+          expression: sum(t-d_min_down + 1 .. t, nb_stopping) <= nb_units_max[t-d_min_down] - nb_units_on + sum(t-d_min_down + 1 .. t, nb_units_max_variation_backward)
       objective: expec(sum(generation_cost * generation + startup_cost * nb_starting + fixed_cost * nb_units_on))

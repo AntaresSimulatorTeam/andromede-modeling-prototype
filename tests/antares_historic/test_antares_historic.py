@@ -19,6 +19,7 @@ from andromede.study.resolve_components import (
 
 
 def create_file(path, filename: str, lines: int, columns: int = 1):
+    Path(path).mkdir(parents=True, exist_ok=True)
     path = path / filename
     data = {
         f"col_{i+1}": [random.randint(1, 99) for _ in range(lines)]
@@ -43,10 +44,17 @@ def data_dir() -> Path:
 def fill_timeseries(study_path):
     modulation_timeseries = study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
     series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
+    links_path_fr = study_path / "input" / "links" / "fr" / "capacities"
+    links_path_at = study_path / "input" / "links" / "at" / "capacities"
     # We have to use a multiple of 168, to match with full weeks
     create_file(modulation_timeseries, "modulation", 840, 4)
     create_file(series_path, "series", 840)
-
+    create_file(links_path_fr, "it_direct", 840, 4)
+    create_file(links_path_fr, "it_indirect", 840, 4)
+    create_file(links_path_at, "fr_direct", 840, 4)
+    create_file(links_path_at, "fr_indirect", 840, 4)
+    create_file(links_path_at, "it_direct", 840, 4)
+    create_file(links_path_at, "it_indirect", 840, 4)
 
 @pytest.fixture
 def study_component(local_study_w_thermal) -> InputStudy:

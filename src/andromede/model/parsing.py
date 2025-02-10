@@ -38,8 +38,8 @@ class ModifiedBaseModel(BaseModel):
 
 class InputParameter(ModifiedBaseModel):
     name: str
-    time_dependent: bool = True
-    scenario_dependent: bool = True
+    time_dependent: bool = False
+    scenario_dependent: bool = False
 
 
 class InputVariable(ModifiedBaseModel):
