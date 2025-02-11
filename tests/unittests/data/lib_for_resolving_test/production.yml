@@ -20,18 +20,18 @@ library:
     - id: generator
       description: A basic generator model
       parameters:
-        - name: cost
+        - id: cost
           time-dependent: false
           scenario-dependent: false
-        - name: p_max
+        - id: p_max
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: generation
+        - id: generation
           lower-bound: 0
           upper-bound: p_max
       ports:
-        - name: injection_port
+        - id: injection_port
           type: flow
       port-field-definitions:
         - port: injection_port

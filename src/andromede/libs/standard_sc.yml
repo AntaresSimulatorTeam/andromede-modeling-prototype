@@ -17,26 +17,26 @@ library:
     - id: flow
       description: A port which transfers power flow
       fields:
-        - name: flow
+        - id: flow
     - id: emission
       description: A port which transfers co2 emission
       fields:
-        - name: emission
+        - id: emission
 
   models:
     - id: convertor
       description: A basic convertor model
       parameters:
-        - name: alpha
+        - id: alpha
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: input
+        - id: input
           lower-bound: 0
       ports:
-        - name: input_port
+        - id: input_port
           type: flow
-        - name: output_port
+        - id: output_port
           type: flow
       port-field-definitions:
         - port: input_port
@@ -49,23 +49,23 @@ library:
     - id: two_input_convertor
       description: Two input convertor model
       parameters:
-        - name: alpha1
+        - id: alpha1
           time-dependent: false
           scenario-dependent: false
-        - name: alpha2
+        - id: alpha2
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: input1
+        - id: input1
           lower-bound: 0
-        - name: input2
+        - id: input2
           lower-bound: 0
       ports:
-        - name: input_port1
+        - id: input_port1
           type: flow
-        - name: input_port2
+        - id: input_port2
           type: flow
-        - name: output_port
+        - id: output_port
           type: flow
       port-field-definitions:
         - port: input_port1
@@ -81,14 +81,14 @@ library:
     - id: decompose_1_flow_into_2_flow
       description: A Consumption aggregation model
       variables:
-        - name: input1
-        - name: input2
+        - id: input1
+        - id: input2
       ports:
-        - name: input_port1
+        - id: input_port1
           type: flow
-        - name: input_port2
+        - id: input_port2
           type: flow
-        - name: output_port
+        - id: output_port
           type: flow
       port-field-definitions:
         - port: input_port1
@@ -98,71 +98,71 @@ library:
           field: flow
           definition: input2
       binding-constraints:
-        - name: Conversion
+        - id: Conversion
           expression: sum_connections(output_port.flow) = input1 + input2
 
     - id: convertor_receive_in
       description: A convertor model
       parameters:
-        - name: alpha
+        - id: alpha
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: input
+        - id: input
           lower-bound: 0
       ports:
-        - name: input_port
+        - id: input_port
           type: flow
-        - name: output_port
+        - id: output_port
           type: flow
       port-field-definitions:
         - port: output_port
           field: flow
           definition: input * alpha
       binding-constraints:
-        - name: Conversion
+        - id: Conversion
           expression: sum_connections(input_port.flow) = input
 
     - id: node_mod
       description: A node model with two ports
       variables:
-        - name: p
+        - id: p
       ports:
-        - name: injection_port_n
+        - id: injection_port_n
           type: flow
-        - name: injection_port_e
+        - id: injection_port_e
           type: flow
       port-field-definitions:
         - port: injection_port_e
           field: flow
           definition: p
       binding-constraints:
-        - name: balance
+        - id: balance
           expression:  sum_connections(injection_port_n.flow) = p
 
     - id: generator_with_co2
       description: generator model that emits CO2
       parameters:
-        - name: pmin
+        - id: pmin
           time-dependent: false
           scenario-dependent: false
-        - name: pmax
+        - id: pmax
           time-dependent: false
           scenario-dependent: false
-        - name: cost
+        - id: cost
           time-dependent: false
           scenario-dependent: false
-        - name: emission_rate
+        - id: emission_rate
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: p
+        - id: p
           lower-bound: pmin
           upper-bound: pmax
       ports:
-        - name: injection_port
+        - id: injection_port
           type: flow
-        - name: co2_port
+        - id: co2_port
           type: emission
       port-field-definitions:
         - port: injection_port
@@ -176,30 +176,30 @@ library:
     - id: quota_co2
       description: A CO2 quota model
       parameters:
-        - name: quota
+        - id: quota
           time-dependent: false
           scenario-dependent: false
       ports:
-        - name: emission_port
+        - id: emission_port
           type: emission
       binding-constraints:
-        - name: bound_co2
+        - id: bound_co2
           expression:  sum_connections(emission_port.emission) <= quota
 
     - id: link
       description: A link model
       parameters:
-        - name: f_max
+        - id: f_max
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: flow
+        - id: flow
           lower-bound: -f_max
           upper-bound: f_max
       ports:
-        - name: injection_port_from
+        - id: injection_port_from
           type: flow
-        - name: injection_port_to
+        - id: injection_port_to
           type: flow
       port-field-definitions:
         - port: injection_port_from

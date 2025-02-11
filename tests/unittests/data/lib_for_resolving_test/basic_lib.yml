@@ -18,14 +18,14 @@ library:
     - id: flow
       description: A port which transfers power flow
       fields:
-        - name: flow
+        - id: flow
 
   models:
     - id: node
       description: A basic balancing node model
       ports:
-        - name: injection_port
+        - id: injection_port
           type: flow
       binding-constraints:
-        - name: balance
+        - id: balance
           expression:  sum_connections(injection_port.flow) = 0
