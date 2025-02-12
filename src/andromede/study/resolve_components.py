@@ -146,7 +146,7 @@ def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> D
             param_value = _evaluate_param_type(
                 param.type, param.value, param.timeseries, timeseries_dir
             )
-            database.add_data(comp.id, param.name, param_value)
+            database.add_data(comp.id, param.id, param_value)
 
     return database
 
@@ -201,6 +201,6 @@ def build_scenarized_data_base(
             param_value = _evaluate_param_type(
                 param.type, param.value, param.timeseries, timeseries_dir, scenarization
             )
-            database.add_data(comp.id, param.name, param_value)
+            database.add_data(comp.id, param.id, param_value)
 
     return database

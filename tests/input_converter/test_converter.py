@@ -44,14 +44,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
+                            id="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
                             value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
+                            id="energy_cost_spilled",
                             type="constant",
                             scenario_group=None,
                             value=1.0,
@@ -65,14 +65,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
+                            id="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
                             value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
+                            id="energy_cost_spilled",
                             type="constant",
                             scenario_group=None,
                             value=1.0,
@@ -103,14 +103,14 @@ class TestConverter:
                 model="area",
                 parameters=[
                     InputComponentParameter(
-                        name="energy_cost_unsupplied",
+                        id="energy_cost_unsupplied",
                         type="constant",
                         scenario_group=None,
                         value=0.5,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="energy_cost_spilled",
+                        id="energy_cost_spilled",
                         type="constant",
                         scenario_group=None,
                         value=1.0,
@@ -123,14 +123,14 @@ class TestConverter:
                 model="area",
                 parameters=[
                     InputComponentParameter(
-                        name="energy_cost_unsupplied",
+                        id="energy_cost_unsupplied",
                         type="constant",
                         scenario_group=None,
                         value=0.5,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="energy_cost_spilled",
+                        id="energy_cost_spilled",
                         type="constant",
                         scenario_group=None,
                         value=1.0,
@@ -179,21 +179,21 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="unit_count",
+                        id="unit_count",
                         type="constant",
                         scenario_group=None,
                         value=1.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="nominal_capacity",
+                        id="nominal_capacity",
                         type="constant",
                         scenario_group=None,
                         value=0.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="generation",
+                        id="generation",
                         type="timeseries",
                         scenario_group=None,
                         value=None,
@@ -232,49 +232,49 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="unit_count",
+                        id="unit_count",
                         type="constant",
                         scenario_group=None,
                         value=1.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="efficiency",
+                        id="efficiency",
                         type="constant",
                         scenario_group=None,
                         value=100.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="nominal_capacity",
+                        id="nominal_capacity",
                         type="constant",
                         scenario_group=None,
                         value=0.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="marginal_cost",
+                        id="marginal_cost",
                         type="constant",
                         scenario_group=None,
                         value=0.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="fixed_cost",
+                        id="fixed_cost",
                         type="constant",
                         scenario_group=None,
                         value=0.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="startup_cost",
+                        id="startup_cost",
                         type="constant",
                         scenario_group=None,
                         value=0.0,
                         timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="p_max_cluster",
+                        id="p_max_cluster",
                         type="timeseries",
                         scenario_group=None,
                         value=None,
@@ -307,14 +307,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
+                            id="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
                             value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
+                            id="energy_cost_spilled",
                             type="constant",
                             scenario_group=None,
                             value=1.0,
@@ -328,14 +328,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
+                            id="energy_cost_unsupplied",
                             type="constant",
                             scenario_group=None,
                             value=0.5,
                             timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
+                            id="energy_cost_spilled",
                             type="constant",
                             scenario_group=None,
                             value=1.0,
@@ -377,7 +377,7 @@ class TestConverter:
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
-                    name="solar",
+                    id="solar",
                     type="timeseries",
                     scenario_group=None,
                     value=None,
@@ -412,7 +412,7 @@ class TestConverter:
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
-                    name="load",
+                    id="load",
                     type="timeseries",
                     scenario_group=None,
                     value=None,
@@ -456,7 +456,7 @@ class TestConverter:
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
-                    name="wind",
+                    id="wind",
                     type="timeseries",
                     scenario_group=None,
                     value=None,
@@ -519,14 +519,14 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="capacity_direct",
+                        id="capacity_direct",
                         type="timeseries",
                         scenario_group=None,
                         value=None,
                         timeseries=f"{fr_it_direct_links_timeseries}",
                     ),
                     InputComponentParameter(
-                        name="capacity_indirect",
+                        id="capacity_indirect",
                         type="timeseries",
                         scenario_group=None,
                         value=None,
@@ -540,14 +540,14 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="capacity_direct",
+                        id="capacity_direct",
                         type="timeseries",
                         scenario_group=None,
                         value=None,
                         timeseries=f"{at_fr_direct_links_timeseries}",
                     ),
                     InputComponentParameter(
-                        name="capacity_indirect",
+                        id="capacity_indirect",
                         type="timeseries",
                         scenario_group=None,
                         value=None,
@@ -561,14 +561,14 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="capacity_direct",
+                        id="capacity_direct",
                         type="timeseries",
                         scenario_group=None,
                         value=None,
                         timeseries=f"{at_it_direct_links_timeseries}",
                     ),
                     InputComponentParameter(
-                        name="capacity_indirect",
+                        id="capacity_indirect",
                         type="timeseries",
                         scenario_group=None,
                         value=None,

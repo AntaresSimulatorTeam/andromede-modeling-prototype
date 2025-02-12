@@ -18,17 +18,17 @@ study:
     - id: G
       model: generator
       parameters:
-        - name: cost
+        - id: cost
           type: constant
           value: 100
-        - name: p_max
+        - id: p_max
           type: constant
           value: 100
     - id: D
       model: demand
       scenario-group: load
       parameters:
-        - name: demand
+        - id: demand
           type: timeseries
           timeseries: loads
 

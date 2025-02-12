@@ -18,40 +18,40 @@ study:
     - id: D
       model: demand
       parameters:
-        - name: demand
+        - id: demand
           type: timeseries
           timeseries: demand-ts
     - id: S
       model: spillage
       parameters:
-        - name: cost
+        - id: cost
           type: constant
           value: 1
     - id: U
       model: unsupplied
       parameters:
-        - name: cost
+        - id: cost
           type: constant
           value: 10
     - id: STS1
       model: short-term-storage
       parameters:
-        - name: p_max_injection
+        - id: p_max_injection
           type: constant
           value: 100
-        - name: p_max_withdrawal
+        - id: p_max_withdrawal
           type: constant
           value: 50
-        - name: level_min
+        - id: level_min
           type: constant
           value: 0
-        - name: level_max
+        - id: level_max
           type: constant
           value: 1000
-        - name: inflows
+        - id: inflows
           type: constant
           value: 0
-        - name: efficiency
+        - id: efficiency
           type: constant
           value: 0.8
 

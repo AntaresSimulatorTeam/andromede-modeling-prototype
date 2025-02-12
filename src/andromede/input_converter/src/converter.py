@@ -76,12 +76,12 @@ class AntaresStudyConverter:
                     model="area",
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
+                            id="energy_cost_unsupplied",
                             type="constant",
                             value=area.properties.energy_cost_unsupplied,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
+                            id="energy_cost_spilled",
                             type="constant",
                             value=area.properties.energy_cost_spilled,
                         ),
@@ -114,17 +114,17 @@ class AntaresStudyConverter:
                         model="renewable",
                         parameters=[
                             InputComponentParameter(
-                                name="unit_count",
+                                id="unit_count",
                                 type="constant",
                                 value=renewable.properties.unit_count,
                             ),
                             InputComponentParameter(
-                                name="nominal_capacity",
+                                id="nominal_capacity",
                                 type="constant",
                                 value=renewable.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
-                                name="generation",
+                                id="generation",
                                 type="timeseries",
                                 timeseries=str(series_path),
                             ),
@@ -167,37 +167,37 @@ class AntaresStudyConverter:
                         model="thermal",
                         parameters=[
                             InputComponentParameter(
-                                name="unit_count",
+                                id="unit_count",
                                 type="constant",
                                 value=thermal.properties.unit_count,
                             ),
                             InputComponentParameter(
-                                name="efficiency",
+                                id="efficiency",
                                 type="constant",
                                 value=thermal.properties.efficiency,
                             ),
                             InputComponentParameter(
-                                name="nominal_capacity",
+                                id="nominal_capacity",
                                 type="constant",
                                 value=thermal.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
-                                name="marginal_cost",
+                                id="marginal_cost",
                                 type="constant",
                                 value=thermal.properties.marginal_cost,
                             ),
                             InputComponentParameter(
-                                name="fixed_cost",
+                                id="fixed_cost",
                                 type="constant",
                                 value=thermal.properties.fixed_cost,
                             ),
                             InputComponentParameter(
-                                name="startup_cost",
+                                id="startup_cost",
                                 type="constant",
                                 value=thermal.properties.startup_cost,
                             ),
                             InputComponentParameter(
-                                name="p_max_cluster",
+                                id="p_max_cluster",
                                 type="timeseries",
                                 timeseries=str(series_path),
                             ),
@@ -245,12 +245,12 @@ class AntaresStudyConverter:
                     model="link",
                     parameters=[
                         InputComponentParameter(
-                            name="capacity_direct",
+                            id="capacity_direct",
                             type="timeseries",
                             timeseries=str(capacity_direct_path),
                         ),
                         InputComponentParameter(
-                            name="capacity_indirect",
+                            id="capacity_indirect",
                             type="timeseries",
                             timeseries=str(capacity_indirect_path),
                         ),
@@ -293,7 +293,7 @@ class AntaresStudyConverter:
                             model="wind",
                             parameters=[
                                 InputComponentParameter(
-                                    name="wind",
+                                    id="wind",
                                     type="timeseries",
                                     timeseries=str(series_path),
                                 )
@@ -330,7 +330,7 @@ class AntaresStudyConverter:
                             model="solar",
                             parameters=[
                                 InputComponentParameter(
-                                    name="solar",
+                                    id="solar",
                                     type="timeseries",
                                     timeseries=str(series_path),
                                 )
@@ -366,7 +366,7 @@ class AntaresStudyConverter:
                             model="load",
                             parameters=[
                                 InputComponentParameter(
-                                    name="load",
+                                    id="load",
                                     type="timeseries",
                                     timeseries=str(series_path),
                                 )

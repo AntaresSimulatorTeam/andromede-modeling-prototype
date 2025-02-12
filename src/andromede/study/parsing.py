@@ -46,7 +46,7 @@ class InputPortConnections(BaseModel):
 
 
 class InputComponentParameter(BaseModel):
-    name: str
+    id: str
     type: str
     scenario_group: Optional[str] = None
     value: Optional[float] = None

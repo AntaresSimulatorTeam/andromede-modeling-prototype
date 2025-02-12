@@ -18,16 +18,16 @@ study:
     - id: G
       model: generator
       parameters:
-        - name: cost
+        - id: cost
           type: constant
           value: 30
-        - name: p_max
+        - id: p_max
           type: constant
           value: 100
     - id: D
       model: demand
       parameters:
-        - name: demand
+        - id: demand
           type: constant
           value: 100
 
