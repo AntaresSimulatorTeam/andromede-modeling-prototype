@@ -158,10 +158,12 @@ def dataframe_to_scenario_series(
         raise ValueError(
             f"Could not convert input data to scenario series data. Expect data series with exactly one line, got shape {ts_dataframe.shape}"
         )
-    ts_dataframe = ts_dataframe.astype(float)
+
     return {
-        ScenarioIndex(col_id): float(ts_dataframe.iloc[0, col_id])
-        for col_id in range(ts_dataframe.shape[1])
+        ScenarioIndex(col_id): float(value)
+        for col_id, value in zip(
+            list(range(ts_dataframe.shape[1])), ts_dataframe.iloc[0, :].values
+        )
     }
 
 
