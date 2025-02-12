@@ -32,6 +32,8 @@ from andromede.study.data import (
     ScenarioSeriesData,
     TimeScenarioSeriesData,
     TimeSeriesData,
+    dataframe_to_scenario_series,
+    dataframe_to_time_series,
     load_ts_from_txt,
 )
 from andromede.study.parsing import InputComponent, InputPortConnections, InputStudy
@@ -163,27 +165,27 @@ def _build_data(
     timeseries_dir: Optional[Path],
     scenarization: Optional[Scenarization] = None,
 ) -> AbstractDataStructure:
-    if time_dependent and scenario_dependent:
-        if isinstance(param_value, str):
-            return TimeScenarioSeriesData(
-                load_ts_from_txt(param_value, timeseries_dir), scenarization
+    if isinstance(param_value, str):
+        # Should happen only if time-dependent or scenario-dependent
+        ts_data = load_ts_from_txt(param_value, timeseries_dir)
+        if time_dependent and scenario_dependent:
+            return TimeScenarioSeriesData(ts_data, scenarization)
+        elif time_dependent:
+            return TimeSeriesData(dataframe_to_time_series(ts_data))
+        elif scenario_dependent:
+            return ScenarioSeriesData(
+                dataframe_to_scenario_series(ts_data), scenarization
             )
         else:
             raise ValueError(
-                f"A timeseries name is expected for time and scenario dependent data, got {param_value}"
-            )
-    elif time_dependent:  # scenario_dependent = False
-        return TimeSeriesData()
-    elif scenario_dependent:  # time_dependent = False
-        return ScenarioSeriesData()
-    else:
-        try:
-            float_value = float(param_value)
-        except ValueError:
-            raise ValueError(
                 f"A float value is expected for constant data, got {param_value}"
             )
-        return ConstantData(float_value)
+    else:  # param_value is a float, we should be in the constant data case
+        if time_dependent or scenario_dependent:
+            raise ValueError(
+                f"A timeseries name is expected for time or scenario dependent data, got {param_value}"
+            )
+        return ConstantData(float(param_value))
 
 
 def _resolve_scenarization(
