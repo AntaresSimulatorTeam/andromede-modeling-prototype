@@ -56,7 +56,7 @@ study:
         - name: demand
           scenario-group: g1
           type: timeseries
-          timeseries: demand-ts
+          value: demand-ts
     - id: S
       model: spillage
       parameters:

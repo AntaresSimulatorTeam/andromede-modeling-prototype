@@ -30,7 +30,7 @@ study:
       parameters:
         - id: demand
           type: timeseries
-          timeseries: loads
+          value: loads
 
   connections:
       - component1: N

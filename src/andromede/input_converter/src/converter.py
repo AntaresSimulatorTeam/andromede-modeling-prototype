@@ -126,7 +126,7 @@ class AntaresStudyConverter:
                             InputComponentParameter(
                                 id="generation",
                                 type="timeseries",
-                                timeseries=str(series_path),
+                                value=str(series_path),
                             ),
                         ],
                     )
@@ -199,7 +199,7 @@ class AntaresStudyConverter:
                             InputComponentParameter(
                                 id="p_max_cluster",
                                 type="timeseries",
-                                timeseries=str(series_path),
+                                value=str(series_path),
                             ),
                         ],
                     )
@@ -247,12 +247,12 @@ class AntaresStudyConverter:
                         InputComponentParameter(
                             id="capacity_direct",
                             type="timeseries",
-                            timeseries=str(capacity_direct_path),
+                            value=str(capacity_direct_path),
                         ),
                         InputComponentParameter(
                             id="capacity_indirect",
                             type="timeseries",
-                            timeseries=str(capacity_indirect_path),
+                            value=str(capacity_indirect_path),
                         ),
                     ],
                 )
@@ -295,7 +295,7 @@ class AntaresStudyConverter:
                                 InputComponentParameter(
                                     id="wind",
                                     type="timeseries",
-                                    timeseries=str(series_path),
+                                    value=str(series_path),
                                 )
                             ],
                         )
@@ -332,7 +332,7 @@ class AntaresStudyConverter:
                                 InputComponentParameter(
                                     id="solar",
                                     type="timeseries",
-                                    timeseries=str(series_path),
+                                    value=str(series_path),
                                 )
                             ],
                         )
@@ -368,7 +368,7 @@ class AntaresStudyConverter:
                                 InputComponentParameter(
                                     id="load",
                                     type="timeseries",
-                                    timeseries=str(series_path),
+                                    value=str(series_path),
                                 )
                             ],
                         )

@@ -144,7 +144,7 @@ def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> D
         # This idiom allows mypy to 'ignore' the fact that comp.parameter can be None
         for param in comp.parameters or []:
             param_value = _evaluate_param_type(
-                param.type, param.value, param.timeseries, timeseries_dir
+                param.type, param.value, param.value, timeseries_dir
             )
             database.add_data(comp.id, param.id, param_value)
 
@@ -199,7 +199,7 @@ def build_scenarized_data_base(
             if param.scenario_group:
                 scenarization = scenarizations[param.scenario_group]
             param_value = _evaluate_param_type(
-                param.type, param.value, param.timeseries, timeseries_dir, scenarization
+                param.type, param.value, param.value, timeseries_dir, scenarization
             )
             database.add_data(comp.id, param.id, param_value)
 

@@ -15,7 +15,7 @@ import os
 import typing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -49,8 +49,9 @@ class InputComponentParameter(BaseModel):
     id: str
     type: str
     scenario_group: Optional[str] = None
-    value: Optional[float] = None
-    timeseries: Optional[str] = None
+    value: Optional[Union[float, str]] = None
+    time_dependent: bool = False
+    scenario_dependent: bool = False
 
     class Config:
         alias_generator = _to_kebab
