@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Callable, Tuple
 
 import pandas as pd
 import pytest
@@ -7,6 +8,8 @@ from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
 from andromede.study import TimeScenarioIndex, TimeScenarioSeriesData
+from andromede.study.data import DataBase
+from andromede.study.network import Network
 from andromede.study.parsing import InputStudy, parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
@@ -88,42 +91,42 @@ def test_basic_balance_using_yaml(
     assert problem.solver.Objective().Value() == 3000
 
 
-def test_basic_balance_time_only_series(data_dir: Path) -> None:
-    study_file = data_dir / "study_time_only_series.yml"
-    lib_file = data_dir / "lib.yml"
-    with lib_file.open() as lib:
-        input_library = parse_yaml_library(lib)
+@pytest.fixture
+def setup_test(data_dir: Path) -> Callable[[], Tuple[Network, DataBase]]:
+    def _setup_test(study_file_name: str):
+        study_file = data_dir / study_file_name
+        lib_file = data_dir / "lib.yml"
+        with lib_file.open() as lib:
+            input_library = parse_yaml_library(lib)
 
-    with study_file.open() as c:
-        input_study = parse_yaml_components(c)
-    library = resolve_library([input_library])
-    network_components = resolve_components_and_cnx(input_study, library)
-    consistency_check(network_components.components, library.models)
+        with study_file.open() as c:
+            input_study = parse_yaml_components(c)
+        library = resolve_library([input_library])
+        network_components = resolve_components_and_cnx(input_study, library)
+        consistency_check(network_components.components, library.models)
 
-    database = build_data_base(input_study, data_dir)
-    network = build_network(network_components)
+        database = build_data_base(input_study, data_dir)
+        network = build_network(network_components)
+        return network, database
 
+    return _setup_test
+
+
+def test_basic_balance_time_only_series(
+    setup_test: Callable[[], Tuple[Network, DataBase]]
+) -> None:
+    network, database = setup_test("study_time_only_series.yml")
     scenarios = 1
     problem = build_problem(network, database, TimeBlock(1, [0, 1]), scenarios)
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 10000
 
-def test_basic_balance_scenario_only_series(data_dir: Path) -> None:
-    study_file = data_dir / "study_scenario_only_series.yml"
-    lib_file = data_dir / "lib.yml"
-    with lib_file.open() as lib:
-        input_library = parse_yaml_library(lib)
 
-    with study_file.open() as c:
-        input_study = parse_yaml_components(c)
-    library = resolve_library([input_library])
-    network_components = resolve_components_and_cnx(input_study, library)
-    consistency_check(network_components.components, library.models)
-
-    database = build_data_base(input_study, data_dir)
-    network = build_network(network_components)
-
+def test_basic_balance_scenario_only_series(
+    setup_test: Callable[[], Tuple[Network, DataBase]]
+) -> None:
+    network, database = setup_test("study_scenario_only_series.yml")
     scenarios = 2
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()
@@ -131,39 +134,14 @@ def test_basic_balance_scenario_only_series(data_dir: Path) -> None:
     assert problem.solver.Objective().Value() == 0.5 * 5000 + 0.5 * 10000
 
 
-def generate_data_for_short_term_storage_test(scenarios: int) -> TimeScenarioSeriesData:
-    data = {}
-    horizon = 10
-    efficiency = 0.8
-    for scenario in range(scenarios):
-        for absolute_timestep in range(10):
-            if absolute_timestep == 0:
-                data[TimeScenarioIndex(absolute_timestep, scenario)] = -18.0
-            else:
-                data[TimeScenarioIndex(absolute_timestep, scenario)] = 2 * efficiency
-
-    values = [value for value in data.values()]
-    data_df = pd.DataFrame(values, columns=["Value"])
-    return TimeScenarioSeriesData(data_df)
-
-
-def test_short_term_storage_base_with_yaml(data_dir: Path) -> None:
-    compo_file = data_dir / "components_for_short_term_storage.yml"
-    lib_file = data_dir / "lib.yml"
-    with lib_file.open() as lib:
-        input_library = parse_yaml_library(lib)
-
-    with compo_file.open() as c:
-        components_file = parse_yaml_components(c)
-    library = resolve_library([input_library])
-    components_input = resolve_components_and_cnx(components_file, library)
+def test_short_term_storage_base_with_yaml(
+    setup_test: Callable[[], Tuple[Network, DataBase]]
+) -> None:
+    network, database = setup_test("components_for_short_term_storage.yml")
     # 18 produced in the 1st time-step, then consumed 2 * efficiency in the rest
     scenarios = 1
     horizon = 10
     time_blocks = [TimeBlock(0, list(range(horizon)))]
-
-    database = build_data_base(components_file, data_dir)
-    network = build_network(components_input)
 
     problem = build_problem(
         network,
