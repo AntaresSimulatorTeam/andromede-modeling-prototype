@@ -158,10 +158,10 @@ def dataframe_to_scenario_series(
         raise ValueError(
             f"Could not convert input data to scenario series data. Expect data series with exactly one line, got shape {ts_dataframe.shape}"
         )
-    df_index = ts_dataframe.index.astype(int)  # Only for mypy
+    ts_dataframe = ts_dataframe.astype(float)
     return {
-        ScenarioIndex(index): float(value)
-        for index, value in zip(df_index, ts_dataframe.iloc[0, :].values)
+        ScenarioIndex(col_id): float(ts_dataframe.iloc[0, col_id])
+        for col_id in range(ts_dataframe.shape[1])
     }
 
 

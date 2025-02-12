@@ -88,6 +88,49 @@ def test_basic_balance_using_yaml(
     assert problem.solver.Objective().Value() == 3000
 
 
+def test_basic_balance_time_only_series(data_dir: Path) -> None:
+    study_file = data_dir / "study_time_only_series.yml"
+    lib_file = data_dir / "lib.yml"
+    with lib_file.open() as lib:
+        input_library = parse_yaml_library(lib)
+
+    with study_file.open() as c:
+        input_study = parse_yaml_components(c)
+    library = resolve_library([input_library])
+    network_components = resolve_components_and_cnx(input_study, library)
+    consistency_check(network_components.components, library.models)
+
+    database = build_data_base(input_study, data_dir)
+    network = build_network(network_components)
+
+    scenarios = 1
+    problem = build_problem(network, database, TimeBlock(1, [0, 1]), scenarios)
+    status = problem.solver.Solve()
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 10000
+
+def test_basic_balance_scenario_only_series(data_dir: Path) -> None:
+    study_file = data_dir / "study_scenario_only_series.yml"
+    lib_file = data_dir / "lib.yml"
+    with lib_file.open() as lib:
+        input_library = parse_yaml_library(lib)
+
+    with study_file.open() as c:
+        input_study = parse_yaml_components(c)
+    library = resolve_library([input_library])
+    network_components = resolve_components_and_cnx(input_study, library)
+    consistency_check(network_components.components, library.models)
+
+    database = build_data_base(input_study, data_dir)
+    network = build_network(network_components)
+
+    scenarios = 2
+    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    status = problem.solver.Solve()
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 0.5 * 5000 + 0.5 * 10000
+
+
 def generate_data_for_short_term_storage_test(scenarios: int) -> TimeScenarioSeriesData:
     data = {}
     horizon = 10
