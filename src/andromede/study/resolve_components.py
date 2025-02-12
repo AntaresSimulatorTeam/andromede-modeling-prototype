@@ -91,8 +91,8 @@ def _resolve_connections(
 ) -> PortsConnection:
     cnx_component1 = connection.component1
     cnx_component2 = connection.component2
-    port1 = connection.port_1
-    port2 = connection.port_2
+    port1 = connection.port1
+    port2 = connection.port2
 
     component_1 = _get_component_by_id(all_components, cnx_component1)
     component_2 = _get_component_by_id(all_components, cnx_component2)

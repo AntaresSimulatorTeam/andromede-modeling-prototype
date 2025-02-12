@@ -167,9 +167,9 @@ class TestConverter:
         expected_renewable_connections = [
             InputPortConnections(
                 component1="generation",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_renewable_component = [
@@ -220,9 +220,9 @@ class TestConverter:
         expected_thermals_connections = [
             InputPortConnections(
                 component1="gaz",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_thermals_components = [
@@ -366,9 +366,9 @@ class TestConverter:
         expected_solar_connection = [
             InputPortConnections(
                 component1="solar",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_solar_components = InputComponent(
@@ -401,9 +401,9 @@ class TestConverter:
         expected_load_connection = [
             InputPortConnections(
                 component1="load",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_load_components = InputComponent(
@@ -445,9 +445,9 @@ class TestConverter:
         expected_wind_connection = [
             InputPortConnections(
                 component1="wind",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_wind_components = InputComponent(
@@ -580,39 +580,39 @@ class TestConverter:
         expected_link_connections = [
             InputPortConnections(
                 component1="fr / it",
-                port_1="in_port",
+                port1="in_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="fr / it",
-                port_1="out_port",
+                port1="out_port",
                 component2="it",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / fr",
-                port_1="in_port",
+                port1="in_port",
                 component2="at",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / fr",
-                port_1="out_port",
+                port1="out_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / it",
-                port_1="in_port",
+                port1="in_port",
                 component2="at",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / it",
-                port_1="out_port",
+                port1="out_port",
                 component2="it",
-                port_2="balance_port",
+                port2="balance_port",
             ),
         ]
 

@@ -40,9 +40,9 @@ def _to_kebab(snake: str) -> str:
 
 class InputPortConnections(BaseModel):
     component1: str
-    port_1: str
+    port1: str
     component2: str
-    port_2: str
+    port2: str
 
 
 class InputComponentParameter(BaseModel):

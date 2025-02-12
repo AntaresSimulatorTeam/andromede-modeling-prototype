@@ -139,9 +139,9 @@ class AntaresStudyConverter:
                 connections.append(
                     InputPortConnections(
                         component1=renewable.id,
-                        port_1="balance_port",
+                        port1="balance_port",
                         component2=area.id,
-                        port_2="balance_port",
+                        port2="balance_port",
                     )
                 )
 
@@ -219,9 +219,9 @@ class AntaresStudyConverter:
                 connections.append(
                     InputPortConnections(
                         component1=thermal.id,
-                        port_1="balance_port",
+                        port1="balance_port",
                         component2=area.id,
-                        port_2="balance_port",
+                        port2="balance_port",
                     )
                 )
         return components, connections
@@ -274,17 +274,17 @@ class AntaresStudyConverter:
             connections.append(
                 InputPortConnections(
                     component1=link.id,
-                    port_1="in_port",
+                    port1="in_port",
                     component2=link.area_from_id,
-                    port_2="balance_port",
+                    port2="balance_port",
                 )
             )
             connections.append(
                 InputPortConnections(
                     component1=link.id,
-                    port_1="out_port",
+                    port1="out_port",
                     component2=link.area_to_id,
-                    port_2="balance_port",
+                    port2="balance_port",
                 ),
             )
         return components, connections
@@ -318,9 +318,9 @@ class AntaresStudyConverter:
                     connections.append(
                         InputPortConnections(
                             component1="wind",
-                            port_1="balance_port",
+                            port1="balance_port",
                             component2=area.id,
-                            port_2="balance_port",
+                            port2="balance_port",
                         )
                     )
 
@@ -356,9 +356,9 @@ class AntaresStudyConverter:
                     connections.append(
                         InputPortConnections(
                             component1="solar",
-                            port_1="balance_port",
+                            port1="balance_port",
                             component2=area.id,
-                            port_2="balance_port",
+                            port2="balance_port",
                         )
                     )
 
@@ -393,9 +393,9 @@ class AntaresStudyConverter:
                     connections.append(
                         InputPortConnections(
                             component1="load",
-                            port_1="balance_port",
+                            port1="balance_port",
                             component2=area.id,
-                            port_2="balance_port",
+                            port2="balance_port",
                         )
                     )
 

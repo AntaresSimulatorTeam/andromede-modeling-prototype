@@ -3,12 +3,11 @@ library:
   description: Basic library
 
   port-types:
-    - id:  1er_flow
+    - id: 1er_flow
       description: first flow
       fields:
         - id: 1er_flow
   models:
-
     - id: short-term-storage
       description: A short term storage
       parameters:
@@ -22,9 +21,8 @@ library:
           lower-bound: 0
           upper-bound: p_max_withdrawal
       ports:
-        - id: injection_port_1
+        - id: injection_port1
           type: 1er_flow
       constraints:
         - id: Level equation
-          expression: injection_port_1.1er_flow = withdrawal
-
+          expression: injection_port1.1er_flow = withdrawal
