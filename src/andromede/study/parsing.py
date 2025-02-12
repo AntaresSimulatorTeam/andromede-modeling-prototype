@@ -15,7 +15,7 @@ import os
 import typing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -40,17 +40,17 @@ def _to_kebab(snake: str) -> str:
 
 class InputPortConnections(BaseModel):
     component1: str
-    port_1: str
+    port1: str
     component2: str
-    port_2: str
+    port2: str
 
 
 class InputComponentParameter(BaseModel):
-    name: str
-    type: str
+    id: str
+    time_dependent: bool = False
+    scenario_dependent: bool = False
+    value: Union[float, str]
     scenario_group: Optional[str] = None
-    value: Optional[float] = None
-    timeseries: Optional[str] = None
 
     class Config:
         alias_generator = _to_kebab

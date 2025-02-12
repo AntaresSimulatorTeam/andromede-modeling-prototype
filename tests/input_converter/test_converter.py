@@ -44,18 +44,18 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
-                            type="constant",
+                            id="energy_cost_unsupplied",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
-                            timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
-                            type="constant",
+                            id="energy_cost_spilled",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=1.0,
-                            timeseries=None,
                         ),
                     ],
                 ),
@@ -65,18 +65,18 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
-                            type="constant",
+                            id="energy_cost_unsupplied",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
-                            timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
-                            type="constant",
+                            id="energy_cost_spilled",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=1.0,
-                            timeseries=None,
                         ),
                     ],
                 ),
@@ -103,18 +103,18 @@ class TestConverter:
                 model="area",
                 parameters=[
                     InputComponentParameter(
-                        name="energy_cost_unsupplied",
-                        type="constant",
+                        id="energy_cost_unsupplied",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.5,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="energy_cost_spilled",
-                        type="constant",
+                        id="energy_cost_spilled",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=1.0,
-                        timeseries=None,
                     ),
                 ],
             ),
@@ -123,18 +123,18 @@ class TestConverter:
                 model="area",
                 parameters=[
                     InputComponentParameter(
-                        name="energy_cost_unsupplied",
-                        type="constant",
+                        id="energy_cost_unsupplied",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.5,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="energy_cost_spilled",
-                        type="constant",
+                        id="energy_cost_spilled",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=1.0,
-                        timeseries=None,
                     ),
                 ],
             ),
@@ -167,9 +167,9 @@ class TestConverter:
         expected_renewable_connections = [
             InputPortConnections(
                 component1="generation",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_renewable_component = [
@@ -179,25 +179,25 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="unit_count",
-                        type="constant",
+                        id="unit_count",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=1.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="nominal_capacity",
-                        type="constant",
+                        id="nominal_capacity",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="generation",
-                        type="timeseries",
+                        id="generation",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{timeserie_path}",
+                        value=f"{timeserie_path}",
                     ),
                 ],
             )
@@ -220,9 +220,9 @@ class TestConverter:
         expected_thermals_connections = [
             InputPortConnections(
                 component1="gaz",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_thermals_components = [
@@ -232,53 +232,53 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="unit_count",
-                        type="constant",
+                        id="unit_count",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=1.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="efficiency",
-                        type="constant",
+                        id="efficiency",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=100.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="nominal_capacity",
-                        type="constant",
+                        id="nominal_capacity",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="marginal_cost",
-                        type="constant",
+                        id="marginal_cost",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="fixed_cost",
-                        type="constant",
+                        id="fixed_cost",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="startup_cost",
-                        type="constant",
+                        id="startup_cost",
+                        time_dependent=False,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.0,
-                        timeseries=None,
                     ),
                     InputComponentParameter(
-                        name="p_max_cluster",
-                        type="timeseries",
+                        id="p_max_cluster",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{p_max_timeserie}",
+                        value=f"{p_max_timeserie}",
                     ),
                 ],
             )
@@ -307,18 +307,18 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
-                            type="constant",
+                            id="energy_cost_unsupplied",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
-                            timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
-                            type="constant",
+                            id="energy_cost_spilled",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=1.0,
-                            timeseries=None,
                         ),
                     ],
                 ),
@@ -328,18 +328,18 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            name="energy_cost_unsupplied",
-                            type="constant",
+                            id="energy_cost_unsupplied",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
-                            timeseries=None,
                         ),
                         InputComponentParameter(
-                            name="energy_cost_spilled",
-                            type="constant",
+                            id="energy_cost_spilled",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             scenario_group=None,
                             value=1.0,
-                            timeseries=None,
                         ),
                     ],
                 ),
@@ -366,9 +366,9 @@ class TestConverter:
         expected_solar_connection = [
             InputPortConnections(
                 component1="solar",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_solar_components = InputComponent(
@@ -377,11 +377,11 @@ class TestConverter:
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
-                    name="solar",
-                    type="timeseries",
+                    id="solar",
+                    time_dependent=True,
+                    scenario_dependent=True,
                     scenario_group=None,
-                    value=None,
-                    timeseries=f"{solar_timeseries}",
+                    value=f"{solar_timeseries}",
                 ),
             ],
         )
@@ -401,9 +401,9 @@ class TestConverter:
         expected_load_connection = [
             InputPortConnections(
                 component1="load",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_load_components = InputComponent(
@@ -412,11 +412,11 @@ class TestConverter:
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
-                    name="load",
-                    type="timeseries",
+                    id="load",
+                    time_dependent=True,
+                    scenario_dependent=True,
                     scenario_group=None,
-                    value=None,
-                    timeseries=f"{load_timeseries}",
+                    value=f"{load_timeseries}",
                 ),
             ],
         )
@@ -445,9 +445,9 @@ class TestConverter:
         expected_wind_connection = [
             InputPortConnections(
                 component1="wind",
-                port_1="balance_port",
+                port1="balance_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             )
         ]
         expected_wind_components = InputComponent(
@@ -456,11 +456,11 @@ class TestConverter:
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
-                    name="wind",
-                    type="timeseries",
+                    id="wind",
+                    time_dependent=True,
+                    scenario_dependent=True,
                     scenario_group=None,
-                    value=None,
-                    timeseries=f"{wind_timeseries}",
+                    value=f"{wind_timeseries}",
                 ),
             ],
         )
@@ -519,18 +519,18 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="capacity_direct",
-                        type="timeseries",
+                        id="capacity_direct",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{fr_it_direct_links_timeseries}",
+                        value=f"{fr_it_direct_links_timeseries}",
                     ),
                     InputComponentParameter(
-                        name="capacity_indirect",
-                        type="timeseries",
+                        id="capacity_indirect",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{fr_it_indirect_links_timeseries}",
+                        value=f"{fr_it_indirect_links_timeseries}",
                     ),
                 ],
             ),
@@ -540,18 +540,18 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="capacity_direct",
-                        type="timeseries",
+                        id="capacity_direct",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{at_fr_direct_links_timeseries}",
+                        value=f"{at_fr_direct_links_timeseries}",
                     ),
                     InputComponentParameter(
-                        name="capacity_indirect",
-                        type="timeseries",
+                        id="capacity_indirect",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{at_fr_indirect_links_timeseries}",
+                        value=f"{at_fr_indirect_links_timeseries}",
                     ),
                 ],
             ),
@@ -561,18 +561,18 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
-                        name="capacity_direct",
-                        type="timeseries",
+                        id="capacity_direct",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{at_it_direct_links_timeseries}",
+                        value=f"{at_it_direct_links_timeseries}",
                     ),
                     InputComponentParameter(
-                        name="capacity_indirect",
-                        type="timeseries",
+                        id="capacity_indirect",
+                        time_dependent=True,
+                        scenario_dependent=True,
                         scenario_group=None,
-                        value=None,
-                        timeseries=f"{at_it_indirect_links_timeseries}",
+                        value=f"{at_it_indirect_links_timeseries}",
                     ),
                 ],
             ),
@@ -580,39 +580,39 @@ class TestConverter:
         expected_link_connections = [
             InputPortConnections(
                 component1="fr / it",
-                port_1="in_port",
+                port1="in_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="fr / it",
-                port_1="out_port",
+                port1="out_port",
                 component2="it",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / fr",
-                port_1="in_port",
+                port1="in_port",
                 component2="at",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / fr",
-                port_1="out_port",
+                port1="out_port",
                 component2="fr",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / it",
-                port_1="in_port",
+                port1="in_port",
                 component2="at",
-                port_2="balance_port",
+                port2="balance_port",
             ),
             InputPortConnections(
                 component1="at / it",
-                port_1="out_port",
+                port1="out_port",
                 component2="it",
-                port_2="balance_port",
+                port2="balance_port",
             ),
         ]
 

@@ -18,30 +18,26 @@ study:
     - id: G
       model: generator
       parameters:
-        - name: cost
-          type: constant
+        - id: cost
           value: 100
-        - name: p_max
-          type: constant
+        - id: p_max
           value: 100
     - id: D
       model: demand
       scenario-group: load
       parameters:
-        - name: demand
-          type: timeseries
-          timeseries: loads
+        - id: demand
+          time-dependent: true
+          scenario-dependent: true
+          value: loads
 
   connections:
-      - component1: N
-        port_1: injection_port
-        component2: D
-        port_2: injection_port
+    - component1: N
+      port1: injection_port
+      component2: D
+      port2: injection_port
 
-      - component1: N
-        port_1: injection_port
-        component2: G
-        port_2: injection_port
-
-
-
+    - component1: N
+      port1: injection_port
+      component2: G
+      port2: injection_port

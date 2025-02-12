@@ -10,13 +10,12 @@
 #
 # This file is part of the Antares project.
 
-
 #test file for command line execution
-#run : 
+#run :
 #$ python src/andromede/main/main.py --models tests/functional/input/models/lib_1.yml tests/functional/input/models/lib_2.yml --component tests/functional/input/components/components.yml --duration 3 --timeseries tests/functional/input/components/series/
 # or
 #$ python src/andromede/main/main.py --study tests/functional/ --duration 3
-#expected value : 
+#expected value :
 #> 0
 #> 72000
 
@@ -30,55 +29,45 @@ study:
       model: thermal-cluster-dhd
       parameters:
         - name: cost
-          type: constant
           value: 100
         - name: p_min
-          type: constant
           value: 100
         - name: p_max
-          type: constant
           value: 500
         - name: d_min_up
-          type: constant
           value: 3
         - name: d_min_down
-          type: constant
           value: 3
         - name: nb_units_max
-          type: constant
           value: 1
         - name: nb_failures
-          type: constant
           value: 0
     - id: D
       model: demand
       parameters:
         - name: demand
           scenario-group: g1
-          type: timeseries
-          timeseries: demand-ts
+          time-dependent: true
+          scenario-dependent: true
+          value: demand-ts
     - id: S
       model: spillage
       parameters:
         - name: cost
-          type: constant
           value: 10
 
   connections:
-      - component1: N
-        port_1: injection_port
-        component2: D
-        port_2: injection_port
+    - component1: N
+      port1: injection_port
+      component2: D
+      port2: injection_port
 
-      - component1: N
-        port_1: injection_port
-        component2: G
-        port_2: injection_port
+    - component1: N
+      port1: injection_port
+      component2: G
+      port2: injection_port
 
-      - component1: N
-        port_1: injection_port
-        component2: S
-        port_2: injection_port
-
-
-
+    - component1: N
+      port1: injection_port
+      component2: S
+      port2: injection_port

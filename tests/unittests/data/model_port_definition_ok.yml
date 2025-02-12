@@ -6,25 +6,25 @@ library:
     - id: flow
       description: second flow
       fields:
-        - name: flow
+        - id: flow
   models:
 
     - id: short-term-storage-2
       description: A short term storage
       parameters:
-        - name: p_max_withdrawal
-        - name: p_max_injection
+        - id: p_max_withdrawal
+        - id: p_max_injection
       variables:
-        - name: injection
+        - id: injection
           lower-bound: 0
           upper-bound: p_max_injection
-        - name: withdrawal
+        - id: withdrawal
           lower-bound: 0
           upper-bound: p_max_withdrawal
       ports:
-        - name: injection_port
+        - id: injection_port
           type: flow
       constraints:
-        - name: Level equation
+        - id: Level equation
           expression: injection_port.flow = withdrawal
 

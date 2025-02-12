@@ -37,13 +37,13 @@ class ModifiedBaseModel(BaseModel):
 
 
 class InputParameter(ModifiedBaseModel):
-    name: str
+    id: str
     time_dependent: bool = False
     scenario_dependent: bool = False
 
 
 class InputVariable(ModifiedBaseModel):
-    name: str
+    id: str
     time_dependent: bool = True
     scenario_dependent: bool = True
     lower_bound: Optional[str] = None
@@ -57,14 +57,14 @@ class InputVariable(ModifiedBaseModel):
 
 
 class InputConstraint(ModifiedBaseModel):
-    name: str
+    id: str
     expression: str
     lower_bound: Optional[str] = None
     upper_bound: Optional[str] = None
 
 
 class InputField(ModifiedBaseModel):
-    name: str
+    id: str
 
 
 class InputPortType(ModifiedBaseModel):
@@ -74,7 +74,7 @@ class InputPortType(ModifiedBaseModel):
 
 
 class InputModelPort(ModifiedBaseModel):
-    name: str
+    id: str
     type: str
 
 
