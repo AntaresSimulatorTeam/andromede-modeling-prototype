@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Union
 
 import pandas as pd
 
@@ -29,7 +29,9 @@ from andromede.study import (
 )
 from andromede.study.data import (
     AbstractDataStructure,
+    ScenarioSeriesData,
     TimeScenarioSeriesData,
+    TimeSeriesData,
     load_ts_from_txt,
 )
 from andromede.study.parsing import InputComponent, InputPortConnections, InputStudy
@@ -143,30 +145,45 @@ def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> D
     for comp in input_comp.components:
         # This idiom allows mypy to 'ignore' the fact that comp.parameter can be None
         for param in comp.parameters or []:
-            param_value = _evaluate_param_type(
-                param.type, param.value, param.value, timeseries_dir
+            param_value = _build_data(
+                param.time_dependent,
+                param.scenario_dependent,
+                param.value,
+                timeseries_dir,
             )
             database.add_data(comp.id, param.id, param_value)
 
     return database
 
 
-def _evaluate_param_type(
-    param_type: str,
-    param_value: Optional[float],
-    timeseries_name: Optional[str],
+def _build_data(
+    time_dependent: bool,
+    scenario_dependent: bool,
+    param_value: Union[float, str],
     timeseries_dir: Optional[Path],
     scenarization: Optional[Scenarization] = None,
 ) -> AbstractDataStructure:
-    if param_type == "constant" and param_value is not None:
-        return ConstantData(float(param_value))
-
-    elif param_type == "timeseries":
-        return TimeScenarioSeriesData(
-            load_ts_from_txt(timeseries_name, timeseries_dir), scenarization
-        )
-
-    raise ValueError(f"Data should be either constant or timeseries ")
+    if time_dependent and scenario_dependent:
+        if isinstance(param_value, str):
+            return TimeScenarioSeriesData(
+                load_ts_from_txt(param_value, timeseries_dir), scenarization
+            )
+        else:
+            raise ValueError(
+                f"A timeseries name is expected for time and scenario dependent data, got {param_value}"
+            )
+    elif time_dependent:  # scenario_dependent = False
+        return TimeSeriesData()
+    elif scenario_dependent:  # time_dependent = False
+        return ScenarioSeriesData()
+    else:
+        try:
+            float_value = float(param_value)
+        except ValueError:
+            raise ValueError(
+                f"A float value is expected for constant data, got {param_value}"
+            )
+        return ConstantData(float_value)
 
 
 def _resolve_scenarization(
@@ -198,8 +215,12 @@ def build_scenarized_data_base(
         for param in comp.parameters or []:
             if param.scenario_group:
                 scenarization = scenarizations[param.scenario_group]
-            param_value = _evaluate_param_type(
-                param.type, param.value, param.value, timeseries_dir, scenarization
+            param_value = _build_data(
+                param.time_dependent,
+                param.scenario_dependent,
+                param.value,
+                timeseries_dir,
+                scenarization,
             )
             database.add_data(comp.id, param.id, param_value)
 

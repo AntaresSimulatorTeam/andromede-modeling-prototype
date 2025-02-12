@@ -47,11 +47,10 @@ class InputPortConnections(BaseModel):
 
 class InputComponentParameter(BaseModel):
     id: str
-    type: str
-    scenario_group: Optional[str] = None
-    value: Optional[Union[float, str]] = None
     time_dependent: bool = False
     scenario_dependent: bool = False
+    value: Union[float, str]
+    scenario_group: Optional[str] = None
 
     class Config:
         alias_generator = _to_kebab

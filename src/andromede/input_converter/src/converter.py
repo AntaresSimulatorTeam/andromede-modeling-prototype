@@ -77,12 +77,14 @@ class AntaresStudyConverter:
                     parameters=[
                         InputComponentParameter(
                             id="energy_cost_unsupplied",
-                            type="constant",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             value=area.properties.energy_cost_unsupplied,
                         ),
                         InputComponentParameter(
                             id="energy_cost_spilled",
-                            type="constant",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             value=area.properties.energy_cost_spilled,
                         ),
                     ],
@@ -115,17 +117,20 @@ class AntaresStudyConverter:
                         parameters=[
                             InputComponentParameter(
                                 id="unit_count",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=renewable.properties.unit_count,
                             ),
                             InputComponentParameter(
                                 id="nominal_capacity",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=renewable.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
                                 id="generation",
-                                type="timeseries",
+                                time_dependent=True,
+                                scenario_dependent=True,
                                 value=str(series_path),
                             ),
                         ],
@@ -168,37 +173,44 @@ class AntaresStudyConverter:
                         parameters=[
                             InputComponentParameter(
                                 id="unit_count",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.unit_count,
                             ),
                             InputComponentParameter(
                                 id="efficiency",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.efficiency,
                             ),
                             InputComponentParameter(
                                 id="nominal_capacity",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
                                 id="marginal_cost",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.marginal_cost,
                             ),
                             InputComponentParameter(
                                 id="fixed_cost",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.fixed_cost,
                             ),
                             InputComponentParameter(
                                 id="startup_cost",
-                                type="constant",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.startup_cost,
                             ),
                             InputComponentParameter(
                                 id="p_max_cluster",
-                                type="timeseries",
+                                time_dependent=True,
+                                scenario_dependent=True,
                                 value=str(series_path),
                             ),
                         ],
@@ -246,12 +258,14 @@ class AntaresStudyConverter:
                     parameters=[
                         InputComponentParameter(
                             id="capacity_direct",
-                            type="timeseries",
+                            time_dependent=True,
+                            scenario_dependent=True,
                             value=str(capacity_direct_path),
                         ),
                         InputComponentParameter(
                             id="capacity_indirect",
-                            type="timeseries",
+                            time_dependent=True,
+                            scenario_dependent=True,
                             value=str(capacity_indirect_path),
                         ),
                     ],
@@ -294,7 +308,8 @@ class AntaresStudyConverter:
                             parameters=[
                                 InputComponentParameter(
                                     id="wind",
-                                    type="timeseries",
+                                    time_dependent=True,
+                                    scenario_dependent=True,
                                     value=str(series_path),
                                 )
                             ],
@@ -331,7 +346,8 @@ class AntaresStudyConverter:
                             parameters=[
                                 InputComponentParameter(
                                     id="solar",
-                                    type="timeseries",
+                                    time_dependent=True,
+                                    scenario_dependent=True,
                                     value=str(series_path),
                                 )
                             ],
@@ -367,7 +383,8 @@ class AntaresStudyConverter:
                             parameters=[
                                 InputComponentParameter(
                                     id="load",
-                                    type="timeseries",
+                                    time_dependent=True,
+                                    scenario_dependent=True,
                                     value=str(series_path),
                                 )
                             ],
