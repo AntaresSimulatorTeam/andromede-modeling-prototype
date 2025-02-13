@@ -48,7 +48,7 @@ def local_study_w_areas(tmp_path, local_study) -> Study:
     areas_to_create = ["fr", "it"]
     for area in areas_to_create:
         area_properties = AreaPropertiesLocal(
-            energy_cost_spilled="1.000000", energy_cost_unsupplied="0.500000"
+            energy_cost_spilled="10.000000", energy_cost_unsupplied="100.000000"
         )
         local_study.create_area(area, properties=area_properties)
     return local_study
@@ -114,95 +114,10 @@ def default_thermal_cluster_properties() -> ThermalClusterProperties:
 
 
 @pytest.fixture
-def actual_thermal_list_ini(local_study_w_thermal) -> IniFile:
-    return IniFile(
-        local_study_w_thermal.service.config.study_path,
-        InitializationFilesTypes.THERMAL_LIST_INI,
-        area_id="fr",
-    )
-
-
-@pytest.fixture
-def actual_thermal_areas_ini(local_study_w_thermal) -> IniFile:
-    return IniFile(
-        local_study_w_thermal.service.config.study_path,
-        InitializationFilesTypes.THERMAL_AREAS_INI,
-    )
-
-
-@pytest.fixture
-def actual_adequacy_patch_ini(local_study_w_areas) -> IniFile:
-    return IniFile(
-        local_study_w_areas.service.config.study_path,
-        InitializationFilesTypes.AREA_ADEQUACY_PATCH_INI,
-        area_id="fr",
-    )
-
-
-@pytest.fixture
-def local_study_with_renewable(local_study_w_thermal) -> Study:
-    renewable_cluster_name = "generation"
-    time_serie = pd.DataFrame(
-        [
-            [-9999999980506447872, 0, 9999999980506447872],
-            [0, "fr", 0],
-        ],
-        dtype="object",
-    )
-    local_study_w_thermal.get_areas()["fr"].create_renewable_cluster(
-        renewable_cluster_name, RenewableClusterProperties(), series=time_serie
-    )
-    return local_study_w_thermal
-
-
-@pytest.fixture
-def default_renewable_cluster_properties() -> RenewableClusterProperties:
-    return RenewableClusterProperties(
-        enabled=True,
-        unit_count=1,
-        nominal_capacity=0,
-        group=RenewableClusterGroup.OTHER1,
-        ts_interpretation=TimeSeriesInterpretation.POWER_GENERATION,
-    )
-
-
-@pytest.fixture
-def actual_renewable_list_ini(local_study_with_renewable) -> IniFile:
-    return IniFile(
-        local_study_with_renewable.service.config.study_path,
-        InitializationFilesTypes.RENEWABLES_LIST_INI,
-        area_id="fr",
-    )
-
-
-@pytest.fixture
 def local_study_with_st_storage(local_study_with_renewable) -> Study:
     storage_name = "short term storage"
     local_study_with_renewable.get_areas()["fr"].create_st_storage(storage_name)
     return local_study_with_renewable
-
-
-@pytest.fixture
-def default_st_storage_properties() -> STStorageProperties:
-    return STStorageProperties(
-        group=STStorageGroup.OTHER1,
-        injection_nominal_capacity=0,
-        withdrawal_nominal_capacity=0,
-        reservoir_capacity=0,
-        efficiency=1,
-        initial_level=0.5,
-        initial_level_optim=False,
-        enabled=True,
-    )
-
-
-@pytest.fixture
-def actual_st_storage_list_ini(local_study_with_st_storage) -> IniFile:
-    return IniFile(
-        local_study_with_st_storage.service.config.study_path,
-        InitializationFilesTypes.ST_STORAGE_LIST_INI,
-        area_id="fr",
-    )
 
 
 @pytest.fixture
@@ -212,75 +127,11 @@ def local_study_with_hydro(local_study_with_st_storage) -> Study:
 
 
 @pytest.fixture
-def default_hydro_properties() -> HydroProperties:
-    return HydroProperties(
-        inter_daily_breakdown=1,
-        intra_daily_modulation=24,
-        inter_monthly_breakdown=1,
-        reservoir=False,
-        reservoir_capacity=0,
-        follow_load=True,
-        use_water=False,
-        hard_bounds=False,
-        initialize_reservoir_date=0,
-        use_heuristic=True,
-        power_to_level=False,
-        use_leeway=False,
-        leeway_low=1,
-        leeway_up=1,
-        pumping_efficiency=1,
-    )
-
-
-@pytest.fixture
-def actual_hydro_ini(local_study_with_hydro) -> IniFile:
-    return IniFile(
-        local_study_with_hydro.service.config.study_path,
-        InitializationFilesTypes.HYDRO_INI,
-    )
-
-
-@pytest.fixture
-def area_fr(local_study_with_hydro) -> Area:
-    return local_study_with_hydro.get_areas()["fr"]
-
-
-@pytest.fixture
-def fr_solar(area_fr) -> None:
-    return area_fr.create_solar(pd.DataFrame([1, 1, 1]))
-
-
-@pytest.fixture
-def fr_wind(area_fr, request) -> None:
-    command = request.param if hasattr(request, "param") else [1, 1, 1]
-    data = pd.DataFrame(command)
-    return area_fr.create_wind(data)
-
-
-@pytest.fixture
-def fr_load(area_fr) -> None:
-    return area_fr.create_load(pd.DataFrame([1, 1, 1]))
-
-
-@pytest.fixture
-def local_study_with_constraint(local_study_with_hydro) -> Study:
-    local_study_with_hydro.create_binding_constraint(name="test constraint")
-    return local_study_with_hydro
-
-
-@pytest.fixture
-def test_constraint(local_study_with_constraint) -> BindingConstraint:
-    return local_study_with_constraint.get_binding_constraints()["test constraint"]
-
-
-@pytest.fixture
-def default_constraint_properties() -> BindingConstraintProperties:
-    return BindingConstraintProperties(
-        enabled=True,
-        time_step=BindingConstraintFrequency.HOURLY,
-        operator=BindingConstraintOperator.LESS,
-        comments="",
-        filter_year_by_year="hourly",
-        filter_synthesis="hourly",
-        group="default",
-    )
+def local_study_end_to_end_simple(local_study):
+    areas_to_create = ["fr"]
+    for area in areas_to_create:
+        area_properties = AreaPropertiesLocal(
+            energy_cost_spilled="0.000000", energy_cost_unsupplied="1.000000"
+        )
+        local_study.create_area(area, properties=area_properties)
+    return local_study

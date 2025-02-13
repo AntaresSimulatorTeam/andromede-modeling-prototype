@@ -18,14 +18,24 @@ from andromede.study.resolve_components import (
 )
 
 
-def create_file(path, filename: str, lines: int, columns: int = 1):
+def create_file(path, filename: str, lines: int, columns: int = 1, value: float = 1):
     Path(path).mkdir(parents=True, exist_ok=True)
     path = path / filename
-    data = {
-        f"col_{i+1}": [random.randint(1, 99) for _ in range(lines)]
-        for i in range(columns)
-    }
+    data = {f"col_{i+1}": [value for _ in range(lines)] for i in range(columns)}
     df = pd.DataFrame(data)
+    df.to_csv(
+        path.with_suffix(".txt"),
+        sep="\t",
+        index=False,
+        header=False,
+        encoding="utf-8",
+    )
+    return path
+
+
+def create_file_with_df(path, filename: str, df: pd.DataFrame = []):
+    Path(path).mkdir(parents=True, exist_ok=True)
+    path = path / filename
     df.to_csv(
         path.with_suffix(".txt"),
         sep="\t",
@@ -42,27 +52,32 @@ def data_dir() -> Path:
 
 
 def fill_timeseries(study_path):
-    modulation_timeseries = study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
-    series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
-    links_path_fr = study_path / "input" / "links" / "fr" / "capacities"
-    links_path_at = study_path / "input" / "links" / "at" / "capacities"
-    # We have to use a multiple of 168, to match with full weeks
-    create_file(modulation_timeseries, "modulation", 840, 4)
-    create_file(series_path, "series", 840)
-    create_file(links_path_fr, "it_direct", 840, 4)
-    create_file(links_path_fr, "it_indirect", 840, 4)
-    create_file(links_path_at, "fr_direct", 840, 4)
-    create_file(links_path_at, "fr_indirect", 840, 4)
-    create_file(links_path_at, "it_direct", 840, 4)
-    create_file(links_path_at, "it_indirect", 840, 4)
+    load_timeseries = study_path / "input" / "load" / "series"
+    demand_data = pd.DataFrame(
+        [
+            [100],
+            [50],
+        ],
+        index=[0, 1],
+        columns=[0],
+    )
+    create_file_with_df(load_timeseries, "load_fr", demand_data)
 
 
 @pytest.fixture
-def study_component(local_study_w_thermal) -> InputStudy:
-    logger = Logger(__name__, local_study_w_thermal.service.config.study_path)
-    study_path = local_study_w_thermal.service.config.study_path
+def study_component(local_study_end_to_end_simple) -> InputStudy:
+    logger = Logger(__name__, local_study_end_to_end_simple.service.config.study_path)
+    study_path = local_study_end_to_end_simple.service.config.study_path
     fill_timeseries(study_path)
-    converter = AntaresStudyConverter(study_input=local_study_w_thermal, logger=logger)
+
+    area_fr = local_study_end_to_end_simple.get_areas()["fr"]
+    path = study_path / "input" / "load" / "series" / "load_fr.txt"
+    test = pd.read_csv(path)
+    area_fr.create_load(pd.DataFrame(test))
+
+    converter = AntaresStudyConverter(
+        study_input=local_study_end_to_end_simple, logger=logger
+    )
     converter.process_all()
     compo_file = converter.output_path
 
@@ -86,7 +101,7 @@ def input_library(
         return parse_yaml_library(lib)
 
 
-@pytest.mark.skip("Missing issue with links handling and result is not verified yet")
+# @pytest.mark.skip("Missing issue with links handling and result is not verified yet")
 def test_basic_balance_using_yaml(
     study_component: InputStudy,
     input_library: InputLibrary,
@@ -105,4 +120,4 @@ def test_basic_balance_using_yaml(
     problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 3000
+    assert problem.solver.Objective().Value() == 50

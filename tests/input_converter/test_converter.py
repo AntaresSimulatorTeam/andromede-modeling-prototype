@@ -506,7 +506,7 @@ class TestConverter:
             )
         ]
         expected_load_components = InputComponent(
-            id="fr",
+            id="load",
             model="load",
             scenario_group=None,
             parameters=[

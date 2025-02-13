@@ -388,7 +388,7 @@ class AntaresStudyConverter:
                 if self._check_dataframe_validity(area.get_load_matrix()):
                     components.append(
                         InputComponent(
-                            id=area.id,
+                            id="load",
                             model="load",
                             parameters=[
                                 InputComponentParameter(
