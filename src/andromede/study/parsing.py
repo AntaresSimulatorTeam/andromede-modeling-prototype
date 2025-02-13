@@ -24,7 +24,7 @@ from yaml import safe_load
 
 def parse_yaml_components(input_study: typing.TextIO) -> "InputStudy":
     tree = safe_load(input_study)
-    return InputStudy.model_validate(tree["study"])
+    return InputStudy.model_validate(tree["system"])
 
 
 def parse_scenario_builder(file: Path) -> pd.DataFrame:
