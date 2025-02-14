@@ -9,6 +9,7 @@ from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
+from andromede.study.data import load_ts_from_txt
 from andromede.study.parsing import InputStudy, parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
@@ -71,9 +72,9 @@ def study_component(local_study_end_to_end_simple) -> InputStudy:
     fill_timeseries(study_path)
 
     area_fr = local_study_end_to_end_simple.get_areas()["fr"]
-    path = study_path / "input" / "load" / "series" / "load_fr.txt"
-    test = pd.read_csv(path)
-    area_fr.create_load(pd.DataFrame(test))
+    path = study_path / "input" / "load" / "series"
+    timeseries = load_ts_from_txt("load_fr", path)
+    area_fr.create_load(pd.DataFrame(timeseries))
 
     converter = AntaresStudyConverter(
         study_input=local_study_end_to_end_simple, logger=logger
@@ -117,7 +118,7 @@ def test_basic_balance_using_yaml(
     network = build_network(components_input)
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0]), scenarios)
+    problem = build_problem(network, database, TimeBlock(1, [0, 1]), scenarios)
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 50
+    assert problem.solver.Objective().Value() == 150

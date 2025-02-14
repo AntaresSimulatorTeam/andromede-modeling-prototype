@@ -413,7 +413,7 @@ class AntaresStudyConverter:
                                 InputComponentParameter(
                                     id="load",
                                     time_dependent=True,
-                                    scenario_dependent=True,
+                                    scenario_dependent=False,
                                     value=str(series_path).removesuffix(".txt"),
                                 )
                             ],
