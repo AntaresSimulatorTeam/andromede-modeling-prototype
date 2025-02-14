@@ -19,14 +19,17 @@ system:
       model: generator
       parameters:
         - id: cost
-          value: 30
+          value: 100
         - id: p_max
           value: 100
     - id: D
       model: demand
+      scenario-group: load
       parameters:
         - id: demand
-          value: 100
+          time-dependent: false
+          scenario-dependent: true
+          value: loads-scenario-only
 
   connections:
     - component1: N

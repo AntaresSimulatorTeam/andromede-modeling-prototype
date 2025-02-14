@@ -25,8 +25,8 @@ library:
     - id: ac-port
       description: A port which transfers power flow and voltage angle
       fields:
-        - name: flow
-        - name: angle
+        - id: flow
+        - id: angle
 
   models:
 
@@ -35,18 +35,18 @@ library:
     # Should we relax constraints on ports compatibility to allow to have only one here?
     - id: ac-node
       variables:
-        - name: angle
+        - id: angle
       ports:
-        - name: injections
+        - id: injections
           type: balance
-        - name: links
+        - id: links
           type: ac-port
       port-field-definitions:
         - port: links
           field: angle
           definition: angle
       binding-constraints:
-        - name: Balance
+        - id: Balance
           expression: sum_connections(injections.flow) + sum_connections(links.flow) = 0
 
     # Flow on the line is proportional to angle difference between extremities,
@@ -54,15 +54,15 @@ library:
     - id: ac-link
       description: A basic AC link model
       parameters:
-        - name: reactance
+        - id: reactance
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: flow
+        - id: flow
       ports:
-        - name: port1
+        - id: port1
           type: ac-port
-        - name: port2
+        - id: port2
           type: ac-port
       port-field-definitions:
         - port: port1
@@ -72,7 +72,7 @@ library:
           field: flow
           definition: flow
       binding-constraints:
-        - name: AC flow
+        - id: AC flow
           expression: flow = 1 / reactance * (port1.angle - port2.angle)
 
     # Flow on the line is proportional to angle difference between extremities,
@@ -81,20 +81,20 @@ library:
     - id: ac-link-with-limit
       description: A basic AC link model with a flow limit
       parameters:
-        - name: reactance
+        - id: reactance
           time-dependent: false
           scenario-dependent: false
-        - name: flow_limit
+        - id: flow_limit
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: flow
+        - id: flow
           lower-bound: -flow_limit
           upper-bound: flow_limit
       ports:
-        - name: port1
+        - id: port1
           type: ac-port
-        - name: port2
+        - id: port2
           type: ac-port
       port-field-definitions:
         - port: port1
@@ -104,7 +104,7 @@ library:
           field: flow
           definition: flow
       binding-constraints:
-        - name: AC flow
+        - id: AC flow
           expression: flow = 1 / reactance * (port1.angle - port2.angle)
 
     # Flow on the line is proportional to angle difference between extremities,
@@ -115,23 +115,23 @@ library:
     - id: ac-link-with-pst
       description: An AC link with a phase shifter
       parameters:
-        - name: reactance
+        - id: reactance
           time-dependent: false
           scenario-dependent: false
-        - name: phase_shift_cost
+        - id: phase_shift_cost
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: flow
-        - name: phase_shift
-        - name: phase_shift_pos
+        - id: flow
+        - id: phase_shift
+        - id: phase_shift_pos
           lower-bound: 0
-        - name: phase_shift_neg
+        - id: phase_shift_neg
           lower-bound: 0
       ports:
-        - name: port1
+        - id: port1
           type: ac-port
-        - name: port2
+        - id: port2
           type: ac-port
       port-field-definitions:
         - port: port1
@@ -141,9 +141,9 @@ library:
           field: flow
           definition: flow
       constraints:
-        - name: Phase shift
+        - id: Phase shift
           expression: phase_shift = phase_shift_pos - phase_shift_neg
       binding-constraints:
-        - name: AC flow
+        - id: AC flow
           expression: flow = 1 / reactance * (port1.angle + phase_shift - port2.angle)
       objective: expec(sum(phase_shift_cost * (phase_shift_pos + phase_shift_neg)))

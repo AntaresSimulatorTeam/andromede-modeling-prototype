@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Union
 
 import pandas as pd
 
@@ -29,7 +29,11 @@ from andromede.study import (
 )
 from andromede.study.data import (
     AbstractDataStructure,
+    ScenarioSeriesData,
     TimeScenarioSeriesData,
+    TimeSeriesData,
+    dataframe_to_scenario_series,
+    dataframe_to_time_series,
     load_ts_from_txt,
 )
 from andromede.study.parsing import InputComponent, InputPortConnections, InputStudy
@@ -87,8 +91,8 @@ def _resolve_connections(
 ) -> PortsConnection:
     cnx_component1 = connection.component1
     cnx_component2 = connection.component2
-    port1 = connection.port_1
-    port2 = connection.port_2
+    port1 = connection.port1
+    port2 = connection.port2
 
     component_1 = _get_component_by_id(all_components, cnx_component1)
     component_2 = _get_component_by_id(all_components, cnx_component2)
@@ -143,32 +147,46 @@ def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> D
 
     for group in input_comp_objects:
         # This idiom allows mypy to 'ignore' the fact that comp.parameter can be None
-        for obj in group:
-            for param in obj.parameters or []:
-                param_value = _evaluate_param_type(
-                    param.type, param.value, param.timeseries, timeseries_dir
-                )
-                database.add_data(obj.id, param.name, param_value)
+        for param in comp.parameters or []:
+            param_value = _build_data(
+                param.time_dependent,
+                param.scenario_dependent,
+                param.value,
+                timeseries_dir,
+            )
+            database.add_data(comp.id, param.id, param_value)
 
     return database
 
 
-def _evaluate_param_type(
-    param_type: str,
-    param_value: Optional[float],
-    timeseries_name: Optional[str],
+def _build_data(
+    time_dependent: bool,
+    scenario_dependent: bool,
+    param_value: Union[float, str],
     timeseries_dir: Optional[Path],
     scenarization: Optional[Scenarization] = None,
 ) -> AbstractDataStructure:
-    if param_type == "constant" and param_value is not None:
+    if isinstance(param_value, str):
+        # Should happen only if time-dependent or scenario-dependent
+        ts_data = load_ts_from_txt(param_value, timeseries_dir)
+        if time_dependent and scenario_dependent:
+            return TimeScenarioSeriesData(ts_data, scenarization)
+        elif time_dependent:
+            return TimeSeriesData(dataframe_to_time_series(ts_data))
+        elif scenario_dependent:
+            return ScenarioSeriesData(
+                dataframe_to_scenario_series(ts_data), scenarization
+            )
+        else:
+            raise ValueError(
+                f"A float value is expected for constant data, got {param_value}"
+            )
+    else:  # param_value is a float, we should be in the constant data case
+        if time_dependent or scenario_dependent:
+            raise ValueError(
+                f"A timeseries name is expected for time or scenario dependent data, got {param_value}"
+            )
         return ConstantData(float(param_value))
-
-    elif param_type == "timeseries":
-        return TimeScenarioSeriesData(
-            load_ts_from_txt(timeseries_name, timeseries_dir), scenarization
-        )
-
-    raise ValueError(f"Data should be either constant or timeseries ")
 
 
 def _resolve_scenarization(
@@ -200,9 +218,13 @@ def build_scenarized_data_base(
         for param in comp.parameters or []:
             if param.scenario_group:
                 scenarization = scenarizations[param.scenario_group]
-            param_value = _evaluate_param_type(
-                param.type, param.value, param.timeseries, timeseries_dir, scenarization
+            param_value = _build_data(
+                param.time_dependent,
+                param.scenario_dependent,
+                param.value,
+                timeseries_dir,
+                scenarization,
             )
-            database.add_data(comp.id, param.name, param_value)
+            database.add_data(comp.id, param.id, param_value)
 
     return database

@@ -18,4 +18,4 @@ library:
     - id: emission
       description: A port which transfers CO2 emission
       fields:
-        - name: CO2
+        - id: CO2

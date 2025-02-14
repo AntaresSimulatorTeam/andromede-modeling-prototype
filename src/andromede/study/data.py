@@ -37,6 +37,19 @@ class ScenarioIndex:
 
 
 @dataclass(frozen=True)
+class Scenarization:
+    _scenarization: Dict[int, int]
+
+    def get_scenario_for_year(self, year: int) -> int:
+        return self._scenarization[year]
+
+    def add_year(self, year: int, scenario: int) -> None:
+        if year in self._scenarization:
+            raise ValueError(f"the year {year} is already defined")
+        self._scenarization[year] = scenario
+
+
+@dataclass(frozen=True)
 class AbstractDataStructure(ABC):
     def get_value(self, timestep: Optional[int], scenario: Optional[int]) -> float:
         raise NotImplementedError()
@@ -95,10 +108,13 @@ class ScenarioSeriesData(AbstractDataStructure):
     """
 
     scenario_series: Dict[ScenarioIndex, float]
+    scenarization: Optional[Scenarization] = None
 
     def get_value(self, timestep: Optional[int], scenario: Optional[int]) -> float:
         if scenario is None:
             raise KeyError("Scenario series data requires a scenario index.")
+        if self.scenarization:
+            scenario = self.scenarization.get_scenario_for_year(scenario)
         return self.scenario_series[ScenarioIndex(scenario)]
 
     def check_requirement(self, time: bool, scenario: bool) -> bool:
@@ -123,17 +139,32 @@ def load_ts_from_txt(
         raise Exception(f"An error has arrived when processing '{ts_path}'")
 
 
-@dataclass(frozen=True)
-class Scenarization:
-    _scenarization: Dict[int, int]
+def dataframe_to_time_series(ts_dataframe: pd.DataFrame) -> Dict[TimeIndex, float]:
+    if ts_dataframe.shape[1] != 1:
+        raise ValueError(
+            f"Could not convert input data to time series data. Expect data series with exactly one column, got shape {ts_dataframe.shape}"
+        )
+    df_index = ts_dataframe.index.astype(int)  # Only for mypy
+    return {
+        TimeIndex(index): float(value)
+        for index, value in zip(df_index, ts_dataframe.iloc[:, 0].values)
+    }
 
-    def get_scenario_for_year(self, year: int) -> int:
-        return self._scenarization[year]
 
-    def add_year(self, year: int, scenario: int) -> None:
-        if year in self._scenarization:
-            raise ValueError(f"the year {year} is already defined")
-        self._scenarization[year] = scenario
+def dataframe_to_scenario_series(
+    ts_dataframe: pd.DataFrame,
+) -> Dict[ScenarioIndex, float]:
+    if ts_dataframe.shape[0] != 1:
+        raise ValueError(
+            f"Could not convert input data to scenario series data. Expect data series with exactly one line, got shape {ts_dataframe.shape}"
+        )
+
+    return {
+        ScenarioIndex(col_id): float(value)
+        for col_id, value in zip(
+            list(range(ts_dataframe.shape[1])), ts_dataframe.iloc[0, :].values
+        )
+    }
 
 
 @dataclass(frozen=True)

@@ -79,13 +79,15 @@ class AntaresStudyConverter:
                     model="area",
                     parameters=[
                         InputComponentParameter(
-                            name="ens_cost",
-                            type="constant",
+                            id="ens_cost",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             value=area.properties.energy_cost_unsupplied,
                         ),
                         InputComponentParameter(
-                            name="spillage_cost",
-                            type="constant",
+                            id="spillage_cost",
+                            time_dependent=False,
+                            scenario_dependent=False,
                             value=area.properties.energy_cost_spilled,
                         ),
                     ],
@@ -117,19 +119,22 @@ class AntaresStudyConverter:
                         model="renewable",
                         parameters=[
                             InputComponentParameter(
-                                name="unit_count",
-                                type="constant",
+                                id="unit_count",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=renewable.properties.unit_count,
                             ),
                             InputComponentParameter(
-                                name="nominal_capacity",
-                                type="constant",
+                                id="p_max_unit",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=renewable.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
-                                name="generation",
-                                type="timeseries",
-                                timeseries=str(series_path).removesuffix(".txt"),
+                                id="generation",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(series_path).removesuffix(".txt"),
                             ),
                         ],
                     )
@@ -137,9 +142,9 @@ class AntaresStudyConverter:
                 connections.append(
                     InputPortConnections(
                         component1=renewable.id,
-                        port_1="balance_port",
+                        port1="balance_port",
                         component2=area.id,
-                        port_2="balance_port",
+                        port2="balance_port",
                     )
                 )
 
@@ -177,54 +182,58 @@ class AntaresStudyConverter:
                             tdp.get_nb_units_max_variation_forward(),
                             tdp.get_nb_units_max_variation_backward(),
                             InputComponentParameter(
-                                name="unit_count",
-                                type="constant",
+                                id="unit_count",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.unit_count,
                             ),
                             InputComponentParameter(
-                                name="p_min_unit",
-                                type="constant",
-                                value=thermal.properties.min_stable_power,
-                            ),
-                            InputComponentParameter(
-                                name="efficiency",
-                                type="constant",
+                                id="efficiency",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.efficiency,
                             ),
                             InputComponentParameter(
-                                name="p_max_unit",
-                                type="constant",
+                                id="p_max_unit",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
-                                name="generation_cost",
-                                type="constant",
+                                id="generation_cost",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.marginal_cost,
                             ),
                             InputComponentParameter(
-                                name="fixed_cost",
-                                type="constant",
+                                id="fixed_cost",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.fixed_cost,
                             ),
                             InputComponentParameter(
-                                name="startup_cost",
-                                type="constant",
+                                id="startup_cost",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.startup_cost,
                             ),
                             InputComponentParameter(
-                                name="d_min_up",
-                                type="constant",
+                                id="d_min_up",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.min_up_time,
                             ),
                             InputComponentParameter(
-                                name="d_min_down",
-                                type="constant",
+                                id="d_min_down",
+                                time_dependent=False,
+                                scenario_dependent=False,
                                 value=thermal.properties.min_down_time,
                             ),
                             InputComponentParameter(
-                                name="p_max_cluster",
-                                type="timeseries",
-                                timeseries=str(series_path).removesuffix(".txt"),
+                                id="p_max_cluster",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(series_path).removesuffix(".txt"),
                             ),
                         ],
                     )
@@ -233,9 +242,9 @@ class AntaresStudyConverter:
                 connections.append(
                     InputPortConnections(
                         component1=thermal.id,
-                        port_1="balance_port",
+                        port1="balance_port",
                         component2=area.id,
-                        port_2="balance_port",
+                        port2="balance_port",
                     )
                 )
         return components, connections
@@ -271,14 +280,16 @@ class AntaresStudyConverter:
                     model="link",
                     parameters=[
                         InputComponentParameter(
-                            name="capacity_direct",
-                            type="timeseries",
-                            timeseries=str(capacity_direct_path),
+                            id="capacity_direct",
+                            time_dependent=True,
+                            scenario_dependent=True,
+                            value=str(capacity_direct_path),
                         ),
                         InputComponentParameter(
-                            name="capacity_indirect",
-                            type="timeseries",
-                            timeseries=str(capacity_indirect_path),
+                            id="capacity_indirect",
+                            time_dependent=True,
+                            scenario_dependent=True,
+                            value=str(capacity_indirect_path),
                         ),
                     ],
                 )
@@ -286,17 +297,17 @@ class AntaresStudyConverter:
             connections.append(
                 InputPortConnections(
                     component1=link.id,
-                    port_1="in_port",
+                    port1="in_port",
                     component2=link.area_from_id,
-                    port_2="balance_port",
+                    port2="balance_port",
                 )
             )
             connections.append(
                 InputPortConnections(
                     component1=link.id,
-                    port_1="out_port",
+                    port1="out_port",
                     component2=link.area_to_id,
-                    port_2="balance_port",
+                    port2="balance_port",
                 ),
             )
         return components, connections
@@ -319,9 +330,10 @@ class AntaresStudyConverter:
                             model="wind",
                             parameters=[
                                 InputComponentParameter(
-                                    name="wind",
-                                    type="timeseries",
-                                    timeseries=str(series_path).removesuffix(".txt"),
+                                    id="wind",
+                                    time_dependent=True,
+                                    scenario_dependent=True,
+                                    value=str(series_path).removesuffix(".txt")
                                 )
                             ],
                         )
@@ -329,9 +341,9 @@ class AntaresStudyConverter:
                     connections.append(
                         InputPortConnections(
                             component1="wind",
-                            port_1="balance_port",
+                            port1="balance_port",
                             component2=area.id,
-                            port_2="balance_port",
+                            port2="balance_port",
                         )
                     )
 
@@ -356,9 +368,10 @@ class AntaresStudyConverter:
                             model="solar",
                             parameters=[
                                 InputComponentParameter(
-                                    name="solar",
-                                    type="timeseries",
-                                    timeseries=str(series_path).removesuffix(".txt"),
+                                    id="solar",
+                                    time_dependent=True,
+                                    scenario_dependent=True,
+                                    value=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
@@ -366,9 +379,9 @@ class AntaresStudyConverter:
                     connections.append(
                         InputPortConnections(
                             component1="solar",
-                            port_1="balance_port",
+                            port1="balance_port",
                             component2=area.id,
-                            port_2="balance_port",
+                            port2="balance_port",
                         )
                     )
 
@@ -392,9 +405,10 @@ class AntaresStudyConverter:
                             model="load",
                             parameters=[
                                 InputComponentParameter(
-                                    name="load",
-                                    type="timeseries",
-                                    timeseries=str(series_path).removesuffix(".txt"),
+                                    id="load",
+                                    time_dependent=True,
+                                    scenario_dependent=True,
+                                    value=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
@@ -402,9 +416,9 @@ class AntaresStudyConverter:
                     connections.append(
                         InputPortConnections(
                             component1="load",
-                            port_1="balance_port",
+                            port1="balance_port",
                             component2=area.id,
-                            port_2="balance_port",
+                            port2="balance_port",
                         )
                     )
 

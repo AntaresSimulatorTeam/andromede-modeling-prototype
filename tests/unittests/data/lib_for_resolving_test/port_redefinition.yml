@@ -20,17 +20,17 @@ library:
     - id: flow
       description: A port which transfers power flow
       fields:
-        - name: flow
+        - id: flow
 
   models:
     - id: demand
       description: A basic fixed demand model
       parameters:
-        - name: demand
+        - id: demand
           time-dependent: true
           scenario-dependent: true
       ports:
-        - name: injection_port
+        - id: injection_port
           type: flow
       port-field-definitions:
         - port: injection_port

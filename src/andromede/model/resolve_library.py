@@ -112,7 +112,7 @@ def resolve_library(
 
 
 def _convert_field(field: InputField) -> PortField:
-    return PortField(name=field.name)
+    return PortField(name=field.id)
 
 
 def _convert_port_type(port_type: InputPortType) -> PortType:
@@ -123,8 +123,8 @@ def _convert_port_type(port_type: InputPortType) -> PortType:
 
 def _resolve_model(input_model: InputModel, port_types: Dict[str, PortType]) -> Model:
     identifiers = ModelIdentifiers(
-        variables={v.name for v in input_model.variables},
-        parameters={p.name for p in input_model.parameters},
+        variables={v.id for v in input_model.variables},
+        parameters={p.id for p in input_model.parameters},
     )
     return model(
         id=input_model.id,
@@ -148,7 +148,7 @@ def _resolve_model(input_model: InputModel, port_types: Dict[str, PortType]) -> 
 def _resolve_model_port(
     port: InputModelPort, port_types: Dict[str, PortType]
 ) -> ModelPort:
-    return ModelPort(port_name=port.name, port_type=port_types[port.type])
+    return ModelPort(port_name=port.id, port_type=port_types[port.type])
 
 
 def _resolve_field_definition(
@@ -163,7 +163,7 @@ def _resolve_field_definition(
 
 def _to_parameter(param: InputParameter) -> Parameter:
     return Parameter(
-        name=param.name,
+        name=param.id,
         type=ValueType.FLOAT,
         structure=IndexingStructure(param.time_dependent, param.scenario_dependent),
     )
@@ -179,7 +179,7 @@ def _to_expression_if_present(
 
 def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
     return Variable(
-        name=var.name,
+        name=var.id,
         data_type={"float": ValueType.FLOAT, "integer": ValueType.INTEGER}[
             var.variable_type
         ],
@@ -194,7 +194,7 @@ def _to_constraint(
     constraint: InputConstraint, identifiers: ModelIdentifiers
 ) -> Constraint:
     return Constraint(
-        name=constraint.name,
+        name=constraint.id,
         expression=parse_expression(constraint.expression, identifiers),
         lower_bound=_to_expression_if_present(constraint.lower_bound, identifiers),
         upper_bound=_to_expression_if_present(constraint.upper_bound, identifiers),

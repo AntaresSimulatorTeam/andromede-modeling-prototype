@@ -17,24 +17,24 @@ library:
     - id: flow
       description: A port which transfers power flow
       fields:
-        - name: flow
+        - id: flow
 
   models:
     - id: node
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       binding-constraints:
-        - name: balance
+        - id: balance
           expression:  sum_connections(balance_port.flow) = 0
 
     - id: demand
       parameters:
-        - name: demand
+        - id: demand
           time-dependent: true
           scenario-dependent: true
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
@@ -43,18 +43,18 @@ library:
 
     - id: production
       parameters:
-        - name: cost
+        - id: cost
           time-dependent: false
           scenario-dependent: false
-        - name: p_max
+        - id: p_max
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: generation
+        - id: generation
           lower-bound: 0
           upper-bound: p_max
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
@@ -64,21 +64,21 @@ library:
 
     - id: production_with_min
       parameters:
-        - name: cost
+        - id: cost
           time-dependent: false
           scenario-dependent: false
-        - name: p_max
+        - id: p_max
           time-dependent: false
           scenario-dependent: false
-        - name: p_min
+        - id: p_min
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: generation
+        - id: generation
           lower-bound: p_min
           upper-bound: p_max
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
@@ -88,17 +88,17 @@ library:
 
     - id: link
       parameters:
-        - name: f_max
+        - id: f_max
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: input
+        - id: input
           lower-bound: -f_max
           upper-bound: f_max
       ports:
-        - name: out_port
+        - id: out_port
           type: flow
-        - name: in_port
+        - id: in_port
           type: flow
       port-field-definitions:
         - port: out_port
@@ -110,14 +110,14 @@ library:
 
     - id: spillage
       parameters:
-        - name: cost
+        - id: cost
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: input
+        - id: input
           lower-bound: 0
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
@@ -127,14 +127,14 @@ library:
 
     - id: unsuplied
       parameters:
-        - name: cost
+        - id: cost
           time-dependent: false
           scenario-dependent: false
       variables:
-        - name: output
+        - id: output
           lower-bound: 0
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
@@ -144,45 +144,45 @@ library:
 
     - id: thermal_cluster
       parameters:
-        - name: p_max
-        - name: p_min
-        - name: cost
-        - name: d_min_up
-        - name: d_min_down
-        - name: nb_units_max
-        - name: nb_failures
+        - id: p_max
+        - id: p_min
+        - id: cost
+        - id: d_min_up
+        - id: d_min_down
+        - id: nb_units_max
+        - id: nb_failures
       variables:
-        - name: nb_units_on
+        - id: nb_units_on
           lower-bound: 0
           upper-bound: nb_units_max
           variable-type: integer
-        - name: nb_starting
+        - id: nb_starting
           lower-bound: 0
           upper-bound: nb_units_max
           variable-type: integer
-        - name: nb_stoping
+        - id: nb_stoping
           lower-bound: 0
           upper-bound: nb_units_max
           variable-type: integer
-        - name: production
+        - id: production
           lower-bound: 0
           upper-bound: nb_units_max * p_max
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
           field: flow
           definition: production
       constraints:
-        - name: max production
+        - id: max production
           expression: production <= nb_units_on * p_max
-        - name: min production
+        - id: min production
           expression: production >= nb_units_on * p_min
-        - name: on units variation
+        - id: on units variation
           expression: nb_units_on = nb_units_on[t-1] + nb_starting - nb_stoping
-        - name: starting time
+        - id: starting time
           expression: sum(t-d_min_up + 1 .. t, nb_starting) <= nb_units_on
-        - name: stoping time
+        - id: stoping time
           expression: sum(t-d_min_down + 1 .. t, nb_stoping) <= nb_units_max - nb_units_on
       objective: expec(sum(cost * production))
