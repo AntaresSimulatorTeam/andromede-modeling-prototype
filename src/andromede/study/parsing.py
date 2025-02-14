@@ -34,6 +34,7 @@ def parse_scenario_builder(file: Path) -> pd.DataFrame:
     sb.rename(columns={0: "name", 1: "year", 2: "scenario"})
     return sb
 
+
 class InputPortConnections(ModifiedBaseModel):
     component1: str
     port1: str
