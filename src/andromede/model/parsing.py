@@ -13,8 +13,10 @@
 import typing
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import Field, ValidationError
 from yaml import safe_load
+
+from andromede.utils import ModifiedBaseModel, _to_kebab
 
 
 def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
@@ -23,17 +25,6 @@ def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
         return InputLibrary.model_validate(tree["library"])
     except ValidationError as e:
         raise ValueError(f"An error occurred during parsing: {e}")
-
-
-# Design note: actual parsing and validation is delegated to pydantic models
-def _to_kebab(snake: str) -> str:
-    return snake.replace("_", "-")
-
-
-class ModifiedBaseModel(BaseModel):
-    class Config:
-        alias_generator = _to_kebab
-        extra = "forbid"
 
 
 class InputParameter(ModifiedBaseModel):
@@ -50,10 +41,8 @@ class InputVariable(ModifiedBaseModel):
     upper_bound: Optional[str] = None
     variable_type: str = "float"
 
-    class Config:
-        alias_generator = _to_kebab
+    class Config(ModifiedBaseModel.Config):
         coerce_numbers_to_str = True
-        extra = "forbid"
 
 
 class InputConstraint(ModifiedBaseModel):

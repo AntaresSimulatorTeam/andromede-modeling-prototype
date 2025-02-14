@@ -17,6 +17,8 @@ import json
 import pathlib
 from typing import Any, Callable, Dict, Optional, TypeVar
 
+from pydantic import BaseModel
+
 T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
@@ -68,3 +70,15 @@ def read_json(filename: str, path: pathlib.Path) -> Dict[str, Any]:
     with (path / filename).open() as file:
         data = json.load(file)
     return data
+
+
+# Design note: actual parsing and validation is delegated to pydantic models
+def _to_kebab(snake: str) -> str:
+    return snake.replace("_", "-")
+
+
+class ModifiedBaseModel(BaseModel):
+    class Config:
+        alias_generator = _to_kebab
+        extra = "forbid"
+        populate_by_name = True
