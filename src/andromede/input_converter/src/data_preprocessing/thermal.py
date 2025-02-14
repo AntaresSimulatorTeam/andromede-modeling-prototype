@@ -72,7 +72,6 @@ class ThermalDataPreprocessing:
         nb_units_max.to_csv(nb_units_max_output, sep="\t", index=False, header=False)
         return InputComponentParameter(
             id="nb_units_max",
-            type="timeseries",
             time_dependent=True,
             scenario_dependent=True,
             value=str(nb_units_max_output).removesuffix(".txt"),

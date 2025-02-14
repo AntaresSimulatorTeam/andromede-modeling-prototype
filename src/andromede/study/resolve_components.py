@@ -143,9 +143,7 @@ def build_network(comp_network: NetworkComponents) -> Network:
 
 def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> DataBase:
     database = DataBase()
-    input_comp_objects = [input_comp.components, input_comp.nodes]
-
-    for comp in input_comp_objects:
+    for comp in input_comp.components:
         # This idiom allows mypy to 'ignore' the fact that comp.parameter can be None
         for param in comp.parameters or []:
             param_value = _build_data(
