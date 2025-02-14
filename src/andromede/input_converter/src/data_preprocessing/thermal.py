@@ -36,11 +36,11 @@ class ThermalDataPreprocessing:
 
         # This separator is chosen to comply with the antares_craft timeseries creation
         p_min_cluster.to_csv(p_min_cluster_output, sep="\t", index=False, header=False)
-
         return InputComponentParameter(
-            name="p_min_cluster",
-            type="timeseries",
-            timeseries=str(p_min_cluster_output).removesuffix(".txt"),
+            id="p_min_cluster",
+            time_dependent=True,
+            scenario_dependent=True,
+            value=str(p_min_cluster_output).removesuffix(".txt"),
         )
 
     def get_nb_units_min(self) -> InputComponentParameter:
@@ -54,11 +54,11 @@ class ThermalDataPreprocessing:
         nb_units_min.to_csv(
             self.nb_units_min_output, sep="\t", index=False, header=False
         )
-
         return InputComponentParameter(
-            name="nb_units_min",
-            type="timeseries",
-            timeseries=str(self.nb_units_min_output).removesuffix(".txt"),
+            id="nb_units_min",
+            time_dependent=True,
+            scenario_dependent=True,
+            value=str(self.nb_units_min_output).removesuffix(".txt"),
         )
 
     def get_nb_units_max(self) -> InputComponentParameter:
@@ -71,9 +71,11 @@ class ThermalDataPreprocessing:
 
         nb_units_max.to_csv(nb_units_max_output, sep="\t", index=False, header=False)
         return InputComponentParameter(
-            name="nb_units_max",
+            id="nb_units_max",
             type="timeseries",
-            timeseries=str(nb_units_max_output).removesuffix(".txt"),
+            time_dependent=True,
+            scenario_dependent=True,
+            value=str(nb_units_max_output).removesuffix(".txt"),
         )
 
     def get_nb_units_max_variation_forward(
@@ -95,9 +97,10 @@ class ThermalDataPreprocessing:
             nb_units_max_variation_output, sep="\t", index=False, header=False
         )
         return InputComponentParameter(
-            name="nb_units_max_variation_forward",
-            type="timeseries",
-            timeseries=str(nb_units_max_variation_output).removesuffix(".txt"),
+            id="nb_units_max_variation_forward",
+            time_dependent=True,
+            scenario_dependent=True,
+            value=str(nb_units_max_variation_output).removesuffix(".txt"),
         )
 
     def get_nb_units_max_variation_backward(
@@ -119,7 +122,8 @@ class ThermalDataPreprocessing:
             nb_units_max_variation_output, sep="\t", index=False, header=False
         )
         return InputComponentParameter(
-            name="nb_units_max_variation_backward",
-            type="timeseries",
-            timeseries=str(nb_units_max_variation_output).removesuffix(".txt"),
+            id="nb_units_max_variation_backward",
+            time_dependent=True,
+            scenario_dependent=True,
+            value=str(nb_units_max_variation_output).removesuffix(".txt"),
         )

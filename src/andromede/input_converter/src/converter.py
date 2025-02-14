@@ -188,6 +188,12 @@ class AntaresStudyConverter:
                                 value=thermal.properties.unit_count,
                             ),
                             InputComponentParameter(
+                                id="p_min_unit",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=thermal.properties.min_stable_power,
+                            ),
+                            InputComponentParameter(
                                 id="efficiency",
                                 time_dependent=False,
                                 scenario_dependent=False,
@@ -333,7 +339,7 @@ class AntaresStudyConverter:
                                     id="wind",
                                     time_dependent=True,
                                     scenario_dependent=True,
-                                    value=str(series_path).removesuffix(".txt")
+                                    value=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
