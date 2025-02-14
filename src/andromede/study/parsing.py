@@ -18,8 +18,10 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import Field
 from yaml import safe_load
+
+from andromede.utils import ModifiedBaseModel
 
 
 def parse_yaml_components(input_study: typing.TextIO) -> "InputStudy":
@@ -32,47 +34,32 @@ def parse_scenario_builder(file: Path) -> pd.DataFrame:
     sb.rename(columns={0: "name", 1: "year", 2: "scenario"})
     return sb
 
-
-# Design note: actual parsing and validation is delegated to pydantic models
-def _to_kebab(snake: str) -> str:
-    return snake.replace("_", "-")
-
-
-class InputPortConnections(BaseModel):
+class InputPortConnections(ModifiedBaseModel):
     component1: str
     port1: str
     component2: str
     port2: str
 
 
-class InputComponentParameter(BaseModel):
+class InputComponentParameter(ModifiedBaseModel):
     id: str
     time_dependent: bool = False
     scenario_dependent: bool = False
     value: Union[float, str]
     scenario_group: Optional[str] = None
 
-    class Config:
-        alias_generator = _to_kebab
 
-
-class InputComponent(BaseModel):
+class InputComponent(ModifiedBaseModel):
     id: str
     model: str
     scenario_group: Optional[str] = None
     parameters: Optional[List[InputComponentParameter]] = None
 
-    class Config:
-        alias_generator = _to_kebab
 
-
-class InputStudy(BaseModel):
+class InputStudy(ModifiedBaseModel):
     nodes: List[InputComponent] = Field(default_factory=list)
     components: List[InputComponent] = Field(default_factory=list)
     connections: List[InputPortConnections] = Field(default_factory=list)
-
-    class Config:
-        alias_generator = _to_kebab
 
 
 @dataclass(frozen=True)
