@@ -145,7 +145,7 @@ def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> D
     database = DataBase()
     input_comp_objects = [input_comp.components, input_comp.nodes]
 
-    for group in input_comp_objects:
+    for comp in input_comp_objects:
         # This idiom allows mypy to 'ignore' the fact that comp.parameter can be None
         for param in comp.parameters or []:
             param_value = _build_data(
