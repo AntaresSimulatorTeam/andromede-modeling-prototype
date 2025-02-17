@@ -63,10 +63,17 @@ def fill_timeseries(study_path):
         columns=[0],
     )
     create_file_with_df(load_timeseries, "load_fr", demand_data)
+    series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
+    prepro_path = study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
+    create_file(prepro_path, "modulation", 3, 4)
+    create_file(series_path, "series", 3, 1, 151)
+    create_file(series_path, "p_min_cluster", 3)
+    create_file(series_path, "nb_units_min", 3)
+    create_file(series_path, "nb_units_max", 3)
 
 
 @pytest.fixture
-def study_component(local_study_end_to_end_simple) -> InputStudy:
+def study_component_basic(local_study_end_to_end_simple) -> InputStudy:
     logger = Logger(__name__, local_study_end_to_end_simple.service.config.study_path)
     study_path = local_study_end_to_end_simple.service.config.study_path
     fill_timeseries(study_path)
@@ -78,6 +85,29 @@ def study_component(local_study_end_to_end_simple) -> InputStudy:
 
     converter = AntaresStudyConverter(
         study_input=local_study_end_to_end_simple, logger=logger
+    )
+    converter.process_all()
+    compo_file = converter.output_path
+
+    with compo_file.open() as c:
+        return parse_yaml_components(c), study_path
+
+
+@pytest.fixture
+def study_component_thermal(local_study_end_to_end_w_thermal) -> InputStudy:
+    logger = Logger(
+        __name__, local_study_end_to_end_w_thermal.service.config.study_path
+    )
+    study_path = local_study_end_to_end_w_thermal.service.config.study_path
+    fill_timeseries(study_path)
+
+    area_fr = local_study_end_to_end_w_thermal.get_areas()["fr"]
+    path = study_path / "input" / "load" / "series"
+    timeseries = load_ts_from_txt("load_fr", path)
+    area_fr.create_load(pd.DataFrame(timeseries))
+
+    converter = AntaresStudyConverter(
+        study_input=local_study_end_to_end_w_thermal, logger=logger, period=3
     )
     converter.process_all()
     compo_file = converter.output_path
@@ -102,13 +132,12 @@ def input_library(
         return parse_yaml_library(lib)
 
 
-# @pytest.mark.skip("Missing issue with links handling and result is not verified yet")
 def test_basic_balance_using_yaml(
-    study_component: InputStudy,
+    study_component_basic: InputStudy,
     input_library: InputLibrary,
 ) -> None:
-    study_path = study_component[1]
-    study_component = study_component[0]
+    study_path = study_component_basic[1]
+    study_component = study_component_basic[0]
 
     result_lib = resolve_library([input_library])
 
@@ -122,3 +151,24 @@ def test_basic_balance_using_yaml(
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 150
+
+
+def test_thermal_balance_using_yaml(
+    study_component_thermal: InputStudy,
+    input_library: InputLibrary,
+) -> None:
+    study_path = study_component_thermal[1]
+    study_component = study_component_thermal[0]
+
+    result_lib = resolve_library([input_library])
+
+    components_input = resolve_components_and_cnx(study_component, result_lib)
+    consistency_check(components_input.components, result_lib.models)
+    database = build_data_base(study_component, study_path)
+    network = build_network(components_input)
+
+    scenarios = 1
+    problem = build_problem(network, database, TimeBlock(1, [0, 1]), scenarios)
+    status = problem.solver.Solve()
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 330

@@ -35,11 +35,13 @@ class AntaresStudyConverter:
         study_input: Union[Path, Study],
         logger: logging.Logger,
         output_path: Optional[Path] = None,
+        period: Optional[int] = None,
     ):
         """
         Initialize processor
         """
         self.logger = logger
+        self.period = period if period else 168
 
         if isinstance(study_input, Study):
             self.study = study_input
@@ -179,8 +181,8 @@ class AntaresStudyConverter:
                             tdp.get_p_min_cluster_parameter(),
                             tdp.get_nb_units_min(),
                             tdp.get_nb_units_max(),
-                            tdp.get_nb_units_max_variation_forward(),
-                            tdp.get_nb_units_max_variation_backward(),
+                            tdp.get_nb_units_max_variation_forward(self.period),
+                            tdp.get_nb_units_max_variation_backward(self.period),
                             InputComponentParameter(
                                 id="unit_count",
                                 time_dependent=False,

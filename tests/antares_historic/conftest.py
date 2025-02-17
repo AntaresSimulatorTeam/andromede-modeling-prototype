@@ -78,7 +78,7 @@ def default_thermal_cluster_properties() -> ThermalClusterProperties:
         group=ThermalClusterGroup.OTHER1,
         enabled=True,
         unit_count=1,
-        nominal_capacity=0,
+        nominal_capacity=150,
         gen_ts=LocalTSGenerationBehavior.USE_GLOBAL,
         min_stable_power=0,
         min_up_time=1,
@@ -89,7 +89,7 @@ def default_thermal_cluster_properties() -> ThermalClusterProperties:
         volatility_planned=0,
         law_forced=LawOption.UNIFORM,
         law_planned=LawOption.UNIFORM,
-        marginal_cost=0,
+        marginal_cost=1.1,
         spread_cost=0,
         fixed_cost=0,
         startup_cost=0,
@@ -134,4 +134,19 @@ def local_study_end_to_end_simple(local_study):
             energy_cost_spilled="0.000000", energy_cost_unsupplied="1.000000"
         )
         local_study.create_area(area, properties=area_properties)
+    return local_study
+
+
+@pytest.fixture
+def local_study_end_to_end_w_thermal(local_study, default_thermal_cluster_properties):
+    areas_to_create = ["fr"]
+    for area in areas_to_create:
+        area_properties = AreaPropertiesLocal(
+            energy_cost_spilled="0.000000", energy_cost_unsupplied="1.000000"
+        )
+        local_study.create_area(area, properties=area_properties)
+    thermal_name = "gaz"
+    local_study.get_areas()["fr"].create_thermal_cluster(
+        thermal_name, properties=default_thermal_cluster_properties
+    )
     return local_study
