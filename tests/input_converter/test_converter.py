@@ -211,7 +211,9 @@ class TestConverter:
         assert renewables_components == expected_renewable_component
         assert renewable_connections == expected_renewable_connections
 
-    def test_convert_thermals_to_component(self, local_study_w_thermal, create_file):
+    def test_convert_thermals_to_component(
+        self, local_study_w_thermal, create_csv_from_constant_value
+    ):
         areas, converter = self._init_area_reading(local_study_w_thermal)
         study_path = converter.study_path
         # I just want to fill the modulation and series files
@@ -220,8 +222,8 @@ class TestConverter:
         )
         series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
         # We have to use a multiple of 168, to match with full weeks
-        create_file(modulation_timeseries, "modulation", 840, 4)
-        create_file(series_path, "series", 840)
+        create_csv_from_constant_value(modulation_timeseries, "modulation", 840, 4)
+        create_csv_from_constant_value(series_path, "series", 840)
 
         self._generate_tdp_instance_parameter(
             areas, study_path, create_dataframes=False
@@ -464,7 +466,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        solar_timeseries = str(study_path / "input" / "solar" / "series" / f"solar_fr")
+        solar_timeseries = str(study_path / "input" / "solar" / "series" / "solar_fr")
         expected_solar_connection = [
             InputPortConnections(
                 component1="solar",
@@ -499,7 +501,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        load_timeseries = str(study_path / "input" / "load" / "series" / f"load_fr")
+        load_timeseries = str(study_path / "input" / "load" / "series" / "load_fr")
         expected_load_connection = [
             InputPortConnections(
                 component1="load",
@@ -543,7 +545,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr")
+        wind_timeseries = str(study_path / "input" / "wind" / "series" / "wind_fr")
         expected_wind_connection = [
             InputPortConnections(
                 component1="wind",
@@ -767,199 +769,77 @@ class TestConverter:
                     thermal.properties.nominal_capacity = 2
                     tdp = ThermalDataPreprocessing(thermal, study_path)
                     return tdp
-
-    def test_data_processing_to_p_min_cluster_parameter(self, local_study_w_thermal):
+    def _setup_test(self, local_study_w_thermal, filename):
+        """
+        Initializes test parameters and returns the instance and expected file path.
+        """
         areas, converter = self._init_area_reading(local_study_w_thermal)
         study_path = converter.study_path
         instance = self._generate_tdp_instance_parameter(areas, study_path)
+        expected_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz" / filename
+        return instance, expected_path
 
-        p_min_cluster_component = instance.get_p_min_cluster_parameter()
-
-        expected_path = (
-            study_path
-            / "input"
-            / "thermal"
-            / "series"
-            / "fr"
-            / "gaz"
-            / "p_min_cluster.txt"
-        )
+    def _validate_component(self, instance, process_method, expected_path, expected_values):
+        """
+        Executes the given processing method, validates the component, and compares the output dataframe.
+        """
+        component = getattr(instance, process_method)()
         expected_component = InputComponentParameter(
-            id="p_min_cluster",
+            id=process_method.split("process_")[1],
             time_dependent=True,
             scenario_dependent=True,
-            value=f"{expected_path}".removesuffix(".txt"),
+            value=str(expected_path),
         )
-        current_df = pd.read_csv(expected_path, header=None)
-        # We expect this: min(min_gen_modulation*unit_count*nominalcapacity, p_max_cluster)
-        # for instance here min(2*1.5*2, 8) -> 6
-        expected_df = pd.DataFrame([[6.0], [10.0], [2.0]])
-
+        current_df = pd.read_csv(expected_path.with_suffix(".txt"), header=None)
+        expected_df = pd.DataFrame(expected_values)
         assert current_df.equals(expected_df)
-        assert p_min_cluster_component == expected_component
+        assert component == expected_component
 
-    def test_data_processing_to_nb_units_min(self, local_study_w_thermal):
-        areas, converter = self._init_area_reading(local_study_w_thermal)
-        study_path = converter.study_path
-        instance = self._generate_tdp_instance_parameter(areas, study_path)
-        instance.get_p_min_cluster_parameter()
+    def _test_p_min_cluster(self, local_study_w_thermal):
+        """Tests the p_min_cluster parameter processing."""
+        instance, expected_path = self._setup_test(local_study_w_thermal, "p_min_cluster.txt")
+        expected_values = [[6.0], [10.0], [2.0]]  # min(min_gen_modulation * unit_count * nominal_capacity, p_max_cluster)
+        self._validate_component(instance, "process_p_min_cluster", expected_path, expected_values)
 
-        nb_units_min_component = instance.get_nb_units_min()
+    def test_nb_units_min(self, local_study_w_thermal):
+        """Tests the nb_units_min parameter processing."""
+        instance, expected_path = self._setup_test(local_study_w_thermal, "nb_units_min")
+        instance.process_p_min_cluster()
+        expected_values = [[3.0], [5.0], [1.0]]  # ceil(p_min_cluster / p_max_unit)
+        self._validate_component(instance, "process_nb_units_min", expected_path, expected_values)
 
-        expected_path = (
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "nb_units_min"
-        )
-        expected_component = InputComponentParameter(
-            id="nb_units_min",
-            time_dependent=True,
-            scenario_dependent=True,
-            value=f"{expected_path}",
-        )
-        current_df = pd.read_csv(nb_units_min_component.value + ".txt", header=None)
-        # We expect this: ceil(p_min_cluster/p_max_unit)
-        # for instance here ceil(6/2) -> 3
-        expected_df = pd.DataFrame([[3.0], [5.0], [1.0]])
+    def test_nb_units_max(self, local_study_w_thermal):
+        """Tests the nb_units_max parameter processing."""
+        instance, expected_path = self._setup_test(local_study_w_thermal, "nb_units_max")
+        instance.process_p_min_cluster()
+        expected_values = [[4.0], [5.0], [1.0]]  # ceil(p_max_cluster / p_max_unit)
+        self._validate_component(instance, "process_nb_units_max", expected_path, expected_values)
 
-        assert current_df.equals(expected_df)
+    @pytest.mark.parametrize("direction", ["forward", "backward"])
+    def test_nb_units_max_variation(self, local_study_w_thermal, create_csv_from_constant_value, direction):
+        """
+        Tests nb_units_max_variation_forward and nb_units_max_variation_backward processing.
+        """
+        instance, expected_path = self._setup_test(
+            local_study_w_thermal, f"nb_units_max_variation_{direction}"
+        )
+        modulation_timeseries = instance.study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
+        series_path = instance.study_path / "input" / "thermal" / "series" / "fr" / "gaz"
+        create_csv_from_constant_value(modulation_timeseries, "modulation", 840, 4)
+        create_csv_from_constant_value(series_path, "series", 840)
+        instance.process_nb_units_max()
+        nb_units_max_output = pd.read_csv(instance.series_path / "nb_units_max.txt", header=None)
 
-        assert nb_units_min_component == expected_component
+        variation_component = getattr(instance, f"process_nb_units_max_variation_{direction}")()
+        current_df = pd.read_csv(variation_component.value + ".txt", header=None)
 
-    def test_data_processing_to_nb_units_max(self, local_study_w_thermal):
-        areas, converter = self._init_area_reading(local_study_w_thermal)
-        study_path = converter.study_path
-        instance = self._generate_tdp_instance_parameter(areas, study_path)
-        instance.get_p_min_cluster_parameter()
+        assert current_df[0][0] == max(0, nb_units_max_output[0][167] - nb_units_max_output[0][0])
+        assert current_df[0][3] == max(0, nb_units_max_output[0][2] - nb_units_max_output[0][3])
+        assert current_df[0][168] == max(0, nb_units_max_output[0][335] - nb_units_max_output[0][168])
+        assert variation_component.value == str(expected_path)
 
-        nb_units_max_component = instance.get_nb_units_max()
+    def test_nb_units_max_variation_forward(self, local_study_w_thermal, create_csv_from_constant_value):
+        self.test_nb_units_max_variation(local_study_w_thermal, create_csv_from_constant_value, direction="forward")
 
-        expected_path = (
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "nb_units_max"
-        )
-        expected_component = InputComponentParameter(
-            id="nb_units_max",
-            time_dependent=True,
-            scenario_dependent=True,
-            value=f"{expected_path}",
-        )
-        current_df = pd.read_csv(nb_units_max_component.value + ".txt", header=None)
-        # We expect this: ceil(p_max_cluster/p_max_unit)
-        # for instance here ceil(8/2) -> 4
-        expected_df = pd.DataFrame([[4.0], [5.0], [1.0]])
-
-        assert current_df.equals(expected_df)
-
-        assert nb_units_max_component == expected_component
-
-    def test_data_processing_to_nb_units_max_variation_forward(
-        self, local_study_w_thermal, create_file
-    ):
-        areas, converter = self._init_area_reading(local_study_w_thermal)
-        study_path = converter.study_path
-        modulation_timeseries = (
-            study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
-        )
-        series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
-        # We have to use a multiple of 168, to match with full weeks
-        create_file(modulation_timeseries, "modulation", 840, 4)
-        create_file(series_path, "series", 840)
-
-        instance = self._generate_tdp_instance_parameter(
-            areas, study_path, create_dataframes=False
-        )
-        # We need to initialize the nb_units_max parameter
-        instance.get_nb_units_max()
-        nb_units_max_output = pd.read_csv(
-            instance.series_path / Path("nb_units_max.txt"), header=None
-        )
-
-        nb_units_max_variation_component = instance.get_nb_units_max_variation_forward()
-
-        expected_path = (
-            study_path
-            / "input"
-            / "thermal"
-            / "series"
-            / "fr"
-            / "gaz"
-            / "nb_units_max_variation_forward"
-        )
-        expected_component = InputComponentParameter(
-            id="nb_units_max_variation_forward",
-            time_dependent=True,
-            scenario_dependent=True,
-            value=f"{expected_path}",
-        )
-
-        current_df = pd.read_csv(
-            nb_units_max_variation_component.value + ".txt", header=None
-        )
-        # We expect this: max(0, self.nb_units_max_output[t-1] - self.nb_units_max_output[t])
-        assert current_df[0][0] == max(
-            0, nb_units_max_output[0][167] - nb_units_max_output[0][0]
-        )
-        assert current_df[0][3] == max(
-            0, nb_units_max_output[0][2] - nb_units_max_output[0][3]
-        )
-        assert current_df[0][168] == max(
-            0, nb_units_max_output[0][335] - nb_units_max_output[0][168]
-        )
-
-        assert nb_units_max_variation_component == expected_component
-
-    def test_data_processing_to_nb_units_max_variation_backward(
-        self, local_study_w_thermal, create_file
-    ):
-        areas, converter = self._init_area_reading(local_study_w_thermal)
-        study_path = converter.study_path
-        modulation_timeseries = (
-            study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
-        )
-        series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
-        # We have to use a multiple of 168, to match with full weeks
-        create_file(modulation_timeseries, "modulation", 840, 4)
-        create_file(series_path, "series", 840)
-
-        instance = self._generate_tdp_instance_parameter(
-            areas, study_path, create_dataframes=False
-        )
-        # We need to initialize the nb_units_max parameter
-        instance.get_nb_units_max()
-        nb_units_max_output = pd.read_csv(
-            instance.series_path / Path("nb_units_max.txt"), header=None
-        )
-
-        nb_units_max_variation_component = (
-            instance.get_nb_units_max_variation_backward()
-        )
-
-        expected_path = (
-            study_path
-            / "input"
-            / "thermal"
-            / "series"
-            / "fr"
-            / "gaz"
-            / "nb_units_max_variation_backward"
-        )
-        expected_component = InputComponentParameter(
-            id="nb_units_max_variation_backward",
-            time_dependent=True,
-            scenario_dependent=True,
-            value=f"{expected_path}",
-        )
-
-        current_df = pd.read_csv(
-            nb_units_max_variation_component.value + ".txt", header=None
-        )
-        # We expect this: max(0, self.nb_units_max_output[t] - self.nb_units_max_output[t-1])
-        assert current_df[0][0] == max(
-            0, nb_units_max_output[0][0] - nb_units_max_output[0][167]
-        )
-        assert current_df[0][3] == max(
-            0, nb_units_max_output[0][3] - nb_units_max_output[0][2]
-        )
-        assert current_df[0][168] == max(
-            0, nb_units_max_output[0][168] - nb_units_max_output[0][335]
-        )
-
-        assert nb_units_max_variation_component == expected_component
+    def test_nb_units_max_variation_backward(self, local_study_w_thermal, create_csv_from_constant_value):
+        self.test_nb_units_max_variation(local_study_w_thermal, create_csv_from_constant_value, direction="backward")

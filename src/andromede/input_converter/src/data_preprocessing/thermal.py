@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -23,7 +22,14 @@ class ThermalDataPreprocessing:
             / self.thermal.id
         )
 
-    def get_p_min_cluster_parameter(self) -> InputComponentParameter:
+    def _write_dataframe_to_csv(self, dataframe: pd.DataFrame, filename: str) -> Path:
+        csv_path = self.series_path / filename
+        # This separator is chosen to comply with the antares_craft timeseries creation
+        dataframe.to_csv(csv_path, sep="\t", index=False, header=False)
+
+        return csv_path
+
+    def _get_p_min_cluster(self) -> pd.DataFrame:
         modulation_data = self.thermal.get_prepro_modulation_matrix().iloc[:, 3]
         series_data = self.thermal.get_series_matrix()
 
@@ -31,98 +37,104 @@ class ThermalDataPreprocessing:
         nominal_capacity = self.thermal.properties.nominal_capacity
         modulation_data = modulation_data * nominal_capacity * unit_count
 
-        p_min_cluster = pd.concat([modulation_data, series_data], axis=1).min(axis=1)
-        p_min_cluster_output = self.series_path / "p_min_cluster.txt"
+        return pd.concat([modulation_data, series_data], axis=1).min(axis=1)
 
-        # This separator is chosen to comply with the antares_craft timeseries creation
-        p_min_cluster.to_csv(p_min_cluster_output, sep="\t", index=False, header=False)
+    def process_p_min_cluster(self) -> InputComponentParameter:
+        p_min_cluster = self._get_p_min_cluster()
+        csv_path = self._write_dataframe_to_csv(p_min_cluster, "p_min_cluster.txt")
+
         return InputComponentParameter(
             id="p_min_cluster",
             time_dependent=True,
             scenario_dependent=True,
-            value=str(p_min_cluster_output).removesuffix(".txt"),
+            value=str(csv_path).removesuffix(".txt"),
         )
 
-    def get_nb_units_min(self) -> InputComponentParameter:
+    def _get_nb_units_min(self) -> pd.DataFrame:
         p_min_cluster = load_ts_from_txt("p_min_cluster", self.series_path)
-        nb_units_min = pd.DataFrame(
+        return pd.DataFrame(
             np.ceil(p_min_cluster / self.thermal.properties.nominal_capacity)
         )
-        self.nb_units_min_output = self.series_path / "nb_units_min.txt"
 
-        # This separator is chosen to comply with the antares_craft timeseries creation
-        nb_units_min.to_csv(
-            self.nb_units_min_output, sep="\t", index=False, header=False
-        )
+    def process_nb_units_min(self) -> InputComponentParameter:
+        nb_units_min = self._get_nb_units_min()
+        csv_path = self._write_dataframe_to_csv(nb_units_min, "nb_units_min.txt")
+
         return InputComponentParameter(
             id="nb_units_min",
             time_dependent=True,
             scenario_dependent=True,
-            value=str(self.nb_units_min_output).removesuffix(".txt"),
+            value=str(csv_path).removesuffix(".txt"),
         )
 
-    def get_nb_units_max(self) -> InputComponentParameter:
+    def _get_nb_units_max(self) -> pd.DataFrame:
         series_data = self.thermal.get_series_matrix()
 
-        nb_units_max = pd.DataFrame(
+        return pd.DataFrame(
             np.ceil(series_data / self.thermal.properties.nominal_capacity)
         )
-        nb_units_max_output = self.series_path / "nb_units_max.txt"
 
-        nb_units_max.to_csv(nb_units_max_output, sep="\t", index=False, header=False)
+    def process_nb_units_max(self) -> InputComponentParameter:
+        nb_units_max = self._get_nb_units_max()
+        csv_path = self._write_dataframe_to_csv(nb_units_max, "nb_units_max.txt")
+
         return InputComponentParameter(
             id="nb_units_max",
             time_dependent=True,
             scenario_dependent=True,
-            value=str(nb_units_max_output).removesuffix(".txt"),
+            value=str(csv_path).removesuffix(".txt"),
         )
 
-    def get_nb_units_max_variation_forward(
-        self, period: int = 168
-    ) -> InputComponentParameter:
+    def _get_nb_units_max_variation_forward(self, period: int = 168) -> pd.DataFrame:
         nb_units_max_output = load_ts_from_txt("nb_units_max", self.series_path)
         previous_indices = []
         for i in range(len(nb_units_max_output)):
             previous_indices.append((i - 1) % period + (i // period) * period)
-
         nb_units_max_output = nb_units_max_output.iloc[previous_indices].reset_index(
             drop=True
         ) - nb_units_max_output.reset_index(drop=True)
-        nb_units_max_variation = nb_units_max_output.applymap(lambda x: max(0, x))  # type: ignore
-        nb_units_max_variation_output = (
-            self.series_path / "nb_units_max_variation_forward.txt"
+
+        return nb_units_max_output.applymap(lambda x: max(0, x))  # type: ignore
+
+    def process_nb_units_max_variation_forward(
+        self, period: int = 168
+    ) -> InputComponentParameter:
+        nb_units_max_variation = self._get_nb_units_max_variation_forward(period=period)
+        csv_path = self._write_dataframe_to_csv(
+            nb_units_max_variation, "nb_units_max_variation_forward.txt"
         )
-        nb_units_max_variation.to_csv(
-            nb_units_max_variation_output, sep="\t", index=False, header=False
-        )
+
         return InputComponentParameter(
             id="nb_units_max_variation_forward",
             time_dependent=True,
             scenario_dependent=True,
-            value=str(nb_units_max_variation_output).removesuffix(".txt"),
+            value=str(csv_path).removesuffix(".txt"),
         )
 
-    def get_nb_units_max_variation_backward(
-        self, period: int = 168
-    ) -> InputComponentParameter:
+    def _get_nb_units_max_variation_backward(self, period: int = 168) -> pd.DataFrame:
         nb_units_max_output = load_ts_from_txt("nb_units_max", self.series_path)
         previous_indices = []
         for i in range(len(nb_units_max_output)):
             previous_indices.append((i - 1) % period + (i // period) * period)
-
         nb_units_max_output = nb_units_max_output.reset_index(
             drop=True
         ) - nb_units_max_output.iloc[previous_indices].reset_index(drop=True)
-        nb_units_max_variation = nb_units_max_output.applymap(lambda x: max(0, x))  # type: ignore
-        nb_units_max_variation_output = (
-            self.series_path / "nb_units_max_variation_backward.txt"
+
+        return nb_units_max_output.applymap(lambda x: max(0, x))  # type: ignore
+
+    def process_nb_units_max_variation_backward(
+        self, period: int = 168
+    ) -> InputComponentParameter:
+        nb_units_max_variation = self._get_nb_units_max_variation_backward(
+            period=period
         )
-        nb_units_max_variation.to_csv(
-            nb_units_max_variation_output, sep="\t", index=False, header=False
+        csv_path = self._write_dataframe_to_csv(
+            nb_units_max_variation, "nb_units_max_variation_backward.txt"
         )
+
         return InputComponentParameter(
             id="nb_units_max_variation_backward",
             time_dependent=True,
             scenario_dependent=True,
-            value=str(nb_units_max_variation_output).removesuffix(".txt"),
+            value=str(csv_path).removesuffix(".txt"),
         )

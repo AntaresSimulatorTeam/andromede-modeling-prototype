@@ -9,22 +9,8 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-import pandas as pd
 import pytest
-from antares.craft.model.area import Area, AreaPropertiesLocal
-from antares.craft.model.binding_constraint import (
-    BindingConstraint,
-    BindingConstraintFrequency,
-    BindingConstraintOperator,
-    BindingConstraintProperties,
-)
-from antares.craft.model.hydro import HydroProperties
-from antares.craft.model.renewable import (
-    RenewableClusterGroup,
-    RenewableClusterProperties,
-    TimeSeriesInterpretation,
-)
-from antares.craft.model.st_storage import STStorageGroup, STStorageProperties
+from antares.craft.model.area import AreaPropertiesLocal
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.model.thermal import (
     LawOption,
@@ -33,43 +19,16 @@ from antares.craft.model.thermal import (
     ThermalClusterProperties,
     ThermalCostGeneration,
 )
-from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
 
 
 @pytest.fixture
 def local_study(tmp_path) -> Study:
+    """
+    Create an empty study
+    """
     study_name = "studyTest"
     study_version = "880"
     return create_study_local(study_name, study_version, str(tmp_path.absolute()))
-
-
-@pytest.fixture
-def local_study_w_areas(tmp_path, local_study) -> Study:
-    areas_to_create = ["fr", "it"]
-    for area in areas_to_create:
-        area_properties = AreaPropertiesLocal(
-            energy_cost_spilled="10.000000", energy_cost_unsupplied="100.000000"
-        )
-        local_study.create_area(area, properties=area_properties)
-    return local_study
-
-
-@pytest.fixture
-def local_study_w_links(tmp_path, local_study_w_areas):
-    local_study_w_areas.create_area("at")
-    links_to_create = ["fr_at", "at_it", "fr_it"]
-    for link in links_to_create:
-        area_from, area_to = link.split("_")
-        local_study_w_areas.create_link(area_from=area_from, area_to=area_to)
-
-    return local_study_w_areas
-
-
-@pytest.fixture
-def local_study_w_thermal(tmp_path, local_study_w_links) -> Study:
-    thermal_name = "gaz"
-    local_study_w_links.get_areas()["fr"].create_thermal_cluster(thermal_name)
-    return local_study_w_links
 
 
 @pytest.fixture
@@ -114,24 +73,15 @@ def default_thermal_cluster_properties() -> ThermalClusterProperties:
 
 
 @pytest.fixture
-def local_study_with_st_storage(local_study_with_renewable) -> Study:
-    storage_name = "short term storage"
-    local_study_with_renewable.get_areas()["fr"].create_st_storage(storage_name)
-    return local_study_with_renewable
-
-
-@pytest.fixture
-def local_study_with_hydro(local_study_with_st_storage) -> Study:
-    local_study_with_st_storage.get_areas()["fr"].create_hydro()
-    return local_study_with_st_storage
-
-
-@pytest.fixture
 def local_study_end_to_end_simple(local_study):
+    """
+    Create an empty study
+    Create an area with custom area properties
+    """
     areas_to_create = ["fr"]
     for area in areas_to_create:
         area_properties = AreaPropertiesLocal(
-            energy_cost_spilled="0.000000", energy_cost_unsupplied="1.000000"
+            energy_cost_spilled="0", energy_cost_unsupplied="1"
         )
         local_study.create_area(area, properties=area_properties)
     return local_study
@@ -139,10 +89,15 @@ def local_study_end_to_end_simple(local_study):
 
 @pytest.fixture
 def local_study_end_to_end_w_thermal(local_study, default_thermal_cluster_properties):
+    """
+    Create an empty study
+    Create an area with custom area properties
+    Create a thermal cluster with custom thermal properties
+    """
     areas_to_create = ["fr"]
     for area in areas_to_create:
         area_properties = AreaPropertiesLocal(
-            energy_cost_spilled="0.000000", energy_cost_unsupplied="1.000000"
+            energy_cost_spilled="0", energy_cost_unsupplied="10"
         )
         local_study.create_area(area, properties=area_properties)
     thermal_name = "gaz"
