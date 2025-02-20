@@ -38,7 +38,9 @@ class ThermalDataPreprocessing:
         modulation_data = modulation_data * nominal_capacity * unit_count
 
         min_values = pd.concat([modulation_data, series_data], axis=1).min(axis=1)
-        return min_values.to_frame(name="p_min_cluster")  # Convert from series to dataframe
+        return min_values.to_frame(
+            name="p_min_cluster"
+        )  # Convert from series to dataframe
 
     def process_p_min_cluster(self) -> InputComponentParameter:
         p_min_cluster = self._get_p_min_cluster()
