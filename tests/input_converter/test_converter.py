@@ -517,7 +517,7 @@ class TestConverter:
                 InputComponentParameter(
                     id="load",
                     time_dependent=True,
-                    scenario_dependent=False,
+                    scenario_dependent=True,
                     scenario_group=None,
                     value=f"{load_timeseries}",
                 ),
