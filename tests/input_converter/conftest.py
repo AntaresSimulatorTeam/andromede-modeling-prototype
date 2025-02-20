@@ -12,9 +12,7 @@
 import pandas as pd
 import pytest
 from antares.craft.model.area import Area, AreaPropertiesLocal
-from antares.craft.model.renewable import (
-    RenewableClusterProperties,
-)
+from antares.craft.model.renewable import RenewableClusterProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
 
