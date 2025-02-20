@@ -20,3 +20,6 @@ where = ["src"]
 [tool.black]
 line-length = 88
 include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
