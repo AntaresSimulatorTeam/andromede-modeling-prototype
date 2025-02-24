@@ -16,7 +16,6 @@ from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from configparser import ConfigParser
 from pathlib import Path
 
-from . import __version__
 from .converter import AntaresStudyConverter
 from .logger import Logger
 
