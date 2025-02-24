@@ -166,3 +166,58 @@ library:
         - id: min_down_duration
           expression: sum(t-d_min_down + 1 .. t, nb_stopping) <= nb_units_max[t-d_min_down] - nb_units_on + sum(t-d_min_down + 1 .. t, nb_units_max_variation_backward)
       objective: expec(sum(generation_cost * generation + startup_cost * nb_starting + fixed_cost * nb_units_on))
+
+    - id: short-term-storage
+      parameters:
+        - id: reservoir-capacity 
+          time-dependent: false
+          scenario-dependent: false
+        - id: injection-installed-capacity # unitcount * injectionnominalcapacity
+          time-dependent: false
+          scenario-dependent: false
+        - id: withdrawal-installed-capacity # unitcount * withdrawalnominalcapacity
+          time-dependent: false
+          scenario-dependent: false
+        - id: efficiency
+          time-dependent: false
+          scenario-dependent: false
+        - id: lower-rule-curve
+          time-dependent: true
+          scenario-dependent: true
+        - id: upper-rule-curve
+          time-dependent: true
+          scenario-dependent: true
+        - id: p_max_withdrawal
+          time-dependent: true
+          scenario-dependent: true
+        - id: p_max_injection
+          time-dependent: true
+          scenario-dependent: true
+        - id: inflows
+          time-dependent: true
+          scenario-dependent: true
+      variables:
+        - id: p-injection
+          lower-bound: 0
+          upper-bound: p_max_injection
+        - id: p-withdrawal
+          lower-bound: 0
+          upper-bound: p_max_withdrawal
+        - id : initial-level
+          lower-bound: 0
+          upper-bound: 1
+        - id: level
+          lower-bound: lower-rule-curve * reservoir-capacity
+          upper-bound: upper-rule-curve * reservoir-capacity
+      ports:
+        - id: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: p-injection - p-withdrawal
+      constraints:
+        - id: initial-level
+          expression: level[0] = initial-level * reservoir-capacity
+        - id: Level equation
+          expression: level[t] = level[t-1] + efficiency * p-injection - p-withdrawal + inflows
