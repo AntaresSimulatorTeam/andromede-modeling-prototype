@@ -29,7 +29,7 @@ class ThermalDataPreprocessing:
 
         return csv_path
 
-    def _get_p_min_cluster(self) -> pd.DataFrame:
+    def _compute_p_min_cluster(self) -> pd.DataFrame:
         modulation_data = self.thermal.get_prepro_modulation_matrix().iloc[:, 3]
         series_data = self.thermal.get_series_matrix()
 
@@ -43,7 +43,7 @@ class ThermalDataPreprocessing:
         )  # Convert from series to dataframe
 
     def process_p_min_cluster(self) -> InputComponentParameter:
-        p_min_cluster = self._get_p_min_cluster()
+        p_min_cluster = self._compute_p_min_cluster()
         csv_path = self._write_dataframe_to_csv(p_min_cluster, "p_min_cluster.txt")
 
         return InputComponentParameter(
@@ -53,14 +53,14 @@ class ThermalDataPreprocessing:
             value=str(csv_path).removesuffix(".txt"),
         )
 
-    def _get_nb_units_min(self) -> pd.DataFrame:
+    def _compute_nb_units_min(self) -> pd.DataFrame:
         p_min_cluster = load_ts_from_txt("p_min_cluster", self.series_path)
         return pd.DataFrame(
             np.ceil(p_min_cluster / self.thermal.properties.nominal_capacity)
         )
 
     def process_nb_units_min(self) -> InputComponentParameter:
-        nb_units_min = self._get_nb_units_min()
+        nb_units_min = self._compute_nb_units_min()
         csv_path = self._write_dataframe_to_csv(nb_units_min, "nb_units_min.txt")
 
         return InputComponentParameter(
@@ -70,7 +70,7 @@ class ThermalDataPreprocessing:
             value=str(csv_path).removesuffix(".txt"),
         )
 
-    def _get_nb_units_max(self) -> pd.DataFrame:
+    def _compute_nb_units_max(self) -> pd.DataFrame:
         series_data = self.thermal.get_series_matrix()
 
         return pd.DataFrame(
@@ -78,7 +78,7 @@ class ThermalDataPreprocessing:
         )
 
     def process_nb_units_max(self) -> InputComponentParameter:
-        nb_units_max = self._get_nb_units_max()
+        nb_units_max = self._compute_nb_units_max()
         csv_path = self._write_dataframe_to_csv(nb_units_max, "nb_units_max.txt")
 
         return InputComponentParameter(
@@ -88,7 +88,7 @@ class ThermalDataPreprocessing:
             value=str(csv_path).removesuffix(".txt"),
         )
 
-    def _get_nb_units_max_variation_forward(self, period: int = 168) -> pd.DataFrame:
+    def _compute_nb_units_max_variation_forward(self, period: int = 168) -> pd.DataFrame:
         nb_units_max_output = load_ts_from_txt("nb_units_max", self.series_path)
         previous_indices = []
         for i in range(len(nb_units_max_output)):
@@ -102,7 +102,7 @@ class ThermalDataPreprocessing:
     def process_nb_units_max_variation_forward(
         self, period: int = 168
     ) -> InputComponentParameter:
-        nb_units_max_variation = self._get_nb_units_max_variation_forward(period=period)
+        nb_units_max_variation = self._compute_nb_units_max_variation_forward(period=period)
         csv_path = self._write_dataframe_to_csv(
             nb_units_max_variation, "nb_units_max_variation_forward.txt"
         )
@@ -114,7 +114,7 @@ class ThermalDataPreprocessing:
             value=str(csv_path).removesuffix(".txt"),
         )
 
-    def _get_nb_units_max_variation_backward(self, period: int = 168) -> pd.DataFrame:
+    def _compute_nb_units_max_variation_backward(self, period: int = 168) -> pd.DataFrame:
         nb_units_max_output = load_ts_from_txt("nb_units_max", self.series_path)
         previous_indices = []
         for i in range(len(nb_units_max_output)):
@@ -128,7 +128,7 @@ class ThermalDataPreprocessing:
     def process_nb_units_max_variation_backward(
         self, period: int = 168
     ) -> InputComponentParameter:
-        nb_units_max_variation = self._get_nb_units_max_variation_backward(
+        nb_units_max_variation = self._compute_nb_units_max_variation_backward(
             period=period
         )
         csv_path = self._write_dataframe_to_csv(
