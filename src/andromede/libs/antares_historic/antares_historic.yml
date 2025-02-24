@@ -215,7 +215,7 @@ library:
       port-field-definitions:
         - port: injection_port
           field: flow
-          definition: p-injection - p-withdrawal
+          definition: p-withdrawal - p-injection
       constraints:
         - id: initial-level
           expression: level[0] = initial-level * reservoir-capacity
