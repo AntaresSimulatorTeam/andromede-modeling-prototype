@@ -11,7 +11,8 @@
 # This file is part of the Antares project.
 import pandas as pd
 import pytest
-from antares.craft.model.area import Area, AreaPropertiesLocal
+from antares.craft.model.area import Area, AreaProperties
+from antares.craft.model.hydro import HydroProperties
 from antares.craft.model.renewable import RenewableClusterProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
@@ -24,7 +25,7 @@ def local_study(tmp_path) -> Study:
     """
     study_name = "studyTest"
     study_version = "880"
-    return create_study_local(study_name, study_version, str(tmp_path.absolute()))
+    return create_study_local(study_name, study_version, tmp_path.absolute())
 
 
 @pytest.fixture
@@ -58,7 +59,7 @@ def local_study_w_areas(local_study) -> Study:
     """
     areas_to_create = ["fr", "it"]
     for area in areas_to_create:
-        area_properties = AreaPropertiesLocal(
+        area_properties = AreaProperties(
             energy_cost_spilled="1", energy_cost_unsupplied="0.5"
         )
         local_study.create_area(area, properties=area_properties)
@@ -111,6 +112,7 @@ def local_study_with_renewable(local_study_w_thermal) -> Study:
         ],
         dtype="object",
     )
+    print(type(time_serie))
     local_study_w_thermal.get_areas()["fr"].create_renewable_cluster(
         renewable_cluster_name, RenewableClusterProperties(), series=time_serie
     )
@@ -155,7 +157,10 @@ def local_study_with_hydro(local_study_with_st_storage) -> Study:
     Create a short term storage
     Create an hydro cluster
     """
-    local_study_with_st_storage.get_areas()["fr"].create_hydro()
+    hydro_properties = HydroProperties()
+    local_study_with_st_storage.get_areas()["fr"].hydro.update_properties(
+        hydro_properties
+    )
     return local_study_with_st_storage
 
 

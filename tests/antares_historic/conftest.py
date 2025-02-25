@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 import pytest
-from antares.craft.model.area import AreaPropertiesLocal
+from antares.craft.model.area import AreaProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.model.thermal import (
     LawOption,
@@ -28,7 +28,7 @@ def local_study(tmp_path) -> Study:
     """
     study_name = "studyTest"
     study_version = "880"
-    return create_study_local(study_name, study_version, str(tmp_path.absolute()))
+    return create_study_local(study_name, study_version, tmp_path.absolute())
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def local_study_end_to_end_simple(local_study):
     """
     areas_to_create = ["fr"]
     for area in areas_to_create:
-        area_properties = AreaPropertiesLocal(
+        area_properties = AreaProperties(
             energy_cost_spilled="0", energy_cost_unsupplied="1"
         )
         local_study.create_area(area, properties=area_properties)
@@ -96,7 +96,7 @@ def local_study_end_to_end_w_thermal(local_study, default_thermal_cluster_proper
     """
     areas_to_create = ["fr"]
     for area in areas_to_create:
-        area_properties = AreaPropertiesLocal(
+        area_properties = AreaProperties(
             energy_cost_spilled="0", energy_cost_unsupplied="10"
         )
         local_study.create_area(area, properties=area_properties)
