@@ -20,7 +20,23 @@ def defaillance(
     t : int,
     ) -> List[int]:
     
+
     nbr_on_float = dictionnaire_valeur["nb_on"][t]
+    startup_cost = dictionnaire_valeur["startup_cost"][t]
+    nbr_units_max = dictionnaire_valeur["nb_units_max_invisible"][t]
+    nbr_on = floor(round(nbr_on_float,12))
+    nbr_on_classic = min(ceil(round(nbr_on_float,12)),nbr_units_max)
+
+    
+    p_min = dictionnaire_valeur["p_min"][t]
+    min_generating = dictionnaire_valeur["min_generating"][t]
+
+    if nbr_on == nbr_on_classic:
+        return([nbr_on,nbr_on,0,0,startup_cost])
+
+    if nbr_on * p_min < min_generating:
+        return([nbr_on_classic,nbr_on,0,0,startup_cost])
+
     energy_generation = dictionnaire_valeur["energy_generation"][t]
     generation_reserve_up_primary_on = dictionnaire_valeur["generation_reserve_up_primary_on"][t]
     generation_reserve_down_primary = dictionnaire_valeur["generation_reserve_down_primary"][t]
@@ -32,7 +48,6 @@ def defaillance(
     generation_reserve_down_tertiary2 = dictionnaire_valeur["generation_reserve_down_tertiary2"][t]
     p_max = dictionnaire_valeur["p_max"][t]
     p_min = dictionnaire_valeur["p_min"][t]
-    nbr_units_max = dictionnaire_valeur["nb_units_max_invisible"][t]
     participation_max_primary_reserve_up_on = dictionnaire_valeur["participation_max_primary_reserve_up_on"][t]
     participation_max_primary_reserve_down = dictionnaire_valeur["participation_max_primary_reserve_down"][t]
     participation_max_secondary_reserve_up_on = dictionnaire_valeur["participation_max_secondary_reserve_up_on"][t]
@@ -42,7 +57,6 @@ def defaillance(
     participation_max_tertiary2_reserve_up_on = dictionnaire_valeur["participation_max_tertiary2_reserve_up_on"][t]
     participation_max_tertiary2_reserve_down = dictionnaire_valeur["participation_max_tertiary2_reserve_down"][t]
     cost = dictionnaire_valeur["cost"][t]
-    startup_cost = dictionnaire_valeur["startup_cost"][t]
     fixed_cost = dictionnaire_valeur["fixed_cost"][t]
     cost_participation_primary_reserve_up_on = dictionnaire_valeur["cost_participation_primary_reserve_up_on"][t]
     cost_participation_primary_reserve_down = dictionnaire_valeur["cost_participation_primary_reserve_down"][t]
@@ -65,13 +79,7 @@ def defaillance(
     max_generating = dictionnaire_valeur["max_generating"][t]
     min_generating = dictionnaire_valeur["min_generating"][t]
 
-    nbr_on = floor(round(nbr_on_float,12))
-    nbr_on_classic = min(ceil(round(nbr_on_float,12)),nbr_units_max)
-
-    if nbr_on * p_min < min_generating:
-        return([nbr_on_classic,nbr_on_classic,0,0,startup_cost])
-
-    solver = lp.Solver.CreateSolver("SCIP")
+    solver = lp.Solver.CreateSolver("XPRESS_LP")
 
     UNSP_primary_up_min = max(0,generation_reserve_up_primary_on-nbr_on*participation_max_primary_reserve_up_on)  
     UNSP_primary_down_min = max(0,generation_reserve_down_primary-nbr_on*participation_max_primary_reserve_down)
@@ -201,9 +209,7 @@ def determination_generations_sans_pmin(
     max_generating = dictionnaire_valeur["max_generating"][t]
     min_generating = dictionnaire_valeur["min_generating"][t]
 
-
-    
-    solver = lp.Solver.CreateSolver("SCIP")
+    solver = lp.Solver.CreateSolver("XPRESS_LP")
         
     generation_reserve_up_primary = generation_reserve_up_primary_on + generation_reserve_up_primary_off
     generation_reserve_up_secondary = generation_reserve_up_secondary_on + generation_reserve_up_secondary_off
@@ -345,19 +351,20 @@ def repartition_sans_pmin(
     
     p_min = dictionnaire_valeur["p_min"][t]
     min_generating = dictionnaire_valeur["min_generating"][t]
+    startup_cost = dictionnaire_valeur["startup_cost"][t]
 
-    if t == 15 and p_min == 145.7372:
-        a = t
+    if nbr_on == nbr_on_classic:
+        return([nbr_on,nbr_on,0,0,startup_cost])
 
     if nbr_on * p_min < min_generating:
-        return([nbr_on_classic])
-
+        return([nbr_on_classic,nbr_on,0,0,startup_cost])
+    
     result = determination_generations_sans_pmin(nbr_on,dictionnaire_valeur,t)
     result_classic = determination_generations_sans_pmin(nbr_on_classic,dictionnaire_valeur,t)
 
-    startup_cost = dictionnaire_valeur["startup_cost"][t]
+    
 
     if (version == "perte" and result[0] + startup_cost < result_classic[0]) or (version == "sans" and result[0] < result_classic[0]) or (version == "gain" and result[0] < result_classic[0] + startup_cost):
-        return[nbr_on]
+        return[nbr_on,nbr_on,result[0],result_classic[0],startup_cost]
     else :
-        return[nbr_on_classic]
+        return[nbr_on_classic,nbr_on,result[0],result_classic[0],startup_cost]

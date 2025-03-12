@@ -36,16 +36,15 @@ def read_mps(path, name_scenario, week, name_solver):
 
     solver = pywraplp.Solver.CreateSolver(name_solver)
     assert solver, "Couldn't find any supported solver"
-    solver.EnableOutput()
-
+    # solver.EnableOutput()
+    
     solver.LoadModelFromProtoWithUniqueNamesOrDie(model_proto)
 
     return solver
 
 
-def delete_variable(model, hours_in_week: int, name_variable: str) -> None:
-    var = model.variables()
-    var_id = [i for i in range(len(var)) if re.search(name_variable, var[i].name())]
+def delete_variable(var,model, hours_in_week: int, name_variable: str) -> None:
+    var_id = [i for i in range(len(var)) if name_variable in var[i].name()]
     assert len(var_id) in [0, hours_in_week]
     if len(var_id) == hours_in_week:
         for i in var_id:
@@ -58,11 +57,11 @@ def delete_constraint(cons, hours_in_week: int, name_constraint: str) -> None:
     cons_id = [
         i for i in range(len(cons)) if name_constraint in cons[i].name()
     ]
-    assert len(cons_id) in [0, hours_in_week]
-    if len(cons_id) == hours_in_week:
-        for i in cons_id:
-            cons[i].Clear()
-            cons[i].SetBounds(lb=0, ub=0)
+    # assert len(cons_id) in [0, hours_in_week]
+    # if len(cons_id) == hours_in_week:
+    for i in cons_id:
+        cons[i].Clear()
+        cons[i].SetBounds(lb=0, ub=0)
 
 
 def solve_complete_problem(solver):
@@ -70,10 +69,11 @@ def solve_complete_problem(solver):
 
     # Paramètres à utiliser avec Xpress
     solver.SetSolverSpecificParametersAsString("THREADS 1")
-    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_OFF)
+    parameters.SetIntegerParam(parameters.PRESOLVE, parameters.PRESOLVE_ON)
     parameters.SetIntegerParam(parameters.SCALING, 0)
     parameters.SetDoubleParam(parameters.DUAL_TOLERANCE, 1e-7)
     parameters.SetDoubleParam(parameters.PRIMAL_TOLERANCE, 1e-7)
+    parameters.SetDoubleParam(parameters.RELATIVE_MIP_GAP, 0.0001)
 
     solver.Solve(parameters)
 
@@ -98,45 +98,55 @@ def inspect_variables(solver):
     return df_vars
 
 
-def find_thermal_var(var,variable):
+def find_var(var,variables):
 
-    var_id = [
-        i for i in range(len(var)) if re.search(variable, var[i].name())
-    ]
+    ensemble_var = {}
+    for variable in variables:
+        ensemble_var[variable] = []
+    
+    for i in range(len(var)):
+        var_name = var[i].name()
+        for variable in variables:
+            if variable in var_name:
+                ensemble_var[variable].append(i)
 
-    df_vars = pd.DataFrame([var[i] for i in var_id], columns=["var"])
-    df_vars["names"] = df_vars["var"].apply(lambda x: x.name())
-    df_vars["split"] = df_vars["names"].apply(lambda x: x.strip().split("::"))
-    # df_vars["name_var"] = df_vars["split"].apply(lambda x: x[0])
-    # df_vars["type_antares_object"] = df_vars["split"].apply(
-    #     lambda x: x[1].split("<")[0]
-    # )
-    df_vars["name_antares_object"] = df_vars["split"].apply(
-        lambda x: x[1].split("<")[1].split(">")[0]
-    )
-    df_vars["subobject"] = df_vars["split"].apply(
-        lambda x: x[2] if len(x) >= 4 else "None"
-    )
-    df_vars["cluster_name"] = (
-        df_vars["name_antares_object"]
-        + "_"
-        + df_vars["subobject"].apply(lambda x: x.split("<")[1].split(">")[0])
-    )
+    df_vars = [ 0 ] * len(variables)
+    for (j,variable) in enumerate(variables):
+        var_id = ensemble_var[variable]
 
-    df_vars["reserve_name"] = df_vars["split"].apply(
-        lambda x: x[3].split("<")[1].split(">")[0]
-    )
+        df_vars[j] = pd.DataFrame([var[i] for i in var_id], columns=["var"])
+        df_vars[j]["names"] = df_vars[j]["var"].apply(lambda x: x.name())
+        df_vars[j]["split"] = df_vars[j]["names"].apply(lambda x: x.strip().split("::"))
+        # df_vars["name_var"] = df_vars["split"].apply(lambda x: x[0])
+        # df_vars["type_antares_object"] = df_vars["split"].apply(
+        #     lambda x: x[1].split("<")[0]
+        # )
+        df_vars[j]["name_antares_object"] = df_vars[j]["split"].apply(
+            lambda x: x[1].split("<")[1].split(">")[0]
+        )
+        df_vars[j]["subobject"] = df_vars[j]["split"].apply(
+            lambda x: x[2] if len(x) >= 4 else "None"
+        )
+        df_vars[j]["cluster_name"] = (
+            df_vars[j]["name_antares_object"]
+            + "_"
+            + df_vars[j]["subobject"].apply(lambda x: x.split("<")[1].split(">")[0])
+        )
 
-    df_vars["time"] = df_vars["split"].apply(
-        lambda x: int(x[-1].split("<")[1].split(">")[0])
-    )
+        df_vars[j]["reserve_name"] = df_vars[j]["split"].apply(
+            lambda x: x[3].split("<")[1].split(">")[0]
+        )
 
-    df_vars["id_var"] = var_id
+        # df_vars["time"] = df_vars["split"].apply(
+        #     lambda x: int(x[-1].split("<")[1].split(">")[0])
+        # )
 
-    df_vars["lb"] = [var[i].lb() for i in var_id]
-    df_vars["ub"] = [var[i].ub() for i in var_id]
+        df_vars[j]["id_var"] = var_id
 
-    df_vars = df_vars.assign(sol=[var[i].solution_value() for i in var_id])
+        df_vars[j]["lb"] = [var[i].lb() for i in var_id]
+        df_vars[j]["ub"] = [var[i].ub() for i in var_id]
+
+        df_vars[j] = df_vars[j].assign(sol=[var[i].solution_value() for i in var_id])
 
     return df_vars
 
@@ -169,9 +179,9 @@ def milp_version(model):
         ]
     ]
     for i in interger_vars:
-        vars[i].SetInteger()
+        vars[i].SetInteger(True)
 
-def get_basis(solver) -> tuple[list, list]:
+def get_basis(solver:pywraplp.Solver) -> tuple[list, list]:
     var_basis = []
     con_basis = []
     for var in solver.variables():
@@ -180,7 +190,7 @@ def get_basis(solver) -> tuple[list, list]:
         con_basis.append(con.basis_status())
     return var_basis, con_basis
  
-def load_basis(solver, basis) -> None:
+def load_basis(solver:pywraplp.Solver, basis) -> None:
     len_cons = len(solver.constraints())
     len_vars = len(solver.variables())
     solver.SetStartingLpBasis(

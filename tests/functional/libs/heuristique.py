@@ -66,18 +66,50 @@ def heuristique_opti_repartition_sans_pmin(
         version: str,
     ) -> List[List[int]]:
 
+
     if version != "choix":
-        arrondi_final = [ repartition_sans_pmin(version,dictionnaire_valeur,t)  for t in horaire]
+        arrondi_final = [[repartition_sans_pmin(version,dictionnaire_valeur,t)[0]] for t in horaire]
         return arrondi_final
 
-    arrondi_base = [ repartition_sans_pmin("perte",dictionnaire_valeur,t)  for t in horaire]
-    arrondi_final = arrondi_base
-    for t in range(1,len(horaire)-1):
+    resulat_perte = [repartition_sans_pmin("perte",dictionnaire_valeur,t) for t in range(horaire[0],horaire[len(horaire)-1])]
+    resulat_perte.append(repartition_sans_pmin("sans",dictionnaire_valeur,len(horaire)-1))
+    arrondi_base = [resulat_perte[t][0] for t in horaire]
+    arrondi_min = [resulat_perte[t][1] for t in horaire]
+    cout_baisse = [resulat_perte[t][2] for t in horaire]
+    cout_hausse = [resulat_perte[t][3] for t in horaire]
+    startup_cost = resulat_perte[horaire[0]][4]
+    arrondi_final = [[arrondi_base[t]] for t in horaire]
+
+    for t in range(horaire[1],len(horaire)-1):
         if arrondi_base[t-1] < arrondi_base[t] and arrondi_base[t] > arrondi_base[t+1]:
-            arrondi_final[t] = repartition_sans_pmin("gain",dictionnaire_valeur,t)        
+            if cout_baisse[t] < cout_hausse[t] + startup_cost:
+                arrondi_final[t] = [arrondi_min[t]]     
         elif arrondi_base[t-1] < arrondi_base[t] or arrondi_base[t] > arrondi_base[t+1]:
-            arrondi_final[t] = repartition_sans_pmin("sans",dictionnaire_valeur,t)        
+            if cout_baisse[t] < cout_hausse[t]:
+                arrondi_final[t] = [arrondi_min[t]]  
+
+    if arrondi_base[horaire[0]] > arrondi_base[horaire[1]]:
+        if cout_baisse[0] < cout_hausse[0] + startup_cost:
+            arrondi_final[horaire[0]] = [arrondi_min[horaire[0]]]
+    if arrondi_base[horaire[0]] == arrondi_base[horaire[1]]:
+        if cout_baisse[0] < cout_hausse[0]:
+            arrondi_final[horaire[0]] = [arrondi_min[horaire[0]]]
+    
     return arrondi_final
+
+
+    # if version != "choix":
+    #     arrondi_final = [ repartition_sans_pmin(version,dictionnaire_valeur,t)  for t in horaire]
+    #     return arrondi_final
+
+    # arrondi_base = [ repartition_sans_pmin("perte",dictionnaire_valeur,t)  for t in horaire]
+    # arrondi_final = arrondi_base
+    # for t in range(1,len(horaire)-1):
+    #     if arrondi_base[t-1] < arrondi_base[t] and arrondi_base[t] > arrondi_base[t+1]:
+    #         arrondi_final[t] = repartition_sans_pmin("gain",dictionnaire_valeur,t)        
+    #     elif arrondi_base[t-1] < arrondi_base[t] or arrondi_base[t] > arrondi_base[t+1]:
+    #         arrondi_final[t] = repartition_sans_pmin("sans",dictionnaire_valeur,t)        
+    # return arrondi_final
 
  
 def heuristique_opti_repartition_pmin_indep(
