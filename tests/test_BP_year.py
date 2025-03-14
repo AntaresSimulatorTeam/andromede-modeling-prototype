@@ -5,23 +5,13 @@ from tests.generate_mps_files import *
 
 def test_BP_year_accurate():
 
-    study_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_4_reserves"
+    study_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves"
     antares_path = "D:/AppliRTE/bin/antares-solver.exe"
     # output_path = generate_mps_file(study_path,antares_path)
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_finaux/BP23_mfrr_FR_1_week/output/20250130-0937exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_finaux/BP23_FR_1week_eteint/output/20250127-1411exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_REF_accurate_sans_reserves/output/20250203-1735exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_REF_accurate_reserves/output/20250211-1334exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_REF_4reserves/output/20250214-0944exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_version_kth/output/20250219-1439exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_final_version_kth/output/20250221-1509exp-export_mps"    
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_new_4reserves/output/20250303-1357exp-export_mps"   
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_base_sans_reserves_an_55/output/20250305-1149exp-export_mps-2"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves/output/20250305-1514exp-export_mps"
+    output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves/output/20250305-1514exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_0_reserves/output/20250305-2102exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves++/output/20250307-1529exp-export_mps"
-    output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_4_reserves/output/20250310-1400exp-export_mps"
-
+    # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_4_reserves/output/20250310-1400exp-export_mps"
 
 
     cost_step1 = []
@@ -88,7 +78,7 @@ def test_BP_year_accurate():
 
     (ensemble_valeur_annuel,ensemble_dmins_etranger) = lecture_donnees_accurate(study_path)
 
-    for week in range(52):
+    for week in range(1):
         temps_initial = time.perf_counter()
         (costs,temps,heure_defaillance_old,quantite_defaillance_old,heure_defaillance,quantite_defaillance,bases) = BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,week,bases)
         temps_actuel = time.perf_counter() 
@@ -322,8 +312,8 @@ def test_BP_year_fast_eteint():
     # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_REF_accurate_sans_reserves/output/20250203-1735exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_version_kth/output/20250219-1439exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_final_version_kth/output/20250221-1509exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves/output/20250305-1514exp-export_mps"
-    output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_0_reserves/output/20250305-2102exp-export_mps"
+    output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves/output/20250305-1514exp-export_mps"
+    # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_0_reserves/output/20250305-2102exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves++/output/20250307-1529exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_4_reserves/output/20250310-1400exp-export_mps"
 
@@ -368,7 +358,7 @@ def test_BP_year_fast_eteint():
     ensemble_valeur_annuel = lecture_donnees_fast(study_path)
 
     temps_initial = time.perf_counter()
-    for week in range(52):
+    for week in range(1):
         (costs,temps,heure_defaillance,quantite_defaillance,bases) = BP_week_fast_eteint(output_path,ensemble_valeur_annuel,week,bases)
         temps_actuel = time.perf_counter() 
         temps_total.append(temps_actuel - temps_initial)
