@@ -36,6 +36,7 @@ def test_BP_year_accurate():
     temps_creation_ensemble_semaine_fr = []
     temps_heuristique_arrondi_etranger = []
     temps_heuristique_dmin_etranger = []
+    temps_heuristique_eteint_old = []
     temps_changement_borne_etranger = []
     temps_heuristique_arrondi_fr_old = []
     temps_heuristique_dmin_fr_old = []
@@ -44,6 +45,7 @@ def test_BP_year_accurate():
     temps_heuristique_arrondi_fr_new = []
     temps_heuristique_dmin_fr_new = []
     temps_changement_borne_fr_new = []
+    temps_heuristique_eteint_new = []
     temps_opti2_new = []
     temps_total = []
     heure_defaillance_prod_old = []
@@ -106,12 +108,14 @@ def test_BP_year_accurate():
         temps_changement_borne_etranger.append(temps[9])
         temps_heuristique_arrondi_fr_old.append(temps[10])
         temps_heuristique_dmin_fr_old.append(temps[11])
-        temps_changement_borne_fr_old.append(temps[12])
-        temps_opti2_old.append(temps[13])
-        temps_heuristique_arrondi_fr_new.append(temps[14])
-        temps_heuristique_dmin_fr_new.append(temps[15])
-        temps_changement_borne_fr_new.append(temps[16])
-        temps_opti2_new.append(temps[17])
+        temps_heuristique_eteint_old.append(temps[12])
+        temps_changement_borne_fr_old.append(temps[13])
+        temps_opti2_old.append(temps[14])
+        temps_heuristique_arrondi_fr_new.append(temps[15])
+        temps_heuristique_dmin_fr_new.append(temps[16])
+        temps_heuristique_eteint_new.append(temps[17])
+        temps_changement_borne_fr_new.append(temps[18])
+        temps_opti2_new.append(temps[19])
         heure_defaillance_prod_old.append(heure_defaillance_old[0])
         heure_defaillance_fcr_up_old.append(heure_defaillance_old[1])
         heure_defaillance_fcr_down_old.append(heure_defaillance_old[2])
@@ -165,10 +169,12 @@ def test_BP_year_accurate():
         "temps_heuristique_arrondi_fr_old": temps_heuristique_arrondi_fr_old,
         "temps_heuristique_dmin_fr_old": temps_heuristique_dmin_fr_old,
         "temps_changement_borne_fr_old": temps_changement_borne_fr_old,
+        "temps_heuristique_eteint_old" : temps_heuristique_eteint_old,
         "temps_opti2_old": temps_opti2_old,
         "temps_heuristique_arrondi_fr": temps_heuristique_arrondi_fr_new,
         "temps_heuristique_dmin_fr_new": temps_heuristique_dmin_fr_new,
         "temps_changement_borne_fr_new": temps_changement_borne_fr_new,
+        "temps_heuristique_eteint_new" : temps_heuristique_eteint_new,
         "temps_opti2_new": temps_opti2_new,
         "heure_defaillance_prod_old": heure_defaillance_prod_old,
         "heure_defaillance_fcr_up_old":  heure_defaillance_fcr_up_old,
@@ -311,15 +317,15 @@ def test_BP_year_milp():
 
 def test_BP_year_fast_eteint():
 
-    study_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_4_reserves"
+    study_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_0_reserves"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_finaux/BP23_mfrr_FR_1_week/output/20250130-0937exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_REF_accurate_sans_reserves/output/20250203-1735exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_version_kth/output/20250219-1439exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_definitifs/BP23_final_version_kth/output/20250221-1509exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves/output/20250305-1514exp-export_mps"
-    # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_0_reserves/output/20250305-2102exp-export_mps"
+    output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_0_reserves/output/20250305-2102exp-export_mps"
     # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_3_reserves++/output/20250307-1529exp-export_mps"
-    output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_4_reserves/output/20250310-1400exp-export_mps"
+    # output_path = "C:/Users/sonvicoleo/Documents/Test_RTE/BP23_4_reserves/output/20250310-1400exp-export_mps"
 
     
 
@@ -362,7 +368,7 @@ def test_BP_year_fast_eteint():
     ensemble_valeur_annuel = lecture_donnees_fast(study_path)
 
     temps_initial = time.perf_counter()
-    for week in range(1):
+    for week in range(52):
         (costs,temps,heure_defaillance,quantite_defaillance,bases) = BP_week_fast_eteint(output_path,ensemble_valeur_annuel,week,bases)
         temps_actuel = time.perf_counter() 
         temps_total.append(temps_actuel - temps_initial)

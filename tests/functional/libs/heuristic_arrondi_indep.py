@@ -211,7 +211,7 @@ def determination_generations_indep(
 
         
     
-    solver = lp.Solver.CreateSolver("SCIP")
+    solver = lp.Solver.CreateSolver("XPRESS")
         
     generation_reserve_up_primary = generation_reserve_up_primary_on + generation_reserve_up_primary_off
     generation_reserve_up_secondary = generation_reserve_up_secondary_on + generation_reserve_up_secondary_off
@@ -506,7 +506,7 @@ def arrondi_eteint_indep(
         max_generating = dictionnaire_valeur["max_generating"][t]
         min_generating = dictionnaire_valeur["min_generating"][t]
 
-        solver = pywraplp.Solver.CreateSolver("SAT")
+        solver = pywraplp.Solver.CreateSolver("XPRESS")
 
 
         nbr_off_max = nbr_units_max - nbr_on
@@ -717,7 +717,7 @@ def repartition_indep(
 
 
 
-def arrondi_opti_entier(
+def arrondi_opti_entier_indep(
     version : str,
     dictionnaire_valeur : dict[List[float]],
     t : int,
