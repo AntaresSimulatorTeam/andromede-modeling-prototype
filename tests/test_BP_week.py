@@ -664,7 +664,7 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
 
     var = m.variables()
     contraintes = m.constraints()
-    delete_constraint(contraintes, 168*3, 'POffUnitsLowerBound::area<fr>:')
+    # delete_constraint(contraintes, 168*3, 'POffUnitsLowerBound::area<fr>:')
 
 
     list_cluster_eteint = ["FR_CCGT*new","FR_DSR_industrie","FR_Hard*coal*new","FR_Light*oil"]
@@ -715,7 +715,7 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
     temps_get_bases = time.perf_counter()
 
 
-    (thermal_var_production,thermal_var_nodu,thermal_var_reserves_on,thermal_var_reserves_off) = find_var(var,["DispatchableProduction","NODU","ParticipationOfRunningUnitsToReserve","ParticipationOfOffUnitsToReserve"])
+    (thermal_var_production,thermal_var_nodu,thermal_var_reserves_on,thermal_var_reserves_off,thermal_var_nodu_off) = find_var(var,["DispatchableProduction","NODU","ParticipationOfRunningUnitsToReserve","ParticipationOfOffUnitsToReserve","NumberOfOffUnitsParticipatingToReserve"])
     thermal_var_fcr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="fcr_up"]
     thermal_var_fcr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="fcr_down"]
     thermal_var_afrr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="afrr_up"]
@@ -726,6 +726,8 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
     thermal_var_new_rr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="new_rr_up"]
     thermal_var_new_rr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="new_rr_down"]
     thermal_var_new_rr_up_off=thermal_var_reserves_off.loc[thermal_var_reserves_off["reserve_name"]=="new_rr_up"]
+    thermal_var_nodu_off_mfrr=thermal_var_nodu_off.loc[thermal_var_nodu_off["reserve_name"]=="mfrr_up"]
+    thermal_var_nodu_off_rr=thermal_var_nodu_off.loc[thermal_var_nodu_off["reserve_name"]=="new_rr_up"]
     
     temps_lecture_resultat = time.perf_counter()
 
@@ -743,6 +745,8 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
         ensemble_valeur_semaine[thermal_cluster] = {}
         ensemble_valeur_semaine[thermal_cluster]["energy_generation"] = list(thermal_var_production.loc[thermal_var_production["cluster_name"]==thermal_cluster]["sol"])
         ensemble_valeur_semaine[thermal_cluster]["nb_on"] = list(round(thermal_var_nodu[thermal_var_nodu["cluster_name"]==thermal_cluster]["sol"],6))
+        ensemble_valeur_semaine[thermal_cluster]["nb_off_primary"] = [0] * 168
+        ensemble_valeur_semaine[thermal_cluster]["nb_off_secondary"] = [0] * 168
         ensemble_valeur_semaine[thermal_cluster]["min_generating"] = list(thermal_var_production.loc[thermal_var_production["cluster_name"]==thermal_cluster]["lb"])
         ensemble_valeur_semaine[thermal_cluster]["max_generating"] = list(thermal_var_production.loc[thermal_var_production["cluster_name"]==thermal_cluster]["ub"])
         ensemble_valeur_semaine[thermal_cluster]["nb_units_max_invisible"] = list(thermal_var_nodu.loc[thermal_var_nodu["cluster_name"]==thermal_cluster]["ub"])
@@ -763,44 +767,48 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
         if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_down"][0] != 0:
             ensemble_valeur_semaine[thermal_cluster]["generation_reserve_down_tertiary1"] = list(thermal_var_mfrr_down_on.loc[thermal_var_mfrr_down_on["cluster_name"]==thermal_cluster]["sol"])
         if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_up_off"][0] != 0:
+            ensemble_valeur_semaine[thermal_cluster]["nb_off_tertiary1"] = list(thermal_var_nodu_off_mfrr.loc[thermal_var_nodu_off_mfrr["cluster_name"]==thermal_cluster]["sol"])
             ensemble_valeur_semaine[thermal_cluster]["generation_reserve_up_tertiary1_off"] = list(thermal_var_mfrr_up_off.loc[thermal_var_mfrr_up_off["cluster_name"]==thermal_cluster]["sol"])
+        else:
+            ensemble_valeur_semaine[thermal_cluster]["nb_off_tertiary1"] = [0] * 168
 
         if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_on"][0] != 0:
             ensemble_valeur_semaine[thermal_cluster]["generation_reserve_up_tertiary2_on"] = list(thermal_var_new_rr_up_on.loc[thermal_var_new_rr_up_on["cluster_name"]==thermal_cluster]["sol"])
         if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_down"][0] != 0:
             ensemble_valeur_semaine[thermal_cluster]["generation_reserve_down_tertiary2"] = list(thermal_var_new_rr_down_on.loc[thermal_var_new_rr_down_on["cluster_name"]==thermal_cluster]["sol"])
         if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_off"][0] != 0:
+            ensemble_valeur_semaine[thermal_cluster]["nb_off_tertiary2"] = list(thermal_var_nodu_off_rr.loc[thermal_var_nodu_off_rr["cluster_name"]==thermal_cluster]["sol"])
             ensemble_valeur_semaine[thermal_cluster]["generation_reserve_up_tertiary2_off"] = list(thermal_var_new_rr_up_off.loc[thermal_var_new_rr_up_off["cluster_name"]==thermal_cluster]["sol"])
-
+        else:
+            ensemble_valeur_semaine[thermal_cluster]["nb_off_tertiary2"] = [0] * 168
         
 
 
     temps_ensemble_valeur_semaine_fr = time.perf_counter()
 
-    for thermal_cluster in list_cluster_fr: 
-        ensemble_valeur = ensemble_valeur_annuel[thermal_cluster] | ensemble_valeur_semaine[thermal_cluster]
-        de_accurate_base = pd.DataFrame(data = {
-                                                "energy_generation":ensemble_valeur["energy_generation"],
-                                                "nodu":ensemble_valeur["nb_on"],
-                                                "generation_reserve_up_primary_on":ensemble_valeur["generation_reserve_up_primary_on"],
-                                                "generation_reserve_down_primary":ensemble_valeur["generation_reserve_down_primary"],
-                                                "generation_reserve_up_secondary_on":ensemble_valeur["generation_reserve_up_secondary_on"],
-                                                "generation_reserve_down_secondary":ensemble_valeur["generation_reserve_down_secondary"],
-                                                "generation_reserve_up_tertiary1_on":ensemble_valeur["generation_reserve_up_tertiary1_on"],
-                                                "generation_reserve_down_tertiary1":ensemble_valeur["generation_reserve_down_tertiary1"],
-                                                "generation_reserve_up_tertiary1_off":ensemble_valeur["generation_reserve_up_tertiary1_off"],
-                                                "generation_reserve_up_tertiary2_on":ensemble_valeur["generation_reserve_up_tertiary2_on"],
-                                                "generation_reserve_down_tertiary2":ensemble_valeur["generation_reserve_down_tertiary2"],
-                                                "generation_reserve_up_tertiary2_off":ensemble_valeur["generation_reserve_up_tertiary2_off"]
-                                                })
-        de_accurate_base.to_csv("result_step1_" + thermal_cluster.replace("*","_") + ".csv",index=False)
+    # for thermal_cluster in list_cluster_fr: 
+    #     ensemble_valeur = ensemble_valeur_annuel[thermal_cluster] | ensemble_valeur_semaine[thermal_cluster]
+    #     de_accurate_base = pd.DataFrame(data = {
+    #                                             "energy_generation":ensemble_valeur["energy_generation"],
+    #                                             "nodu":ensemble_valeur["nb_on"],
+    #                                             "generation_reserve_up_primary_on":ensemble_valeur["generation_reserve_up_primary_on"],
+    #                                             "generation_reserve_down_primary":ensemble_valeur["generation_reserve_down_primary"],
+    #                                             "generation_reserve_up_secondary_on":ensemble_valeur["generation_reserve_up_secondary_on"],
+    #                                             "generation_reserve_down_secondary":ensemble_valeur["generation_reserve_down_secondary"],
+    #                                             "generation_reserve_up_tertiary1_on":ensemble_valeur["generation_reserve_up_tertiary1_on"],
+    #                                             "generation_reserve_down_tertiary1":ensemble_valeur["generation_reserve_down_tertiary1"],
+    #                                             "generation_reserve_up_tertiary1_off":ensemble_valeur["generation_reserve_up_tertiary1_off"],
+    #                                             "generation_reserve_up_tertiary2_on":ensemble_valeur["generation_reserve_up_tertiary2_on"],
+    #                                             "generation_reserve_down_tertiary2":ensemble_valeur["generation_reserve_down_tertiary2"],
+    #                                             "generation_reserve_up_tertiary2_off":ensemble_valeur["generation_reserve_up_tertiary2_off"]
+    #                                             })
+    #     de_accurate_base.to_csv("result_step1_" + thermal_cluster.replace("*","_") + ".csv",index=False)
 
     
 
-
-
     nbr_heuristique = {}
     nbr_on_final = {}
+    nbr_off_final = {}
 
 
     for thermal_cluster in list_thermal_clusters:
@@ -859,6 +867,27 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
 
     temps_heuristique_dmin_fr_old = time.perf_counter()
 
+    for thermal_cluster in list_cluster_fr:
+        ensemble_valeurs = ensemble_valeur_annuel[thermal_cluster] | ensemble_valeur_semaine[thermal_cluster]
+        
+        nbr_off_final[thermal_cluster] = heuristique_eteint_mutualise(
+            [t for t in range(168)],
+            ensemble_valeurs,
+            nbr_on_final[thermal_cluster],
+            "quantite", # option
+            " ", # bonus
+            )
+        
+        id_var = thermal_var_nodu_off_mfrr.loc[thermal_var_nodu_off_mfrr["cluster_name"]==thermal_cluster,"id_var"]
+        for hour, id in enumerate(id_var):
+            change_lower_bound(var,id,nbr_off_final[thermal_cluster][hour][0])
+            change_upper_bound(var,id,nbr_off_final[thermal_cluster][hour][0])
+        id_var = thermal_var_nodu_off_rr.loc[thermal_var_nodu_off_rr["cluster_name"]==thermal_cluster,"id_var"]
+        for hour, id in enumerate(id_var):
+            change_lower_bound(var,id,nbr_off_final[thermal_cluster][hour][1])
+            change_upper_bound(var,id,nbr_off_final[thermal_cluster][hour][1])
+
+    temps_heuristique_eteint_old = time.perf_counter()
 
     for thermal_cluster in list_cluster_fr:
         id_var = thermal_var_nodu.loc[thermal_var_nodu["cluster_name"]==thermal_cluster,"id_var"]
@@ -871,7 +900,8 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
     # de_accurate_heuristique = pd.DataFrame(data = nbr_heuristique)
     # de_accurate_heuristique.to_csv("result_mps_heuristique_old.csv",index=False)
 
-
+    de_accurate_heuristique = pd.DataFrame(data = nbr_off_final)
+    de_accurate_heuristique.to_csv("result_nbr_off_old.csv",index=False)
 
     solve_complete_problem(m)
  
@@ -940,12 +970,12 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
     for thermal_cluster in list_cluster_fr:
         ensemble_valeurs = ensemble_valeur_annuel[thermal_cluster] | ensemble_valeur_semaine[thermal_cluster]
 
-        heuristique_resultat = heuristique_opti_repartition_sans_pmin(
+        heuristique_resultat = heuristique_opti_repartition_mutualise(
             [t for t in range(168)],
             ensemble_valeurs,
             "choix",    # version
-            # "choix", # option
-            # "réduction", # bonus
+            "quantite", # option
+            " ", # bonus
             )
         
         nbr_heuristique[thermal_cluster] = []
@@ -963,6 +993,27 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
 
     temps_heuristique_dmin_fr_new = time.perf_counter()
 
+    for thermal_cluster in list_cluster_fr:
+        ensemble_valeurs = ensemble_valeur_annuel[thermal_cluster] | ensemble_valeur_semaine[thermal_cluster]
+        
+        nbr_off_final[thermal_cluster] = heuristique_eteint_mutualise(
+            [t for t in range(168)],
+            ensemble_valeurs,
+            nbr_on_final[thermal_cluster],
+            "quantite", # option
+            " ", # bonus
+            )
+        
+        id_var = thermal_var_nodu_off_mfrr.loc[thermal_var_nodu_off_mfrr["cluster_name"]==thermal_cluster,"id_var"]
+        for hour, id in enumerate(id_var):
+            change_lower_bound(var,id,nbr_off_final[thermal_cluster][hour][0])
+            change_upper_bound(var,id,nbr_off_final[thermal_cluster][hour][0])
+        id_var = thermal_var_nodu_off_rr.loc[thermal_var_nodu_off_rr["cluster_name"]==thermal_cluster,"id_var"]
+        for hour, id in enumerate(id_var):
+            change_lower_bound(var,id,nbr_off_final[thermal_cluster][hour][1])
+            change_upper_bound(var,id,nbr_off_final[thermal_cluster][hour][1])
+
+    temps_heuristique_eteint_new = time.perf_counter()
 
     for thermal_cluster in list_cluster_fr:
         id_var = thermal_var_nodu.loc[thermal_var_nodu["cluster_name"]==thermal_cluster,"id_var"]
@@ -975,6 +1026,8 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
     # de_accurate_heuristique = pd.DataFrame(data = nbr_heuristique)
     # de_accurate_heuristique.to_csv("result_mps_heuristique_new.csv",index=False)
 
+    de_accurate_heuristique = pd.DataFrame(data = nbr_off_final)
+    de_accurate_heuristique.to_csv("result_nbr_off_new.csv",index=False)
 
 
     solve_complete_problem(m)
@@ -1047,73 +1100,75 @@ def BP_week_accurate(output_path,ensemble_valeur_annuel,ensemble_dmins_etranger,
              temps_changement_borne_etranger-temps_heuristique_dmin_etranger,
              temps_heuristique_arrondi_fr_old -temps_changement_borne_etranger,
              temps_heuristique_dmin_fr_old - temps_heuristique_arrondi_fr_old,
-             temps_changement_borne_fr_old - temps_heuristique_dmin_fr_old,
+             temps_heuristique_eteint_old - temps_heuristique_dmin_fr_old,
+             temps_changement_borne_fr_old - temps_heuristique_eteint_old,
              temps_post_opti2_old-temps_changement_borne_fr_old,
              temps_heuristique_arrondi_fr_new -temps_post_defaillace_old,
              temps_heuristique_dmin_fr_new - temps_heuristique_arrondi_fr_new,
-             temps_changement_borne_fr_new-temps_heuristique_dmin_fr_new,
+             temps_heuristique_eteint_new-temps_heuristique_dmin_fr_new,
+             temps_changement_borne_fr_new-temps_heuristique_eteint_new,
              temps_post_opti2_new-temps_changement_borne_fr_new
              ]
     
     
-    (thermal_var_production,thermal_var_nodu,thermal_var_reserves_on,thermal_var_reserves_off) = find_var(var,["DispatchableProduction","NODU","ParticipationOfRunningUnitsToReserve","ParticipationOfOffUnitsToReserve"])
-    thermal_var_fcr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="fcr_up"]
-    thermal_var_fcr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="fcr_down"]
-    thermal_var_afrr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="afrr_up"]
-    thermal_var_afrr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="afrr_down"]
-    thermal_var_mfrr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="mfrr_up"]
-    thermal_var_mfrr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="mfrr_down"]
-    thermal_var_mfrr_up_off=thermal_var_reserves_off.loc[thermal_var_reserves_off["reserve_name"]=="mfrr_up"]
-    thermal_var_new_rr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="new_rr_up"]
-    thermal_var_new_rr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="new_rr_down"]
-    thermal_var_new_rr_up_off=thermal_var_reserves_off.loc[thermal_var_reserves_off["reserve_name"]=="new_rr_up"]
+    # (thermal_var_production,thermal_var_nodu,thermal_var_reserves_on,thermal_var_reserves_off) = find_var(var,["DispatchableProduction","NODU","ParticipationOfRunningUnitsToReserve","ParticipationOfOffUnitsToReserve"])
+    # thermal_var_fcr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="fcr_up"]
+    # thermal_var_fcr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="fcr_down"]
+    # thermal_var_afrr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="afrr_up"]
+    # thermal_var_afrr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="afrr_down"]
+    # thermal_var_mfrr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="mfrr_up"]
+    # thermal_var_mfrr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="mfrr_down"]
+    # thermal_var_mfrr_up_off=thermal_var_reserves_off.loc[thermal_var_reserves_off["reserve_name"]=="mfrr_up"]
+    # thermal_var_new_rr_up_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="new_rr_up"]
+    # thermal_var_new_rr_down_on=thermal_var_reserves_on.loc[thermal_var_reserves_on["reserve_name"]=="new_rr_down"]
+    # thermal_var_new_rr_up_off=thermal_var_reserves_off.loc[thermal_var_reserves_off["reserve_name"]=="new_rr_up"]
 
-    ensemble_valeur = {}
-    for thermal_cluster in list_cluster_fr:
-        ensemble_valeurs[thermal_cluster] = ensemble_valeur_annuel[thermal_cluster] | ensemble_valeur_semaine[thermal_cluster]
-        ensemble_valeurs[thermal_cluster]["energy_generation"] = list(thermal_var_production.loc[thermal_var_production["cluster_name"]==thermal_cluster]["sol"])
-        ensemble_valeurs[thermal_cluster]["nb_on"] = list(thermal_var_nodu[thermal_var_nodu["cluster_name"]==thermal_cluster]["sol"])
+    # ensemble_valeur = {}
+    # for thermal_cluster in list_cluster_fr:
+    #     ensemble_valeurs[thermal_cluster] = ensemble_valeur_annuel[thermal_cluster] | ensemble_valeur_semaine[thermal_cluster]
+    #     ensemble_valeurs[thermal_cluster]["energy_generation"] = list(thermal_var_production.loc[thermal_var_production["cluster_name"]==thermal_cluster]["sol"])
+    #     ensemble_valeurs[thermal_cluster]["nb_on"] = list(thermal_var_nodu[thermal_var_nodu["cluster_name"]==thermal_cluster]["sol"])
         
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_primary_reserve_up_on"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_up_primary_on"] = list(thermal_var_fcr_up_on.loc[thermal_var_fcr_up_on["cluster_name"]==thermal_cluster]["sol"])
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_primary_reserve_down"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_down_primary"] = list(thermal_var_fcr_down_on.loc[thermal_var_fcr_down_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_primary_reserve_up_on"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_up_primary_on"] = list(thermal_var_fcr_up_on.loc[thermal_var_fcr_up_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_primary_reserve_down"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_down_primary"] = list(thermal_var_fcr_down_on.loc[thermal_var_fcr_down_on["cluster_name"]==thermal_cluster]["sol"])
 
 
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_secondary_reserve_up_on"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_up_secondary_on"] = list(thermal_var_afrr_up_on.loc[thermal_var_afrr_up_on["cluster_name"]==thermal_cluster]["sol"])
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_secondary_reserve_down"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_down_secondary"] = list(thermal_var_afrr_down_on.loc[thermal_var_afrr_down_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_secondary_reserve_up_on"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_up_secondary_on"] = list(thermal_var_afrr_up_on.loc[thermal_var_afrr_up_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_secondary_reserve_down"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_down_secondary"] = list(thermal_var_afrr_down_on.loc[thermal_var_afrr_down_on["cluster_name"]==thermal_cluster]["sol"])
 
 
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_up_on"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_on"] = list(thermal_var_mfrr_up_on.loc[thermal_var_mfrr_up_on["cluster_name"]==thermal_cluster]["sol"])
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_down"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary1"] = list(thermal_var_mfrr_down_on.loc[thermal_var_mfrr_down_on["cluster_name"]==thermal_cluster]["sol"])
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_up_off"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_off"] = list(thermal_var_mfrr_up_off.loc[thermal_var_mfrr_up_off["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_up_on"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_on"] = list(thermal_var_mfrr_up_on.loc[thermal_var_mfrr_up_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_down"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary1"] = list(thermal_var_mfrr_down_on.loc[thermal_var_mfrr_down_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_up_off"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_off"] = list(thermal_var_mfrr_up_off.loc[thermal_var_mfrr_up_off["cluster_name"]==thermal_cluster]["sol"])
 
 
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_on"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_on"] = list(thermal_var_new_rr_up_on.loc[thermal_var_new_rr_up_on["cluster_name"]==thermal_cluster]["sol"])
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_down"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary2"] = list(thermal_var_new_rr_down_on.loc[thermal_var_new_rr_down_on["cluster_name"]==thermal_cluster]["sol"])
-        if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_off"][0] != 0:
-            ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_off"] = list(thermal_var_new_rr_up_off.loc[thermal_var_new_rr_up_off["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_on"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_on"] = list(thermal_var_new_rr_up_on.loc[thermal_var_new_rr_up_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_down"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary2"] = list(thermal_var_new_rr_down_on.loc[thermal_var_new_rr_down_on["cluster_name"]==thermal_cluster]["sol"])
+    #     if ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_off"][0] != 0:
+    #         ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_off"] = list(thermal_var_new_rr_up_off.loc[thermal_var_new_rr_up_off["cluster_name"]==thermal_cluster]["sol"])
 
-        de_accurate_peak = pd.DataFrame(data = {"energy_generation":ensemble_valeurs[thermal_cluster]["energy_generation"],
-                                                "nodu":ensemble_valeurs[thermal_cluster]["nb_on"],
-                                                "generation_reserve_up_primary_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_primary_on"],
-                                                "generation_reserve_down_primary":ensemble_valeurs[thermal_cluster]["generation_reserve_down_primary"],
-                                                "generation_reserve_up_secondary_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_secondary_on"],
-                                                "generation_reserve_down_secondary":ensemble_valeurs[thermal_cluster]["generation_reserve_down_secondary"],
-                                                "generation_reserve_up_tertiary1_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_on"],
-                                                "generation_reserve_down_tertiary1":ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary1"],
-                                                "generation_reserve_up_tertiary1_off":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_off"],
-                                                "generation_reserve_up_tertiary2_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_on"],
-                                                "generation_reserve_down_tertiary2":ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary2"],
-                                                "generation_reserve_up_tertiary2_off":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_off"]})
-        de_accurate_peak.to_csv("result_step2" + thermal_cluster.replace("*","_") + ".csv",index=False)
+    #     de_accurate_peak = pd.DataFrame(data = {"energy_generation":ensemble_valeurs[thermal_cluster]["energy_generation"],
+    #                                             "nodu":ensemble_valeurs[thermal_cluster]["nb_on"],
+    #                                             "generation_reserve_up_primary_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_primary_on"],
+    #                                             "generation_reserve_down_primary":ensemble_valeurs[thermal_cluster]["generation_reserve_down_primary"],
+    #                                             "generation_reserve_up_secondary_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_secondary_on"],
+    #                                             "generation_reserve_down_secondary":ensemble_valeurs[thermal_cluster]["generation_reserve_down_secondary"],
+    #                                             "generation_reserve_up_tertiary1_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_on"],
+    #                                             "generation_reserve_down_tertiary1":ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary1"],
+    #                                             "generation_reserve_up_tertiary1_off":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary1_off"],
+    #                                             "generation_reserve_up_tertiary2_on":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_on"],
+    #                                             "generation_reserve_down_tertiary2":ensemble_valeurs[thermal_cluster]["generation_reserve_down_tertiary2"],
+    #                                             "generation_reserve_up_tertiary2_off":ensemble_valeurs[thermal_cluster]["generation_reserve_up_tertiary2_off"]})
+    #     de_accurate_peak.to_csv("result_step2" + thermal_cluster.replace("*","_") + ".csv",index=False)
 
     return (cost,temps,heure_defaillance_old,quantite_defaillance_old,heure_defaillance,quantite_defaillance,bases)
 
@@ -1135,7 +1190,7 @@ def BP_week_milp(output_path,week):
 
     contraintes = m.constraints()
     var = m.variables()
-    # delete_constraint(contraintes, 168*3, 'POffUnitsLowerBound::area<fr>:')
+    delete_constraint(contraintes, 168*3, 'POffUnitsLowerBound::area<fr>:')
 
     list_cluster_eteint = ["FR_CCGT*new","FR_DSR_industrie","FR_Hard*coal*new","FR_Light*oil"]
     list_pmax_eteint = [452,36,586.7,135.8]
@@ -1168,16 +1223,16 @@ def BP_week_milp(output_path,week):
 
     milp_version(m)
 
-    interger_vars = [
-        i
-        for i in range(len(var))
-        if var[i].name().strip().split("::")[0]
-        in [
-            "NumberOfOffUnitsParticipatingToReserve",
-        ]
-    ]
-    for i in interger_vars:
-        var[i].SetInteger(True)
+    # interger_vars = [
+    #     i
+    #     for i in range(len(var))
+    #     if var[i].name().strip().split("::")[0]
+    #     in [
+    #         "NumberOfOffUnitsParticipatingToReserve",
+    #     ]
+    # ]
+    # for i in interger_vars:
+    #     var[i].SetInteger(True)
 
 
     # lp_format = m.ExportModelAsLpFormat(False)
@@ -1355,7 +1410,7 @@ def BP_week_fast_eteint(output_path,ensemble_valeur_annuel,week,bases):
             list_cluster_fr.append(thermal_cluster)
 
 
-    delete_constraint(contraintes, 168*3, 'POffUnitsLowerBound::area<fr>:')  #il y a 3 clusters avec de l'éteint
+    # delete_constraint(contraintes, 168*3, 'POffUnitsLowerBound::area<fr>:')  #il y a 3 clusters avec de l'éteint
     
     delete_variable(var,m,168*nbr_thermal_clusters,'NumberStartingDispatchableUnits::area<')
     delete_variable(var,m,168*nbr_thermal_clusters,'NumberStoppingDispatchableUnits::area<')
@@ -1368,31 +1423,31 @@ def BP_week_fast_eteint(output_path,ensemble_valeur_annuel,week,bases):
     delete_constraint(contraintes,168*nbr_thermal_clusters,'PMaxDispatchableGeneration::area<')
     delete_constraint(contraintes,168*nbr_thermal_clusters,'PMinDispatchableGeneration::area<')
 
-    list_cluster_eteint = ["FR_CCGT*new","FR_DSR_industrie","FR_Hard*coal*new","FR_Light*oil"]
-    list_pmax_eteint = [452,36,586.7,135.8]
-    for i in range(4):
-        cluster = list_cluster_eteint[i]
-        pmax = list_pmax_eteint[i]
-        nom_poff_mfrr= "ParticipationOfOffUnitsToReserve::area<fr>::ThermalCluster<" + cluster + ">::Reserve<mfrr_up>::hour<"
-        list_poff_mfrr = [ var[c] for c in range(len(var)) if nom_poff_mfrr in var[c].name()]
-        nom_poff_rr= "ParticipationOfOffUnitsToReserve::area<fr>::ThermalCluster<" + cluster + ">::Reserve<new_rr_up>::hour<"
-        list_poff_rr = [ var[c] for c in range(len(var)) if nom_poff_rr in var[c].name()]
-        nom_nodu= "NODU::area<fr>::ThermalCluster<" + cluster + ">::hour<"
-        list_nodu = [ var[c] for c in range(len(var)) if nom_nodu in var[c].name()]
-        for t in range(168):
-            poff_mfrr = list_poff_mfrr[t]
-            poff_rr = list_poff_rr[t]
-            nodu = list_nodu[t]
-            mbarre = nodu.ub()
-            borne = pmax * mbarre
-            nom_contrainte = "NouvelleContrainteEteinte::area<fr>::ThermalCluster<" + cluster + ">::hour<" + str(t) + ">"
-            m.Add(
-                    poff_mfrr
-                    + poff_rr
-                    + pmax * nodu
-                    <= borne,
-                    name=nom_contrainte,
-                )
+    # list_cluster_eteint = ["FR_CCGT*new","FR_DSR_industrie","FR_Hard*coal*new","FR_Light*oil"]
+    # list_pmax_eteint = [452,36,586.7,135.8]
+    # for i in range(4):
+    #     cluster = list_cluster_eteint[i]
+    #     pmax = list_pmax_eteint[i]
+    #     nom_poff_mfrr= "ParticipationOfOffUnitsToReserve::area<fr>::ThermalCluster<" + cluster + ">::Reserve<mfrr_up>::hour<"
+    #     list_poff_mfrr = [ var[c] for c in range(len(var)) if nom_poff_mfrr in var[c].name()]
+    #     nom_poff_rr= "ParticipationOfOffUnitsToReserve::area<fr>::ThermalCluster<" + cluster + ">::Reserve<new_rr_up>::hour<"
+    #     list_poff_rr = [ var[c] for c in range(len(var)) if nom_poff_rr in var[c].name()]
+    #     nom_nodu= "NODU::area<fr>::ThermalCluster<" + cluster + ">::hour<"
+    #     list_nodu = [ var[c] for c in range(len(var)) if nom_nodu in var[c].name()]
+    #     for t in range(168):
+    #         poff_mfrr = list_poff_mfrr[t]
+    #         poff_rr = list_poff_rr[t]
+    #         nodu = list_nodu[t]
+    #         mbarre = nodu.ub()
+    #         borne = pmax * mbarre
+    #         nom_contrainte = "NouvelleContrainteEteinte::area<fr>::ThermalCluster<" + cluster + ">::hour<" + str(t) + ">"
+    #         m.Add(
+    #                 poff_mfrr
+    #                 + poff_rr
+    #                 + pmax * nodu
+    #                 <= borne,
+    #                 name=nom_contrainte,
+    #             )
 
     # list_cluster_fr_reserve = []
     # nbr_reserve_x_cluster = 0
@@ -1418,9 +1473,9 @@ def BP_week_fast_eteint(output_path,ensemble_valeur_annuel,week,bases):
     temps_conversion_fast = time.perf_counter()
 
 
-    lp_format = m.ExportModelAsLpFormat(False)
-    with open("model_fast_sans_pmin.lp","w") as file:
-        file.write(lp_format)    
+    # lp_format = m.ExportModelAsLpFormat(False)
+    # with open("model_fast_sans_pmin.lp","w") as file:
+    #     file.write(lp_format)    
 
     # if bases != None:
     #     load_basis(m,bases)
@@ -1601,28 +1656,28 @@ def BP_week_fast_eteint(output_path,ensemble_valeur_annuel,week,bases):
             if puissance_maximale[hour] != ensemble_valeur_semaine[thermal_cluster]["max_generating"][hour]:
                 change_upper_bound(var,id,puissance_maximale[hour])
         
-        nbr_off_float = [[ensemble_valeur_semaine[thermal_cluster]["nb_off_mfrr"][t],ensemble_valeur_semaine[thermal_cluster]["nb_off_rr"][t]] for t in range(168)]
-        nbr_off[thermal_cluster] = []
-        for t in range(168):
-            nbr_on = nbr_on_final[thermal_cluster][t]
-            nbr_units_max = ensemble_valeur_semaine[thermal_cluster]["nb_units_max"][t]
-            nbr_off_t = [min(ceil(round(nbr_off_float[t][0],12)),nbr_units_max-nbr_on),min(ceil(round(nbr_off_float[t][1],12)),nbr_units_max-nbr_on)]
-            p_min = ensemble_valeur_annuel[thermal_cluster]["p_min"]
-            p_max = ensemble_valeur_annuel[thermal_cluster]["p_max"]
-            participation_max_off = [ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_up_off"],ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_off"]]
-            while sum(nbr_off_t) * p_min > p_max * (nbr_units_max - nbr_on):
-                    premier_indice_non_nulle = 0
-                    while nbr_off_t[premier_indice_non_nulle] == 0 :
-                        premier_indice_non_nulle += 1
-                    quantite_mini = participation_max_off[premier_indice_non_nulle] * min(nbr_off_float[premier_indice_non_nulle]-(nbr_off_t[premier_indice_non_nulle]-1),nbr_off_t[premier_indice_non_nulle])
-                    indice_mini = premier_indice_non_nulle
-                    for i in range(premier_indice_non_nulle+1,len(nbr_off_t)):
-                        quantite = participation_max_off[i] * min(nbr_off_float[i]-(nbr_off_t[i]-1),nbr_off_t[i])
-                        if (nbr_off_t[i] != 0) and (quantite <= quantite_mini):
-                            indice_mini = i
-                            quantite_mini = quantite
-                    nbr_off_t[indice_mini] -= 1
-            nbr_off[thermal_cluster].append(nbr_off_t) 
+        # nbr_off_float = [[ensemble_valeur_semaine[thermal_cluster]["nb_off_mfrr"][t],ensemble_valeur_semaine[thermal_cluster]["nb_off_rr"][t]] for t in range(168)]
+        # nbr_off[thermal_cluster] = []
+        # for t in range(168):
+        #     nbr_on = nbr_on_final[thermal_cluster][t]
+        #     nbr_units_max = ensemble_valeur_semaine[thermal_cluster]["nb_units_max"][t]
+        #     nbr_off_t = [min(ceil(round(nbr_off_float[t][0],12)),nbr_units_max-nbr_on),min(ceil(round(nbr_off_float[t][1],12)),nbr_units_max-nbr_on)]
+        #     p_min = ensemble_valeur_annuel[thermal_cluster]["p_min"]
+        #     p_max = ensemble_valeur_annuel[thermal_cluster]["p_max"]
+        #     participation_max_off = [ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary1_reserve_up_off"],ensemble_valeur_annuel[thermal_cluster]["participation_max_tertiary2_reserve_up_off"]]
+        #     while sum(nbr_off_t) * p_min > p_max * (nbr_units_max - nbr_on):
+        #             premier_indice_non_nulle = 0
+        #             while nbr_off_t[premier_indice_non_nulle] == 0 :
+        #                 premier_indice_non_nulle += 1
+        #             quantite_mini = participation_max_off[premier_indice_non_nulle] * min(nbr_off_float[premier_indice_non_nulle]-(nbr_off_t[premier_indice_non_nulle]-1),nbr_off_t[premier_indice_non_nulle])
+        #             indice_mini = premier_indice_non_nulle
+        #             for i in range(premier_indice_non_nulle+1,len(nbr_off_t)):
+        #                 quantite = participation_max_off[i] * min(nbr_off_float[i]-(nbr_off_t[i]-1),nbr_off_t[i])
+        #                 if (nbr_off_t[i] != 0) and (quantite <= quantite_mini):
+        #                     indice_mini = i
+        #                     quantite_mini = quantite
+        #             nbr_off_t[indice_mini] -= 1
+        #     nbr_off[thermal_cluster].append(nbr_off_t) 
 
         # id_var = thermal_var_nodu_off_mfrr.loc[thermal_var_nodu_off_mfrr["cluster_name"]==thermal_cluster,"id_var"]
         # for hour, id in enumerate(id_var):
@@ -1642,9 +1697,9 @@ def BP_week_fast_eteint(output_path,ensemble_valeur_annuel,week,bases):
 
     temps_changement_borne = time.perf_counter()
 
-    lp_format = m.ExportModelAsLpFormat(False)
-    with open("model_fast_2_sans_pmin.lp","w") as file:
-        file.write(lp_format)
+    # lp_format = m.ExportModelAsLpFormat(False)
+    # with open("model_fast_2_sans_pmin.lp","w") as file:
+    #     file.write(lp_format)
 
 
     solve_complete_problem(m)
