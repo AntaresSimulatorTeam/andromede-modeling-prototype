@@ -1,0 +1,260 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+study:
+  nodes:
+    - id: N
+      model: NODE_MODEL
+      parameters:
+      - name: spillage_cost
+        type: constant
+        value: 0
+      - name: ens_cost
+        type: constant
+        value: 100
+      - name: primary_reserve_up_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: primary_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: secondary_reserve_up_not_supplied_cost
+        type: constant
+        value: 1200
+      - name: secondary_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary1_reserve_up_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary1_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary2_reserve_up_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: tertiary2_reserve_down_not_supplied_cost
+        type: constant
+        value: 1000
+      - name: primary_reserve_up_oversupplied_cost
+        type: constant
+        value: 0
+      - name: primary_reserve_down_oversupplied_cost
+        type: constant
+        value: 0
+      - name: secondary_reserve_up_oversupplied_cost
+        type: constant
+        value: 0
+      - name: secondary_reserve_down_oversupplied_cost
+        type: constant
+        value: 0
+      - name: tertiary1_reserve_up_oversupplied_cost
+        type: constant
+        value: 0
+      - name: tertiary1_reserve_down_oversupplied_cost
+        type: constant
+        value: 0
+      - name: tertiary2_reserve_up_oversupplied_cost
+        type: constant
+        value: 0
+      - name: tertiary2_reserve_down_oversupplied_cost
+        type: constant
+        value: 0
+
+  components:
+    - id: D
+      model: DEMAND_MODEL
+      parameters:
+        - name: demand_energy
+          type: timeseries
+          timeseries: demand_energy-ts
+        - name: demand_primary_reserve_up
+          type: timeseries
+          timeseries: demand_primary_reserve_up-ts
+        - name: demand_primary_reserve_down
+          type: timeseries
+          timeseries: demand_primary_reserve_down-ts
+        - name: demand_secondary_reserve_up
+          type: timeseries
+          timeseries: demand_secondary_reserve_up-ts
+        - name: demand_secondary_reserve_down
+          type: constant
+          value: 0
+        - name: demand_tertiary1_reserve_up
+          type: constant
+          value: 0
+        - name: demand_tertiary1_reserve_down
+          type: constant
+          value: 0
+        - name: demand_tertiary2_reserve_up
+          type: constant
+          value: 0
+        - name: demand_tertiary2_reserve_down
+          type: constant
+          value: 0
+
+    - id: G
+      model: GEN
+      parameters:
+        - name: p_max
+          type: constant
+          value: 100
+        - name: p_min
+          type: constant
+          value: 80
+        - name: cost
+          type: constant
+          value: 35
+        - name: startup_cost
+          type: constant
+          value: 100
+        - name: fixed_cost
+          type: constant
+          value: 1000
+        - name: d_min_up
+          type: constant
+          value: 3
+        - name: d_min_down
+          type: constant
+          value: 3
+        - name: nb_units_min
+          type: constant
+          value: 0
+        - name: nb_units_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_max_invisible
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_primary_min
+          type: constant
+          value: 0
+        - name: nb_units_off_primary_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_secondary_min
+          type: constant
+          value: 0
+        - name: nb_units_off_secondary_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary1_min
+          type: constant
+          value: 0
+        - name: nb_units_off_tertiary1_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: nb_units_off_tertiary2_min
+          type: constant
+          value: 0
+        - name: nb_units_off_tertiary2_max
+          type: timeseries
+          timeseries: nb_units_max-ts
+        - name: max_failure
+          type: constant
+          value: 0
+        - name: min_generating
+          type: constant
+          value: 0
+        - name: max_generating
+          type: constant
+          value: 8000
+        - name: nb_units_max_min_down_time
+          type: constant
+          value: 8
+        - name: participation_max_primary_reserve_up_on
+          type: constant
+          value: 27
+        - name: participation_max_primary_reserve_up_off
+          type: constant
+          value: 90
+        - name: participation_max_primary_reserve_down
+          type: constant
+          value: 27
+        - name: participation_max_secondary_reserve_up_on
+          type: constant
+          value: 27
+        - name: participation_max_secondary_reserve_up_off
+          type: constant
+          value: 95
+        - name: participation_max_secondary_reserve_down
+          type: constant
+          value: 27
+        - name: participation_max_tertiary1_reserve_up_on
+          type: constant
+          value: 27
+        - name: participation_max_tertiary1_reserve_up_off
+          type: constant
+          value: 0
+        - name: participation_max_tertiary1_reserve_down
+          type: constant
+          value: 27
+        - name: participation_max_tertiary2_reserve_up_on
+          type: constant
+          value: 27
+        - name: participation_max_tertiary2_reserve_up_off
+          type: constant
+          value: 0
+        - name: participation_max_tertiary2_reserve_down
+          type: constant
+          value: 27
+        - name : cost_participation_primary_reserve_up_on
+          type : constant
+          value : 1
+        - name : cost_participation_primary_reserve_up_off
+          type : constant
+          value : 2
+        - name : cost_participation_primary_reserve_down
+          type : constant
+          value : 1
+        - name : cost_participation_secondary_reserve_up_on
+          type : constant
+          value : 2.1
+        - name : cost_participation_secondary_reserve_up_off
+          type : constant
+          value : 3
+        - name : cost_participation_secondary_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_up_on
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_up_off
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary1_reserve_down
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_up_on
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_up_off
+          type : constant
+          value : 0
+        - name : cost_participation_tertiary2_reserve_down
+          type : constant
+          value : 0
+
+  connections:
+      - component1: N
+        port_1: balance_port
+        component2: D
+        port_2: balance_port
+
+      - component1: N
+        port_1: balance_port
+        component2: G
+        port_2: balance_port
+
+
+
+
+

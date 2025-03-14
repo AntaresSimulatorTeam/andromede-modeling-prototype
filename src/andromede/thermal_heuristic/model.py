@@ -152,7 +152,11 @@ class FastModelBuilder(ModelEditor):
 class HeuristicAccurateModelBuilder(ModelEditor):
     def __init__(self, initial_model: Model) -> None:
         super().__init__(initial_model)
-        generation_variable = ["generation"]
+        generation_variable = ["energy_generation","generation_reserve_up_primary_on","generation_reserve_up_primary_off",
+                     "generation_reserve_down_primary","generation_reserve_up_secondary_on","generation_reserve_up_secondary_off",
+                     "generation_reserve_down_secondary","generation_reserve_up_tertiary1_on","generation_reserve_up_tertiary1_off",
+                     "generation_reserve_down_tertiary1","generation_reserve_up_tertiary2_on","generation_reserve_up_tertiary2_off",
+                     "generation_reserve_down_tertiary2","nb_off_primary","nb_off_secondary","nb_off_tertiary1","nb_off_tertiary2"]
 
         THERMAL_CLUSTER_MODEL_ACCURATE_HEURISTIC = model(
             id=self.initial_model.id,

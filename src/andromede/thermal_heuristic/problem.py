@@ -71,30 +71,37 @@ class ThermalProblemBuilder:
         output: OutputValues,
         index: BlockScenarioIndex,
         list_cluster_id: List[str],
-        param_to_update: str,
-        var_to_read: str,
+        param_to_update: List[List[str]],
+        var_to_read: List[str],
         fn_to_apply: Callable,
         param_needed_to_compute: Optional[List[str]] = None,
+        param_node_needed_to_compute : Optional[List[str]] = None,
+        version: Optional[str] = None,
+        option: Optional[str] = None,
+        bonus: Optional[str] = None,
     ) -> None:
         for cluster in list_cluster_id:
-            if (
-                ComponentParameterIndex(cluster, param_to_update)
-                not in self.database.__dict__.keys()
-            ):
-                self.database.add_data(cluster, param_to_update, ConstantData(0))
-            self.database.convert_to_time_scenario_series_data(
-                ComponentParameterIndex(cluster, param_to_update),
-                self.time_scenario_hour_parameter.hour
-                * self.time_scenario_hour_parameter.week,
-                self.time_scenario_hour_parameter.scenario,
-            )
-
-            sol = output.component(cluster).var(var_to_read).value[0]  # type:ignore
+            for list_param_update in param_to_update:
+                for param_update in list_param_update:
+                    if (
+                        ComponentParameterIndex(cluster, param_update)
+                        not in self.database.__dict__.keys()
+                    ):
+                        self.database.add_data(cluster, param_update, ConstantData(0))
+                    self.database.convert_to_time_scenario_series_data(
+                        ComponentParameterIndex(cluster, param_update),
+                        self.time_scenario_hour_parameter.hour
+                        * self.time_scenario_hour_parameter.week,
+                        self.time_scenario_hour_parameter.scenario,
+                    )
+            sol = {}
+            for variable in var_to_read:
+                sol[variable] = output.component(cluster).var(variable).value[0] # type:ignore
 
             param = {}
             if param_needed_to_compute is not None:
                 for p in param_needed_to_compute:
-                    param[p] = [
+                    sol[p] = [
                         self.database.get_value(
                             ComponentParameterIndex(cluster, p),
                             t,
@@ -102,14 +109,45 @@ class ThermalProblemBuilder:
                         )
                         for t in timesteps(index, self.time_scenario_hour_parameter)
                     ]
+            if param_node_needed_to_compute is not None:
+                list_connections = self.network._connections
+                print(list_connections)
+                node = None
+                for connection in list_connections:
+                    if connection.port1.component.id == cluster:
+                        node = connection.port2.component.id
+                    if connection.port2.component.id == cluster:
+                        node = connection.port1.component.id
+                for p in param_node_needed_to_compute:
+                    sol[p] = [self.database.get_data(node,p).value
+                                for t in timesteps(index, self.time_scenario_hour_parameter)]   
+
+            if version is not None:
+                if option is not None:
+                    result_heuristic = fn_to_apply([i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                            sol,version,option,bonus)            
+                else:
+                    result_heuristic = fn_to_apply([i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                            sol,version)            
+            elif option is not None:
+                result_heuristic = fn_to_apply([i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                            sol,option,bonus)            
+            else:
+                result_heuristic = fn_to_apply( [i for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter))],
+                                            sol)            
 
             for i, t in enumerate(timesteps(index, self.time_scenario_hour_parameter)):
-                self.database.set_value(
-                    ComponentParameterIndex(cluster, param_to_update),
-                    fn_to_apply(sol[i], *[p[i] for p in param.values()]),  # type:ignore
-                    t,
-                    index.scenario,
-                )
+                results_heuristic = result_heuristic[i]
+                for p,list_param_update in enumerate(param_to_update):
+                    for param_update in list_param_update:
+                        self.database.set_value(
+                            ComponentParameterIndex(cluster, param_update),
+                            results_heuristic[p],  # type:ignore
+                            t,
+                            index.scenario,
+                        )
+
+
 
     def heuristic_resolution_step(
         self,
