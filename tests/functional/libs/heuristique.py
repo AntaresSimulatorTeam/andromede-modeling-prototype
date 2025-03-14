@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 from tests.functional.libs.heuristic_arrondi_indep import *
 from tests.functional.libs.heuristic_arrondi_sans_pmin import *
