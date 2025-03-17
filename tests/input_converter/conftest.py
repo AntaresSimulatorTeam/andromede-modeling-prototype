@@ -112,7 +112,6 @@ def local_study_with_renewable(local_study_w_thermal) -> Study:
         ],
         dtype="object",
     )
-    print(type(time_serie))
     local_study_w_thermal.get_areas()["fr"].create_renewable_cluster(
         renewable_cluster_name, RenewableClusterProperties(), series=time_serie
     )
@@ -177,7 +176,7 @@ def fr_solar(area_fr) -> None:
     """
     return area object from the fixture local_study_with_hydro
     """
-    return area_fr.create_solar(pd.DataFrame([1, 1, 1]))
+    return area_fr.set_solar(pd.DataFrame([1, 1, 1]))
 
 
 @pytest.fixture
@@ -187,7 +186,7 @@ def fr_wind(area_fr, request) -> None:
     """
     command = request.param if hasattr(request, "param") else [1, 1, 1]
     data = pd.DataFrame(command)
-    return area_fr.create_wind(data)
+    return area_fr.set_wind(data)
 
 
 @pytest.fixture
@@ -195,4 +194,4 @@ def fr_load(area_fr) -> None:
     """
     return area object with a load object that has custom parameters
     """
-    return area_fr.create_load(pd.DataFrame([1, 1, 1]))
+    return area_fr.set_load(pd.DataFrame([1, 1, 1]))

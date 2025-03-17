@@ -8,8 +8,12 @@ absl-py==2.1.0
     # via ortools
 annotated-types==0.7.0
     # via pydantic
-antares-craft==0.2.0
+antares-craft==0.2.1
     # via -r requirements.in
+antares-study-version==1.0.9
+    # via antares-craft
+antares-timeseries-generation==0.1.7
+    # via antares-craft
 antlr4-python3-runtime==4.13.1
     # via -r requirements.in
 antlr4-tools==0.2.1
@@ -25,7 +29,9 @@ cfgv==3.4.0
 charset-normalizer==3.4.0
     # via requests
 click==8.1.7
-    # via black
+    # via
+    #   antares-study-version
+    #   black
 configparser==5.0.2
     # via antares-craft
 coverage[toml]==7.6.9
@@ -58,6 +64,7 @@ numpy==1.26.4
     # via
     #   -r requirements.in
     #   antares-craft
+    #   antares-timeseries-generation
     #   ortools
     #   pandas
     #   pandas-stubs
@@ -72,6 +79,8 @@ pandas==2.2.3
     # via
     #   -r requirements-dev.in
     #   antares-craft
+    #   antares-study-version
+    #   antares-timeseries-generation
     #   ortools
 pandas-stubs==2.2.3.241126
     # via -r requirements-dev.in
@@ -87,6 +96,8 @@ pre-commit==3.5.0
     # via -r requirements-dev.in
 protobuf==5.29.2
     # via ortools
+psutil==7.0.0
+    # via antares-craft
 py==1.11.0
     # via pytest
 pydantic==2.7.4
@@ -108,6 +119,7 @@ pytz==2024.2
 pyyaml==6.0.2
     # via
     #   -r requirements.in
+    #   antares-timeseries-generation
     #   pre-commit
 requests==2.32.3
     # via antares-craft

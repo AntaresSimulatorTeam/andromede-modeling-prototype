@@ -88,7 +88,9 @@ class ThermalDataPreprocessing:
             value=str(csv_path).removesuffix(".txt"),
         )
 
-    def _compute_nb_units_max_variation_forward(self, period: int = 168) -> pd.DataFrame:
+    def _compute_nb_units_max_variation_forward(
+        self, period: int = 168
+    ) -> pd.DataFrame:
         nb_units_max_output = load_ts_from_txt("nb_units_max", self.series_path)
         previous_indices = []
         for i in range(len(nb_units_max_output)):
@@ -102,7 +104,9 @@ class ThermalDataPreprocessing:
     def process_nb_units_max_variation_forward(
         self, period: int = 168
     ) -> InputComponentParameter:
-        nb_units_max_variation = self._compute_nb_units_max_variation_forward(period=period)
+        nb_units_max_variation = self._compute_nb_units_max_variation_forward(
+            period=period
+        )
         csv_path = self._write_dataframe_to_csv(
             nb_units_max_variation, "nb_units_max_variation_forward.txt"
         )
@@ -114,7 +118,9 @@ class ThermalDataPreprocessing:
             value=str(csv_path).removesuffix(".txt"),
         )
 
-    def _compute_nb_units_max_variation_backward(self, period: int = 168) -> pd.DataFrame:
+    def _compute_nb_units_max_variation_backward(
+        self, period: int = 168
+    ) -> pd.DataFrame:
         nb_units_max_output = load_ts_from_txt("nb_units_max", self.series_path)
         previous_indices = []
         for i in range(len(nb_units_max_output)):

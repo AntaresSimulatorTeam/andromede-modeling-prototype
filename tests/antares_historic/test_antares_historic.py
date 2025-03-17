@@ -135,7 +135,7 @@ def _setup_study_component(study, period=None) -> tuple:
     area_fr = study.get_areas()["fr"]
     path = study_path / "input" / "load" / "series"
     timeseries = load_ts_from_txt("load_fr", path)
-    area_fr.create_load(pd.DataFrame(timeseries))
+    area_fr.set_load(pd.DataFrame(timeseries))
 
     converter = AntaresStudyConverter(study_input=study, logger=logger, period=period)
     converter.process_all()

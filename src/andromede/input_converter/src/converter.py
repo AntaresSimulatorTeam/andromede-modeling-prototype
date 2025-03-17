@@ -104,7 +104,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting renewables to component list...")
         for area in areas:
-            renewables = area.read_renewables()
+            renewables = area._read_renewables()
             for renewable in renewables:
                 series_path = (
                     self.study_path
@@ -161,7 +161,7 @@ class AntaresStudyConverter:
         # Add thermal components for each area
 
         for area in areas:
-            thermals = area.read_thermal_clusters()
+            thermals = area._read_thermal_clusters()
             for thermal in thermals:
                 series_path = (
                     self.study_path
@@ -264,7 +264,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting links to component list...")
         # Add links components for each area
-        links = self.study.read_links()
+        links = self.study._read_links()
         for link in links:
             capacity_direct_path = (
                 self.study_path
@@ -433,7 +433,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def convert_study_to_input_study(self) -> InputStudy:
-        areas = self.study.read_areas()
+        areas = self.study._read_areas()
         area_components = self._convert_area_to_component_list(areas)
 
         list_components: list[InputComponent] = []

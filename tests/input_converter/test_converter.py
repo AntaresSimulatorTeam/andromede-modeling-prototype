@@ -26,13 +26,14 @@ from andromede.study.parsing import (
     InputStudy,
     parse_yaml_components,
 )
+from dataclasses import replace
 
 
 class TestConverter:
     def _init_area_reading(self, local_study):
         logger = Logger(__name__, local_study.service.config.study_path)
         converter = AntaresStudyConverter(study_input=local_study, logger=logger)
-        areas = converter.study.read_areas()
+        areas = converter.study._read_areas()
         return areas, converter
 
     def test_convert_study_to_input_study(self, local_study_w_areas):
@@ -682,44 +683,46 @@ class TestConverter:
         ]
         expected_link_connections = [
             InputPortConnections(
-                component1="fr / it",
+                component1="at / fr",
                 port1="in_port",
+                component2="at",
+                port2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / fr",
+                port1="out_port",
                 component2="fr",
                 port2="balance_port",
             ),
             InputPortConnections(
-                component1="fr / it",
+                component1="at / it",
+                port1="in_port",
+                component2="at",
+                port2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / it",
                 port1="out_port",
                 component2="it",
                 port2="balance_port",
             ),
             InputPortConnections(
-                component1="at / fr",
+                component1="fr / it",
                 port1="in_port",
-                component2="at",
-                port2="balance_port",
-            ),
-            InputPortConnections(
-                component1="at / fr",
-                port1="out_port",
                 component2="fr",
                 port2="balance_port",
             ),
             InputPortConnections(
-                component1="at / it",
-                port1="in_port",
-                component2="at",
-                port2="balance_port",
-            ),
-            InputPortConnections(
-                component1="at / it",
+                component1="fr / it",
                 port1="out_port",
                 component2="it",
                 port2="balance_port",
             ),
         ]
 
-        assert links_components == expected_link_component
+        assert sorted(links_components, key=lambda x: x.id) == sorted(
+            expected_link_component, key=lambda x: x.id
+        )
         assert links_connections == expected_link_connections
 
     def _generate_tdp_instance_parameter(
@@ -761,11 +764,13 @@ class TestConverter:
             df.to_csv(series_path, sep="\t", index=False, header=False)
 
         for area in areas:
-            thermals = area.read_thermal_clusters()
+            thermals = area._read_thermal_clusters()
             for thermal in thermals:
                 if thermal.area_id == "fr":
-                    thermal.properties.unit_count = 1.5
-                    thermal.properties.nominal_capacity = 2
+                    # The dataclass can not be modified, so we have to create a new one
+                    thermal._properties = replace(
+                        thermal.properties, unit_count=1.5, nominal_capacity=2
+                    )
                     tdp = ThermalDataPreprocessing(thermal, study_path)
                     return tdp
 
