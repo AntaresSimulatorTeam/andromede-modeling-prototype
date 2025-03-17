@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+from dataclasses import replace
+
 import pandas as pd
 import pytest
 
@@ -26,7 +28,6 @@ from andromede.study.parsing import (
     InputStudy,
     parse_yaml_components,
 )
-from dataclasses import replace
 
 
 class TestConverter:
