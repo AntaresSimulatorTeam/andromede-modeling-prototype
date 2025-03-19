@@ -17,31 +17,33 @@ library:
     - id: flow
       description: A port which transfers power flow
       fields:
-        - name: flow
+        - id: flow
 
   models:
     - id: area
       parameters:
-        - name: spillage_cost
-        - name: ens_cost
+        - id: spillage_cost
+        - id: ens_cost
       variables:
-        - name: spillage
+        - id: spillage
           lower-bound: 0
-        - name: unsupplied_energy
+        - id: unsupplied_energy
           lower-bound: 0
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       binding-constraints:
-        - name: balance
+        - id: balance
           expression: sum_connections(balance_port.flow) = spillage - unsupplied_energy
       objective: expec(sum(spillage_cost * spillage + ens_cost * unsupplied_energy))
 
     - id: load
       parameters:
-        - name: load
+        - id: load
+          time-dependent: true
+          scenario-dependent: true
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
@@ -50,51 +52,47 @@ library:
 
     - id: link
       parameters:
-        - name: capacity_direct
+        - id: capacity_direct
           time-dependent: true
           scenario-dependent: true
-        - name: capacity_indirect
+        - id: capacity_indirect
           time-dependent: true
           scenario-dependent: true
       variables:
-        - name: flow_direct
+        - id: flow_direct
           lower-bound: 0
           upper-bound: capacity_direct
-        - name: flow_indirect
+        - id: flow_indirect
           lower-bound: 0
           upper-bound: capacity_indirect
-        - name: flow
+        - id: flow
           lower-bound: -capacity_indirect
           upper-bound: capacity_indirect
       ports:
-        - name: out_port
+        - id: out_port
           type: flow
-        - name: in_port
+        - id: in_port
           type: flow
       port-field-definitions:
-        - port: out_port
-          field: flow
-          definition: flow
-        - port: in_port
-          field: flow
-          definition: -flow
+          - port: out_port
+            field: flow
+            definition: flow
+          - port: in_port
+            field: flow
+            definition: -flow
       constraints:
-        - name: flow_direct_indirect
+        - id: flow_direct_indirect
           expression: flow = flow_direct - flow_indirect
 
     - id: renewable
       parameters:
-        - name: nominal_capacity
-          time-dependent: false
-          scenario-dependent: false
-        - name: unit_count
-          time-dependent: false
-          scenario-dependent: false
-        - name: generation
+        - id: nominal_capacity
+        - id: unit_count
+        - id: generation
           time-dependent: true
           scenario-dependent: true
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
@@ -103,82 +101,68 @@ library:
 
     - id: thermal
       parameters:
-        - name: p_min_cluster
+        - id: p_min_cluster
           scenario-dependent: true
           time-dependent: true
-        - name: p_max_cluster # timeseries that takes outages into account
+        - id: p_max_cluster # timeseries that takes outages into account
           scenario-dependent: true 
           time-dependent: true
-        - name: p_min_unit
-          scenario-dependent: false
-          time-dependent: false
-        - name: p_max_unit
-          scenario-dependent: false
-          time-dependent: false
-        - name: generation_cost
-          scenario-dependent: false
-          time-dependent: false
-        - name: startup_cost
-          scenario-dependent: false
-          time-dependent: false
-        - name: fixed_cost
-          scenario-dependent: false
-          time-dependent: false
-        - name: d_min_up
-          scenario-dependent: false
-          time-dependent: false
-        - name: d_min_down
-          scenario-dependent: false
-          time-dependent: false
-        - name: nb_units_min # Equals to ceil(p_min_cluster/p_max_unit), to be done in preprocessing
+        - id: p_min_unit
+        - id: p_max_unit
+        - id: generation_cost
+        - id: startup_cost
+        - id: fixed_cost
+        - id: d_min_up
+        - id: d_min_down
+        - id: nb_units_min # Equals to ceil(p_min_cluster/p_max_unit), to be done in preprocessing
           scenario-dependent: true
           time-dependent: true
-        - name: nb_units_max # Equals to ceil(p_max_cluster/p_max_unit), to be done in preprocessing
-          scenario-dependent: true 
-          time-dependent: true
-        - name: nb_units_max_variation_forward
+        - id: nb_units_max # Equals to ceil(p_max_cluster/p_max_unit), to be done in preprocessing
           scenario-dependent: true
           time-dependent: true
-        - name: nb_units_max_variation_backward
+        - id: nb_units_max_variation_forward
+          scenario-dependent: true
+          time-dependent: true
+        - id: nb_units_max_variation_backward
           scenario-dependent: true
           time-dependent: true
       variables:
-        - name: generation
+        - id: generation
           lower-bound: p_min_cluster
           upper-bound: p_max_cluster
-        - name: nb_units_on
+        - id: nb_units_on
           lower-bound: nb_units_min
           upper-bound: nb_units_max
           variable-type: integer
-        - name: nb_starting
+        - id: nb_starting
           lower-bound: 0
           upper-bound: nb_units_max
           variable-type: integer
-        - name: nb_stopping
+        - id: nb_stopping
           lower-bound: 0
           variable-type: integer
-        - name: nb_failing
+        - id: nb_failing
           lower-bound: 0
       ports:
-        - name: balance_port
+        - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
           field: flow
           definition: generation
       constraints:
-        - name: max_generation
+        - id: max_generation
           expression: generation <= nb_units_on * p_max_unit
-        - name: min_generation
+        - id: min_generation
           expression: generation >= nb_units_on * p_min_unit
-        - name: on_units_dynamics
+        - id: on_units_dynamics
           expression: nb_units_on = nb_units_on[t-1] + nb_starting - nb_stopping
-        - name: nb_failing_lower_than_stopping
+        - id: nb_failing_lower_than_stopping
           expression: nb_failing <= nb_stopping
-        - name: nb_failing_lower_than_max_variation
+        - id: nb_failing_lower_than_max_variation
           expression: nb_failing <= nb_units_max_variation_forward
-        - name: min_up_duration
+        - id: min_up_duration
           expression: sum(t-d_min_up + 1 .. t, nb_starting - nb_failing) <= nb_units_on
-        - name: min_down_duration
+        - id: min_down_duration
           expression: sum(t-d_min_down + 1 .. t, nb_stopping) <= nb_units_max[t-d_min_down] - nb_units_on + sum(t-d_min_down + 1 .. t, nb_units_max_variation_backward)
       objective: expec(sum(generation_cost * generation + startup_cost * nb_starting + fixed_cost * nb_units_on))
