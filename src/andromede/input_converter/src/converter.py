@@ -17,6 +17,9 @@ from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 from pandas import DataFrame
 
+from andromede.input_converter.src.data_preprocessing.thermal import (
+    ThermalDataPreprocessing,
+)
 from andromede.input_converter.src.utils import resolve_path, transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
@@ -32,11 +35,13 @@ class AntaresStudyConverter:
         study_input: Union[Path, Study],
         logger: logging.Logger,
         output_path: Optional[Path] = None,
+        period: Optional[int] = None,
     ):
         """
         Initialize processor
         """
         self.logger = logger
+        self.period = period if period else 168
 
         if isinstance(study_input, Study):
             self.study = study_input
@@ -76,13 +81,13 @@ class AntaresStudyConverter:
                     model="area",
                     parameters=[
                         InputComponentParameter(
-                            id="energy_cost_unsupplied",
+                            id="ens_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             value=area.properties.energy_cost_unsupplied,
                         ),
                         InputComponentParameter(
-                            id="energy_cost_spilled",
+                            id="spillage_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             value=area.properties.energy_cost_spilled,
@@ -99,7 +104,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting renewables to component list...")
         for area in areas:
-            renewables = area.read_renewables()
+            renewables = area._read_renewables()
             for renewable in renewables:
                 series_path = (
                     self.study_path
@@ -122,7 +127,7 @@ class AntaresStudyConverter:
                                 value=renewable.properties.unit_count,
                             ),
                             InputComponentParameter(
-                                id="nominal_capacity",
+                                id="p_max_unit",
                                 time_dependent=False,
                                 scenario_dependent=False,
                                 value=renewable.properties.nominal_capacity,
@@ -131,7 +136,7 @@ class AntaresStudyConverter:
                                 id="generation",
                                 time_dependent=True,
                                 scenario_dependent=True,
-                                value=str(series_path),
+                                value=str(series_path).removesuffix(".txt"),
                             ),
                         ],
                     )
@@ -154,28 +159,41 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting thermals to component list...")
         # Add thermal components for each area
+
         for area in areas:
-            thermals = area.read_thermal_clusters()
+            thermals = area._read_thermal_clusters()
             for thermal in thermals:
                 series_path = (
                     self.study_path
                     / "input"
                     / "thermal"
                     / "series"
-                    / Path(area.id)
-                    / Path(thermal.name)
+                    / Path(thermal.area_id)
+                    / Path(thermal.id)
                     / "series.txt"
                 )
+                tdp = ThermalDataPreprocessing(thermal, self.study_path)
                 components.append(
                     InputComponent(
                         id=thermal.id,
                         model="thermal",
                         parameters=[
+                            tdp.process_p_min_cluster(),
+                            tdp.process_nb_units_min(),
+                            tdp.process_nb_units_max(),
+                            tdp.process_nb_units_max_variation_forward(self.period),
+                            tdp.process_nb_units_max_variation_backward(self.period),
                             InputComponentParameter(
                                 id="unit_count",
                                 time_dependent=False,
                                 scenario_dependent=False,
                                 value=thermal.properties.unit_count,
+                            ),
+                            InputComponentParameter(
+                                id="p_min_unit",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=thermal.properties.min_stable_power,
                             ),
                             InputComponentParameter(
                                 id="efficiency",
@@ -184,13 +202,13 @@ class AntaresStudyConverter:
                                 value=thermal.properties.efficiency,
                             ),
                             InputComponentParameter(
-                                id="nominal_capacity",
+                                id="p_max_unit",
                                 time_dependent=False,
                                 scenario_dependent=False,
                                 value=thermal.properties.nominal_capacity,
                             ),
                             InputComponentParameter(
-                                id="marginal_cost",
+                                id="generation_cost",
                                 time_dependent=False,
                                 scenario_dependent=False,
                                 value=thermal.properties.marginal_cost,
@@ -208,14 +226,27 @@ class AntaresStudyConverter:
                                 value=thermal.properties.startup_cost,
                             ),
                             InputComponentParameter(
+                                id="d_min_up",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=thermal.properties.min_up_time,
+                            ),
+                            InputComponentParameter(
+                                id="d_min_down",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=thermal.properties.min_down_time,
+                            ),
+                            InputComponentParameter(
                                 id="p_max_cluster",
                                 time_dependent=True,
                                 scenario_dependent=True,
-                                value=str(series_path),
+                                value=str(series_path).removesuffix(".txt"),
                             ),
                         ],
                     )
                 )
+
                 connections.append(
                     InputPortConnections(
                         component1=thermal.id,
@@ -233,7 +264,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting links to component list...")
         # Add links components for each area
-        links = self.study.read_links()
+        links = self.study._read_links()
         for link in links:
             capacity_direct_path = (
                 self.study_path
@@ -241,7 +272,7 @@ class AntaresStudyConverter:
                 / "links"
                 / Path(link.area_from_id)
                 / "capacities"
-                / f"{link.area_to_id}_direct.txt"
+                / f"{link.area_to_id}_direct"
             )
             capacity_indirect_path = (
                 self.study_path
@@ -249,7 +280,7 @@ class AntaresStudyConverter:
                 / "links"
                 / Path(link.area_from_id)
                 / "capacities"
-                / f"{link.area_to_id}_indirect.txt"
+                / f"{link.area_to_id}_indirect"
             )
             components.append(
                 InputComponent(
@@ -310,7 +341,7 @@ class AntaresStudyConverter:
                                     id="wind",
                                     time_dependent=True,
                                     scenario_dependent=True,
-                                    value=str(series_path),
+                                    value=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
@@ -348,7 +379,7 @@ class AntaresStudyConverter:
                                     id="solar",
                                     time_dependent=True,
                                     scenario_dependent=True,
-                                    value=str(series_path),
+                                    value=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
@@ -378,14 +409,14 @@ class AntaresStudyConverter:
                 if self._check_dataframe_validity(area.get_load_matrix()):
                     components.append(
                         InputComponent(
-                            id=area.id,
+                            id="load",
                             model="load",
                             parameters=[
                                 InputComponentParameter(
                                     id="load",
                                     time_dependent=True,
                                     scenario_dependent=True,
-                                    value=str(series_path),
+                                    value=str(series_path).removesuffix(".txt"),
                                 )
                             ],
                         )
@@ -402,7 +433,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def convert_study_to_input_study(self) -> InputStudy:
-        areas = self.study.read_areas()
+        areas = self.study._read_areas()
         area_components = self._convert_area_to_component_list(areas)
 
         list_components: list[InputComponent] = []

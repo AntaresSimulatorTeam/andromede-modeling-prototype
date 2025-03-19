@@ -9,9 +9,16 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+
+from dataclasses import replace
+
+import pandas as pd
 import pytest
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
+from andromede.input_converter.src.data_preprocessing.thermal import (
+    ThermalDataPreprocessing,
+)
 from andromede.input_converter.src.logger import Logger
 from andromede.input_converter.src.utils import transform_to_yaml
 from andromede.study.parsing import (
@@ -27,7 +34,7 @@ class TestConverter:
     def _init_area_reading(self, local_study):
         logger = Logger(__name__, local_study.service.config.study_path)
         converter = AntaresStudyConverter(study_input=local_study, logger=logger)
-        areas = converter.study.read_areas()
+        areas = converter.study._read_areas()
         return areas, converter
 
     def test_convert_study_to_input_study(self, local_study_w_areas):
@@ -44,14 +51,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            id="energy_cost_unsupplied",
+                            id="ens_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
                         ),
                         InputComponentParameter(
-                            id="energy_cost_spilled",
+                            id="spillage_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
@@ -65,14 +72,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            id="energy_cost_unsupplied",
+                            id="ens_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
                         ),
                         InputComponentParameter(
-                            id="energy_cost_spilled",
+                            id="spillage_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
@@ -103,14 +110,14 @@ class TestConverter:
                 model="area",
                 parameters=[
                     InputComponentParameter(
-                        id="energy_cost_unsupplied",
+                        id="ens_cost",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
                         value=0.5,
                     ),
                     InputComponentParameter(
-                        id="energy_cost_spilled",
+                        id="spillage_cost",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
@@ -123,14 +130,14 @@ class TestConverter:
                 model="area",
                 parameters=[
                     InputComponentParameter(
-                        id="energy_cost_unsupplied",
+                        id="ens_cost",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
                         value=0.5,
                     ),
                     InputComponentParameter(
-                        id="energy_cost_spilled",
+                        id="spillage_cost",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
@@ -162,7 +169,7 @@ class TestConverter:
             / "series"
             / "fr"
             / "generation"
-            / "series.txt"
+            / "series"
         )
         expected_renewable_connections = [
             InputPortConnections(
@@ -186,7 +193,7 @@ class TestConverter:
                         value=1.0,
                     ),
                     InputComponentParameter(
-                        id="nominal_capacity",
+                        id="p_max_unit",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
@@ -205,9 +212,23 @@ class TestConverter:
         assert renewables_components == expected_renewable_component
         assert renewable_connections == expected_renewable_connections
 
-    def test_convert_thermals_to_component(self, local_study_w_thermal):
+    def test_convert_thermals_to_component(
+        self, local_study_w_thermal, create_csv_from_constant_value
+    ):
         areas, converter = self._init_area_reading(local_study_w_thermal)
+        study_path = converter.study_path
+        # I just want to fill the modulation and series files
+        modulation_timeseries = (
+            study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
+        )
+        series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
+        # We have to use a multiple of 168, to match with full weeks
+        create_csv_from_constant_value(modulation_timeseries, "modulation", 840, 4)
+        create_csv_from_constant_value(series_path, "series", 840)
 
+        self._generate_tdp_instance_parameter(
+            areas, study_path, create_dataframes=False
+        )
         (
             thermals_components,
             thermals_connections,
@@ -215,7 +236,34 @@ class TestConverter:
 
         study_path = converter.study_path
         p_max_timeserie = str(
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "series.txt"
+            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "series"
+        )
+        p_min_cluster = str(
+            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "p_min_cluster"
+        )
+        nb_units_min = str(
+            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "nb_units_min"
+        )
+        nb_units_max = str(
+            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "nb_units_max"
+        )
+        nb_units_max_variation_forward = str(
+            study_path
+            / "input"
+            / "thermal"
+            / "series"
+            / "fr"
+            / "gaz"
+            / "nb_units_max_variation_forward"
+        )
+        nb_units_max_variation_backward = str(
+            study_path
+            / "input"
+            / "thermal"
+            / "series"
+            / "fr"
+            / "gaz"
+            / "nb_units_max_variation_backward"
         )
         expected_thermals_connections = [
             InputPortConnections(
@@ -232,11 +280,53 @@ class TestConverter:
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
+                        id="p_min_cluster",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{p_min_cluster}",
+                    ),
+                    InputComponentParameter(
+                        id="nb_units_min",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{nb_units_min}",
+                    ),
+                    InputComponentParameter(
+                        id="nb_units_max",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{nb_units_max}",
+                    ),
+                    InputComponentParameter(
+                        id="nb_units_max_variation_forward",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{nb_units_max_variation_forward}",
+                    ),
+                    InputComponentParameter(
+                        id="nb_units_max_variation_backward",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{nb_units_max_variation_backward}",
+                    ),
+                    InputComponentParameter(
                         id="unit_count",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
                         value=1.0,
+                    ),
+                    InputComponentParameter(
+                        id="p_min_unit",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=0.0,
                     ),
                     InputComponentParameter(
                         id="efficiency",
@@ -246,14 +336,14 @@ class TestConverter:
                         value=100.0,
                     ),
                     InputComponentParameter(
-                        id="nominal_capacity",
+                        id="p_max_unit",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
                         value=0.0,
                     ),
                     InputComponentParameter(
-                        id="marginal_cost",
+                        id="generation_cost",
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
@@ -274,6 +364,20 @@ class TestConverter:
                         value=0.0,
                     ),
                     InputComponentParameter(
+                        id="d_min_up",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=1.0,
+                    ),
+                    InputComponentParameter(
+                        id="d_min_down",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=1.0,
+                    ),
+                    InputComponentParameter(
                         id="p_max_cluster",
                         time_dependent=True,
                         scenario_dependent=True,
@@ -283,6 +387,9 @@ class TestConverter:
                 ],
             )
         ]
+        print("ACTUAL:", thermals_components)
+        print("EXPECTED:", expected_thermals_components)
+
         assert thermals_components == expected_thermals_components
         assert thermals_connections == expected_thermals_connections
 
@@ -307,14 +414,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            id="energy_cost_unsupplied",
+                            id="ens_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
                         ),
                         InputComponentParameter(
-                            id="energy_cost_spilled",
+                            id="spillage_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
@@ -328,14 +435,14 @@ class TestConverter:
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
-                            id="energy_cost_unsupplied",
+                            id="ens_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
                             value=0.5,
                         ),
                         InputComponentParameter(
-                            id="energy_cost_spilled",
+                            id="spillage_cost",
                             time_dependent=False,
                             scenario_dependent=False,
                             scenario_group=None,
@@ -360,9 +467,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        solar_timeseries = str(
-            study_path / "input" / "solar" / "series" / f"solar_fr.txt"
-        )
+        solar_timeseries = str(study_path / "input" / "solar" / "series" / "solar_fr")
         expected_solar_connection = [
             InputPortConnections(
                 component1="solar",
@@ -397,7 +502,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        load_timeseries = str(study_path / "input" / "load" / "series" / f"load_fr.txt")
+        load_timeseries = str(study_path / "input" / "load" / "series" / "load_fr")
         expected_load_connection = [
             InputPortConnections(
                 component1="load",
@@ -407,7 +512,7 @@ class TestConverter:
             )
         ]
         expected_load_components = InputComponent(
-            id="fr",
+            id="load",
             model="load",
             scenario_group=None,
             parameters=[
@@ -441,7 +546,7 @@ class TestConverter:
         )
         study_path = converter.study_path
 
-        wind_timeseries = str(study_path / "input" / "wind" / "series" / f"wind_fr.txt")
+        wind_timeseries = str(study_path / "input" / "wind" / "series" / "wind_fr")
         expected_wind_connection = [
             InputPortConnections(
                 component1="wind",
@@ -506,12 +611,12 @@ class TestConverter:
 
         fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
         at_prefix_path = study_path / "input" / "links" / "at" / "capacities"
-        fr_it_direct_links_timeseries = str(fr_prefix_path / "it_direct.txt")
-        fr_it_indirect_links_timeseries = str(fr_prefix_path / "it_indirect.txt")
-        at_fr_direct_links_timeseries = str(at_prefix_path / "fr_direct.txt")
-        at_fr_indirect_links_timeseries = str(at_prefix_path / "fr_indirect.txt")
-        at_it_direct_links_timeseries = str(at_prefix_path / "it_direct.txt")
-        at_it_indirect_links_timeseries = str(at_prefix_path / "it_indirect.txt")
+        fr_it_direct_links_timeseries = str(fr_prefix_path / "it_direct")
+        fr_it_indirect_links_timeseries = str(fr_prefix_path / "it_indirect")
+        at_fr_direct_links_timeseries = str(at_prefix_path / "fr_direct")
+        at_fr_indirect_links_timeseries = str(at_prefix_path / "fr_indirect")
+        at_it_direct_links_timeseries = str(at_prefix_path / "it_direct")
+        at_it_indirect_links_timeseries = str(at_prefix_path / "it_indirect")
         expected_link_component = [
             InputComponent(
                 id="fr / it",
@@ -579,42 +684,212 @@ class TestConverter:
         ]
         expected_link_connections = [
             InputPortConnections(
-                component1="fr / it",
+                component1="at / fr",
                 port1="in_port",
+                component2="at",
+                port2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / fr",
+                port1="out_port",
                 component2="fr",
                 port2="balance_port",
             ),
             InputPortConnections(
-                component1="fr / it",
+                component1="at / it",
+                port1="in_port",
+                component2="at",
+                port2="balance_port",
+            ),
+            InputPortConnections(
+                component1="at / it",
                 port1="out_port",
                 component2="it",
                 port2="balance_port",
             ),
             InputPortConnections(
-                component1="at / fr",
+                component1="fr / it",
                 port1="in_port",
-                component2="at",
-                port2="balance_port",
-            ),
-            InputPortConnections(
-                component1="at / fr",
-                port1="out_port",
                 component2="fr",
                 port2="balance_port",
             ),
             InputPortConnections(
-                component1="at / it",
-                port1="in_port",
-                component2="at",
-                port2="balance_port",
-            ),
-            InputPortConnections(
-                component1="at / it",
+                component1="fr / it",
                 port1="out_port",
                 component2="it",
                 port2="balance_port",
             ),
         ]
 
-        assert links_components == expected_link_component
+        assert sorted(links_components, key=lambda x: x.id) == sorted(
+            expected_link_component, key=lambda x: x.id
+        )
         assert links_connections == expected_link_connections
+
+    def _generate_tdp_instance_parameter(
+        self, areas, study_path, create_dataframes: bool = True
+    ):
+        if create_dataframes:
+            modulation_timeseries = str(
+                study_path
+                / "input"
+                / "thermal"
+                / "prepro"
+                / "fr"
+                / "gaz"
+                / "modulation.txt"
+            )
+            series_path = (
+                study_path
+                / "input"
+                / "thermal"
+                / "series"
+                / "fr"
+                / "gaz"
+                / "series.txt"
+            )
+            data_p_max = [
+                [1, 1, 1, 2],
+                [2, 2, 2, 6],
+                [3, 3, 3, 1],
+            ]
+            data_series = [
+                [8],
+                [10],
+                [2],
+            ]
+            df = pd.DataFrame(data_p_max)
+            df.to_csv(modulation_timeseries, sep="\t", index=False, header=False)
+
+            df = pd.DataFrame(data_series)
+            df.to_csv(series_path, sep="\t", index=False, header=False)
+
+        for area in areas:
+            thermals = area._read_thermal_clusters()
+            for thermal in thermals:
+                if thermal.area_id == "fr":
+                    # The dataclass can not be modified, so we have to create a new one
+                    thermal._properties = replace(
+                        thermal.properties, unit_count=1.5, nominal_capacity=2
+                    )
+                    tdp = ThermalDataPreprocessing(thermal, study_path)
+                    return tdp
+
+    def _setup_test(self, local_study_w_thermal, filename):
+        """
+        Initializes test parameters and returns the instance and expected file path.
+        """
+        areas, converter = self._init_area_reading(local_study_w_thermal)
+        study_path = converter.study_path
+        instance = self._generate_tdp_instance_parameter(areas, study_path)
+        expected_path = (
+            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / filename
+        )
+        return instance, expected_path
+
+    def _validate_component(
+        self, instance, process_method, expected_path, expected_values
+    ):
+        """
+        Executes the given processing method, validates the component, and compares the output dataframe.
+        """
+        component = getattr(instance, process_method)()
+        expected_component = InputComponentParameter(
+            id=process_method.split("process_")[1],
+            time_dependent=True,
+            scenario_dependent=True,
+            value=str(expected_path),
+        )
+        current_df = pd.read_csv(expected_path.with_suffix(".txt"), header=None)
+        expected_df = pd.DataFrame(expected_values)
+        assert current_df.equals(expected_df)
+        assert component == expected_component
+
+    def _test_p_min_cluster(self, local_study_w_thermal):
+        """Tests the p_min_cluster parameter processing."""
+        instance, expected_path = self._setup_test(
+            local_study_w_thermal, "p_min_cluster.txt"
+        )
+        expected_values = [
+            [6.0],
+            [10.0],
+            [2.0],
+        ]  # min(min_gen_modulation * unit_count * nominal_capacity, p_max_cluster)
+        self._validate_component(
+            instance, "process_p_min_cluster", expected_path, expected_values
+        )
+
+    def test_nb_units_min(self, local_study_w_thermal):
+        """Tests the nb_units_min parameter processing."""
+        instance, expected_path = self._setup_test(
+            local_study_w_thermal, "nb_units_min"
+        )
+        instance.process_p_min_cluster()
+        expected_values = [[3.0], [5.0], [1.0]]  # ceil(p_min_cluster / p_max_unit)
+        self._validate_component(
+            instance, "process_nb_units_min", expected_path, expected_values
+        )
+
+    def test_nb_units_max(self, local_study_w_thermal):
+        """Tests the nb_units_max parameter processing."""
+        instance, expected_path = self._setup_test(
+            local_study_w_thermal, "nb_units_max"
+        )
+        instance.process_p_min_cluster()
+        expected_values = [[4.0], [5.0], [1.0]]  # ceil(p_max_cluster / p_max_unit)
+        self._validate_component(
+            instance, "process_nb_units_max", expected_path, expected_values
+        )
+
+    @pytest.mark.parametrize("direction", ["forward", "backward"])
+    def test_nb_units_max_variation(
+        self, local_study_w_thermal, create_csv_from_constant_value, direction
+    ):
+        """
+        Tests nb_units_max_variation_forward and nb_units_max_variation_backward processing.
+        """
+        instance, expected_path = self._setup_test(
+            local_study_w_thermal, f"nb_units_max_variation_{direction}"
+        )
+        modulation_timeseries = (
+            instance.study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
+        )
+        series_path = (
+            instance.study_path / "input" / "thermal" / "series" / "fr" / "gaz"
+        )
+        create_csv_from_constant_value(modulation_timeseries, "modulation", 840, 4)
+        create_csv_from_constant_value(series_path, "series", 840)
+        instance.process_nb_units_max()
+        nb_units_max_output = pd.read_csv(
+            instance.series_path / "nb_units_max.txt", header=None
+        )
+
+        variation_component = getattr(
+            instance, f"process_nb_units_max_variation_{direction}"
+        )()
+        current_df = pd.read_csv(variation_component.value + ".txt", header=None)
+
+        assert current_df[0][0] == max(
+            0, nb_units_max_output[0][167] - nb_units_max_output[0][0]
+        )
+        assert current_df[0][3] == max(
+            0, nb_units_max_output[0][2] - nb_units_max_output[0][3]
+        )
+        assert current_df[0][168] == max(
+            0, nb_units_max_output[0][335] - nb_units_max_output[0][168]
+        )
+        assert variation_component.value == str(expected_path)
+
+    def test_nb_units_max_variation_forward(
+        self, local_study_w_thermal, create_csv_from_constant_value
+    ):
+        self.test_nb_units_max_variation(
+            local_study_w_thermal, create_csv_from_constant_value, direction="forward"
+        )
+
+    def test_nb_units_max_variation_backward(
+        self, local_study_w_thermal, create_csv_from_constant_value
+    ):
+        self.test_nb_units_max_variation(
+            local_study_w_thermal, create_csv_from_constant_value, direction="backward"
+        )

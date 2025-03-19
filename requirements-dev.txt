@@ -5,17 +5,17 @@
 #    pip-compile --output-file=requirements-dev.txt requirements-dev.in
 #
 absl-py==2.1.0
-    # via
-    #   -r requirements.txt
-    #   ortools
+    # via ortools
 annotated-types==0.7.0
-    # via
-    #   -r requirements.txt
-    #   pydantic
-antares-craft==0.1.8rc1
-    # via -r requirements.txt
+    # via pydantic
+antares-craft==0.2.1
+    # via -r requirements.in
+antares-study-version==1.0.9
+    # via antares-craft
+antares-timeseries-generation==0.1.7
+    # via antares-craft
 antlr4-python3-runtime==4.13.1
-    # via -r requirements.txt
+    # via -r requirements.in
 antlr4-tools==0.2.1
     # via -r requirements-dev.in
 attrs==24.3.0
@@ -23,21 +23,17 @@ attrs==24.3.0
 black==23.7.0
     # via -r requirements-dev.in
 certifi==2024.12.14
-    # via
-    #   -r requirements.txt
-    #   requests
+    # via requests
 cfgv==3.4.0
     # via pre-commit
 charset-normalizer==3.4.0
+    # via requests
+click==8.1.8
     # via
-    #   -r requirements.txt
-    #   requests
-click==8.1.7
-    # via black
+    #   antares-study-version
+    #   black
 configparser==5.0.2
-    # via
-    #   -r requirements.txt
-    #   antares-craft
+    # via antares-craft
 coverage[toml]==7.6.9
     # via pytest-cov
 distlib==0.3.9
@@ -47,13 +43,9 @@ filelock==3.16.1
 identify==2.6.3
     # via pre-commit
 idna==3.10
-    # via
-    #   -r requirements.txt
-    #   requests
+    # via requests
 immutabledict==4.2.1
-    # via
-    #   -r requirements.txt
-    #   ortools
+    # via ortools
 iniconfig==2.0.0
     # via pytest
 install-jdk==1.1.0
@@ -70,14 +62,15 @@ nodeenv==1.9.1
     # via pre-commit
 numpy==1.26.4
     # via
-    #   -r requirements.txt
+    #   -r requirements.in
     #   antares-craft
+    #   antares-timeseries-generation
     #   ortools
     #   pandas
     #   pandas-stubs
     #   scipy
 ortools==9.9.3963
-    # via -r requirements.txt
+    # via -r requirements.in
 packaging==24.2
     # via
     #   black
@@ -85,8 +78,9 @@ packaging==24.2
 pandas==2.2.3
     # via
     #   -r requirements-dev.in
-    #   -r requirements.txt
     #   antares-craft
+    #   antares-study-version
+    #   antares-timeseries-generation
     #   ortools
 pandas-stubs==2.2.3.241126
     # via -r requirements-dev.in
@@ -101,19 +95,17 @@ pluggy==1.5.0
 pre-commit==3.5.0
     # via -r requirements-dev.in
 protobuf==5.29.2
-    # via
-    #   -r requirements.txt
-    #   ortools
+    # via ortools
+psutil==7.0.0
+    # via antares-craft
 py==1.11.0
     # via pytest
 pydantic==2.7.4
     # via
-    #   -r requirements.txt
+    #   -r requirements.in
     #   antares-craft
 pydantic-core==2.18.4
-    # via
-    #   -r requirements.txt
-    #   pydantic
+    # via pydantic
 pytest==7.0.1
     # via
     #   -r requirements-dev.in
@@ -121,27 +113,20 @@ pytest==7.0.1
 pytest-cov==6.0.0
     # via -r requirements-dev.in
 python-dateutil==2.9.0.post0
-    # via
-    #   -r requirements.txt
-    #   pandas
+    # via pandas
 pytz==2024.2
-    # via
-    #   -r requirements.txt
-    #   pandas
+    # via pandas
 pyyaml==6.0.2
     # via
-    #   -r requirements.txt
+    #   -r requirements.in
+    #   antares-timeseries-generation
     #   pre-commit
 requests==2.32.3
-    # via
-    #   -r requirements.txt
-    #   antares-craft
+    # via antares-craft
 scipy==1.10.1
-    # via -r requirements.txt
+    # via -r requirements.in
 six==1.17.0
-    # via
-    #   -r requirements.txt
-    #   python-dateutil
+    # via python-dateutil
 tomli==2.2.1
     # via pytest
 types-pytz==2024.2.0.20241003
@@ -150,17 +135,12 @@ types-pyyaml==6.0.12.20240917
     # via -r requirements-dev.in
 typing-extensions==4.12.2
     # via
-    #   -r requirements.txt
     #   mypy
     #   pydantic
     #   pydantic-core
 tzdata==2024.2
-    # via
-    #   -r requirements.txt
-    #   pandas
+    # via pandas
 urllib3==2.2.3
-    # via
-    #   -r requirements.txt
-    #   requests
+    # via requests
 virtualenv==20.28.0
     # via pre-commit
