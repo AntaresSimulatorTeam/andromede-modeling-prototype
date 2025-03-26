@@ -169,22 +169,22 @@ library:
 
     - id: short-term-storage
       parameters:
-        - id: reservoir-capacity 
+        - id: reservoir_capacity 
           time-dependent: false
           scenario-dependent: false
-        - id: injection-installed-capacity # unitcount * injectionnominalcapacity
+        - id: injection_installed_capacity # unitcount * injectionnominalcapacity
           time-dependent: false
           scenario-dependent: false
-        - id: withdrawal-installed-capacity # unitcount * withdrawalnominalcapacity
+        - id: withdrawal_installed_capacity # unitcount * withdrawalnominalcapacity
           time-dependent: false
           scenario-dependent: false
         - id: efficiency
           time-dependent: false
           scenario-dependent: false
-        - id: lower-rule-curve
+        - id: lower_rule_curve
           time-dependent: true
           scenario-dependent: true
-        - id: upper-rule-curve
+        - id: upper_rule_curve
           time-dependent: true
           scenario-dependent: true
         - id: p_max_withdrawal
@@ -197,27 +197,27 @@ library:
           time-dependent: true
           scenario-dependent: true
       variables:
-        - id: p-injection
+        - id: p_injection
           lower-bound: 0
           upper-bound: p_max_injection
-        - id: p-withdrawal
+        - id: p_withdrawal
           lower-bound: 0
           upper-bound: p_max_withdrawal
-        - id : initial-level
+        - id : initial_level
           lower-bound: 0
           upper-bound: 1
         - id: level
-          lower-bound: lower-rule-curve * reservoir-capacity
-          upper-bound: upper-rule-curve * reservoir-capacity
+          lower-bound: lower_rule_curve * reservoir_capacity
+          upper-bound: upper_rule_curve * reservoir_capacity
       ports:
         - id: injection_port
           type: flow
       port-field-definitions:
         - port: injection_port
           field: flow
-          definition: p-withdrawal - p-injection
+          definition: p_withdrawal - p_injection
       constraints:
-        - id: initial-level
-          expression: level[0] = initial-level * reservoir-capacity
+        - id: initial_level
+          expression: level[0] = initial_level * reservoir_capacity
         - id: Level equation
-          expression: level[t] = level[t-1] + efficiency * p-injection - p-withdrawal + inflows
+          expression: level[t] = level[t-1] + efficiency * p_injection - p_withdrawal + inflows
