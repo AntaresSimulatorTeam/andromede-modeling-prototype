@@ -74,12 +74,12 @@ library:
         - id: in_port
           type: flow
       port-field-definitions:
-          - port: out_port
-            field: flow
-            definition: flow
-          - port: in_port
-            field: flow
-            definition: -flow
+        - port: out_port
+          field: flow
+          definition: flow
+        - port: in_port
+          field: flow
+          definition: -flow
       constraints:
         - id: flow_direct_indirect
           expression: flow = flow_direct - flow_indirect
@@ -105,7 +105,7 @@ library:
           scenario-dependent: true
           time-dependent: true
         - id: p_max_cluster # timeseries that takes outages into account
-          scenario-dependent: true 
+          scenario-dependent: true
           time-dependent: true
         - id: p_min_unit
         - id: p_max_unit
@@ -169,7 +169,7 @@ library:
 
     - id: short-term-storage
       parameters:
-        - id: reservoir_capacity 
+        - id: reservoir_capacity
           time-dependent: false
           scenario-dependent: false
         - id: injection_installed_capacity # unitcount * injectionnominalcapacity
@@ -199,11 +199,11 @@ library:
       variables:
         - id: p_injection
           lower-bound: 0
-          upper-bound: p_max_injection
+          upper-bound: p_max_injection * injection_installed_capacity # p_max_injection is a timeseries with adimensional values between 0 and 1
         - id: p_withdrawal
           lower-bound: 0
-          upper-bound: p_max_withdrawal
-        - id : initial_level
+          upper-bound: p_max_withdrawal * withdrawal_installed_capacity # p_max_withdrawal is a timeseries with adimensional values between 0 and 1
+        - id: initial_level
           lower-bound: 0
           upper-bound: 1
         - id: level
