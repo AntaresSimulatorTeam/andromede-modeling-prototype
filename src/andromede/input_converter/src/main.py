@@ -16,8 +16,8 @@ from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from configparser import ConfigParser
 from pathlib import Path
 
-from converter import AntaresStudyConverter
-from logger import Logger
+from .converter import AntaresStudyConverter
+from .logger import Logger
 
 DEFAULT: dict = {}
 LOGGER_PATH: str = os.path.join(os.path.dirname(__file__), "../data/logging.log")

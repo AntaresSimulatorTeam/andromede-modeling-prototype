@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
@@ -70,7 +70,7 @@ class AntaresStudyConverter:
         return True
 
     def _convert_area_to_component_list(
-        self, areas: list[Area]
+        self, areas: Iterable[Area]
     ) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
@@ -99,15 +99,14 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, areas: list[Area]
+        self, areas: Iterable[Area]
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting renewables to component list...")
         for area in areas:
             renewables = area.get_renewables()
-            for renewable in renewables:
-                renewable = renewables[renewable]
+            for renewable in renewables.values():
                 series_path = (
                     self.study_path
                     / "input"
@@ -155,7 +154,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_thermal_to_component_list(
-        self, areas: list[Area]
+        self, areas: Iterable[Area]
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -164,8 +163,7 @@ class AntaresStudyConverter:
 
         for area in areas:
             thermals = area.get_thermals()
-            for thermal in thermals:
-                thermal = thermals[thermal]
+            for thermal in thermals.values():
                 series_path = (
                     self.study_path
                     / "input"
@@ -268,8 +266,7 @@ class AntaresStudyConverter:
         self.logger.info("Converting links to component list...")
         # Add links components for each area
         links = self.study.get_links()
-        for link in links:
-            link = links[link]
+        for link in links.values():
             capacity_direct_path = (
                 self.study_path
                 / "input"
@@ -325,7 +322,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_wind_to_component_list(
-        self, areas: list[Area]
+        self, areas: Iterable[Area]
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -362,7 +359,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_solar_to_component_list(
-        self, areas: list[Area]
+        self, areas: Iterable[Area]
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -400,7 +397,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_load_to_component_list(
-        self, areas: list[Area]
+        self, areas: Iterable[Area]
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
