@@ -319,7 +319,7 @@ class TestConverter:
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
-                        value=1.5,
+                        value=1.0,
                     ),
                     InputComponentParameter(
                         id="p_min_unit",
@@ -768,10 +768,6 @@ class TestConverter:
             thermals = area.get_thermals()
             for thermal in thermals.values():
                 if thermal.area_id == "fr":
-                    # The dataclass can not be modified, so we have to create a new one
-                    thermal._properties = replace(
-                        thermal.properties, unit_count=1.5, nominal_capacity=2
-                    )
                     tdp = ThermalDataPreprocessing(thermal, study_path)
                     return tdp
 
@@ -825,7 +821,7 @@ class TestConverter:
             local_study_w_thermal, "nb_units_min"
         )
         instance.process_p_min_cluster()
-        expected_values = [[3.0], [5.0], [1.0]]  # ceil(p_min_cluster / p_max_unit)
+        expected_values = [[2.0], [5.0], [1.0]]  # ceil(p_min_cluster / p_max_unit)
         self._validate_component(
             instance, "process_nb_units_min", expected_path, expected_values
         )

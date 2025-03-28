@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 from antares.craft.model.area import Area, AreaProperties
 from antares.craft.model.hydro import HydroProperties
+from antares.craft.model.thermal import ThermalClusterProperties
 from antares.craft.model.renewable import RenewableClusterProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
@@ -91,7 +92,9 @@ def local_study_w_thermal(local_study_w_links) -> Study:
     Create a thermal cluster
     """
     thermal_name = "gaz"
-    local_study_w_links.get_areas()["fr"].create_thermal_cluster(thermal_name)
+    local_study_w_links.get_areas()["fr"].create_thermal_cluster(
+        thermal_name, ThermalClusterProperties(unit_count=1, nominal_capacity=2.0)
+    )
     return local_study_w_links
 
 
