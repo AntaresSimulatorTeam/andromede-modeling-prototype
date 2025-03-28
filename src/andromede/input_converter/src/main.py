@@ -16,8 +16,8 @@ from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from configparser import ConfigParser
 from pathlib import Path
 
-from .converter import AntaresStudyConverter
-from .logger import Logger
+from converter import AntaresStudyConverter
+from logger import Logger
 
 DEFAULT: dict = {}
 LOGGER_PATH: str = os.path.join(os.path.dirname(__file__), "../data/logging.log")
@@ -168,6 +168,6 @@ if __name__ == "__main__":
         config_parser.set("study", "output_path", str(args.output_path))
 
     converter = AntaresStudyConverter(
-        Path(config_parser["study"].get("study_path")), logger=logger
+        study_input=Path(config_parser["study"].get("study_path")), logger=logger
     )
     converter.process_all()

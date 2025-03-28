@@ -74,6 +74,7 @@ class AntaresStudyConverter:
     ) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
+   
         for area in areas:
             components.append(
                 InputComponent(
@@ -104,14 +105,15 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting renewables to component list...")
         for area in areas:
-            renewables = area._read_renewables()
+            renewables = area.get_renewables()
             for renewable in renewables:
+                renewable = renewables[renewable]
                 series_path = (
                     self.study_path
                     / "input"
                     / "renewables"
                     / "series"
-                    / Path(area.id)
+                    / Path(renewable.area_id)
                     / Path(renewable.id)
                     / "series.txt"
                 )
@@ -145,7 +147,7 @@ class AntaresStudyConverter:
                     InputPortConnections(
                         component1=renewable.id,
                         port1="balance_port",
-                        component2=area.id,
+                        component2=renewable.area_id,
                         port2="balance_port",
                     )
                 )
@@ -161,8 +163,9 @@ class AntaresStudyConverter:
         # Add thermal components for each area
 
         for area in areas:
-            thermals = area._read_thermal_clusters()
+            thermals = area.get_thermals()
             for thermal in thermals:
+                thermal = thermals[thermal]
                 series_path = (
                     self.study_path
                     / "input"
@@ -264,8 +267,9 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting links to component list...")
         # Add links components for each area
-        links = self.study._read_links()
+        links = self.study.get_links()
         for link in links:
+            link = links[link]
             capacity_direct_path = (
                 self.study_path
                 / "input"
@@ -433,7 +437,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def convert_study_to_input_study(self) -> InputStudy:
-        areas = self.study._read_areas()
+        areas = self.study.get_areas().values()
         area_components = self._convert_area_to_component_list(areas)
 
         list_components: list[InputComponent] = []

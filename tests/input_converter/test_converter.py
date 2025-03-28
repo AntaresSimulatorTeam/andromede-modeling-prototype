@@ -34,7 +34,7 @@ class TestConverter:
     def _init_area_reading(self, local_study):
         logger = Logger(__name__, local_study.service.config.study_path)
         converter = AntaresStudyConverter(study_input=local_study, logger=logger)
-        areas = converter.study._read_areas()
+        areas = converter.study.get_areas().values()
         return areas, converter
 
     def test_convert_study_to_input_study(self, local_study_w_areas):
@@ -319,7 +319,7 @@ class TestConverter:
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
-                        value=1.0,
+                        value=1.5,
                     ),
                     InputComponentParameter(
                         id="p_min_unit",
@@ -340,7 +340,7 @@ class TestConverter:
                         time_dependent=False,
                         scenario_dependent=False,
                         scenario_group=None,
-                        value=0.0,
+                        value=2.0,
                     ),
                     InputComponentParameter(
                         id="generation_cost",
@@ -765,8 +765,9 @@ class TestConverter:
             df.to_csv(series_path, sep="\t", index=False, header=False)
 
         for area in areas:
-            thermals = area._read_thermal_clusters()
+            thermals = area.get_thermals()
             for thermal in thermals:
+                thermal = thermals[thermal]
                 if thermal.area_id == "fr":
                     # The dataclass can not be modified, so we have to create a new one
                     thermal._properties = replace(
