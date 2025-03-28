@@ -74,7 +74,7 @@ class AntaresStudyConverter:
     ) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
-   
+
         for area in areas:
             components.append(
                 InputComponent(
