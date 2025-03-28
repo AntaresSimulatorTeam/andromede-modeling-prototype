@@ -13,9 +13,9 @@ import pandas as pd
 import pytest
 from antares.craft.model.area import Area, AreaProperties
 from antares.craft.model.hydro import HydroProperties
-from antares.craft.model.thermal import ThermalClusterProperties
 from antares.craft.model.renewable import RenewableClusterProperties
 from antares.craft.model.study import Study, create_study_local
+from antares.craft.model.thermal import ThermalClusterProperties
 from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
 
 
