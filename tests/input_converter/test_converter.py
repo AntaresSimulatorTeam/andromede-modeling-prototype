@@ -766,8 +766,7 @@ class TestConverter:
 
         for area in areas:
             thermals = area.get_thermals()
-            for thermal in thermals:
-                thermal = thermals[thermal]
+            for thermal in thermals.values():
                 if thermal.area_id == "fr":
                     # The dataclass can not be modified, so we have to create a new one
                     thermal._properties = replace(
