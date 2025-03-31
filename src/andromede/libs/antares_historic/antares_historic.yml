@@ -172,13 +172,16 @@ library:
         - id: reservoir_capacity
           time-dependent: false
           scenario-dependent: false
-        - id: injection_installed_capacity # unitcount * injectionnominalcapacity
+        - id: injection_nominal_capacity
           time-dependent: false
           scenario-dependent: false
-        - id: withdrawal_installed_capacity # unitcount * withdrawalnominalcapacity
+        - id: withdrawal_nominal_capacity
           time-dependent: false
           scenario-dependent: false
-        - id: efficiency
+        - id: efficiency_injection
+          time-dependent: false
+          scenario-dependent: false
+        - id: efficiency_withdrawal
           time-dependent: false
           scenario-dependent: false
         - id: lower_rule_curve
@@ -187,10 +190,10 @@ library:
         - id: upper_rule_curve
           time-dependent: true
           scenario-dependent: true
-        - id: p_max_withdrawal
+        - id: p_max_injection_modulation  # Read in p_max_injection
           time-dependent: true
           scenario-dependent: true
-        - id: p_max_injection
+        - id: p_max_withdrawal_modulation # Read in p_max_withdrawal
           time-dependent: true
           scenario-dependent: true
         - id: inflows
@@ -199,10 +202,10 @@ library:
       variables:
         - id: p_injection
           lower-bound: 0
-          upper-bound: p_max_injection * injection_installed_capacity # p_max_injection is a timeseries with adimensional values between 0 and 1
+          upper-bound: p_max_injection_modulation * injection_nominal_capacity # p_max_injection_modulation is a timeseries with adimensional values between 0 and 1
         - id: p_withdrawal
           lower-bound: 0
-          upper-bound: p_max_withdrawal * withdrawal_installed_capacity # p_max_withdrawal is a timeseries with adimensional values between 0 and 1
+          upper-bound: p_max_withdrawal_modulation * withdrawal_nominal_capacity # p_max_withdrawal_modulation is a timeseries with adimensional values between 0 and 1
         - id: initial_level
           lower-bound: 0
           upper-bound: 1
@@ -220,4 +223,4 @@ library:
         - id: initial_level
           expression: level[0] = initial_level * reservoir_capacity
         - id: Level equation
-          expression: level[t] = level[t-1] + efficiency * p_injection - p_withdrawal + inflows
+          expression: level[t] = level[t-1] + efficiency_injection * p_injection - efficiency_withdrawal * p_withdrawal + inflows
