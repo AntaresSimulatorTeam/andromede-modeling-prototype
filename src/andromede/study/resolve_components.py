@@ -167,7 +167,6 @@ def _build_data(
 ) -> AbstractDataStructure:
     if isinstance(param_value, str):
         # Should happen only if time-dependent or scenario-dependent
-        print("coucou", timeseries_dir, param_value)
         ts_data = load_ts_from_txt(param_value, timeseries_dir)
         if time_dependent and scenario_dependent:
             return TimeScenarioSeriesData(ts_data, scenarization)
