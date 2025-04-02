@@ -24,9 +24,9 @@ from yaml import safe_load
 from andromede.utils import ModifiedBaseModel
 
 
-def parse_yaml_components(input_study: typing.TextIO) -> "InputStudy":
+def parse_yaml_components(input_study: typing.TextIO) -> "InputSystem":
     tree = safe_load(input_study)
-    return InputStudy.model_validate(tree["system"])
+    return InputSystem.model_validate(tree["system"])
 
 
 def parse_scenario_builder(file: Path) -> pd.DataFrame:
@@ -57,7 +57,8 @@ class InputComponent(ModifiedBaseModel):
     parameters: Optional[List[InputComponentParameter]] = None
 
 
-class InputStudy(ModifiedBaseModel):
+class InputSystem(ModifiedBaseModel):
+    model_librairies: str = None # Parsed but unused for now
     nodes: List[InputComponent] = Field(default_factory=list)
     components: List[InputComponent] = Field(default_factory=list)
     connections: List[InputPortConnections] = Field(default_factory=list)

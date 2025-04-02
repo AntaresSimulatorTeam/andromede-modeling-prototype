@@ -31,19 +31,19 @@ from andromede.study import (
 @pytest.fixture
 def std_lib() -> Library:
     return library(
-        port_types=[BALANCE_PORT_TYPE], models=[GENERATOR_MODEL, DEMAND_MODEL]
+        id="std", port_types=[BALANCE_PORT_TYPE], models=[GENERATOR_MODEL, DEMAND_MODEL]
     )
 
 
 @pytest.fixture
-def ac_lib(libs_dir: Path, std_lib: Library) -> Library:
+def ac_lib(libs_dir: Path, std_lib: Library) -> dict[str, Library]:
     lib_file = libs_dir / "ac.yml"
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
         return resolve_library([input_lib], preloaded_libs=[std_lib])
 
 
-def test_ac_network_no_links(ac_lib: Library) -> None:
+def test_ac_network_no_links(ac_lib: dict[str, Library]) -> None:
     """
     The network only has one AC node where a generator and a demand are connected.
 
@@ -53,7 +53,7 @@ def test_ac_network_no_links(ac_lib: Library) -> None:
      - cost = 30
      --> objective = 30 * 100 = 3000
     """
-    ac_node_model = ac_lib.models["ac-node"]
+    ac_node_model = ac_lib["ac"].models["ac-node"]
 
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))
@@ -87,7 +87,7 @@ def test_ac_network_no_links(ac_lib: Library) -> None:
     assert problem.solver.Objective().Value() == pytest.approx(3000, abs=0.01)
 
 
-def test_ac_network(ac_lib: Library) -> None:
+def test_ac_network(ac_lib: dict[str, Library]) -> None:
     """
     The network only has 2 AC nodes connected by 1 AC link.
 
@@ -97,8 +97,8 @@ def test_ac_network(ac_lib: Library) -> None:
     We check that final cost matches the demand: 100 * 35 = 3500,
     and that flow on the line is -100 MW.
     """
-    ac_node_model = ac_lib.models["ac-node"]
-    ac_link_model = ac_lib.models["ac-link"]
+    ac_node_model = ac_lib["ac"].models["ac-node"]
+    ac_link_model = ac_lib["ac"].models["ac-link"]
 
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))
@@ -148,7 +148,7 @@ def test_ac_network(ac_lib: Library) -> None:
     )
 
 
-def test_parallel_ac_links(ac_lib: Library) -> None:
+def test_parallel_ac_links(ac_lib: dict[str, Library]) -> None:
     """
     The network has 2 AC nodes connected by 2 parallel links,
     where reactance is 1 for line L1, and 2 for line L2.
@@ -160,8 +160,8 @@ def test_parallel_ac_links(ac_lib: Library) -> None:
     We check that final cost matches the demand: 100 * 35 = 3500,
     and that flow on L1 is -66. MW while flow on L2 is only -33.3 MW.
     """
-    ac_node_model = ac_lib.models["ac-node"]
-    ac_link_model = ac_lib.models["ac-link"]
+    ac_node_model = ac_lib["ac"].models["ac-node"]
+    ac_link_model = ac_lib["ac"].models["ac-link"]
 
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))
@@ -220,7 +220,7 @@ def test_parallel_ac_links(ac_lib: Library) -> None:
     )
 
 
-def test_parallel_ac_links_with_pst(ac_lib: Library) -> None:
+def test_parallel_ac_links_with_pst(ac_lib: dict[str, Library]) -> None:
     """
     Same case as in parallel_ac_links but:
      - flow is restricted to 50 MW on line L1, so it cannot
@@ -233,9 +233,9 @@ def test_parallel_ac_links_with_pst(ac_lib: Library) -> None:
 
     Objective value is 3500 (for generation) + 50 (for phase shift).
     """
-    ac_node_model = ac_lib.models["ac-node"]
-    ac_link_model = ac_lib.models["ac-link-with-limit"]
-    pst_model = ac_lib.models["ac-link-with-pst"]
+    ac_node_model = ac_lib["ac"].models["ac-node"]
+    ac_link_model = ac_lib["ac"].models["ac-link-with-limit"]
+    pst_model = ac_lib["ac"].models["ac-link-with-pst"]
 
     database = DataBase()
     database.add_data("D", "demand", ConstantData(100))

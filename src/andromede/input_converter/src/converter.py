@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Optional, Union, Iterable
+from typing import Iterable, Optional, Union
 
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
@@ -25,7 +25,7 @@ from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
     InputPortConnections,
-    InputStudy,
+    InputSystem,
 )
 
 
@@ -70,7 +70,7 @@ class AntaresStudyConverter:
         return True
 
     def _convert_area_to_component_list(
-        self, areas: Iterable[Area]
+        self, areas: Iterable[Area], lib_id: str
     ) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
@@ -79,7 +79,7 @@ class AntaresStudyConverter:
             components.append(
                 InputComponent(
                     id=area.id,
-                    model="area",
+                    model=f"{lib_id}.area",
                     parameters=[
                         InputComponentParameter(
                             id="ens_cost",
@@ -99,7 +99,7 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, areas: Iterable[Area]
+        self, areas: Iterable[Area], lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -119,7 +119,7 @@ class AntaresStudyConverter:
                 components.append(
                     InputComponent(
                         id=renewable.id,
-                        model="renewable",
+                        model=f"{lib_id}.renewable",
                         parameters=[
                             InputComponentParameter(
                                 id="unit_count",
@@ -154,7 +154,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_thermal_to_component_list(
-        self, areas: Iterable[Area]
+        self, areas: Iterable[Area], lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -177,7 +177,7 @@ class AntaresStudyConverter:
                 components.append(
                     InputComponent(
                         id=thermal.id,
-                        model="thermal",
+                        model=f"{lib_id}.thermal",
                         parameters=[
                             tdp.process_p_min_cluster(),
                             tdp.process_nb_units_min(),
@@ -259,7 +259,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_link_to_component_list(
-        self,
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -286,7 +286,7 @@ class AntaresStudyConverter:
             components.append(
                 InputComponent(
                     id=link.id,
-                    model="link",
+                    model=f"{lib_id}.link",
                     parameters=[
                         InputComponentParameter(
                             id="capacity_direct",
@@ -322,7 +322,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_wind_to_component_list(
-        self, areas: Iterable[Area]
+        self, areas: Iterable[Area], lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -336,7 +336,7 @@ class AntaresStudyConverter:
                     components.append(
                         InputComponent(
                             id=area.id,
-                            model="wind",
+                            model=f"{lib_id}.wind",
                             parameters=[
                                 InputComponentParameter(
                                     id="wind",
@@ -359,7 +359,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_solar_to_component_list(
-        self, areas: Iterable[Area]
+        self, areas: Iterable[Area], lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -374,7 +374,7 @@ class AntaresStudyConverter:
                     components.append(
                         InputComponent(
                             id=area.id,
-                            model="solar",
+                            model=f"{lib_id}.solar",
                             parameters=[
                                 InputComponentParameter(
                                     id="solar",
@@ -397,7 +397,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_load_to_component_list(
-        self, areas: Iterable[Area]
+        self, areas: Iterable[Area], lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -411,7 +411,7 @@ class AntaresStudyConverter:
                     components.append(
                         InputComponent(
                             id="load",
-                            model="load",
+                            model=f"{lib_id}.load",
                             parameters=[
                                 InputComponentParameter(
                                     id="load",
@@ -433,14 +433,19 @@ class AntaresStudyConverter:
 
         return components, connections
 
-    def convert_study_to_input_study(self) -> InputStudy:
+    def convert_study_to_input_study(self) -> InputSystem:
+        antares_historic_lib_id = "antares-historic"
         areas = self.study.get_areas().values()
-        area_components = self._convert_area_to_component_list(areas)
+        area_components = self._convert_area_to_component_list(
+            areas, antares_historic_lib_id
+        )
 
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
 
-        components, connections = self._convert_link_to_component_list()
+        components, connections = self._convert_link_to_component_list(
+            antares_historic_lib_id
+        )
         list_components.extend(components)
         list_connections.extend(connections)
         conversion_methods = [
@@ -452,14 +457,14 @@ class AntaresStudyConverter:
         ]
 
         for method in conversion_methods:
-            components, connections = method(areas)
+            components, connections = method(areas, antares_historic_lib_id)
             list_components.extend(components)
             list_connections.extend(connections)
 
         self.logger.info(
             "Converting node, components and connections into Input study..."
         )
-        return InputStudy(
+        return InputSystem(
             nodes=area_components,
             components=list_components,
             connections=list_connections,

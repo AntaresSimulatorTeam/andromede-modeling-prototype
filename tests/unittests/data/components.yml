@@ -10,20 +10,21 @@
 #
 # This file is part of the Antares project.
 system:
+  model-librairies: basic
   nodes:
     - id: N
-      model: node
+      model: basic.node
 
   components:
     - id: G
-      model: generator
+      model: basic.generator
       parameters:
         - id: cost
           value: 30
         - id: p_max
           value: 100
     - id: D
-      model: demand
+      model: basic.demand
       parameters:
         - id: demand
           value: 100

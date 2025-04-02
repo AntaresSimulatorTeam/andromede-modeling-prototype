@@ -28,23 +28,23 @@ def data_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
-def lib(data_dir: Path) -> Library:
+def lib_dict(data_dir: Path) -> dict[str, Library]:
     lib_file = data_dir / "lib.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
 
-    lib = resolve_library([input_lib])
-    return lib
+    lib_dict = resolve_library([input_lib])
+    return lib_dict
 
 
 @pytest.fixture(scope="session")
-def lib_sc() -> Library:
+def lib_dict_sc() -> dict[str, Library]:
     libs_path = Path(__file__).parents[2] / "src/andromede/libs/"
     lib_sc_file = libs_path / "standard_sc.yml"
 
     with lib_sc_file.open() as f:
         input_lib_sc = parse_yaml_library(f)
 
-    lib_sc = resolve_library([input_lib_sc])
-    return lib_sc
+    lib_dict_sc = resolve_library([input_lib_sc])
+    return lib_dict_sc

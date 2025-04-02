@@ -12,7 +12,7 @@
 
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from andromede.model.library import Library
 from andromede.model.parsing import parse_yaml_library
@@ -21,11 +21,11 @@ from andromede.simulation import TimeBlock, build_problem
 from andromede.study import DataBase
 from andromede.study.parsing import parse_cli, parse_yaml_components
 from andromede.study.resolve_components import (
-    NetworkComponents,
+    System,
     build_data_base,
     build_network,
     consistency_check,
-    resolve_components_and_cnx,
+    resolve_system,
 )
 
 
@@ -33,7 +33,7 @@ class AntaresTimeSeriesImportError(Exception):
     pass
 
 
-def input_models(model_paths: List[Path]) -> Library:
+def input_models(model_paths: List[Path]) -> dict[str, Library]:
     yaml_libraries = []
     yaml_library_ids = set()
 
@@ -55,9 +55,9 @@ def input_database(study_path: Path, timeseries_path: Optional[Path]) -> DataBas
         return build_data_base(parse_yaml_components(comp), timeseries_path)
 
 
-def input_study(study_path: Path, model: Library) -> NetworkComponents:
+def input_study(study_path: Path, librairies: dict[str, Library]) -> System:
     with study_path.open() as comp:
-        return resolve_components_and_cnx(parse_yaml_components(comp), model)
+        return resolve_system(parse_yaml_components(comp), librairies)
 
 
 def main_cli() -> None:

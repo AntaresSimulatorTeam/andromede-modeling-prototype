@@ -55,6 +55,11 @@ def resolve_library(
     """
     yaml_lib_dict = dict((l.id, l) for l in input_libs)
 
+    preloaded_port_types = {}
+    if preloaded_libs:
+        for preloaded_lib in preloaded_libs:
+            preloaded_port_types.update(preloaded_lib.port_types)
+
     output_lib_dict: Dict[str, Library] = (
         dict((l.id, l) for l in preloaded_libs) if preloaded_libs else {}
     )
@@ -76,6 +81,7 @@ def resolve_library(
             current_lib = Library(id=cur_yaml_lib.id, port_types={}, models={})
 
             # Add already parsed port types from dependencies in current lib
+            _add_preloaded_port_types_to_current_lib(preloaded_port_types, current_lib)
             _add_treated_dependent_port_types_to_current_lib(
                 output_lib_dict, treated_lib_ids, cur_yaml_lib, current_lib
             )
@@ -90,6 +96,12 @@ def resolve_library(
                 _update_treated_libs_and_import_stack(treated_lib_ids, import_stack)
 
     return output_lib_dict
+
+
+def _add_preloaded_port_types_to_current_lib(
+    preloaded_port_types: dict[str, PortType], current_lib: Library
+) -> None:
+    current_lib.port_types.update(preloaded_port_types)
 
 
 def _add_treated_dependent_port_types_to_current_lib(
