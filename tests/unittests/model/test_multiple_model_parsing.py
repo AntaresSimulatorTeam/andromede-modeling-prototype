@@ -165,7 +165,7 @@ def test_model_redefinition_in_same_lib(lib_dir: Path) -> None:
             input_libs.append(parse_yaml_library(f))
 
     with pytest.raises(
-        Exception, match=re.escape("Model(s) : {'generator'} is(are) defined twice")
+        Exception, match=re.escape("Model generator is defined twice")
     ):
         resolve_library(input_libs)
 

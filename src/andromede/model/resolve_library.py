@@ -121,13 +121,15 @@ def _treat_lib(
         )
     current_lib.port_types.update(port_types_dict)
 
+    cur_yaml_lib_model_ids = [model.id for model in cur_yaml_lib.models]
+    for id in cur_yaml_lib_model_ids:
+        if cur_yaml_lib_model_ids.count(id) > 1:
+            raise Exception(f"Model {id} is defined twice")
+
     models = [_resolve_model(m, current_lib.port_types) for m in cur_yaml_lib.models]
 
     models_dict = dict((m.id, m) for m in models)
-    if current_lib.models.keys() & models_dict.keys():
-        raise Exception(
-            f"Model(s) : {str(current_lib.models.keys() & models_dict.keys())} is(are) defined twice"
-        )
+
     current_lib.models.update(models_dict)
     output_lib[current_lib.id] = current_lib
 
