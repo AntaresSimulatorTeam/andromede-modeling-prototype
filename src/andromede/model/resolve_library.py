@@ -109,7 +109,7 @@ def _add_treated_dependent_port_types_to_current_lib(
     treated_lib_ids: Set[str],
     cur_yaml_lib: InputLibrary,
     current_lib: Library,
-):
+) -> None:
     done_dependencies = set(cur_yaml_lib.dependencies) & treated_lib_ids
     for done_lib in done_dependencies:
         current_lib.port_types.update(output_lib_dict[done_lib].port_types)
@@ -117,7 +117,7 @@ def _add_treated_dependent_port_types_to_current_lib(
 
 def _update_treated_libs_and_import_stack(
     treated_lib_ids: Set[str], import_stack: List[str]
-):
+) -> None:
     treated_lib_ids.add(import_stack.pop())
 
 
