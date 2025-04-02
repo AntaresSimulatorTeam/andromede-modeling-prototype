@@ -10,10 +10,11 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import replace
+from typing import Callable, Literal
 
 import pandas as pd
 import pytest
+from antares.craft.model.study import Study
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.data_preprocessing.thermal import (
@@ -37,7 +38,7 @@ class TestConverter:
         areas = converter.study.get_areas().values()
         return areas, converter
 
-    def test_convert_study_to_input_study(self, local_study_w_areas):
+    def test_convert_study_to_input_study(self, local_study_w_areas: Study):
         logger = Logger(__name__, local_study_w_areas.service.config.study_path)
         converter = AntaresStudyConverter(
             study_input=local_study_w_areas, logger=logger
@@ -100,7 +101,7 @@ class TestConverter:
 
         assert input_study == expected_input_study
 
-    def test_convert_area_to_component(self, local_study_w_areas, lib_id):
+    def test_convert_area_to_component(self, local_study_w_areas: Study, lib_id: str):
         areas, converter = self._init_area_reading(local_study_w_areas)
         area_components = converter._convert_area_to_component_list(areas, lib_id)
 
@@ -154,7 +155,9 @@ class TestConverter:
         area_components.sort(key=lambda x: x.id)
         assert area_components == expected_area_components
 
-    def test_convert_renewables_to_component(self, local_study_with_renewable, lib_id):
+    def test_convert_renewables_to_component(
+        self, local_study_with_renewable: Study, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_with_renewable)
         study_path = converter.study_path
         (
@@ -213,7 +216,10 @@ class TestConverter:
         assert renewable_connections == expected_renewable_connections
 
     def test_convert_thermals_to_component(
-        self, local_study_w_thermal, create_csv_from_constant_value, lib_id
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
+        lib_id: str,
     ):
         areas, converter = self._init_area_reading(local_study_w_thermal)
         study_path = converter.study_path
@@ -393,7 +399,7 @@ class TestConverter:
         assert thermals_components == expected_thermals_components
         assert thermals_connections == expected_thermals_connections
 
-    def test_convert_area_to_yaml(self, local_study_w_areas, lib_id):
+    def test_convert_area_to_yaml(self, local_study_w_areas: Study, lib_id: str):
         areas, converter = self._init_area_reading(local_study_w_areas)
         area_components = converter._convert_area_to_component_list(areas, lib_id)
         input_study = InputSystem(nodes=area_components)
@@ -459,7 +465,7 @@ class TestConverter:
         validated_data.nodes.sort(key=lambda x: x.id)
         assert validated_data == expected_validated_data
 
-    def test_convert_solar_to_component(self, local_study_w_areas, fr_solar, lib_id):
+    def test_convert_solar_to_component(self, local_study_w_areas: Study, lib_id: str):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
         solar_components, solar_connection = converter._convert_solar_to_component_list(
@@ -494,7 +500,7 @@ class TestConverter:
         assert solar_components[0] == expected_solar_components
         assert solar_connection == expected_solar_connection
 
-    def test_convert_load_to_component(self, local_study_w_areas, fr_load, lib_id):
+    def test_convert_load_to_component(self, local_study_w_areas: Study, lib_id: str):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
         load_components, load_connection = converter._convert_load_to_component_list(
@@ -537,7 +543,7 @@ class TestConverter:
         indirect=True,
     )
     def test_convert_wind_to_component_not_empty_file(
-        self, local_study_w_areas, fr_wind, lib_id
+        self, local_study_w_areas: Study, fr_wind: int, lib_id: str
     ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
@@ -581,7 +587,7 @@ class TestConverter:
         indirect=True,
     )
     def test_convert_wind_to_component_empty_file(
-        self, local_study_w_areas, fr_wind, lib_id
+        self, local_study_w_areas: Study, lib_id: str
     ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
@@ -597,7 +603,7 @@ class TestConverter:
         indirect=True,
     )
     def test_convert_wind_to_component_zero_values(
-        self, local_study_w_areas, fr_wind, lib_id
+        self, local_study_w_areas: Study, lib_id: str
     ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
@@ -605,7 +611,7 @@ class TestConverter:
 
         assert wind_components == []
 
-    def test_convert_links_to_component(self, local_study_w_links, lib_id):
+    def test_convert_links_to_component(self, local_study_w_links: Study, lib_id: str):
         _, converter = self._init_area_reading(local_study_w_links)
         study_path = converter.study_path
         (
@@ -819,7 +825,7 @@ class TestConverter:
             instance, "process_p_min_cluster", expected_path, expected_values
         )
 
-    def test_nb_units_min(self, local_study_w_thermal):
+    def test_nb_units_min(self, local_study_w_thermal: Study):
         """Tests the nb_units_min parameter processing."""
         instance, expected_path = self._setup_test(
             local_study_w_thermal, "nb_units_min"
@@ -830,7 +836,7 @@ class TestConverter:
             instance, "process_nb_units_min", expected_path, expected_values
         )
 
-    def test_nb_units_max(self, local_study_w_thermal):
+    def test_nb_units_max(self, local_study_w_thermal: Study):
         """Tests the nb_units_max parameter processing."""
         instance, expected_path = self._setup_test(
             local_study_w_thermal, "nb_units_max"
@@ -843,7 +849,10 @@ class TestConverter:
 
     @pytest.mark.parametrize("direction", ["forward", "backward"])
     def test_nb_units_max_variation(
-        self, local_study_w_thermal, create_csv_from_constant_value, direction
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
+        direction: Literal["forward"] | Literal["backward"],
     ):
         """
         Tests nb_units_max_variation_forward and nb_units_max_variation_backward processing.
@@ -881,14 +890,18 @@ class TestConverter:
         assert variation_component.value == str(expected_path)
 
     def test_nb_units_max_variation_forward(
-        self, local_study_w_thermal, create_csv_from_constant_value
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
     ):
         self.test_nb_units_max_variation(
             local_study_w_thermal, create_csv_from_constant_value, direction="forward"
         )
 
     def test_nb_units_max_variation_backward(
-        self, local_study_w_thermal, create_csv_from_constant_value
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
     ):
         self.test_nb_units_max_variation(
             local_study_w_thermal, create_csv_from_constant_value, direction="backward"

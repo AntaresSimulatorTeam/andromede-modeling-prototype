@@ -71,7 +71,7 @@ def local_study_w_areas(local_study) -> Study:
 
 
 @pytest.fixture
-def local_study_w_links(local_study_w_areas):
+def local_study_w_links(local_study_w_areas) -> Study:
     """
     Create an empty study
     Create 2 areas with custom area properties
