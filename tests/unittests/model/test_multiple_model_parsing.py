@@ -153,6 +153,7 @@ def test_model_with_same_name_in_different_lib_ok(lib_dir: Path) -> None:
     assert len(lib_dict["production_CO2"].port_types) == 2
     assert len(lib_dict["production"].port_types) == 1
 
+
 def test_model_redefinition_in_same_lib(lib_dir: Path) -> None:
     lib_files = [
         lib_dir / "basic_lib.yml",
@@ -164,9 +165,7 @@ def test_model_redefinition_in_same_lib(lib_dir: Path) -> None:
         with lib_file.open() as f:
             input_libs.append(parse_yaml_library(f))
 
-    with pytest.raises(
-        Exception, match=re.escape("Model generator is defined twice")
-    ):
+    with pytest.raises(Exception, match=re.escape("Model generator is defined twice")):
         resolve_library(input_libs)
 
 

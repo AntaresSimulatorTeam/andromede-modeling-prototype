@@ -23,6 +23,7 @@ from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
 def lib_id() -> str:
     return "antares-historic"
 
+
 @pytest.fixture
 def local_study(tmp_path) -> Study:
     """
