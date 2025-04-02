@@ -33,11 +33,11 @@ class AntaresTimeSeriesImportError(Exception):
     pass
 
 
-def input_models(model_paths: List[Path]) -> dict[str, Library]:
+def input_libs(yaml_lib_paths: List[Path]) -> dict[str, Library]:
     yaml_libraries = []
     yaml_library_ids = set()
 
-    for path in model_paths:
+    for path in yaml_lib_paths:
         with path.open("r") as file:
             yaml_lib = parse_yaml_library(file)
 
@@ -63,9 +63,14 @@ def input_study(study_path: Path, librairies: dict[str, Library]) -> System:
 def main_cli() -> None:
     parsed_args = parse_cli()
 
-    models = input_models(parsed_args.models_path)
-    study = input_study(parsed_args.components_path, models)
-    consistency_check(study.components, models.models)
+    lib_dict = input_libs(parsed_args.models_path)
+    study = input_study(parsed_args.components_path, lib_dict)
+
+    models = {}
+    for lib in lib_dict.values():
+        models.update(lib.models)
+
+    consistency_check(study.components, models)
 
     try:
         database = input_database(

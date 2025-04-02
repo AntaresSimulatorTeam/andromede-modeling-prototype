@@ -120,6 +120,7 @@ def consistency_check(
     Checks if all components in the Components instances have a valid model from the library.
     Returns True if all components are consistent, raises ValueError otherwise.
     """
+    # TODO: Update this consistency check to check if each component have a valid model from the lib it refers to (and not all libs)
     model_ids_set = input_models.keys()
     for component_id, component in input_study.items():
         if component.model.id not in model_ids_set:
