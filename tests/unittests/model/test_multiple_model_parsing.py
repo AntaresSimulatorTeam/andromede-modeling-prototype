@@ -58,8 +58,15 @@ def test_simple_dependency_tree(lib_dir: Path) -> None:
             input_libs.append(parse_yaml_library(f))
 
     lib = resolve_library(input_libs)
-    assert len(lib.models) == 3
-    assert len(lib.port_types) == 1
+    assert len(lib) == 3
+
+    assert len(lib["basic_lib"].models) == 1
+    assert len(lib["demand"].models) == 1
+    assert len(lib["production"].models) == 1
+    
+    assert len(lib["basic_lib"].port_types) == 1
+    assert len(lib["demand"].port_types) == 1
+    assert len(lib["production"].port_types) == 1
 
     # changing order in lib_files
     lib_files = [
