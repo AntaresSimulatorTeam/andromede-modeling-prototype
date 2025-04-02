@@ -18,6 +18,7 @@ from antares.craft.model.study import Study, create_study_local
 from antares.craft.model.thermal import ThermalClusterProperties
 from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
 
+
 @pytest.fixture
 def lib_id() -> str:
     return "antares-historic"
