@@ -13,3 +13,6 @@ bin
 outputs
 build
 src/andromede_modeling_prototype.egg-info/
+main_st_storage.py 
+main_test_cpp.py 
+

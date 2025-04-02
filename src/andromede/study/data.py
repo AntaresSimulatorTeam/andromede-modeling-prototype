@@ -130,6 +130,7 @@ def load_ts_from_txt(
     if path_to_file is not None and timeseries_name is not None:
         timeseries_with_extension = timeseries_name + ".txt"
         ts_path = path_to_file / timeseries_with_extension
+        return pd.read_csv(ts_path, header=None, sep=r"\s+")
     try:
         return pd.read_csv(ts_path, header=None, sep=r"\s+")
 

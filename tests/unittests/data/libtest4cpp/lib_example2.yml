@@ -1,0 +1,62 @@
+library:
+  id: lib_example2
+  description: test model library
+
+  models:
+    - id: node_2gen_1load_mingen
+      description: A simple node with two generators and one load, with min P constraints
+      parameters:
+        - name: load
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen1_max_p
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen1_min_p
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen1_prop_cost
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen2_max_p
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen2_min_p
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen2_prop_cost
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - name: gen1_p
+          lower-bound: 0
+          upper-bound: gen1_max_p
+          variable-type: float
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen1_up
+          variable-type: integer
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen2_p
+          lower-bound: 0
+          upper-bound: gen2_max_p
+          variable-type: float
+          time-dependent: false
+          scenario-dependent: false
+        - name: gen2_up
+          variable-type: integer
+          time-dependent: false
+          scenario-dependent: false
+      constraints:
+        - name: balance
+          expression: gen1_p + gen2_p - load = 0
+        - name: gen1_gen_min_range
+          expression: gen1_up * gen1_min_p <= gen1_p
+        - name: gen1_gen_max_range
+          expression: gen1_p <= gen1_up * gen1_max_p
+        - name: gen2_gen_min_range
+          expression: gen2_up * gen2_min_p <= gen2_p
+        - name: gen2_gen_max_range
+          expression: gen2_p <= gen2_up * gen2_max_p
+      objective: gen1_p * gen1_prop_cost + gen2_p * gen2_prop_cost

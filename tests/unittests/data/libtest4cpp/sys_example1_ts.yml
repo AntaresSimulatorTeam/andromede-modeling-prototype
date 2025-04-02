@@ -1,0 +1,26 @@
+#system:
+study:
+  id: sys_example1
+  description: test system
+  #model-libraries: lib_example1
+
+  components:
+  - id: node1
+    model: node_2gen_1load
+    scenario-group: sg
+    parameters:
+    - name: load
+      type: constant
+      value : 20
+    - name: gen1_max_p
+      type: timeseries
+      timeseries: gen1_max_p
+    - name: gen1_prop_cost
+      type: timeseries
+      timeseries: gen1_prop_cost
+    - name: gen2_max_p
+      type: timeseries
+      timeseries: gen2_max_p
+    - name: gen2_prop_cost
+      type: timeseries
+      timeseries: gen2_prop_cost

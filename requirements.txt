@@ -64,7 +64,7 @@ pyyaml==6.0.2
     #   antares-timeseries-generation
 requests==2.32.3
     # via antares-craft
-scipy==1.10.1
+scipy==1.15.2
     # via -r requirements.in
 six==1.17.0
     # via python-dateutil
@@ -76,3 +76,5 @@ tzdata==2024.2
     # via pandas
 urllib3==2.2.3
     # via requests
+pytest==8.3.4
+
