@@ -117,6 +117,7 @@ def main_storage_case(timespan):
     consistency_check(components_input.components, result_lib.models)
     database = build_data_base(input_component, dbpath)
     network = build_network(components_input)
+    print(network.get_component("storage_base_zone").model.constraints['initial_level'])
     problem = build_problem(network, database, TimeBlock(1, [i for i in range(0,timespan)]), scenarios)
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
@@ -124,7 +125,7 @@ def main_storage_case(timespan):
     results = (OutputValues(problem))
     pbfile = problem.export_as_lp()
     print(pbfile)
-    print(results)
+    #print(results)
     dataframe = pd.DataFrame()
     for cluster in ["gas_base_zone","coal_base_zone","oil_base_zone"]:
         var_result = results.component(cluster).var("generation")
@@ -143,10 +144,10 @@ def main_storage_case(timespan):
     dataframe.to_excel("../parallel_run/storage_case_modeler.xlsx")
 
 
-#main_base_case(7*24)
+main_base_case(7*24)
 #main_dsr_case(7*24)
 #main_electrolyser_case(7*24)
-main_storage_case(5)
+main_storage_case(7*24)
 print("Test terminated")
 
 

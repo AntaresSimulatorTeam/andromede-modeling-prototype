@@ -222,7 +222,7 @@ library:
           definition: p_withdrawal - p_injection
       constraints:
         - id: initial_level
-          expression: level[0] = initial_level * reservoir_capacity
+          expression: level[0] = initial_level[0] * reservoir_capacity
           #expression: level[0] = initial_level[0] * reservoir_capacity[0] # Problème de gestion d'un paramètre/variable que l'on souhaite être défini sur un seul pas de temps
         - id: Level equation
           expression: level[t] = level[t-1] + efficiency_injection * p_injection - efficiency_withdrawal * p_withdrawal + inflows 
