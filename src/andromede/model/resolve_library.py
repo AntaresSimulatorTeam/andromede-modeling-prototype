@@ -55,53 +55,63 @@ def resolve_library(
     """
     yaml_lib_dict = dict((l.id, l) for l in input_libs)
 
-    output_lib: Dict[str, Library] = (
+    output_lib_dict: Dict[str, Library] = (
         dict((l.id, l) for l in preloaded_libs) if preloaded_libs else {}
     )
 
     remaining_lib_ids: List[str] = list(yaml_lib_dict)
-    treated_lib_id: Set[str] = set()
+    treated_lib_ids: Set[str] = set()
     import_stack: List[str] = []
 
     while remaining_lib_ids:
         next_lib_id = remaining_lib_ids.pop()
 
-        if next_lib_id in treated_lib_id:
+        if next_lib_id in treated_lib_ids:
             continue
         else:
             import_stack.append(next_lib_id)
 
-        current_lib = Library(id=next_lib_id, port_types={}, models={})
-
         while import_stack:
             cur_yaml_lib = yaml_lib_dict[import_stack[-1]]
+            current_lib = Library(id=cur_yaml_lib.id, port_types={}, models={})
 
             # Add already parsed port types from dependencies in current lib
-            done_dependencies = set(cur_yaml_lib.dependencies) & treated_lib_id
-            for done_lib in done_dependencies:
-                current_lib.port_types.update(output_lib[done_lib].port_types)
+            _add_treated_dependent_port_types_to_current_lib(
+                output_lib_dict, treated_lib_ids, cur_yaml_lib, current_lib
+            )
 
-            remaining_dependencies = set(cur_yaml_lib.dependencies) - treated_lib_id
+            remaining_dependencies = set(cur_yaml_lib.dependencies) - treated_lib_ids
 
             if remaining_dependencies:
                 _add_dependencies_to_stack(import_stack, remaining_dependencies)
 
             else:
-                _treat_lib(current_lib, cur_yaml_lib)
-                _update_treated_libs_and_import_stack(treated_lib_id, import_stack)
+                _treat_lib(current_lib, cur_yaml_lib, output_lib_dict)
+                _update_treated_libs_and_import_stack(treated_lib_ids, import_stack)
 
-        output_lib[current_lib.id] = current_lib
+    return output_lib_dict
 
-    return output_lib
+
+def _add_treated_dependent_port_types_to_current_lib(
+    output_lib_dict: Dict[str, Library],
+    treated_lib_ids: Set[str],
+    cur_yaml_lib: InputLibrary,
+    current_lib: Library,
+):
+    done_dependencies = set(cur_yaml_lib.dependencies) & treated_lib_ids
+    for done_lib in done_dependencies:
+        current_lib.port_types.update(output_lib_dict[done_lib].port_types)
 
 
 def _update_treated_libs_and_import_stack(
-    treated_lib_id: Set[str], import_stack: List[str]
+    treated_lib_ids: Set[str], import_stack: List[str]
 ):
-    treated_lib_id.add(import_stack.pop())
+    treated_lib_ids.add(import_stack.pop())
 
 
-def _treat_lib(current_lib, cur_yaml_lib):
+def _treat_lib(
+    current_lib: Library, cur_yaml_lib: InputLibrary, output_lib: Dict[str, Library]
+) -> None:
     port_types = [_convert_port_type(p) for p in cur_yaml_lib.port_types]
     port_types_dict = dict((p.id, p) for p in port_types)
 
@@ -119,6 +129,7 @@ def _treat_lib(current_lib, cur_yaml_lib):
             f"Model(s) : {str(current_lib.models.keys() & models_dict.keys())} is(are) defined twice"
         )
     current_lib.models.update(models_dict)
+    output_lib[current_lib.id] = current_lib
 
 
 def _add_dependencies_to_stack(

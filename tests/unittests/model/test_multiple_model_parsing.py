@@ -14,20 +14,6 @@ from pathlib import Path
 
 import pytest
 
-from andromede.expression import literal, param, var
-from andromede.expression.expression import port_field
-from andromede.expression.parsing.parse_expression import AntaresParseException
-from andromede.libs.standard import CONSTANT
-from andromede.model import (
-    Constraint,
-    ModelPort,
-    PortField,
-    PortType,
-    float_parameter,
-    float_variable,
-    model,
-)
-from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 
@@ -57,16 +43,16 @@ def test_simple_dependency_tree(lib_dir: Path) -> None:
         with lib_file.open() as f:
             input_libs.append(parse_yaml_library(f))
 
-    lib = resolve_library(input_libs)
-    assert len(lib) == 3
+    lib_dict = resolve_library(input_libs)
+    assert len(lib_dict) == 3
 
-    assert len(lib["basic_lib"].models) == 1
-    assert len(lib["demand"].models) == 1
-    assert len(lib["production"].models) == 1
-    
-    assert len(lib["basic_lib"].port_types) == 1
-    assert len(lib["demand"].port_types) == 1
-    assert len(lib["production"].port_types) == 1
+    assert len(lib_dict["basic"].models) == 1
+    assert len(lib_dict["demand"].models) == 1
+    assert len(lib_dict["production"].models) == 1
+
+    assert len(lib_dict["basic"].port_types) == 1
+    assert len(lib_dict["demand"].port_types) == 1
+    assert len(lib_dict["production"].port_types) == 1
 
     # changing order in lib_files
     lib_files = [
@@ -80,9 +66,14 @@ def test_simple_dependency_tree(lib_dir: Path) -> None:
         with lib_file.open() as f:
             input_libs.append(parse_yaml_library(f))
 
-    lib = resolve_library(input_libs)
-    assert len(lib.models) == 3
-    assert len(lib.port_types) == 1
+    lib_dict = resolve_library(input_libs)
+    assert len(lib_dict["basic"].models) == 1
+    assert len(lib_dict["demand"].models) == 1
+    assert len(lib_dict["production"].models) == 1
+
+    assert len(lib_dict["basic"].port_types) == 1
+    assert len(lib_dict["demand"].port_types) == 1
+    assert len(lib_dict["production"].port_types) == 1
 
 
 def test_multiple_dependencies_tree(lib_dir: Path) -> None:
@@ -103,9 +94,16 @@ def test_multiple_dependencies_tree(lib_dir: Path) -> None:
         with lib_file.open() as f:
             input_libs.append(parse_yaml_library(f))
 
-    lib = resolve_library(input_libs)
-    assert len(lib.models) == 3
-    assert len(lib.port_types) == 2
+    lib_dict = resolve_library(input_libs)
+    assert len(lib_dict["basic"].models) == 1
+    assert len(lib_dict["CO2_port"].models) == 0
+    assert len(lib_dict["production_CO2"].models) == 1
+    assert len(lib_dict["demand"].models) == 1
+
+    assert len(lib_dict["basic"].port_types) == 1
+    assert len(lib_dict["CO2_port"].port_types) == 1
+    assert len(lib_dict["production_CO2"].port_types) == 2
+    assert len(lib_dict["demand"].port_types) == 1
 
 
 def test_looping_dependency(lib_dir: Path) -> None:
@@ -123,10 +121,10 @@ def test_looping_dependency(lib_dir: Path) -> None:
             input_libs.append(parse_yaml_library(f))
 
     with pytest.raises(Exception, match=r"Circular import in yaml libraries"):
-        lib = resolve_library(input_libs)
+        resolve_library(input_libs)
 
 
-def test_model_redefinition(lib_dir: Path) -> None:
+def test_model_with_same_name_in_different_lib_ok(lib_dir: Path) -> None:
     """basic_lib   CO2_port
             |     |      |
             V     V      V
@@ -144,10 +142,32 @@ def test_model_redefinition(lib_dir: Path) -> None:
         with lib_file.open() as f:
             input_libs.append(parse_yaml_library(f))
 
+    lib_dict = resolve_library(input_libs)
+    assert len(lib_dict["basic"].models) == 1
+    assert len(lib_dict["CO2_port"].models) == 0
+    assert len(lib_dict["production_CO2"].models) == 1
+    assert len(lib_dict["production"].models) == 1
+
+    assert len(lib_dict["basic"].port_types) == 1
+    assert len(lib_dict["CO2_port"].port_types) == 1
+    assert len(lib_dict["production_CO2"].port_types) == 2
+    assert len(lib_dict["production"].port_types) == 1
+
+def test_model_redefinition_in_same_lib(lib_dir: Path) -> None:
+    lib_files = [
+        lib_dir / "basic_lib.yml",
+        lib_dir / "production_redefinition.yml",
+    ]
+
+    input_libs = []
+    for lib_file in lib_files:
+        with lib_file.open() as f:
+            input_libs.append(parse_yaml_library(f))
+
     with pytest.raises(
         Exception, match=re.escape("Model(s) : {'generator'} is(are) defined twice")
     ):
-        lib = resolve_library(input_libs)
+        resolve_library(input_libs)
 
 
 def test_port_redefinition(lib_dir: Path) -> None:
