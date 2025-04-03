@@ -35,10 +35,15 @@ from andromede.expression import (
     var,
     visit,
 )
+from andromede.expression.copy import copy_expression
 from andromede.expression.equality import expressions_equal
 from andromede.expression.expression import (
+    AllTimeSumNode,
     ComponentParameterNode,
     ComponentVariableNode,
+    MultiplicationNode,
+    TimeEvalNode,
+    TimeShiftNode,
 )
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
@@ -75,6 +80,22 @@ class ComponentEvaluationContext(ValueProvider):
 
     def get_component_parameter_value(self, component_id: str, name: str) -> float:
         return self.parameters[comp_key(component_id, name)]
+
+
+def test_copy_ast() -> None:
+    ast = AllTimeSumNode(
+        DivisionNode(
+            TimeEvalNode(
+                AdditionNode([LiteralNode(1), VariableNode("x")]), ParameterNode("p")
+            ),
+            TimeShiftNode(
+                MultiplicationNode(LiteralNode(1), VariableNode("x")),
+                ComponentParameterNode("comp1", "p"),
+            ),
+        ),
+    )
+    copy = copy_expression(ast)
+    assert expressions_equal(ast, copy)
 
 
 def test_comp_parameter() -> None:
