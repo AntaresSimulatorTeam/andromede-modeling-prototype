@@ -333,10 +333,10 @@ def test_requirements_consistency_scenario_varying_parameter_with_correct_data_p
     database.requirements_consistency(network)
 
 
-def test_load_data_from_txt(data_dir: Path) -> None:
+def test_load_data_from_txt(series_dir: Path) -> None:
     txt_file = "gen-costs"
 
-    gen_costs = load_ts_from_txt(txt_file, data_dir)
+    gen_costs = load_ts_from_txt(txt_file, series_dir)
     expected_timeseries = pd.DataFrame(
         [[100, 200], [50, 100]], index=[0, 1], columns=[0, 1]
     )

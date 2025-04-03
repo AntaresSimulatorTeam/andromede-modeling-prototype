@@ -24,12 +24,12 @@ def libs_dir() -> Path:
 
 @pytest.fixture(scope="session")
 def data_dir() -> Path:
-    return Path(__file__).parents[1] / "unittests/data"
+    return Path(__file__).parents[1] / "data"
 
 
 @pytest.fixture(scope="session")
-def lib_dict(data_dir: Path) -> dict[str, Library]:
-    lib_file = data_dir / "lib.yml"
+def lib_dict(libs_dir: Path) -> dict[str, Library]:
+    lib_file = libs_dir / "lib_unittest.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)

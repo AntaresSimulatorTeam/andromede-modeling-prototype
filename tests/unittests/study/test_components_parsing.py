@@ -19,9 +19,9 @@ from andromede.study.resolve_components import (
 
 @pytest.fixture
 def input_system(
-    data_dir: Path,
+    systems_dir: Path,
 ) -> InputSystem:
-    compo_file = data_dir / "components.yml"
+    compo_file = systems_dir / "system.yml"
 
     with compo_file.open() as c:
         return parse_yaml_components(c)
@@ -29,9 +29,9 @@ def input_system(
 
 @pytest.fixture
 def input_library(
-    data_dir: Path,
+    libs_dir: Path,
 ) -> InputLibrary:
-    library = data_dir / "lib.yml"
+    library = libs_dir / "lib_unittest.yml"
 
     with library.open() as lib:
         return parse_yaml_library(lib)
@@ -90,10 +90,12 @@ def test_basic_balance_using_yaml(
 
 
 @pytest.fixture
-def setup_test(data_dir: Path) -> Callable[[], Tuple[Network, DataBase]]:
+def setup_test(
+    libs_dir: Path, systems_dir: Path, series_dir: Path
+) -> Callable[[], Tuple[Network, DataBase]]:
     def _setup_test(study_file_name: str):
-        study_file = data_dir / study_file_name
-        lib_file = data_dir / "lib.yml"
+        study_file = systems_dir / study_file_name
+        lib_file = libs_dir / "lib_unittest.yml"
         with lib_file.open() as lib:
             input_library = parse_yaml_library(lib)
 
@@ -103,7 +105,7 @@ def setup_test(data_dir: Path) -> Callable[[], Tuple[Network, DataBase]]:
         network_components = resolve_system(input_study, lib_dict)
         consistency_check(network_components.components, lib_dict["basic"].models)
 
-        database = build_data_base(input_study, data_dir)
+        database = build_data_base(input_study, series_dir)
         network = build_network(network_components)
         return network, database
 
