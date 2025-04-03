@@ -465,7 +465,9 @@ class TestConverter:
         validated_data.nodes.sort(key=lambda x: x.id)
         assert validated_data == expected_validated_data
 
-    def test_convert_solar_to_component(self, local_study_w_areas: Study, lib_id: str):
+    def test_convert_solar_to_component(
+        self, local_study_w_areas: Study, fr_solar: None, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
         solar_components, solar_connection = converter._convert_solar_to_component_list(
@@ -500,7 +502,9 @@ class TestConverter:
         assert solar_components[0] == expected_solar_components
         assert solar_connection == expected_solar_connection
 
-    def test_convert_load_to_component(self, local_study_w_areas: Study, lib_id: str):
+    def test_convert_load_to_component(
+        self, local_study_w_areas: Study, fr_load: None, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
         load_components, load_connection = converter._convert_load_to_component_list(
@@ -587,7 +591,7 @@ class TestConverter:
         indirect=True,
     )
     def test_convert_wind_to_component_empty_file(
-        self, local_study_w_areas: Study, lib_id: str
+        self, local_study_w_areas: Study, fr_wind: object, lib_id: str
     ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
@@ -603,7 +607,7 @@ class TestConverter:
         indirect=True,
     )
     def test_convert_wind_to_component_zero_values(
-        self, local_study_w_areas: Study, lib_id: str
+        self, local_study_w_areas: Study, fr_wind: int, lib_id: str
     ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
