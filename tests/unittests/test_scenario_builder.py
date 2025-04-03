@@ -25,7 +25,7 @@ from andromede.study.resolve_components import (
     build_network,
     build_scenarized_data_base,
     consistency_check,
-    resolve_components_and_cnx,
+    resolve_system,
 )
 
 
@@ -79,14 +79,14 @@ def test_solving(data_dir: Path, database: DataBase) -> None:
     library_path = data_dir / "lib.yml"
     with library_path.open("r") as file:
         yaml_lib = parse_yaml_library(file)
-        models = resolve_library([yaml_lib])
+        lib_dict = resolve_library([yaml_lib])
 
     components_path = data_dir / "components_for_scenarization_test.yml"
     with components_path.open("r") as file:
         yaml_comp = parse_yaml_components(file)
-        components = resolve_components_and_cnx(yaml_comp, models)
+        components = resolve_system(yaml_comp, lib_dict)
 
-    consistency_check(components.components, models.models)
+    consistency_check(components.components, lib_dict["basic"].models)
     network = build_network(components)
 
     timeblock = TimeBlock(1, list(range(2)))

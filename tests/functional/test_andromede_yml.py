@@ -19,7 +19,7 @@ from andromede.study import (
 )
 
 
-def test_network(lib: Library) -> None:
+def test_network(lib_dict: dict[str, Library]) -> None:
     network = Network("test")
     assert network.id == "test"
     assert list(network.nodes) == []
@@ -30,7 +30,7 @@ def test_network(lib: Library) -> None:
     with pytest.raises(KeyError):
         network.get_node("N")
 
-    node_model = lib.models["node"]
+    node_model = lib_dict["basic"].models["node"]
 
     N1 = Node(model=node_model, id="N1")
     N2 = Node(model=node_model, id="N2")
@@ -43,7 +43,7 @@ def test_network(lib: Library) -> None:
         network.get_component("unknown")
 
 
-def test_basic_balance(lib: Library) -> None:
+def test_basic_balance(lib_dict: dict[str, Library]) -> None:
     """
     Balance on one node with one fixed demand and one generation, on 1 timestep.
     """
@@ -54,9 +54,9 @@ def test_basic_balance(lib: Library) -> None:
     database.add_data("G", "p_max", ConstantData(100))
     database.add_data("G", "cost", ConstantData(30))
 
-    node_model = lib.models["node"]
-    demand_model = lib.models["demand"]
-    production_model = lib.models["production"]
+    node_model = lib_dict["basic"].models["node"]
+    demand_model = lib_dict["basic"].models["demand"]
+    production_model = lib_dict["basic"].models["production"]
 
     node = Node(model=node_model, id="N")
     demand = create_component(
@@ -84,7 +84,7 @@ def test_basic_balance(lib: Library) -> None:
     assert problem.solver.Objective().Value() == 3000
 
 
-def test_link(lib: Library) -> None:
+def test_link(lib_dict: dict[str, Library]) -> None:
     """
     Balance on one node with one fixed demand and one generation, on 1 timestep.
     """
@@ -97,10 +97,10 @@ def test_link(lib: Library) -> None:
 
     database.add_data("L", "f_max", ConstantData(150))
 
-    node_model = lib.models["node"]
-    demand_model = lib.models["demand"]
-    production_model = lib.models["production"]
-    link_model = lib.models["link"]
+    node_model = lib_dict["basic"].models["node"]
+    demand_model = lib_dict["basic"].models["demand"]
+    production_model = lib_dict["basic"].models["production"]
+    link_model = lib_dict["basic"].models["link"]
 
     node1 = Node(model=node_model, id="1")
     node2 = Node(model=node_model, id="2")
@@ -142,7 +142,7 @@ def test_link(lib: Library) -> None:
             assert variable.solution_value() == -100
 
 
-def test_stacking_generation(lib: Library) -> None:
+def test_stacking_generation(lib_dict: dict[str, Library]) -> None:
     """
     Balance on one node with one fixed demand and 2 generations with different costs, on 1 timestep.
     """
@@ -156,9 +156,9 @@ def test_stacking_generation(lib: Library) -> None:
     database.add_data("G2", "p_max", ConstantData(100))
     database.add_data("G2", "cost", ConstantData(50))
 
-    node_model = lib.models["node"]
-    demand_model = lib.models["demand"]
-    production_model = lib.models["production"]
+    node_model = lib_dict["basic"].models["node"]
+    demand_model = lib_dict["basic"].models["demand"]
+    production_model = lib_dict["basic"].models["production"]
 
     node1 = Node(model=node_model, id="1")
 
@@ -194,7 +194,7 @@ def test_stacking_generation(lib: Library) -> None:
     assert problem.solver.Objective().Value() == 30 * 100 + 50 * 50
 
 
-def test_spillage(lib: Library) -> None:
+def test_spillage(lib_dict: dict[str, Library]) -> None:
     """
     Balance on one node with one fixed demand and 1 generation higher than demand and 1 timestep .
     """
@@ -207,10 +207,10 @@ def test_spillage(lib: Library) -> None:
     database.add_data("G1", "p_min", ConstantData(200))
     database.add_data("G1", "cost", ConstantData(30))
 
-    node_model = lib.models["node"]
-    demand_model = lib.models["demand"]
-    production_with_min_model = lib.models["production_with_min"]
-    spillage_model = lib.models["spillage"]
+    node_model = lib_dict["basic"].models["node"]
+    demand_model = lib_dict["basic"].models["demand"]
+    production_with_min_model = lib_dict["basic"].models["production_with_min"]
+    spillage_model = lib_dict["basic"].models["spillage"]
 
     node = Node(model=node_model, id="1")
     spillage = create_component(model=spillage_model, id="S")
@@ -234,7 +234,7 @@ def test_spillage(lib: Library) -> None:
     assert problem.solver.Objective().Value() == 30 * 200 + 50 * 10
 
 
-def test_min_up_down_times(lib: Library) -> None:
+def test_min_up_down_times(lib_dict: dict[str, Library]) -> None:
     """
     Model on 3 time steps with one thermal generation and one demand on a single node.
         - Demand is the following time series : [500 MW, 0, 0]
@@ -285,11 +285,11 @@ def test_min_up_down_times(lib: Library) -> None:
     time_block = TimeBlock(1, [0, 1, 2])
     scenarios = 1
 
-    node_model = lib.models["node"]
-    demand_model = lib.models["demand"]
-    spillage_model = lib.models["spillage"]
-    unsuplied_model = lib.models["unsuplied"]
-    thermal_cluster = lib.models["thermal_cluster"]
+    node_model = lib_dict["basic"].models["node"]
+    demand_model = lib_dict["basic"].models["demand"]
+    spillage_model = lib_dict["basic"].models["spillage"]
+    unsuplied_model = lib_dict["basic"].models["unsuplied"]
+    thermal_cluster = lib_dict["basic"].models["thermal_cluster"]
 
     node = Node(model=node_model, id="1")
     demand = create_component(model=demand_model, id="D")
@@ -328,7 +328,7 @@ def test_min_up_down_times(lib: Library) -> None:
     assert problem.solver.Objective().Value() == pytest.approx(72000, abs=0.01)
 
 
-def test_changing_demand(lib: Library) -> None:
+def test_changing_demand(lib_dict: dict[str, Library]) -> None:
     """
     Model on 3 time steps simple production, demand
         - P_max = 500 MW
@@ -355,9 +355,9 @@ def test_changing_demand(lib: Library) -> None:
     time_block = TimeBlock(1, [0, 1, 2])
     scenarios = 1
 
-    node_model = lib.models["node"]
-    demand_model = lib.models["demand"]
-    production_model = lib.models["production"]
+    node_model = lib_dict["basic"].models["node"]
+    demand_model = lib_dict["basic"].models["demand"]
+    production_model = lib_dict["basic"].models["production"]
 
     node = Node(model=node_model, id="1")
     demand = create_component(model=demand_model, id="D")
@@ -384,7 +384,7 @@ def test_changing_demand(lib: Library) -> None:
     assert problem.solver.Objective().Value() == 40000
 
 
-def test_min_up_down_times_2(lib: Library) -> None:
+def test_min_up_down_times_2(lib_dict: dict[str, Library]) -> None:
     """
     Model on 3 time steps with one thermal generation and one demand on a single node.
         - Demand is the following time series : [500 MW, 0, 0]
@@ -435,11 +435,11 @@ def test_min_up_down_times_2(lib: Library) -> None:
     time_block = TimeBlock(1, [0, 1, 2])
     scenarios = 1
 
-    node_model = lib.models["node"]
-    demand_model = lib.models["demand"]
-    spillage_model = lib.models["spillage"]
-    unsuplied_model = lib.models["unsuplied"]
-    thermal_cluster = lib.models["thermal_cluster"]
+    node_model = lib_dict["basic"].models["node"]
+    demand_model = lib_dict["basic"].models["demand"]
+    spillage_model = lib_dict["basic"].models["spillage"]
+    unsuplied_model = lib_dict["basic"].models["unsuplied"]
+    thermal_cluster = lib_dict["basic"].models["thermal_cluster"]
 
     node = Node(model=node_model, id="1")
     demand = create_component(model=demand_model, id="D")

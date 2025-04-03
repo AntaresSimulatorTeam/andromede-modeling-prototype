@@ -9,12 +9,12 @@ from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
 from andromede.study.data import load_ts_from_txt
-from andromede.study.parsing import InputStudy, parse_yaml_components
+from andromede.study.parsing import InputSystem, parse_yaml_components
 from andromede.study.resolve_components import (
     build_data_base,
     build_network,
     consistency_check,
-    resolve_components_and_cnx,
+    resolve_system,
 )
 
 
@@ -172,7 +172,7 @@ def input_library(
 
 
 def factory_balance_using_converter(
-    study_component: InputStudy, input_library: InputLibrary, expected_value: int
+    input_system: InputSystem, input_library: InputLibrary, expected_value: int
 ) -> None:
     """
     - Resolves the input library.
@@ -181,12 +181,14 @@ def factory_balance_using_converter(
     - Builds the database and network.
     - Solves the optimization problem and verifies results.
     """
-    study_path = study_component[1]
-    study_component_data = study_component[0]
+    study_path = input_system[1]
+    study_component_data = input_system[0]
 
     result_lib = resolve_library([input_library])
-    components_input = resolve_components_and_cnx(study_component_data, result_lib)
-    consistency_check(components_input.components, result_lib.models)
+    components_input = resolve_system(study_component_data, result_lib)
+    consistency_check(
+        components_input.components, result_lib["antares-historic"].models
+    )
 
     database = build_data_base(study_component_data, study_path)
     network = build_network(components_input)
@@ -199,7 +201,7 @@ def factory_balance_using_converter(
 
 
 def test_basic_balance_using_converter(
-    study_component_basic: InputStudy, input_library: InputLibrary
+    study_component_basic: InputSystem, input_library: InputLibrary
 ) -> None:
     """
     Test basic study balance using the converter.
@@ -210,7 +212,7 @@ def test_basic_balance_using_converter(
 
 
 def test_thermal_balance_using_converter(
-    study_component_thermal: InputStudy, input_library: InputLibrary
+    study_component_thermal: InputSystem, input_library: InputLibrary
 ) -> None:
     """
     Test thermal study balance using the converter.

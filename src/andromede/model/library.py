@@ -17,15 +17,18 @@ from andromede.model import Model, PortType
 
 @dataclass(frozen=True)
 class Library:
+    id: str
     port_types: Dict[str, PortType]
     models: Dict[str, Model]
 
 
 def library(
+    id: str,
     port_types: Iterable[PortType],
     models: Iterable[Model],
 ) -> Library:
     return Library(
+        id=id,
         port_types=dict((p.id, p) for p in port_types),
         models=dict((m.id, m) for m in models),
     )

@@ -36,48 +36,51 @@ from andromede.study.data import (
     dataframe_to_time_series,
     load_ts_from_txt,
 )
-from andromede.study.parsing import InputComponent, InputPortConnections, InputStudy
+from andromede.study.parsing import InputComponent, InputPortConnections, InputSystem
 
 
 @dataclass(frozen=True)
-class NetworkComponents:
+class System:
     components: Dict[str, Component]
     nodes: Dict[str, Component]
     connections: List[PortsConnection]
 
 
-def network_components(
+def system(
     components_list: Iterable[Component],
     nodes: Iterable[Component],
     connections: Iterable[PortsConnection],
-) -> NetworkComponents:
-    return NetworkComponents(
+) -> System:
+    return System(
         components=dict((m.id, m) for m in components_list),
         nodes=dict((n.id, n) for n in nodes),
         connections=list(connections),
     )
 
 
-def resolve_components_and_cnx(
-    input_comp: InputStudy, library: Library
-) -> NetworkComponents:
+def resolve_system(input_system: InputSystem, libraries: dict[str, Library]) -> System:
     """
     Resolves:
     - components to be used for study
     - connections between components"""
-    components_list = [_resolve_component(library, m) for m in input_comp.components]
-    nodes = [_resolve_component(library, n) for n in input_comp.nodes]
+    components_list = [
+        _resolve_component(libraries, m) for m in input_system.components
+    ]
+    nodes = [_resolve_component(libraries, n) for n in input_system.nodes]
     all_components: List[Component] = components_list + nodes
     connections = []
-    for cnx in input_comp.connections:
+    for cnx in input_system.connections:
         resolved_cnx = _resolve_connections(cnx, all_components)
         connections.append(resolved_cnx)
 
-    return network_components(components_list, nodes, connections)
+    return system(components_list, nodes, connections)
 
 
-def _resolve_component(library: Library, component: InputComponent) -> Component:
-    model = library.models[component.model]
+def _resolve_component(
+    libraries: dict[str, Library], component: InputComponent
+) -> Component:
+    lib_id, model_id = component.model.split(".")
+    model = libraries[lib_id].models[model_id]
 
     return Component(
         model=model,
@@ -117,6 +120,7 @@ def consistency_check(
     Checks if all components in the Components instances have a valid model from the library.
     Returns True if all components are consistent, raises ValueError otherwise.
     """
+    # TODO: Update this consistency check to check if each component have a valid model from the lib it refers to (and not all libs)
     model_ids_set = input_models.keys()
     for component_id, component in input_study.items():
         if component.model.id not in model_ids_set:
@@ -126,22 +130,25 @@ def consistency_check(
     return True
 
 
-def build_network(comp_network: NetworkComponents) -> Network:
+def build_network(system: System) -> Network:
+    # It seems that System and Network are almost the same thing -> could be simplified ?
     network = Network("study")
 
-    for node_id, node in comp_network.nodes.items():
+    for node_id, node in system.nodes.items():
         node = Node(model=node.model, id=node_id)
         network.add_node(node)
 
-    for component_id, component in comp_network.components.items():
+    for component in system.components.values():
         network.add_component(component)
 
-    for connection in comp_network.connections:
+    for connection in system.connections:
         network.connect(connection.port1, connection.port2)
     return network
 
 
-def build_data_base(input_comp: InputStudy, timeseries_dir: Optional[Path]) -> DataBase:
+def build_data_base(
+    input_comp: InputSystem, timeseries_dir: Optional[Path]
+) -> DataBase:
     database = DataBase()
     input_comp_objects = input_comp.components + input_comp.nodes
     for comp in input_comp_objects:
@@ -201,7 +208,7 @@ def _resolve_scenarization(
 
 
 def build_scenarized_data_base(
-    input_comp: InputStudy,
+    input_comp: InputSystem,
     scenario_builder_data: pd.DataFrame,
     timeseries_dir: Optional[Path],
 ) -> DataBase:

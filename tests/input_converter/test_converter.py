@@ -10,10 +10,11 @@
 #
 # This file is part of the Antares project.
 
-from dataclasses import replace
+from typing import Callable, Literal
 
 import pandas as pd
 import pytest
+from antares.craft.model.study import Study
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.data_preprocessing.thermal import (
@@ -25,7 +26,7 @@ from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
     InputPortConnections,
-    InputStudy,
+    InputSystem,
     parse_yaml_components,
 )
 
@@ -37,17 +38,17 @@ class TestConverter:
         areas = converter.study.get_areas().values()
         return areas, converter
 
-    def test_convert_study_to_input_study(self, local_study_w_areas):
+    def test_convert_study_to_input_study(self, local_study_w_areas: Study):
         logger = Logger(__name__, local_study_w_areas.service.config.study_path)
         converter = AntaresStudyConverter(
             study_input=local_study_w_areas, logger=logger
         )
         input_study = converter.convert_study_to_input_study()
-        expected_input_study = InputStudy(
+        expected_input_study = InputSystem(
             nodes=[
                 InputComponent(
                     id="fr",
-                    model="area",
+                    model="antares-historic.area",
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
@@ -68,7 +69,7 @@ class TestConverter:
                 ),
                 InputComponent(
                     id="it",
-                    model="area",
+                    model="antares-historic.area",
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
@@ -100,14 +101,14 @@ class TestConverter:
 
         assert input_study == expected_input_study
 
-    def test_convert_area_to_component(self, local_study_w_areas):
+    def test_convert_area_to_component(self, local_study_w_areas: Study, lib_id: str):
         areas, converter = self._init_area_reading(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(areas)
+        area_components = converter._convert_area_to_component_list(areas, lib_id)
 
         expected_area_components = [
             InputComponent(
                 id="fr",
-                model="area",
+                model="antares-historic.area",
                 parameters=[
                     InputComponentParameter(
                         id="ens_cost",
@@ -127,7 +128,7 @@ class TestConverter:
             ),
             InputComponent(
                 id="it",
-                model="area",
+                model="antares-historic.area",
                 parameters=[
                     InputComponentParameter(
                         id="ens_cost",
@@ -154,13 +155,15 @@ class TestConverter:
         area_components.sort(key=lambda x: x.id)
         assert area_components == expected_area_components
 
-    def test_convert_renewables_to_component(self, local_study_with_renewable):
+    def test_convert_renewables_to_component(
+        self, local_study_with_renewable: Study, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_with_renewable)
         study_path = converter.study_path
         (
             renewables_components,
             renewable_connections,
-        ) = converter._convert_renewable_to_component_list(areas)
+        ) = converter._convert_renewable_to_component_list(areas, lib_id)
 
         timeserie_path = str(
             study_path
@@ -182,7 +185,7 @@ class TestConverter:
         expected_renewable_component = [
             InputComponent(
                 id="generation",
-                model="renewable",
+                model="antares-historic.renewable",
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
@@ -213,7 +216,10 @@ class TestConverter:
         assert renewable_connections == expected_renewable_connections
 
     def test_convert_thermals_to_component(
-        self, local_study_w_thermal, create_csv_from_constant_value
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
+        lib_id: str,
     ):
         areas, converter = self._init_area_reading(local_study_w_thermal)
         study_path = converter.study_path
@@ -232,7 +238,7 @@ class TestConverter:
         (
             thermals_components,
             thermals_connections,
-        ) = converter._convert_thermal_to_component_list(areas)
+        ) = converter._convert_thermal_to_component_list(areas, lib_id)
 
         study_path = converter.study_path
         p_max_timeserie = str(
@@ -276,7 +282,7 @@ class TestConverter:
         expected_thermals_components = [
             InputComponent(
                 id="gaz",
-                model="thermal",
+                model="antares-historic.thermal",
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
@@ -393,10 +399,10 @@ class TestConverter:
         assert thermals_components == expected_thermals_components
         assert thermals_connections == expected_thermals_connections
 
-    def test_convert_area_to_yaml(self, local_study_w_areas):
+    def test_convert_area_to_yaml(self, local_study_w_areas: Study, lib_id: str):
         areas, converter = self._init_area_reading(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(areas)
-        input_study = InputStudy(nodes=area_components)
+        area_components = converter._convert_area_to_component_list(areas, lib_id)
+        input_study = InputSystem(nodes=area_components)
 
         # Dump model into yaml file
         yaml_path = converter.study_path / "study_path.yaml"
@@ -406,11 +412,11 @@ class TestConverter:
         with open(yaml_path, "r", encoding="utf-8") as yaml_file:
             validated_data = parse_yaml_components(yaml_file)
 
-        expected_validated_data = InputStudy(
+        expected_validated_data = InputSystem(
             nodes=[
                 InputComponent(
                     id="it",
-                    model="area",
+                    model="antares-historic.area",
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
@@ -431,7 +437,7 @@ class TestConverter:
                 ),
                 InputComponent(
                     id="fr",
-                    model="area",
+                    model="antares-historic.area",
                     scenario_group=None,
                     parameters=[
                         InputComponentParameter(
@@ -459,11 +465,13 @@ class TestConverter:
         validated_data.nodes.sort(key=lambda x: x.id)
         assert validated_data == expected_validated_data
 
-    def test_convert_solar_to_component(self, local_study_w_areas, fr_solar):
+    def test_convert_solar_to_component(
+        self, local_study_w_areas: Study, fr_solar: None, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
         solar_components, solar_connection = converter._convert_solar_to_component_list(
-            areas
+            areas, lib_id
         )
         study_path = converter.study_path
 
@@ -478,7 +486,7 @@ class TestConverter:
         ]
         expected_solar_components = InputComponent(
             id="fr",
-            model="solar",
+            model="antares-historic.solar",
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
@@ -494,11 +502,13 @@ class TestConverter:
         assert solar_components[0] == expected_solar_components
         assert solar_connection == expected_solar_connection
 
-    def test_convert_load_to_component(self, local_study_w_areas, fr_load):
+    def test_convert_load_to_component(
+        self, local_study_w_areas: Study, fr_load: None, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
         load_components, load_connection = converter._convert_load_to_component_list(
-            areas
+            areas, lib_id
         )
         study_path = converter.study_path
 
@@ -513,7 +523,7 @@ class TestConverter:
         ]
         expected_load_components = InputComponent(
             id="load",
-            model="load",
+            model="antares-historic.load",
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
@@ -537,12 +547,12 @@ class TestConverter:
         indirect=True,
     )
     def test_convert_wind_to_component_not_empty_file(
-        self, local_study_w_areas, fr_wind
+        self, local_study_w_areas: Study, fr_wind: int, lib_id: str
     ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
         wind_components, wind_connection = converter._convert_wind_to_component_list(
-            areas
+            areas, lib_id
         )
         study_path = converter.study_path
 
@@ -557,7 +567,7 @@ class TestConverter:
         ]
         expected_wind_components = InputComponent(
             id="fr",
-            model="wind",
+            model="antares-historic.wind",
             scenario_group=None,
             parameters=[
                 InputComponentParameter(
@@ -580,10 +590,12 @@ class TestConverter:
         ],
         indirect=True,
     )
-    def test_convert_wind_to_component_empty_file(self, local_study_w_areas, fr_wind):
+    def test_convert_wind_to_component_empty_file(
+        self, local_study_w_areas: Study, fr_wind: object, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(areas)
+        wind_components, _ = converter._convert_wind_to_component_list(areas, lib_id)
 
         assert wind_components == []
 
@@ -594,20 +606,22 @@ class TestConverter:
         ],
         indirect=True,
     )
-    def test_convert_wind_to_component_zero_values(self, local_study_w_areas, fr_wind):
+    def test_convert_wind_to_component_zero_values(
+        self, local_study_w_areas: Study, fr_wind: int, lib_id: str
+    ):
         areas, converter = self._init_area_reading(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(areas)
+        wind_components, _ = converter._convert_wind_to_component_list(areas, lib_id)
 
         assert wind_components == []
 
-    def test_convert_links_to_component(self, local_study_w_links):
+    def test_convert_links_to_component(self, local_study_w_links: Study, lib_id: str):
         _, converter = self._init_area_reading(local_study_w_links)
         study_path = converter.study_path
         (
             links_components,
             links_connections,
-        ) = converter._convert_link_to_component_list()
+        ) = converter._convert_link_to_component_list(lib_id)
 
         fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
         at_prefix_path = study_path / "input" / "links" / "at" / "capacities"
@@ -620,7 +634,7 @@ class TestConverter:
         expected_link_component = [
             InputComponent(
                 id="fr / it",
-                model="link",
+                model="antares-historic.link",
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
@@ -641,7 +655,7 @@ class TestConverter:
             ),
             InputComponent(
                 id="at / fr",
-                model="link",
+                model="antares-historic.link",
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
@@ -662,7 +676,7 @@ class TestConverter:
             ),
             InputComponent(
                 id="at / it",
-                model="link",
+                model="antares-historic.link",
                 scenario_group=None,
                 parameters=[
                     InputComponentParameter(
@@ -815,7 +829,7 @@ class TestConverter:
             instance, "process_p_min_cluster", expected_path, expected_values
         )
 
-    def test_nb_units_min(self, local_study_w_thermal):
+    def test_nb_units_min(self, local_study_w_thermal: Study):
         """Tests the nb_units_min parameter processing."""
         instance, expected_path = self._setup_test(
             local_study_w_thermal, "nb_units_min"
@@ -826,7 +840,7 @@ class TestConverter:
             instance, "process_nb_units_min", expected_path, expected_values
         )
 
-    def test_nb_units_max(self, local_study_w_thermal):
+    def test_nb_units_max(self, local_study_w_thermal: Study):
         """Tests the nb_units_max parameter processing."""
         instance, expected_path = self._setup_test(
             local_study_w_thermal, "nb_units_max"
@@ -839,7 +853,10 @@ class TestConverter:
 
     @pytest.mark.parametrize("direction", ["forward", "backward"])
     def test_nb_units_max_variation(
-        self, local_study_w_thermal, create_csv_from_constant_value, direction
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
+        direction: Literal["forward"] | Literal["backward"],
     ):
         """
         Tests nb_units_max_variation_forward and nb_units_max_variation_backward processing.
@@ -877,14 +894,18 @@ class TestConverter:
         assert variation_component.value == str(expected_path)
 
     def test_nb_units_max_variation_forward(
-        self, local_study_w_thermal, create_csv_from_constant_value
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
     ):
         self.test_nb_units_max_variation(
             local_study_w_thermal, create_csv_from_constant_value, direction="forward"
         )
 
     def test_nb_units_max_variation_backward(
-        self, local_study_w_thermal, create_csv_from_constant_value
+        self,
+        local_study_w_thermal: Study,
+        create_csv_from_constant_value: Callable[..., None],
     ):
         self.test_nb_units_max_variation(
             local_study_w_thermal, create_csv_from_constant_value, direction="backward"

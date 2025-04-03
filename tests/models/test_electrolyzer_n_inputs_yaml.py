@@ -44,7 +44,9 @@ we always have:
 """
 
 
-def test_electrolyzer_n_inputs_1(data_dir: Path, lib: Library, lib_sc: Library) -> None:
+def test_electrolyzer_n_inputs_1(
+    lib_dict: dict[str, Library], lib_dict_sc: dict[str, Library]
+) -> None:
     """
     Test with an electrolyzer for each input
 
@@ -58,10 +60,10 @@ def test_electrolyzer_n_inputs_1(data_dir: Path, lib: Library, lib_sc: Library) 
 
     """
 
-    gen_model = lib.models["generator"]
-    node_model = lib.models["node"]
-    convertor_model = lib_sc.models["convertor"]
-    demand_model = lib.models["demand"]
+    gen_model = lib_dict["basic"].models["generator"]
+    node_model = lib_dict["basic"].models["node"]
+    convertor_model = lib_dict_sc["basic"].models["convertor"]
+    demand_model = lib_dict["basic"].models["demand"]
 
     elec_node_1 = Node(model=node_model, id="e1")
     electric_prod_1 = create_component(model=gen_model, id="ep1")
@@ -147,7 +149,9 @@ def test_electrolyzer_n_inputs_1(data_dir: Path, lib: Library, lib_sc: Library) 
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_2(data_dir: Path, lib: Library, lib_sc: Library) -> None:
+def test_electrolyzer_n_inputs_2(
+    lib_dict: dict[str, Library], lib_dict_sc: dict[str, Library]
+) -> None:
     """
     Test with one electrolyzer that has two inputs
 
@@ -159,10 +163,10 @@ def test_electrolyzer_n_inputs_2(data_dir: Path, lib: Library, lib_sc: Library) 
     total gaz production = flow_ep1 * alpha1_ez + flow_ep2 * alpha2_ez + flow_gp
     """
 
-    gen_model = lib.models["generator"]
-    node_model = lib.models["node"]
-    convertor_model = lib_sc.models["two_input_convertor"]
-    demand_model = lib.models["demand"]
+    gen_model = lib_dict["basic"].models["generator"]
+    node_model = lib_dict["basic"].models["node"]
+    convertor_model = lib_dict_sc["basic"].models["two_input_convertor"]
+    demand_model = lib_dict["basic"].models["demand"]
 
     elec_node_1 = Node(model=node_model, id="e1")
     elec_node_2 = Node(model=node_model, id="e2")
@@ -245,7 +249,9 @@ def test_electrolyzer_n_inputs_2(data_dir: Path, lib: Library, lib_sc: Library) 
     assert math.isclose(problem.solver.Objective().Value(), 1990)
 
 
-def test_electrolyzer_n_inputs_3(data_dir: Path, lib: Library, lib_sc: Library) -> None:
+def test_electrolyzer_n_inputs_3(
+    lib_dict: dict[str, Library], lib_dict_sc: dict[str, Library]
+) -> None:
     """
     Test with a consumption_electrolyzer with two inputs
 
@@ -259,11 +265,11 @@ def test_electrolyzer_n_inputs_3(data_dir: Path, lib: Library, lib_sc: Library) 
     The result is different since we only have one alpha at 0.7
     """
 
-    gen_model = lib.models["generator"]
-    node_model = lib.models["node"]
-    convertor_model = lib_sc.models["convertor"]
-    demand_model = lib.models["demand"]
-    decompose_flow_model = lib_sc.models["decompose_1_flow_into_2_flow"]
+    gen_model = lib_dict["basic"].models["generator"]
+    node_model = lib_dict["basic"].models["node"]
+    convertor_model = lib_dict_sc["basic"].models["convertor"]
+    demand_model = lib_dict["basic"].models["demand"]
+    decompose_flow_model = lib_dict_sc["basic"].models["decompose_1_flow_into_2_flow"]
 
     elec_node_1 = Node(model=node_model, id="e1")
     elec_node_2 = Node(model=node_model, id="e2")
@@ -350,7 +356,9 @@ def test_electrolyzer_n_inputs_3(data_dir: Path, lib: Library, lib_sc: Library) 
     assert math.isclose(problem.solver.Objective().Value(), 1750)
 
 
-def test_electrolyzer_n_inputs_4(data_dir: Path, lib: Library, lib_sc: Library) -> None:
+def test_electrolyzer_n_inputs_4(
+    lib_dict: dict[str, Library], lib_dict_sc: dict[str, Library]
+) -> None:
     """
     Test with one electrolyzer with one input that takes every inputs
 
@@ -364,11 +372,11 @@ def test_electrolyzer_n_inputs_4(data_dir: Path, lib: Library, lib_sc: Library) 
     same as test 3, the result is different than the first two since we only have one alpha at 0.7
     """
 
-    gen_model = lib.models["generator"]
-    node_model = lib.models["node"]
-    node_mod_model = lib_sc.models["node_mod"]
-    convertor_model = lib_sc.models["convertor_receive_in"]
-    demand_model = lib.models["demand"]
+    gen_model = lib_dict["basic"].models["generator"]
+    node_model = lib_dict["basic"].models["node"]
+    node_mod_model = lib_dict_sc["basic"].models["node_mod"]
+    convertor_model = lib_dict_sc["basic"].models["convertor_receive_in"]
+    demand_model = lib_dict["basic"].models["demand"]
 
     elec_node_1 = Node(model=node_mod_model, id="e1")
     elec_node_2 = Node(model=node_mod_model, id="e2")

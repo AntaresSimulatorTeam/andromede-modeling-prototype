@@ -10,30 +10,31 @@
 #
 # This file is part of the Antares project.
 system:
+  model-libraries: basic
   nodes:
     - id: N
-      model: node
+      model: basic.node
 
   components:
     - id: D
-      model: demand
+      model: basic.demand
       parameters:
         - id: demand
           time-dependent: true
           scenario-dependent: true
           value: demand-ts
     - id: S
-      model: spillage
+      model: basic.spillage
       parameters:
         - id: cost
           value: 1
     - id: U
-      model: unsupplied
+      model: basic.unsupplied
       parameters:
         - id: cost
           value: 10
     - id: STS1
-      model: short-term-storage
+      model: basic.short-term-storage
       parameters:
         - id: p_max_injection
           value: 100
