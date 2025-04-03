@@ -130,17 +130,18 @@ def consistency_check(
     return True
 
 
-def build_network(comp_network: System) -> Network:
+def build_network(system: System) -> Network:
+    # It seems that System and Network are almost the same thing -> could be simplified ?
     network = Network("study")
 
-    for node_id, node in comp_network.nodes.items():
+    for node_id, node in system.nodes.items():
         node = Node(model=node.model, id=node_id)
         network.add_node(node)
 
-    for component_id, component in comp_network.components.items():
+    for component in system.components.values():
         network.add_component(component)
 
-    for connection in comp_network.connections:
+    for connection in system.connections:
         network.connect(connection.port1, connection.port2)
     return network
 

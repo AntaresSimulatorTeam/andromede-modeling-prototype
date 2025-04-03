@@ -172,7 +172,7 @@ def input_library(
 
 
 def factory_balance_using_converter(
-    study_component: InputSystem, input_library: InputLibrary, expected_value: int
+    input_system: InputSystem, input_library: InputLibrary, expected_value: int
 ) -> None:
     """
     - Resolves the input library.
@@ -181,8 +181,8 @@ def factory_balance_using_converter(
     - Builds the database and network.
     - Solves the optimization problem and verifies results.
     """
-    study_path = study_component[1]
-    study_component_data = study_component[0]
+    study_path = input_system[1]
+    study_component_data = input_system[0]
 
     result_lib = resolve_library([input_library])
     components_input = resolve_system(study_component_data, result_lib)

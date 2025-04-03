@@ -82,7 +82,7 @@ def resolve_library(
 
             # Add already parsed port types from dependencies in current lib
             _add_preloaded_port_types_to_current_lib(preloaded_port_types, current_lib)
-            _add_treated_dependent_port_types_to_current_lib(
+            _add_resolved_dependent_port_types_to_current_lib(
                 output_lib_dict, treated_lib_ids, cur_yaml_lib, current_lib
             )
 
@@ -92,7 +92,7 @@ def resolve_library(
                 _add_dependencies_to_stack(import_stack, remaining_dependencies)
 
             else:
-                _treat_lib(current_lib, cur_yaml_lib, output_lib_dict)
+                _resolve_lib(current_lib, cur_yaml_lib, output_lib_dict)
                 _update_treated_libs_and_import_stack(treated_lib_ids, import_stack)
 
     return output_lib_dict
@@ -104,7 +104,7 @@ def _add_preloaded_port_types_to_current_lib(
     current_lib.port_types.update(preloaded_port_types)
 
 
-def _add_treated_dependent_port_types_to_current_lib(
+def _add_resolved_dependent_port_types_to_current_lib(
     output_lib_dict: Dict[str, Library],
     treated_lib_ids: Set[str],
     cur_yaml_lib: InputLibrary,
@@ -121,7 +121,7 @@ def _update_treated_libs_and_import_stack(
     treated_lib_ids.add(import_stack.pop())
 
 
-def _treat_lib(
+def _resolve_lib(
     current_lib: Library, cur_yaml_lib: InputLibrary, output_lib: Dict[str, Library]
 ) -> None:
     port_types = [_convert_port_type(p) for p in cur_yaml_lib.port_types]
