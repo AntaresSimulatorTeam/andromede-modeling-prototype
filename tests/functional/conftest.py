@@ -19,7 +19,7 @@ from andromede.model.resolve_library import Library, resolve_library
 
 @pytest.fixture(scope="session")
 def libs_dir() -> Path:
-    return Path(__file__).parent / "libs"
+    return Path(__file__).parents[1] / "data/libs"
 
 
 @pytest.fixture(scope="session")
