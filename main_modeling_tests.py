@@ -125,7 +125,6 @@ def main_storage_case(timespan):
     results = (OutputValues(problem))
     pbfile = problem.export_as_lp()
     print(pbfile)
-    #print(results)
     dataframe = pd.DataFrame()
     for cluster in ["gas_base_zone","coal_base_zone","oil_base_zone"]:
         var_result = results.component(cluster).var("generation")
