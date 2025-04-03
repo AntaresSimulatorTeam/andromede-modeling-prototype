@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 system:
-  model-librairies: basic
+  model-libraries: basic
   nodes:
     - id: N
       model: basic.node
