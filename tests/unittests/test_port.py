@@ -14,9 +14,9 @@ import pytest
 
 from andromede.expression import literal
 from andromede.expression.expression import port_field
-from andromede.libs.standard import DEMAND_MODEL
 from andromede.model import Constraint, ModelPort, PortType, model
 from andromede.study import Node, PortRef, PortsConnection, create_component
+from tests.data.libs.standard import DEMAND_MODEL
 
 
 def test_port_type_compatibility_ko() -> None:

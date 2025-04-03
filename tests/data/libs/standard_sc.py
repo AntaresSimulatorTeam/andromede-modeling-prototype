@@ -12,7 +12,6 @@
 
 from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
-from andromede.libs.standard import BALANCE_PORT_TYPE, CONSTANT, TIME_AND_SCENARIO_FREE
 from andromede.model import (
     Constraint,
     ModelPort,
@@ -23,6 +22,7 @@ from andromede.model import (
     model,
 )
 from andromede.model.model import PortFieldDefinition, PortFieldId
+from tests.data.libs.standard import BALANCE_PORT_TYPE, CONSTANT
 
 """
 Simple Convertor model.

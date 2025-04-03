@@ -30,18 +30,19 @@ from andromede.study.resolve_components import (
 
 
 @pytest.fixture
-def scenario_builder(data_dir: Path) -> pd.DataFrame:
-    buider_path = data_dir / "scenario_builder.csv"
+def scenario_builder(series_dir: Path) -> pd.DataFrame:
+    buider_path = series_dir / "scenario_builder.csv"
     return parse_scenario_builder(buider_path)
 
 
 @pytest.fixture
-def database(data_dir: Path, scenario_builder: pd.DataFrame) -> DataBase:
-    components_path = data_dir / "components_for_scenarization_test.yml"
-    ts_path = data_dir
+def database(
+    series_dir: Path, systems_dir: Path, scenario_builder: pd.DataFrame
+) -> DataBase:
+    components_path = systems_dir / "components_for_scenarization_test.yml"
     with components_path.open() as components:
         return build_scenarized_data_base(
-            parse_yaml_components(components), scenario_builder, ts_path
+            parse_yaml_components(components), scenario_builder, series_dir
         )
 
 
@@ -75,13 +76,13 @@ def test_scenarized_data_base(database: DataBase) -> None:
     assert database.get_value(load_index, 0, 3) == 100
 
 
-def test_solving(data_dir: Path, database: DataBase) -> None:
-    library_path = data_dir / "lib.yml"
+def test_solving(libs_dir: Path, systems_dir: Path, database: DataBase) -> None:
+    library_path = libs_dir / "lib_unittest.yml"
     with library_path.open("r") as file:
         yaml_lib = parse_yaml_library(file)
         lib_dict = resolve_library([yaml_lib])
 
-    components_path = data_dir / "components_for_scenarization_test.yml"
+    components_path = systems_dir / "components_for_scenarization_test.yml"
     with components_path.open("r") as file:
         yaml_comp = parse_yaml_components(file)
         components = resolve_system(yaml_comp, lib_dict)

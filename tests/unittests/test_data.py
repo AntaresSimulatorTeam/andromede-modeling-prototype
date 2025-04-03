@@ -17,14 +17,6 @@ import pytest
 
 from andromede.expression import param, var
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-    CONSTANT,
-    DEMAND_MODEL,
-    GENERATOR_MODEL,
-    NODE_BALANCE_MODEL,
-    NON_ANTICIPATIVE_TIME_VARYING,
-)
 from andromede.model import (
     Constraint,
     Model,
@@ -48,6 +40,14 @@ from andromede.study import (
     create_component,
 )
 from andromede.study.data import load_ts_from_txt
+from tests.data.libs.standard import (
+    BALANCE_PORT_TYPE,
+    CONSTANT,
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+    NODE_BALANCE_MODEL,
+    NON_ANTICIPATIVE_TIME_VARYING,
+)
 
 
 @pytest.fixture
@@ -333,10 +333,10 @@ def test_requirements_consistency_scenario_varying_parameter_with_correct_data_p
     database.requirements_consistency(network)
 
 
-def test_load_data_from_txt(data_dir: Path) -> None:
+def test_load_data_from_txt(series_dir: Path) -> None:
     txt_file = "gen-costs"
 
-    gen_costs = load_ts_from_txt(txt_file, data_dir)
+    gen_costs = load_ts_from_txt(txt_file, series_dir)
     expected_timeseries = pd.DataFrame(
         [[100, 200], [50, 100]], index=[0, 1], columns=[0, 1]
     )

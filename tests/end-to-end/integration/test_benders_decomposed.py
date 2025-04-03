@@ -15,13 +15,6 @@ import pytest
 
 from andromede.expression.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-    CONSTANT,
-    DEMAND_MODEL,
-    GENERATOR_MODEL,
-    NODE_WITH_SPILL_AND_ENS_MODEL,
-)
 from andromede.model import (
     Constraint,
     Model,
@@ -51,6 +44,13 @@ from andromede.study import (
     TimeScenarioSeriesData,
     TimeSeriesData,
     create_component,
+)
+from tests.data.libs.standard import (
+    BALANCE_PORT_TYPE,
+    CONSTANT,
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+    NODE_WITH_SPILL_AND_ENS_MODEL,
 )
 
 CONSTANT = IndexingStructure(False, False)

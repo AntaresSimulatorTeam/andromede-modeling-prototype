@@ -17,7 +17,6 @@ import pytest
 from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
 from andromede.expression.parsing.parse_expression import AntaresParseException
-from andromede.libs.standard import CONSTANT
 from andromede.model import (
     Constraint,
     ModelPort,
@@ -30,10 +29,11 @@ from andromede.model import (
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
+from tests.data.libs.standard import CONSTANT
 
 
-def test_library_parsing(data_dir: Path) -> None:
-    lib_file = data_dir / "lib.yml"
+def test_library_parsing(libs_dir: Path) -> None:
+    lib_file = libs_dir / "lib_unittest.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
@@ -118,8 +118,8 @@ def test_library_parsing(data_dir: Path) -> None:
     )
 
 
-def test_library_error_parsing(data_dir: Path) -> None:
-    lib_file = data_dir / "model_port_definition_ko.yml"
+def test_library_error_parsing(libs_dir: Path) -> None:
+    lib_file = libs_dir / "model_port_definition_ko.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
@@ -131,8 +131,8 @@ def test_library_error_parsing(data_dir: Path) -> None:
         resolve_library([input_lib])
 
 
-def test_library_port_model_ok_parsing(data_dir: Path) -> None:
-    lib_file = data_dir / "model_port_definition_ok.yml"
+def test_library_port_model_ok_parsing(libs_dir: Path) -> None:
+    lib_file = libs_dir / "model_port_definition_ok.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)

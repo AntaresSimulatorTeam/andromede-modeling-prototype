@@ -16,4 +16,19 @@ import pytest
 
 @pytest.fixture(scope="session")
 def data_dir() -> Path:
-    return Path(__file__).parent / "data"
+    return Path(__file__).parents[1] / "data"
+
+
+@pytest.fixture(scope="session")
+def libs_dir(data_dir: Path) -> Path:
+    return data_dir / "libs"
+
+
+@pytest.fixture(scope="session")
+def series_dir(data_dir: Path) -> Path:
+    return data_dir / "series"
+
+
+@pytest.fixture(scope="session")
+def systems_dir(data_dir: Path) -> Path:
+    return data_dir / "systems"

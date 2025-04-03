@@ -22,7 +22,7 @@ system:
         - id: demand
           time-dependent: true
           scenario-dependent: true
-          value: demand-ts
+          value: demand-ts-unittest
     - id: S
       model: basic.spillage
       parameters:

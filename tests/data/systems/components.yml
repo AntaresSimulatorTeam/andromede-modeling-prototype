@@ -12,7 +12,7 @@
 
 #test file for command line execution
 #run :
-#$ python src/andromede/main/main.py --models tests/functional/input/models/lib_1.yml tests/functional/input/models/lib_2.yml --component tests/functional/input/components/components.yml --duration 3 --timeseries tests/functional/input/components/series/
+#$ python src/andromede/main/main.py --models tests/data/libs/lib_1.yml tests/data/libs/lib_2.yml --component tests/data/systems/components.yml --duration 3 --timeseries tests/data/series/
 # or
 #$ python src/andromede/main/main.py --study tests/functional/ --duration 3
 #expected value :
