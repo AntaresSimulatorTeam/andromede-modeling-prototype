@@ -15,15 +15,6 @@ import pytest
 
 from andromede.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-    DEMAND_MODEL,
-    GENERATOR_MODEL,
-    NODE_BALANCE_MODEL,
-    SHORT_TERM_STORAGE_SIMPLE,
-    SPILLAGE_MODEL,
-    UNSUPPLIED_ENERGY_MODEL,
-)
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
@@ -36,6 +27,15 @@ from andromede.study import (
     TimeScenarioIndex,
     TimeScenarioSeriesData,
     create_component,
+)
+from tests.data.libs.standard import (
+    BALANCE_PORT_TYPE,
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+    NODE_BALANCE_MODEL,
+    SHORT_TERM_STORAGE_SIMPLE,
+    SPILLAGE_MODEL,
+    UNSUPPLIED_ENERGY_MODEL,
 )
 
 

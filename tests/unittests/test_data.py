@@ -17,14 +17,6 @@ import pytest
 
 from andromede.expression import param, var
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-    CONSTANT,
-    DEMAND_MODEL,
-    GENERATOR_MODEL,
-    NODE_BALANCE_MODEL,
-    NON_ANTICIPATIVE_TIME_VARYING,
-)
 from andromede.model import (
     Constraint,
     Model,
@@ -48,6 +40,14 @@ from andromede.study import (
     create_component,
 )
 from andromede.study.data import load_ts_from_txt
+from tests.data.libs.standard import (
+    BALANCE_PORT_TYPE,
+    CONSTANT,
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+    NODE_BALANCE_MODEL,
+    NON_ANTICIPATIVE_TIME_VARYING,
+)
 
 
 @pytest.fixture

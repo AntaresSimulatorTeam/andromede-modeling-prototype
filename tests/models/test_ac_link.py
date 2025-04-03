@@ -13,7 +13,6 @@ from pathlib import Path
 
 import pytest
 
-from andromede.libs.standard import BALANCE_PORT_TYPE, DEMAND_MODEL, GENERATOR_MODEL
 from andromede.model.library import Library, library
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
@@ -26,6 +25,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
+from tests.data.libs.standard import BALANCE_PORT_TYPE, DEMAND_MODEL, GENERATOR_MODEL
 
 
 @pytest.fixture

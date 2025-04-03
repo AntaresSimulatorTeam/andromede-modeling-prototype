@@ -40,7 +40,7 @@ def lib_dict(data_dir: Path) -> dict[str, Library]:
 
 @pytest.fixture(scope="session")
 def lib_dict_sc() -> dict[str, Library]:
-    libs_path = Path(__file__).parents[2] / "src/andromede/libs/"
+    libs_path = Path(__file__).parents[1] / "data/libs/"
     lib_sc_file = libs_path / "standard_sc.yml"
 
     with lib_sc_file.open() as f:
