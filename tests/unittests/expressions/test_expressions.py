@@ -202,6 +202,14 @@ def test_shift() -> None:
     assert compute_indexation(expr, provider) == IndexingStructure(True, True)
 
 
+def test_time_eval() -> None:
+    x = var("x")
+    expr = x.eval(1)
+
+    provider = StructureProvider()
+    assert compute_indexation(expr, provider) == IndexingStructure(False, True)
+
+
 def test_time_sum() -> None:
     x = var("x")
     expr = x.time_sum(1, 4)
