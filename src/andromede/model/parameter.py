@@ -40,4 +40,4 @@ def float_parameter(
     name: str,
     structure: IndexingStructure = IndexingStructure(True, True),
 ) -> Parameter:
-    return Parameter(name, ValueType.FLOAT, structure)
+    return Parameter(name, ValueType.CONTINUOUS, structure)

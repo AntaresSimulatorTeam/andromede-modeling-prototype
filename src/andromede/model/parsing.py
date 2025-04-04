@@ -39,7 +39,7 @@ class InputVariable(ModifiedBaseModel):
     scenario_dependent: bool = True
     lower_bound: Optional[str] = None
     upper_bound: Optional[str] = None
-    variable_type: str = "float"
+    variable_type: str = "continuous"
 
     class Config(ModifiedBaseModel.Config):
         coerce_numbers_to_str = True
