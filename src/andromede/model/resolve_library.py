@@ -209,7 +209,7 @@ def _resolve_field_definition(
 def _to_parameter(param: InputParameter) -> Parameter:
     return Parameter(
         name=param.id,
-        type=ValueType.FLOAT,
+        type=ValueType.CONTINUOUS,
         structure=IndexingStructure(param.time_dependent, param.scenario_dependent),
     )
 
@@ -225,7 +225,7 @@ def _to_expression_if_present(
 def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
     return Variable(
         name=var.id,
-        data_type={"float": ValueType.FLOAT, "integer": ValueType.INTEGER}[
+        data_type={"continuous": ValueType.CONTINUOUS, "integer": ValueType.INTEGER}[
             var.variable_type
         ],
         structure=IndexingStructure(var.time_dependent, var.scenario_dependent),
