@@ -12,7 +12,6 @@
 
 from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
-from andromede.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
 from andromede.model import (
     Constraint,
     ModelPort,
@@ -32,6 +31,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
+from tests.data.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
 
 ELECTRICAL_PORT = PortType(id="electrical_port", fields=[PortField("flow")])
 

@@ -13,17 +13,8 @@ import cProfile
 from pstats import SortKey
 from typing import cast
 
-import pytest
-
 from andromede.expression.expression import ExpressionNode, literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.libs.standard import (
-    BALANCE_PORT_TYPE,
-    DEMAND_MODEL,
-    GENERATOR_MODEL,
-    GENERATOR_MODEL_WITH_STORAGE,
-    NODE_BALANCE_MODEL,
-)
 from andromede.model import float_parameter, float_variable, model
 from andromede.simulation import TimeBlock, build_problem
 from andromede.study import (
@@ -33,6 +24,12 @@ from andromede.study import (
     Node,
     PortRef,
     create_component,
+)
+from tests.data.libs.standard import (
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+    GENERATOR_MODEL_WITH_STORAGE,
+    NODE_BALANCE_MODEL,
 )
 from tests.unittests.test_utils import generate_scalar_matrix_data
 

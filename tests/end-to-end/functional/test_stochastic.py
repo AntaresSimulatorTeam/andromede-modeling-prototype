@@ -14,12 +14,6 @@ from typing import List
 
 import pytest
 
-from andromede.libs.standard import (
-    DEMAND_MODEL,
-    NODE_BALANCE_MODEL,
-    THERMAL_CLUSTER_MODEL_DHD,
-    THERMAL_CLUSTER_MODEL_HD,
-)
 from andromede.simulation import TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -28,6 +22,12 @@ from andromede.study import (
     Node,
     PortRef,
     create_component,
+)
+from tests.data.libs.standard import (
+    DEMAND_MODEL,
+    NODE_BALANCE_MODEL,
+    THERMAL_CLUSTER_MODEL_DHD,
+    THERMAL_CLUSTER_MODEL_HD,
 )
 from tests.unittests.test_utils import generate_scalar_matrix_data
 

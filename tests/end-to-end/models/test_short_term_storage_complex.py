@@ -2,13 +2,6 @@ import math
 
 import pandas as pd
 
-from andromede.libs.standard import (
-    DEMAND_MODEL,
-    NODE_BALANCE_MODEL,
-    SPILLAGE_MODEL,
-    UNSUPPLIED_ENERGY_MODEL,
-)
-from andromede.libs.standard_sc import SHORT_TERM_STORAGE_COMPLEX
 from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -19,6 +12,13 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
+from tests.data.libs.standard import (
+    DEMAND_MODEL,
+    NODE_BALANCE_MODEL,
+    SPILLAGE_MODEL,
+    UNSUPPLIED_ENERGY_MODEL,
+)
+from tests.data.libs.standard_sc import SHORT_TERM_STORAGE_COMPLEX
 
 
 def generate_data(

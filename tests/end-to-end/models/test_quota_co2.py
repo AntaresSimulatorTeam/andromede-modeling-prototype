@@ -12,8 +12,6 @@
 
 import math
 
-from andromede.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
-from andromede.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -23,6 +21,8 @@ from andromede.study import (
     PortRef,
     create_component,
 )
+from tests.data.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
+from tests.data.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
 
 """
 build the quota CO² test system.

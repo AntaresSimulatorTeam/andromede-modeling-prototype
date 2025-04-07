@@ -11,7 +11,6 @@
 # This file is part of the Antares project.
 
 import math
-from pathlib import Path
 
 from andromede.model.library import Library
 from andromede.simulation import OutputValues, TimeBlock, build_problem
