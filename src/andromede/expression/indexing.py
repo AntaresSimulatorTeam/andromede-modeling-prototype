@@ -138,7 +138,7 @@ class TimeScenarioIndexingVisitor(ExpressionVisitor[IndexingStructure]):
         return visit(node.operand, self)
 
     def time_eval(self, node: TimeEvalNode) -> IndexingStructure:
-        return visit(node.operand, self)
+        return IndexingStructure(False, visit(node.operand, self).scenario)
 
     def time_sum(self, node: TimeSumNode) -> IndexingStructure:
         return visit(node.operand, self)

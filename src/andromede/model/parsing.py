@@ -12,8 +12,10 @@
 import typing
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import Field, ValidationError
 from yaml import safe_load
+
+from andromede.utils import ModifiedBaseModel, _to_kebab
 
 
 def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
@@ -24,46 +26,33 @@ def parse_yaml_library(input: typing.TextIO) -> "InputLibrary":
         raise ValueError(f"An error occurred during parsing: {e}")
 
 
-# Design note: actual parsing and validation is delegated to pydantic models
-def _to_kebab(snake: str) -> str:
-    return snake.replace("_", "-")
-
-
-class ModifiedBaseModel(BaseModel):
-    class Config:
-        alias_generator = _to_kebab
-        extra = "forbid"
-
-
 class InputParameter(ModifiedBaseModel):
-    name: str
+    id: str
     time_dependent: bool = False
     scenario_dependent: bool = False
 
 
 class InputVariable(ModifiedBaseModel):
-    name: str
+    id: str
     time_dependent: bool = True
     scenario_dependent: bool = True
     lower_bound: Optional[str] = None
     upper_bound: Optional[str] = None
-    variable_type: str = "float"
+    variable_type: str = "continuous"
 
-    class Config:
-        alias_generator = _to_kebab
+    class Config(ModifiedBaseModel.Config):
         coerce_numbers_to_str = True
-        extra = "forbid"
 
 
 class InputConstraint(ModifiedBaseModel):
-    name: str
+    id: str
     expression: str
     lower_bound: Optional[str] = None
     upper_bound: Optional[str] = None
 
 
 class InputField(ModifiedBaseModel):
-    name: str
+    id: str
 
 
 class InputPortType(ModifiedBaseModel):
@@ -73,7 +62,7 @@ class InputPortType(ModifiedBaseModel):
 
 
 class InputModelPort(ModifiedBaseModel):
-    name: str
+    id: str
     type: str
 
 

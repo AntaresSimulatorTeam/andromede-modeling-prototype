@@ -71,7 +71,7 @@ def bool_var(
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    return Variable(name, ValueType.BOOL, literal(0), literal(1), structure, context)
+    return Variable(name, ValueType.BOOLEAN, literal(0), literal(1), structure, context)
 
 
 def float_variable(
@@ -81,4 +81,6 @@ def float_variable(
     structure: IndexingStructure = IndexingStructure(True, True),
     context: ProblemContext = ProblemContext.OPERATIONAL,
 ) -> Variable:
-    return Variable(name, ValueType.FLOAT, lower_bound, upper_bound, structure, context)
+    return Variable(
+        name, ValueType.CONTINUOUS, lower_bound, upper_bound, structure, context
+    )

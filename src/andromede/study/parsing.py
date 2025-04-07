@@ -14,16 +14,18 @@ import argparse
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, TextIO
+from typing import List, Optional, TextIO, Union
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import Field
 from yaml import safe_load
 
+from andromede.utils import ModifiedBaseModel
 
-def parse_yaml_components(input_components: TextIO) -> "InputComponents":
-    tree = safe_load(input_components)
-    return InputComponents.model_validate(tree["study"])
+
+def parse_yaml_components(input_study: TextIO) -> "InputSystem":
+    tree = safe_load(input_study)
+    return InputSystem.model_validate(tree["system"])
 
 
 def parse_scenario_builder(file: Path) -> pd.DataFrame:
@@ -32,46 +34,33 @@ def parse_scenario_builder(file: Path) -> pd.DataFrame:
     return sb
 
 
-# Design note: actual parsing and validation is delegated to pydantic models
-def _to_kebab(snake: str) -> str:
-    return snake.replace("_", "-")
-
-
-class InputPortConnections(BaseModel):
+class InputPortConnections(ModifiedBaseModel):
     component1: str
-    port_1: str
+    port1: str
     component2: str
-    port_2: str
+    port2: str
 
 
-class InputComponentParameter(BaseModel):
-    name: str
-    type: str
+class InputComponentParameter(ModifiedBaseModel):
+    id: str
+    time_dependent: bool = False
+    scenario_dependent: bool = False
+    value: Union[float, str]
     scenario_group: Optional[str] = None
-    value: Optional[float] = None
-    timeseries: Optional[str] = None
-
-    class Config:
-        alias_generator = _to_kebab
 
 
-class InputComponent(BaseModel):
+class InputComponent(ModifiedBaseModel):
     id: str
     model: str
     scenario_group: Optional[str] = None
     parameters: Optional[List[InputComponentParameter]] = None
 
-    class Config:
-        alias_generator = _to_kebab
 
-
-class InputComponents(BaseModel):
+class InputSystem(ModifiedBaseModel):
+    model_libraries: Optional[str] = None  # Parsed but unused for now
     nodes: List[InputComponent] = Field(default_factory=list)
     components: List[InputComponent] = Field(default_factory=list)
     connections: List[InputPortConnections] = Field(default_factory=list)
-
-    class Config:
-        alias_generator = _to_kebab
 
 
 @dataclass(frozen=True)

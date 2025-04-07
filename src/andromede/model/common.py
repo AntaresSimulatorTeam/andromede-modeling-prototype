@@ -17,9 +17,9 @@ from enum import Enum
 
 
 class ValueType(Enum):
-    FLOAT = "FLOAT"
+    CONTINUOUS = "CONTINUOUS"
     INTEGER = "INTEGER"
-    BOOL = "BOOL"
+    BOOLEAN = "BOOLEAN"
 
 
 class ProblemContext(Enum):

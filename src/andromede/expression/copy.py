@@ -74,7 +74,7 @@ class CopyVisitor(ExpressionVisitorOperations[ExpressionNode]):
         return TimeShiftNode(visit(node.operand, self), visit(node.time_shift, self))
 
     def time_eval(self, node: TimeEvalNode) -> ExpressionNode:
-        return TimeShiftNode(visit(node.operand, self), visit(node.eval_time, self))
+        return TimeEvalNode(visit(node.operand, self), visit(node.eval_time, self))
 
     def time_sum(self, node: TimeSumNode) -> ExpressionNode:
         return TimeSumNode(

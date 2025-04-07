@@ -12,7 +12,7 @@
 
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from andromede.model.library import Library
 from andromede.model.parsing import parse_yaml_library
@@ -21,11 +21,11 @@ from andromede.simulation import TimeBlock, build_problem
 from andromede.study import DataBase
 from andromede.study.parsing import parse_cli, parse_yaml_components
 from andromede.study.resolve_components import (
-    NetworkComponents,
+    System,
     build_data_base,
     build_network,
     consistency_check,
-    resolve_components_and_cnx,
+    resolve_system,
 )
 
 
@@ -33,11 +33,11 @@ class AntaresTimeSeriesImportError(Exception):
     pass
 
 
-def input_models(model_paths: List[Path]) -> Library:
+def input_libs(yaml_lib_paths: List[Path]) -> dict[str, Library]:
     yaml_libraries = []
     yaml_library_ids = set()
 
-    for path in model_paths:
+    for path in yaml_lib_paths:
         with path.open("r") as file:
             yaml_lib = parse_yaml_library(file)
 
@@ -55,17 +55,22 @@ def input_database(study_path: Path, timeseries_path: Optional[Path]) -> DataBas
         return build_data_base(parse_yaml_components(comp), timeseries_path)
 
 
-def input_components(study_path: Path, model: Library) -> NetworkComponents:
+def input_study(study_path: Path, librairies: dict[str, Library]) -> System:
     with study_path.open() as comp:
-        return resolve_components_and_cnx(parse_yaml_components(comp), model)
+        return resolve_system(parse_yaml_components(comp), librairies)
 
 
 def main_cli() -> None:
     parsed_args = parse_cli()
 
-    models = input_models(parsed_args.models_path)
-    components = input_components(parsed_args.components_path, models)
-    consistency_check(components.components, models.models)
+    lib_dict = input_libs(parsed_args.models_path)
+    study = input_study(parsed_args.components_path, lib_dict)
+
+    models = {}
+    for lib in lib_dict.values():
+        models.update(lib.models)
+
+    consistency_check(study.components, models)
 
     try:
         database = input_database(
@@ -77,7 +82,7 @@ def main_cli() -> None:
             f"An error occurred while importing time series."
         )
 
-    network = build_network(components)
+    network = build_network(study)
 
     timeblock = TimeBlock(1, list(range(parsed_args.duration)))
     scenario = parsed_args.nb_scenarios

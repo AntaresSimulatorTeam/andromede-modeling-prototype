@@ -689,7 +689,7 @@ class OptimizationProblem:
                             f"Upper bound ({upper_bound}) must be strictly greater than lower bound ({lower_bound}) for variable {solver_var_name}"
                         )
 
-                    if model_var.data_type == ValueType.BOOL:
+                    if model_var.data_type == ValueType.BOOLEAN:
                         solver_var = self.solver.BoolVar(
                             solver_var_name,
                         )

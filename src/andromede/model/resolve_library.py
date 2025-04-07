@@ -46,7 +46,7 @@ from andromede.model.port import PortFieldDefinition, port_field_def
 
 def resolve_library(
     input_libs: List[InputLibrary], preloaded_libs: Optional[List[Library]] = None
-) -> Library:
+) -> Dict[str, Library]:
     """
     Converts parsed data into an actually usable library of models.
 
@@ -60,59 +60,104 @@ def resolve_library(
         for preloaded_lib in preloaded_libs:
             preloaded_port_types.update(preloaded_lib.port_types)
 
-    output_lib = Library(port_types=preloaded_port_types, models={})
+    output_lib_dict: Dict[str, Library] = (
+        dict((l.id, l) for l in preloaded_libs) if preloaded_libs else {}
+    )
 
-    todo: List[str] = list(yaml_lib_dict)
-    done: Set[str] = set()
+    remaining_lib_ids: List[str] = list(yaml_lib_dict)
+    treated_lib_ids: Set[str] = set()
     import_stack: List[str] = []
 
-    while todo:
-        next_lib_id = todo.pop()
+    while remaining_lib_ids:
+        next_lib_id = remaining_lib_ids.pop()
 
-        if next_lib_id in done:
+        if next_lib_id in treated_lib_ids:
             continue
         else:
             import_stack.append(next_lib_id)
 
         while import_stack:
-            cur_lib = yaml_lib_dict[import_stack[-1]]
-            dependencies = set(cur_lib.dependencies) - done
+            cur_yaml_lib = yaml_lib_dict[import_stack[-1]]
+            current_lib = Library(id=cur_yaml_lib.id, port_types={}, models={})
 
-            if dependencies:
-                first_dependency = dependencies.pop()
+            # Add already parsed port types from dependencies in current lib
+            _add_preloaded_port_types_to_current_lib(preloaded_port_types, current_lib)
+            _add_resolved_dependent_port_types_to_current_lib(
+                output_lib_dict, treated_lib_ids, cur_yaml_lib, current_lib
+            )
 
-                if first_dependency in import_stack:
-                    raise Exception("Circular import in yaml libraries")
-                import_stack.append(first_dependency)
+            remaining_dependencies = set(cur_yaml_lib.dependencies) - treated_lib_ids
+
+            if remaining_dependencies:
+                _add_dependencies_to_stack(import_stack, remaining_dependencies)
 
             else:
-                port_types = [_convert_port_type(p) for p in cur_lib.port_types]
-                port_types_dict = dict((p.id, p) for p in port_types)
+                _resolve_lib(current_lib, cur_yaml_lib, output_lib_dict)
+                _update_treated_libs_and_import_stack(treated_lib_ids, import_stack)
 
-                if output_lib.port_types.keys() & port_types_dict.keys():
-                    raise Exception(
-                        f"Port(s) : {str(output_lib.port_types.keys() & port_types_dict.keys())} is(are) defined twice."
-                    )
-                output_lib.port_types.update(port_types_dict)
+    return output_lib_dict
 
-                models = [
-                    _resolve_model(m, output_lib.port_types) for m in cur_lib.models
-                ]
 
-                models_dict = dict((m.id, m) for m in models)
-                if output_lib.models.keys() & models_dict.keys():
-                    raise Exception(
-                        f"Model(s) : {str(output_lib.models.keys() & models_dict.keys())} is(are) defined twice"
-                    )
-                output_lib.models.update(models_dict)
+def _add_preloaded_port_types_to_current_lib(
+    preloaded_port_types: dict[str, PortType], current_lib: Library
+) -> None:
+    current_lib.port_types.update(preloaded_port_types)
 
-                done.add(import_stack.pop())
 
-    return output_lib
+def _add_resolved_dependent_port_types_to_current_lib(
+    output_lib_dict: Dict[str, Library],
+    treated_lib_ids: Set[str],
+    cur_yaml_lib: InputLibrary,
+    current_lib: Library,
+) -> None:
+    done_dependencies = set(cur_yaml_lib.dependencies) & treated_lib_ids
+    for done_lib in done_dependencies:
+        current_lib.port_types.update(output_lib_dict[done_lib].port_types)
+
+
+def _update_treated_libs_and_import_stack(
+    treated_lib_ids: Set[str], import_stack: List[str]
+) -> None:
+    treated_lib_ids.add(import_stack.pop())
+
+
+def _resolve_lib(
+    current_lib: Library, cur_yaml_lib: InputLibrary, output_lib: Dict[str, Library]
+) -> None:
+    port_types = [_convert_port_type(p) for p in cur_yaml_lib.port_types]
+    port_types_dict = dict((p.id, p) for p in port_types)
+
+    if current_lib.port_types.keys() & port_types_dict.keys():
+        raise Exception(
+            f"Port(s) : {str(current_lib.port_types.keys() & port_types_dict.keys())} is(are) defined twice."
+        )
+    current_lib.port_types.update(port_types_dict)
+
+    cur_yaml_lib_model_ids = [model.id for model in cur_yaml_lib.models]
+    for id in cur_yaml_lib_model_ids:
+        if cur_yaml_lib_model_ids.count(id) > 1:
+            raise Exception(f"Model {id} is defined twice")
+
+    models = [_resolve_model(m, current_lib.port_types) for m in cur_yaml_lib.models]
+
+    models_dict = dict((m.id, m) for m in models)
+
+    current_lib.models.update(models_dict)
+    output_lib[current_lib.id] = current_lib
+
+
+def _add_dependencies_to_stack(
+    import_stack: List[str], remaining_dependencies: Set[str]
+) -> None:
+    first_dependency = remaining_dependencies.pop()
+
+    if first_dependency in import_stack:
+        raise Exception("Circular import in yaml libraries")
+    import_stack.append(first_dependency)
 
 
 def _convert_field(field: InputField) -> PortField:
-    return PortField(name=field.name)
+    return PortField(name=field.id)
 
 
 def _convert_port_type(port_type: InputPortType) -> PortType:
@@ -123,8 +168,8 @@ def _convert_port_type(port_type: InputPortType) -> PortType:
 
 def _resolve_model(input_model: InputModel, port_types: Dict[str, PortType]) -> Model:
     identifiers = ModelIdentifiers(
-        variables={v.name for v in input_model.variables},
-        parameters={p.name for p in input_model.parameters},
+        variables={v.id for v in input_model.variables},
+        parameters={p.id for p in input_model.parameters},
     )
     return model(
         id=input_model.id,
@@ -148,7 +193,7 @@ def _resolve_model(input_model: InputModel, port_types: Dict[str, PortType]) -> 
 def _resolve_model_port(
     port: InputModelPort, port_types: Dict[str, PortType]
 ) -> ModelPort:
-    return ModelPort(port_name=port.name, port_type=port_types[port.type])
+    return ModelPort(port_name=port.id, port_type=port_types[port.type])
 
 
 def _resolve_field_definition(
@@ -163,8 +208,8 @@ def _resolve_field_definition(
 
 def _to_parameter(param: InputParameter) -> Parameter:
     return Parameter(
-        name=param.name,
-        type=ValueType.FLOAT,
+        name=param.id,
+        type=ValueType.CONTINUOUS,
         structure=IndexingStructure(param.time_dependent, param.scenario_dependent),
     )
 
@@ -179,8 +224,8 @@ def _to_expression_if_present(
 
 def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
     return Variable(
-        name=var.name,
-        data_type={"float": ValueType.FLOAT, "integer": ValueType.INTEGER}[
+        name=var.id,
+        data_type={"continuous": ValueType.CONTINUOUS, "integer": ValueType.INTEGER}[
             var.variable_type
         ],
         structure=IndexingStructure(var.time_dependent, var.scenario_dependent),
@@ -196,7 +241,7 @@ def _to_constraint(
     lb = _to_expression_if_present(constraint.lower_bound, identifiers)
     ub = _to_expression_if_present(constraint.upper_bound, identifiers)
     return Constraint(
-        name=constraint.name,
+        name=constraint.id,
         expression=parse_expression(constraint.expression, identifiers),
         lower_bound=(lb if lb is not None else literal(-float("inf"))),
         upper_bound=(ub if ub is not None else literal(float("inf"))),

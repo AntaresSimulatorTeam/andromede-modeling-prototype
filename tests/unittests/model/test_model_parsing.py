@@ -16,7 +16,6 @@ import pytest
 from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
 from andromede.expression.parsing.parse_expression import AntaresParseException
-from andromede.libs.standard import CONSTANT
 from andromede.model import (
     Constraint,
     ModelPort,
@@ -29,10 +28,11 @@ from andromede.model import (
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
+from tests.data.libs.standard import CONSTANT
 
 
-def test_library_parsing(data_dir: Path) -> None:
-    lib_file = data_dir / "lib.yml"
+def test_library_parsing(libs_dir: Path) -> None:
+    lib_file = libs_dir / "lib_unittest.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
@@ -41,11 +41,12 @@ def test_library_parsing(data_dir: Path) -> None:
     assert len(input_lib.port_types) == 1
 
     lib = resolve_library([input_lib])
-    assert len(lib.models) == 7
-    assert len(lib.port_types) == 1
-    port_type = lib.port_types["flow"]
+    assert len(lib) == 1
+    assert len(lib[input_lib.id].models) == 7
+    assert len(lib[input_lib.id].port_types) == 1
+    port_type = lib[input_lib.id].port_types["flow"]
     assert port_type == PortType(id="flow", fields=[PortField(name="flow")])
-    gen_model = lib.models["generator"]
+    gen_model = lib[input_lib.id].models["generator"]
     assert gen_model == model(
         id="generator",
         parameters=[
@@ -68,7 +69,7 @@ def test_library_parsing(data_dir: Path) -> None:
         .time_sum()
         .expec(),
     )
-    short_term_storage = lib.models["short-term-storage"]
+    short_term_storage = lib[input_lib.id].models["short-term-storage"]
     assert short_term_storage == model(
         id="short-term-storage",
         parameters=[
@@ -116,8 +117,8 @@ def test_library_parsing(data_dir: Path) -> None:
     )
 
 
-def test_library_error_parsing(data_dir: Path) -> None:
-    lib_file = data_dir / "model_port_definition_ko.yml"
+def test_library_error_parsing(libs_dir: Path) -> None:
+    lib_file = libs_dir / "model_port_definition_ko.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
@@ -129,17 +130,17 @@ def test_library_error_parsing(data_dir: Path) -> None:
         resolve_library([input_lib])
 
 
-def test_library_port_model_ok_parsing(data_dir: Path) -> None:
-    lib_file = data_dir / "model_port_definition_ok.yml"
+def test_library_port_model_ok_parsing(libs_dir: Path) -> None:
+    lib_file = libs_dir / "model_port_definition_ok.yml"
 
     with lib_file.open() as f:
         input_lib = parse_yaml_library(f)
     assert input_lib.id == "basic"
 
     lib = resolve_library([input_lib])
-    port_type = lib.port_types["flow"]
+    port_type = lib[input_lib.id].port_types["flow"]
     assert port_type == PortType(id="flow", fields=[PortField(name="flow")])
-    short_term_storage = lib.models["short-term-storage-2"]
+    short_term_storage = lib[input_lib.id].models["short-term-storage-2"]
     assert short_term_storage == model(
         id="short-term-storage-2",
         parameters=[
