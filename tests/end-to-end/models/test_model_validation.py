@@ -4,7 +4,7 @@ from tests.unittests.study.test_components_parsing import *
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.study.resolve_components import resolve_system
-
+import pytest
 import pandas as pd
 
 @pytest.mark.parametrize(
