@@ -31,14 +31,14 @@ library:
         - id: curtailment
           lower-bound: 0
           upper-bound: max_load
-      objective: expec(sum(curtailment*curtailment_price))
+      objective: expec(sum(curtailment * curtailment_price))
       ports:
         - id: balance_port
           type: flow
       port-field-definitions:
         - port: balance_port
           field: flow
-          definition: -max_load+curtailment
+          definition: -max_load + curtailment
 
 
     - id: electrolyser
@@ -64,4 +64,4 @@ library:
           definition: -power
         - port: hydrogen_port
           field: flow
-          definition: efficiency*power
+          definition: efficiency * power
