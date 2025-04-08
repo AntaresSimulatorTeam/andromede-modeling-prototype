@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 library:
   id: andromede-v1-models
-  description: Antares historic model library
+  description: Andromede V1 model library
 
   port-types:
     - id: flow
