@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 library:
-  id: reference-models
+  id: andromede-v1-models
   description: Antares historic model library
 
   port-types:
