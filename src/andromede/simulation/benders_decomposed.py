@@ -224,7 +224,11 @@ def build_benders_decomposed_problem(
     struct_filename: str = "structure.txt",
 ) -> BendersDecomposedProblem:
     """
-    Entry point to build the xpansion problem for a time period
+    Entry point to build the xpansion pathway problem.
+
+    For each node of the tree, it builds a Master and a Subproblem.
+    Then it defines a coupled problem that merges all masters along with
+    its pathway constraints into one 'tree master' problem.
 
     Returns a Benders Decomposed problem
     """

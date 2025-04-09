@@ -197,39 +197,6 @@ GENERATOR_MODEL_WITH_STORAGE = model(
     .expec(),
 )
 
-"""
-A model for a linear cost generation limited by a maximum generation per time-step
-and total generation in whole period. It considers a full storage with no replenishing
-"""
-GENERATOR_MODEL_WITH_STORAGE = model(
-    id="GEN",
-    parameters=[
-        float_parameter("p_max", CONSTANT),
-        float_parameter("cost", CONSTANT),
-        float_parameter("full_storage", CONSTANT),
-    ],
-    variables=[float_variable("generation", lower_bound=literal(0))],
-    ports=[ModelPort(port_type=BALANCE_PORT_TYPE, port_name="balance_port")],
-    port_fields_definitions=[
-        PortFieldDefinition(
-            port_field=PortFieldId("balance_port", "flow"),
-            definition=var("generation"),
-        )
-    ],
-    constraints=[
-        Constraint(
-            name="Max generation", expression=var("generation") <= param("p_max")
-        ),
-        Constraint(
-            name="Total storage",
-            expression=var("generation").time_sum() <= param("full_storage"),
-        ),
-    ],
-    objective_operational_contribution=(param("cost") * var("generation"))
-    .time_sum()
-    .expec(),
-)
-
 # For now, no starting cost
 THERMAL_CLUSTER_MODEL_HD = model(
     id="GEN",

@@ -332,7 +332,7 @@ def literal(value: float) -> LiteralNode:
     return LiteralNode(value)
 
 
-def is_unbound(expr: ExpressionNode) -> bool:
+def is_unbounded(expr: ExpressionNode) -> bool:
     return isinstance(expr, LiteralNode) and (abs(expr.value) == float("inf"))
 
 

@@ -158,7 +158,7 @@ class DecisionTreeNode(NodeMixin):
         """
         Here and below, we use (and mostly abuse!) of the fact that
         both coupling_network and coupling_info attributes are initialized,
-        or bound, at the function definition since they are default arguments!
+        or bounded, at the function definition since they are default arguments!
         It allows us to not iterate over the tree, since all nodes share the same
         coupling_network and coupling_info objects.
 

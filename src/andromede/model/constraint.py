@@ -23,7 +23,7 @@ from andromede.expression.expression import (
     ComparisonNode,
     ExpressionNode,
     is_non_negative,
-    is_unbound,
+    is_unbounded,
     literal,
 )
 from andromede.expression.print import print_expr
@@ -48,7 +48,7 @@ class Constraint:
         self,
     ) -> None:
         if isinstance(self.expression, ComparisonNode):
-            if not is_unbound(self.lower_bound) or not is_unbound(self.upper_bound):
+            if not is_unbounded(self.lower_bound) or not is_unbounded(self.upper_bound):
                 raise ValueError(
                     "Both comparison between two expressions and a bound are specfied, set either only a comparison between expressions or a single linear expression with bounds."
                 )
@@ -74,10 +74,10 @@ class Constraint:
                         f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
                     )
 
-            if is_unbound(self.lower_bound) and is_non_negative(self.lower_bound):
+            if is_unbounded(self.lower_bound) and is_non_negative(self.lower_bound):
                 raise ValueError("Lower bound should not be +Inf")
 
-            if is_unbound(self.upper_bound) and not is_non_negative(self.upper_bound):
+            if is_unbounded(self.upper_bound) and not is_non_negative(self.upper_bound):
                 raise ValueError("Upper bound should not be -Inf")
 
     def replicate(self, /, **changes: Any) -> "Constraint":
