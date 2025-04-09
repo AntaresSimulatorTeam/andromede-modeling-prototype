@@ -26,9 +26,11 @@ def libs_dir() -> Path:
 def data_dir() -> Path:
     return Path(__file__).parents[2] / "data"
 
+
 @pytest.fixture(scope="session")
 def systems_dir(data_dir: Path) -> Path:
     return data_dir / "systems"
+
 
 @pytest.fixture(scope="session")
 def series_dir(data_dir: Path) -> Path:

@@ -29,16 +29,20 @@ from andromede.study.resolve_components import (
 
 @pytest.mark.parametrize(
     "system_file, optim_result_file, timespan, batch, relative_accuracy",
-    [   
-        ("dsr_validation.yml","dsr_case_results.csv",168,20,1e-6),     
-        ("base_validation.yml","base_case_results.csv",168,20,1e-6),
-        ("electrolyser_validation.yml","electrolyser_case_results.csv",168,20,1e-6),
-        ("storage_validation.yml","storage_case_results.csv",168,20,1e-6),
-        ("bde_system.yml","bde_case_results.csv",168,20,1e-6)
-    ], 
+    [
+        ("dsr_validation.yml", "dsr_case_results.csv", 168, 20, 1e-6),
+        ("base_validation.yml", "base_case_results.csv", 168, 20, 1e-6),
+        ("electrolyser_validation.yml", "electrolyser_case_results.csv", 168, 20, 1e-6),
+        ("storage_validation.yml", "storage_case_results.csv", 168, 20, 1e-6),
+        ("bde_system.yml", "bde_case_results.csv", 168, 20, 1e-6),
+    ],
 )
-
-def test_model_behaviour(system_file: str, optim_result_file:str, timespan: int, batch: int, relative_accuracy : float
+def test_model_behaviour(
+    system_file: str,
+    optim_result_file: str,
+    timespan: int,
+    batch: int,
+    relative_accuracy: float,
 ) -> None:
     scenarios = 1
     syspath = "tests/data/systems/"
@@ -55,18 +59,18 @@ def test_model_behaviour(system_file: str, optim_result_file:str, timespan: int,
     components_input = resolve_system(input_component, result_lib)
     database = build_data_base(input_component, Path(tspath))
     network = build_network(components_input)
-    reference_values = (pd.read_csv(respath + optim_result_file,header=None)).values
+    reference_values = (pd.read_csv(respath + optim_result_file, header=None)).values
     for k in range(batch):
         problem = build_problem(
-            network, 
-            database, 
-            TimeBlock(1, [i for i in range(k*timespan,(k+1)*timespan)]), 
-            scenarios
+            network,
+            database,
+            TimeBlock(1, [i for i in range(k * timespan, (k + 1) * timespan)]),
+            scenarios,
         )
         status = problem.solver.Solve()
         assert status == problem.solver.OPTIMAL
         assert (
             relative_accuracy
-            > abs(reference_values[k,0] - problem.solver.Objective().Value())
+            > abs(reference_values[k, 0] - problem.solver.Objective().Value())
             / reference_values[k, 0]
         )
