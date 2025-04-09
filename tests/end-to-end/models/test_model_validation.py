@@ -17,7 +17,6 @@ from andromede.model.resolve_library import resolve_library
 from andromede.study.resolve_components import resolve_system
 
 
-
 @pytest.mark.parametrize(
     "system_file, optim_result_file, timespan, batch",
     [
