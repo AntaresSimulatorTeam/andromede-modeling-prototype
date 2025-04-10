@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 from antares.craft.model.area import Area, AreaProperties
 from antares.craft.model.hydro import HydroProperties
+from antares.craft.model.st_storage import STStorageProperties
 from antares.craft.model.renewable import RenewableClusterProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.model.thermal import ThermalClusterProperties
@@ -139,7 +140,22 @@ def actual_renewable_list_ini(local_study_with_renewable) -> IniFile:
 
 
 @pytest.fixture
-def local_study_with_st_storage(local_study_with_renewable) -> Study:
+def default_thermal_cluster_properties() -> STStorageProperties:
+    return STStorageProperties(
+        injection_nominal_capacity=10,
+        withdrawal_nominal_capacity=10,
+        reservoir_capacity=0,
+        efficiency=1,
+        initial_level=0.5,
+        initial_level_optim=False,
+        enabled=True,
+    )
+
+
+@pytest.fixture
+def local_study_with_st_storage(
+    local_study_with_renewable, default_thermal_cluster_properties
+) -> Study:
     """
     Create an empty study
     Create 2 areas with custom area properties
@@ -148,8 +164,10 @@ def local_study_with_st_storage(local_study_with_renewable) -> Study:
     Create a renewable cluster
     Create a short term storage
     """
-    storage_name = "short term storage"
-    local_study_with_renewable.get_areas()["fr"].create_st_storage(storage_name)
+    storage_name = "battery"
+    local_study_with_renewable.get_areas()["fr"].create_st_storage(
+        storage_name, properties=default_thermal_cluster_properties
+    )
     return local_study_with_renewable
 
 
