@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable, Literal
 
 import pandas as pd
@@ -13,15 +14,15 @@ from andromede.study.parsing import InputComponentParameter
 
 
 class TestPreprocessingThermal:
-    def _init_area_reading(self, local_study):
+    def _init_area_reading(self, local_study: Study):
         logger = Logger(__name__, local_study.service.config.study_path)
         converter = AntaresStudyConverter(study_input=local_study, logger=logger)
         areas = converter.study.get_areas().values()
         return areas, converter
 
     def _generate_tdp_instance_parameter(
-        self, areas, study_path, create_dataframes: bool = True
-    ):
+        self, areas, study_path: Path, create_dataframes: bool = True
+    ) -> ThermalDataPreprocessing:
         if create_dataframes:
             modulation_timeseries = str(
                 study_path
@@ -64,7 +65,7 @@ class TestPreprocessingThermal:
                     tdp = ThermalDataPreprocessing(thermal, study_path)
                     return tdp
 
-    def _setup_test(self, local_study_w_thermal, filename):
+    def _setup_test(self, local_study_w_thermal: Study, filename: Path):
         """
         Initializes test parameters and returns the instance and expected file path.
         """
@@ -77,7 +78,11 @@ class TestPreprocessingThermal:
         return instance, expected_path
 
     def _validate_component(
-        self, instance, process_method, expected_path, expected_values
+        self,
+        instance: ThermalDataPreprocessing,
+        process_method: str,
+        expected_path: Path,
+        expected_values: list,
     ):
         """
         Executes the given processing method, validates the component, and compares the output dataframe.
@@ -94,7 +99,7 @@ class TestPreprocessingThermal:
         assert current_df.equals(expected_df)
         assert component == expected_component
 
-    def _test_p_min_cluster(self, local_study_w_thermal):
+    def _test_p_min_cluster(self, local_study_w_thermal: Study):
         """Tests the p_min_cluster parameter processing."""
         instance, expected_path = self._setup_test(
             local_study_w_thermal, "p_min_cluster.txt"
