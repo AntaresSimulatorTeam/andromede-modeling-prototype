@@ -15,7 +15,7 @@ import sys
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from configparser import ConfigParser
 from pathlib import Path
-
+sys.path.append(os.path.dirname(__file__))
 from converter import AntaresStudyConverter
 from logger import Logger
 
