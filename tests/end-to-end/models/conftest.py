@@ -28,6 +28,16 @@ def data_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
+def systems_dir(data_dir: Path) -> Path:
+    return data_dir / "systems"
+
+
+@pytest.fixture(scope="session")
+def series_dir(data_dir: Path) -> Path:
+    return data_dir / "series"
+
+
+@pytest.fixture(scope="session")
 def lib_dict(libs_dir: Path) -> dict[str, Library]:
     lib_file = libs_dir / "lib_unittest.yml"
 
