@@ -224,52 +224,12 @@ class TestConverter:
             storage_components,
             storage_connections,
         ) = converter._convert_st_storage_to_component_list(areas, lib_id)
-
-        inflows_path = (
-            study_path
-            / "input"
-            / "st-storage"
-            / "series"
-            / "fr"
-            / "battery"
-            / "inflows"
-        )
-        lower_rule_curve_path = (
-            study_path
-            / "input"
-            / "st-storage"
-            / "series"
-            / "fr"
-            / "battery"
-            / "lower-rule-curve"
-        )
-        pmax_injection_path = (
-            study_path
-            / "input"
-            / "st-storage"
-            / "series"
-            / "fr"
-            / "battery"
-            / "PMAX-injection"
-        )
-        pmax_withdrawal_path = (
-            study_path
-            / "input"
-            / "st-storage"
-            / "series"
-            / "fr"
-            / "battery"
-            / "PMAX-withdrawal"
-        )
-        upper_rule_curve_path = (
-            study_path
-            / "input"
-            / "st-storage"
-            / "series"
-            / "fr"
-            / "battery"
-            / "upper-rule-curve"
-        )
+        default_path = study_path / "input" / "st-storage" / "series" / "fr" / "battery"
+        inflows_path = default_path / "inflows"
+        lower_rule_curve_path = default_path / "lower-rule-curve"
+        pmax_injection_path = default_path / "PMAX-injection"
+        pmax_withdrawal_path = default_path / "PMAX-withdrawal"
+        upper_rule_curve_path = default_path / "upper-rule-curve"
         expected_storage_connections = [
             InputPortConnections(
                 component1="battery",
@@ -334,6 +294,13 @@ class TestConverter:
                         value=f"{lower_rule_curve_path}",
                     ),
                     InputComponentParameter(
+                        id="upper_rule_curve",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{upper_rule_curve_path}",
+                    ),
+                    InputComponentParameter(
                         id="p_max_injection_modulation",
                         time_dependent=True,
                         scenario_dependent=True,
@@ -347,17 +314,11 @@ class TestConverter:
                         scenario_group=None,
                         value=f"{pmax_withdrawal_path}",
                     ),
-                    InputComponentParameter(
-                        id="upper_rule_curve",
-                        time_dependent=True,
-                        scenario_dependent=True,
-                        scenario_group=None,
-                        value=f"{upper_rule_curve_path}",
-                    ),
                 ],
             )
         ]
-
+        print("actual: ", storage_components)
+        print("epxected: ", expected_storage_component)
         assert storage_components == expected_storage_component
         assert storage_connections == expected_storage_connections
 

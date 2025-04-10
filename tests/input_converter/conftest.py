@@ -140,7 +140,7 @@ def actual_renewable_list_ini(local_study_with_renewable) -> IniFile:
 
 
 @pytest.fixture
-def default_thermal_cluster_properties() -> STStorageProperties:
+def default_storage_cluster_properties() -> STStorageProperties:
     return STStorageProperties(
         injection_nominal_capacity=10,
         withdrawal_nominal_capacity=10,
@@ -154,7 +154,7 @@ def default_thermal_cluster_properties() -> STStorageProperties:
 
 @pytest.fixture
 def local_study_with_st_storage(
-    local_study_with_renewable, default_thermal_cluster_properties
+    local_study_with_renewable, default_storage_cluster_properties
 ) -> Study:
     """
     Create an empty study
@@ -166,7 +166,7 @@ def local_study_with_st_storage(
     """
     storage_name = "battery"
     local_study_with_renewable.get_areas()["fr"].create_st_storage(
-        storage_name, properties=default_thermal_cluster_properties
+        storage_name, properties=default_storage_cluster_properties
     )
     return local_study_with_renewable
 

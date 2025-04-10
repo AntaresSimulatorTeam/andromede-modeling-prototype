@@ -336,6 +336,12 @@ class AntaresStudyConverter:
                                 value=str(lower_rule_curve_path),
                             ),
                             InputComponentParameter(
+                                id="upper_rule_curve",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(upper_rule_curve_path),
+                            ),
+                            InputComponentParameter(
                                 id="p_max_injection_modulation",
                                 time_dependent=True,
                                 scenario_dependent=True,
@@ -346,12 +352,6 @@ class AntaresStudyConverter:
                                 time_dependent=True,
                                 scenario_dependent=True,
                                 value=str(pmax_withdrawal_path),
-                            ),
-                            InputComponentParameter(
-                                id="upper_rule_curve",
-                                time_dependent=True,
-                                scenario_dependent=True,
-                                value=str(upper_rule_curve_path),
                             ),
                         ],
                     )
