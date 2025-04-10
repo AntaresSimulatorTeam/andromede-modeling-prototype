@@ -29,6 +29,9 @@ from andromede.study.parsing import (
     InputSystem,
     parse_yaml_components,
 )
+from tests.input_converter.test_thermal_preprocessing import (
+    generate_tdp_instance_parameter,
+)
 
 
 class TestConverter:
@@ -339,9 +342,7 @@ class TestConverter:
         create_csv_from_constant_value(modulation_timeseries, "modulation", 840, 4)
         create_csv_from_constant_value(series_path, "series", 840)
 
-        self._generate_tdp_instance_parameter(
-            areas, study_path, create_dataframes=False
-        )
+        generate_tdp_instance_parameter(areas, study_path, create_dataframes=False)
         (
             thermals_components,
             thermals_connections,
@@ -846,48 +847,3 @@ class TestConverter:
             expected_link_component, key=lambda x: x.id
         )
         assert links_connections == expected_link_connections
-
-    def _generate_tdp_instance_parameter(
-        self, areas, study_path, create_dataframes: bool = True
-    ):
-        if create_dataframes:
-            modulation_timeseries = str(
-                study_path
-                / "input"
-                / "thermal"
-                / "prepro"
-                / "fr"
-                / "gaz"
-                / "modulation.txt"
-            )
-            series_path = (
-                study_path
-                / "input"
-                / "thermal"
-                / "series"
-                / "fr"
-                / "gaz"
-                / "series.txt"
-            )
-            data_p_max = [
-                [1, 1, 1, 2],
-                [2, 2, 2, 6],
-                [3, 3, 3, 1],
-            ]
-            data_series = [
-                [8],
-                [10],
-                [2],
-            ]
-            df = pd.DataFrame(data_p_max)
-            df.to_csv(modulation_timeseries, sep="\t", index=False, header=False)
-
-            df = pd.DataFrame(data_series)
-            df.to_csv(series_path, sep="\t", index=False, header=False)
-
-        for area in areas:
-            thermals = area.get_thermals()
-            for thermal in thermals.values():
-                if thermal.area_id == "fr":
-                    tdp = ThermalDataPreprocessing(thermal, study_path)
-                    return tdp

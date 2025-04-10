@@ -13,6 +13,46 @@ from andromede.input_converter.src.logger import Logger
 from andromede.study.parsing import InputComponentParameter
 
 
+def generate_tdp_instance_parameter(
+    areas, study_path: Path, create_dataframes: bool = True
+) -> ThermalDataPreprocessing:
+    if create_dataframes:
+        modulation_timeseries = str(
+            study_path
+            / "input"
+            / "thermal"
+            / "prepro"
+            / "fr"
+            / "gaz"
+            / "modulation.txt"
+        )
+        series_path = (
+            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "series.txt"
+        )
+        data_p_max = [
+            [1, 1, 1, 2],
+            [2, 2, 2, 6],
+            [3, 3, 3, 1],
+        ]
+        data_series = [
+            [8],
+            [10],
+            [2],
+        ]
+        df = pd.DataFrame(data_p_max)
+        df.to_csv(modulation_timeseries, sep="\t", index=False, header=False)
+
+        df = pd.DataFrame(data_series)
+        df.to_csv(series_path, sep="\t", index=False, header=False)
+
+    for area in areas:
+        thermals = area.get_thermals()
+        for thermal in thermals.values():
+            if thermal.area_id == "fr":
+                tdp = ThermalDataPreprocessing(thermal, study_path)
+                return tdp
+
+
 class TestPreprocessingThermal:
     def _init_area_reading(self, local_study: Study):
         logger = Logger(__name__, local_study.service.config.study_path)
@@ -20,58 +60,13 @@ class TestPreprocessingThermal:
         areas = converter.study.get_areas().values()
         return areas, converter
 
-    def _generate_tdp_instance_parameter(
-        self, areas, study_path: Path, create_dataframes: bool = True
-    ) -> ThermalDataPreprocessing:
-        if create_dataframes:
-            modulation_timeseries = str(
-                study_path
-                / "input"
-                / "thermal"
-                / "prepro"
-                / "fr"
-                / "gaz"
-                / "modulation.txt"
-            )
-            series_path = (
-                study_path
-                / "input"
-                / "thermal"
-                / "series"
-                / "fr"
-                / "gaz"
-                / "series.txt"
-            )
-            data_p_max = [
-                [1, 1, 1, 2],
-                [2, 2, 2, 6],
-                [3, 3, 3, 1],
-            ]
-            data_series = [
-                [8],
-                [10],
-                [2],
-            ]
-            df = pd.DataFrame(data_p_max)
-            df.to_csv(modulation_timeseries, sep="\t", index=False, header=False)
-
-            df = pd.DataFrame(data_series)
-            df.to_csv(series_path, sep="\t", index=False, header=False)
-
-        for area in areas:
-            thermals = area.get_thermals()
-            for thermal in thermals.values():
-                if thermal.area_id == "fr":
-                    tdp = ThermalDataPreprocessing(thermal, study_path)
-                    return tdp
-
     def _setup_test(self, local_study_w_thermal: Study, filename: Path):
         """
         Initializes test parameters and returns the instance and expected file path.
         """
         areas, converter = self._init_area_reading(local_study_w_thermal)
         study_path = converter.study_path
-        instance = self._generate_tdp_instance_parameter(areas, study_path)
+        instance = generate_tdp_instance_parameter(areas, study_path)
         expected_path = (
             study_path / "input" / "thermal" / "series" / "fr" / "gaz" / filename
         )
