@@ -215,6 +215,113 @@ class TestConverter:
         assert renewables_components == expected_renewable_component
         assert renewable_connections == expected_renewable_connections
 
+    def test_convert_st_storages_to_component(
+        self, local_study_with_st_storage, lib_id: str
+    ):
+        areas, converter = self._init_area_reading(local_study_with_st_storage)
+        study_path = converter.study_path
+        (
+            storage_components,
+            storage_connections,
+        ) = converter._convert_st_storage_to_component_list(areas, lib_id)
+        default_path = study_path / "input" / "st-storage" / "series" / "fr" / "battery"
+        inflows_path = default_path / "inflows"
+        lower_rule_curve_path = default_path / "lower-rule-curve"
+        pmax_injection_path = default_path / "PMAX-injection"
+        pmax_withdrawal_path = default_path / "PMAX-withdrawal"
+        upper_rule_curve_path = default_path / "upper-rule-curve"
+        expected_storage_connections = [
+            InputPortConnections(
+                component1="battery",
+                port1="injection_port",
+                component2="fr",
+                port2="balance_port",
+            )
+        ]
+        expected_storage_component = [
+            InputComponent(
+                id="battery",
+                model=f"{lib_id}.short-term-storage",
+                scenario_group=None,
+                parameters=[
+                    InputComponentParameter(
+                        id="efficiency_injection",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=1,
+                    ),
+                    InputComponentParameter(
+                        id="initial_level",
+                        time_dependent=False,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=0.5,
+                    ),
+                    InputComponentParameter(
+                        id="reservoir_capacity",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=0.0,
+                    ),
+                    InputComponentParameter(
+                        id="injection_nominal_capacity",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=10.0,
+                    ),
+                    InputComponentParameter(
+                        id="withdrawal_nominal_capacity",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=10.0,
+                    ),
+                    InputComponentParameter(
+                        id="inflows",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{inflows_path}",
+                    ),
+                    InputComponentParameter(
+                        id="lower_rule_curve",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{lower_rule_curve_path}",
+                    ),
+                    InputComponentParameter(
+                        id="upper_rule_curve",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{upper_rule_curve_path}",
+                    ),
+                    InputComponentParameter(
+                        id="p_max_injection_modulation",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{pmax_injection_path}",
+                    ),
+                    InputComponentParameter(
+                        id="p_max_withdrawal_modulation",
+                        time_dependent=True,
+                        scenario_dependent=True,
+                        scenario_group=None,
+                        value=f"{pmax_withdrawal_path}",
+                    ),
+                ],
+            )
+        ]
+        print("actual: ", storage_components)
+        print("epxected: ", expected_storage_component)
+        assert storage_components == expected_storage_component
+        assert storage_connections == expected_storage_connections
+
     def test_convert_thermals_to_component(
         self,
         local_study_w_thermal: Study,
