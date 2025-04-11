@@ -114,12 +114,6 @@ def test_addition(
     assert e1 + e2 == expected
 
 
-def test_addition_of_linear_expressions_with_different_number_of_instances_should_raise_value_error() -> (
-    None
-):
-    pass
-
-
 def test_operation_that_leads_to_term_with_zero_coefficient_should_be_removed_from_terms() -> (
     None
 ):

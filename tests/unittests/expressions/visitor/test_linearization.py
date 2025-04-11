@@ -1,3 +1,15 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
 from unittest.mock import Mock
 
 import pytest
@@ -6,7 +18,6 @@ from andromede.expression import ExpressionNode, LiteralNode, literal, var
 from andromede.expression.expression import (
     ComponentVariableNode,
     CurrentScenarioIndex,
-    NoScenarioIndex,
     TimeShift,
     comp_param,
     comp_var,
@@ -22,7 +33,24 @@ from andromede.expression.operators_expansion import (
 from andromede.simulation.linear_expression import LinearExpression, Term
 from andromede.simulation.linearize import ParameterGetter, linearize_expression
 
-from .test_expressions import StructureProvider
+
+class AllTimeScenarioDependent(IndexingStructureProvider):
+    def get_parameter_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_variable_structure(self, name: str) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_component_variable_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
+    def get_component_parameter_structure(
+        self, component_id: str, name: str
+    ) -> IndexingStructure:
+        return IndexingStructure(True, True)
+
 
 P = comp_param("c", "p")
 X = comp_var("c", "x")
@@ -66,29 +94,10 @@ def test_linearization_before_operator_substitution_raises_an_error() -> None:
     x = var("x")
     expr = x.variance()
 
-    provider = StructureProvider()
     with pytest.raises(
         ValueError, match="Scenario operators need to be expanded before linearization"
     ):
         linearize_expression(expr, timestep=0, scenario=0)
-
-
-class AllTimeScenarioDependent(IndexingStructureProvider):
-    def get_parameter_structure(self, name: str) -> IndexingStructure:
-        return IndexingStructure(True, True)
-
-    def get_variable_structure(self, name: str) -> IndexingStructure:
-        return IndexingStructure(True, True)
-
-    def get_component_variable_structure(
-        self, component_id: str, name: str
-    ) -> IndexingStructure:
-        return IndexingStructure(True, True)
-
-    def get_component_parameter_structure(
-        self, component_id: str, name: str
-    ) -> IndexingStructure:
-        return IndexingStructure(True, True)
 
 
 def _expand_and_linearize(
