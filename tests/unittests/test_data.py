@@ -25,7 +25,7 @@ from andromede.model import (
     float_variable,
     model,
 )
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.study import (
     ConstantData,
     DataBase,

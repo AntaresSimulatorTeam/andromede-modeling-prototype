@@ -12,10 +12,9 @@
 
 import argparse
 import os
-import typing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, TextIO, Union
 
 import pandas as pd
 from pydantic import Field
@@ -24,7 +23,7 @@ from yaml import safe_load
 from andromede.utils import ModifiedBaseModel
 
 
-def parse_yaml_components(input_study: typing.TextIO) -> "InputSystem":
+def parse_yaml_components(input_study: TextIO) -> "InputSystem":
     tree = safe_load(input_study)
     return InputSystem.model_validate(tree["system"])
 

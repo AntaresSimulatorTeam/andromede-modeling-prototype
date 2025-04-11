@@ -22,7 +22,7 @@ from andromede.expression.expression import (
     var,
 )
 from andromede.model import Constraint, float_variable, model
-from andromede.model.model import port_field_def
+from andromede.model.port import port_field_def
 
 
 @pytest.mark.parametrize(
@@ -41,8 +41,8 @@ from andromede.model.model import port_field_def
         (
             "my_constraint",
             2 * var("my_var"),
-            None,
-            None,
+            literal(-float("inf")),
+            literal(float("inf")),
             "my_constraint",
             2 * var("my_var"),
             literal(-float("inf")),
@@ -51,8 +51,8 @@ from andromede.model.model import port_field_def
         (
             "my_constraint",
             2 * var("my_var") <= param("p"),
-            None,
-            None,
+            literal(-float("inf")),
+            literal(float("inf")),
             "my_constraint",
             2 * var("my_var") - param("p"),
             literal(-float("inf")),
@@ -61,8 +61,8 @@ from andromede.model.model import port_field_def
         (
             "my_constraint",
             2 * var("my_var") >= param("p"),
-            None,
-            None,
+            literal(-float("inf")),
+            literal(float("inf")),
             "my_constraint",
             2 * var("my_var") - param("p"),
             literal(0),
@@ -71,8 +71,8 @@ from andromede.model.model import port_field_def
         (
             "my_constraint",
             2 * var("my_var") == param("p"),
-            None,
-            None,
+            literal(-float("inf")),
+            literal(float("inf")),
             "my_constraint",
             2 * var("my_var") - param("p"),
             literal(0),
@@ -81,8 +81,8 @@ from andromede.model.model import port_field_def
         (
             "my_constraint",
             2 * var("my_var").expec() == param("p"),
-            None,
-            None,
+            literal(-float("inf")),
+            literal(float("inf")),
             "my_constraint",
             2 * var("my_var").expec() - param("p"),
             literal(0),
@@ -91,8 +91,8 @@ from andromede.model.model import port_field_def
         (
             "my_constraint",
             2 * var("my_var").shift(-1) == param("p"),
-            None,
-            None,
+            literal(-float("inf")),
+            literal(float("inf")),
             "my_constraint",
             2 * var("my_var").shift(-1) - param("p"),
             literal(0),

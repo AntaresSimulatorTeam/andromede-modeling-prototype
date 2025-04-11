@@ -12,7 +12,7 @@
 from dataclasses import dataclass
 from typing import Set
 
-from antlr4 import CommonTokenStream, DiagnosticErrorListener, InputStream
+from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from andromede.expression import ExpressionNode, literal, param, var

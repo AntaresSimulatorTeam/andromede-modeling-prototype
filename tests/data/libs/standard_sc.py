@@ -21,7 +21,7 @@ from andromede.model import (
     float_variable,
     model,
 )
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from tests.data.libs.standard import BALANCE_PORT_TYPE, CONSTANT
 
 """
@@ -174,7 +174,7 @@ C02_POWER_MODEL = model(
 )
 
 """
-Model of the CO² quota. 
+Model of the CO² quota.
 It takes a set a CO² emissions as input. It forces the sum of those emissions to be smaller than a predefined quota. 
 """
 QUOTA_CO2_MODEL = model(

@@ -16,43 +16,16 @@ A model allows to define the behaviour for components, by
 defining parameters, variables, and equations.
 """
 import itertools
-from dataclasses import dataclass, field
-from typing import Dict, Iterable, Optional
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, Iterable, Optional
 
-from andromede.expression import (
-    AdditionNode,
-    ComparisonNode,
-    DivisionNode,
-    ExpressionNode,
-    ExpressionVisitor,
-    LiteralNode,
-    MultiplicationNode,
-    NegationNode,
-    ParameterNode,
-    VariableNode,
-)
+from andromede.expression import ExpressionNode
 from andromede.expression.degree import is_linear
-from andromede.expression.expression import (
-    AllTimeSumNode,
-    BinaryOperatorNode,
-    ComponentParameterNode,
-    ComponentVariableNode,
-    PortFieldAggregatorNode,
-    PortFieldNode,
-    ProblemParameterNode,
-    ProblemVariableNode,
-    ScenarioOperatorNode,
-    TimeEvalNode,
-    TimeShiftNode,
-    TimeSumNode,
-)
 from andromede.expression.indexing import IndexingStructureProvider, compute_indexation
 from andromede.expression.indexing_structure import IndexingStructure
-from andromede.expression.port_resolver import PortFieldId
-from andromede.expression.visitor import visit
 from andromede.model.constraint import Constraint
 from andromede.model.parameter import Parameter
-from andromede.model.port import PortType
+from andromede.model.port import PortFieldDefinition, PortFieldId, PortType
 from andromede.model.variable import Variable
 
 
@@ -111,24 +84,8 @@ class ModelPort:
     port_type: PortType
     port_name: str
 
-
-@dataclass(frozen=True)
-class PortFieldDefinition:
-    """
-    Defines the values of one port field
-    """
-
-    port_field: PortFieldId
-    definition: ExpressionNode
-
-    def __post_init__(self) -> None:
-        _validate_port_field_expression(self)
-
-
-def port_field_def(
-    port_name: str, field_name: str, definition: ExpressionNode
-) -> PortFieldDefinition:
-    return PortFieldDefinition(PortFieldId(port_name, field_name), definition)
+    def replicate(self, /, **changes: Any) -> "ModelPort":
+        return replace(self, **changes)
 
 
 @dataclass(frozen=True)
@@ -181,6 +138,10 @@ class Model:
             self.binding_constraints.values(), self.constraints.values()
         )
 
+    def replicate(self, /, **changes: Any) -> "Model":
+        # Shallow copy
+        return replace(self, **changes)
+
 
 def model(
     id: str,
@@ -223,84 +184,3 @@ def model(
         if port_fields_definitions
         else {},
     )
-
-
-class _PortFieldExpressionChecker(ExpressionVisitor[None]):
-    """
-    Visits the whole expression to check there is no:
-    comparison, other port field, component-associated parametrs or variables...
-    """
-
-    def literal(self, node: LiteralNode) -> None:
-        pass
-
-    def negation(self, node: NegationNode) -> None:
-        visit(node.operand, self)
-
-    def _visit_binary_op(self, node: BinaryOperatorNode) -> None:
-        visit(node.left, self)
-        visit(node.right, self)
-
-    def addition(self, node: AdditionNode) -> None:
-        for n in node.operands:
-            visit(n, self)
-
-    def multiplication(self, node: MultiplicationNode) -> None:
-        self._visit_binary_op(node)
-
-    def division(self, node: DivisionNode) -> None:
-        self._visit_binary_op(node)
-
-    def comparison(self, node: ComparisonNode) -> None:
-        raise ValueError("Port definition cannot contain a comparison operator.")
-
-    def variable(self, node: VariableNode) -> None:
-        pass
-
-    def parameter(self, node: ParameterNode) -> None:
-        pass
-
-    def comp_parameter(self, node: ComponentParameterNode) -> None:
-        raise ValueError(
-            "Port definition must not contain a parameter associated to a component."
-        )
-
-    def comp_variable(self, node: ComponentVariableNode) -> None:
-        raise ValueError(
-            "Port definition must not contain a variable associated to a component."
-        )
-
-    def pb_parameter(self, node: ProblemParameterNode) -> None:
-        raise ValueError(
-            "Port definition must not contain a parameter associated to a component."
-        )
-
-    def pb_variable(self, node: ProblemVariableNode) -> None:
-        raise ValueError(
-            "Port definition must not contain a variable associated to a component."
-        )
-
-    def time_shift(self, node: TimeShiftNode) -> None:
-        visit(node.operand, self)
-
-    def time_eval(self, node: TimeEvalNode) -> None:
-        visit(node.operand, self)
-
-    def time_sum(self, node: TimeSumNode) -> None:
-        visit(node.operand, self)
-
-    def all_time_sum(self, node: AllTimeSumNode) -> None:
-        visit(node.operand, self)
-
-    def scenario_operator(self, node: ScenarioOperatorNode) -> None:
-        visit(node.operand, self)
-
-    def port_field(self, node: PortFieldNode) -> None:
-        raise ValueError("Port definition cannot reference another port field.")
-
-    def port_field_aggregator(self, node: PortFieldAggregatorNode) -> None:
-        raise ValueError("Port definition cannot contain port field aggregation.")
-
-
-def _validate_port_field_expression(definition: PortFieldDefinition) -> None:
-    visit(definition.definition, _PortFieldExpressionChecker())
