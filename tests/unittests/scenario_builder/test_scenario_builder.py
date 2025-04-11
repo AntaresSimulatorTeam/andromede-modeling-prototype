@@ -21,9 +21,14 @@ from andromede.study.parsing import parse_scenario_builder, parse_yaml_component
 from andromede.study.resolve_components import build_scenarized_data_base
 
 
+@pytest.fixture(scope="session")
+def series_dir() -> Path:
+    return Path(__file__).parent / "series"
+
+
 @pytest.fixture
-def scenario_builder() -> pd.DataFrame:
-    buider_path = Path(__file__).parent / "series/scenario_builder.csv"
+def scenario_builder(series_dir: Path) -> pd.DataFrame:
+    buider_path = series_dir / "scenario_builder.csv"
     return parse_scenario_builder(buider_path)
 
 
