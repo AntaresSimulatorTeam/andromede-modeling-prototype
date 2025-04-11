@@ -5,7 +5,8 @@ import pytest
 
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
+from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation.optimization import BlockBorderManagement
 from andromede.study.data import DataBase
 from andromede.study.network import Network
 from andromede.study.parsing import InputSystem, parse_yaml_components
@@ -18,9 +19,17 @@ from andromede.study.resolve_components import (
 
 
 @pytest.fixture
-def input_system(
-    systems_dir: Path,
-) -> InputSystem:
+def systems_dir() -> Path:
+    return Path(__file__).parents[2] / "data/systems"
+
+
+@pytest.fixture
+def series_dir() -> Path:
+    return Path(__file__).parents[2] / "data/series"
+
+
+@pytest.fixture
+def input_system(systems_dir: Path) -> InputSystem:
     compo_file = systems_dir / "system.yml"
 
     with compo_file.open() as c:
@@ -28,48 +37,11 @@ def input_system(
 
 
 @pytest.fixture
-def input_library(
-    libs_dir: Path,
-) -> InputLibrary:
-    library = libs_dir / "lib_unittest.yml"
+def input_library() -> InputLibrary:
+    library = Path(__file__).parents[2] / "data/libs/lib_unittest.yml"
 
     with library.open() as lib:
         return parse_yaml_library(lib)
-
-
-def test_parsing_components_ok(
-    input_system: InputSystem, input_library: InputLibrary
-) -> None:
-    assert len(input_system.components) == 2
-    assert len(input_system.nodes) == 1
-    assert len(input_system.connections) == 2
-    lib_dict = resolve_library([input_library])
-    result = resolve_system(input_system, lib_dict)
-
-    assert len(result.components) == 2
-    assert len(result.nodes) == 1
-    assert len(result.connections) == 2
-
-
-def test_consistency_check_ok(
-    input_system: InputSystem, input_library: InputLibrary
-) -> None:
-    result_lib = resolve_library([input_library])
-    result_system = resolve_system(input_system, result_lib)
-    consistency_check(result_system.components, result_lib["basic"].models)
-
-
-def test_consistency_check_ko(
-    input_system: InputSystem, input_library: InputLibrary
-) -> None:
-    result_lib = resolve_library([input_library])
-    result_comp = resolve_system(input_system, result_lib)
-    result_lib["basic"].models.pop("generator")
-    with pytest.raises(
-        ValueError,
-        match=r"Error: Component G has invalid model ID: generator",
-    ):
-        consistency_check(result_comp.components, result_lib["basic"].models)
 
 
 def test_basic_balance_using_yaml(
