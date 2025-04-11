@@ -12,6 +12,7 @@
 
 from typing import List
 
+import pandas as pd
 import pytest
 
 from andromede.simulation import TimeBlock, build_problem
@@ -23,13 +24,23 @@ from andromede.study import (
     PortRef,
     create_component,
 )
+from andromede.study.data import TimeScenarioSeriesData
 from tests.data.libs.standard import (
     DEMAND_MODEL,
     NODE_BALANCE_MODEL,
     THERMAL_CLUSTER_MODEL_DHD,
     THERMAL_CLUSTER_MODEL_HD,
 )
-from tests.unittests.test_utils import generate_scalar_matrix_data
+
+
+def generate_scalar_matrix_data(
+    value: float, horizon: int, scenarios: int
+) -> TimeScenarioSeriesData:
+    data = pd.DataFrame(index=range(horizon), columns=range(scenarios))
+
+    data.fillna(value, inplace=True)
+
+    return TimeScenarioSeriesData(time_scenario_series=data)
 
 
 @pytest.fixture

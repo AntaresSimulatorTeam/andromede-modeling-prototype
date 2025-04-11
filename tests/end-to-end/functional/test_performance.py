@@ -13,6 +13,8 @@ import cProfile
 from pstats import SortKey
 from typing import cast
 
+import pandas as pd
+
 from andromede.expression.expression import ExpressionNode, literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import float_parameter, float_variable, model
@@ -25,13 +27,23 @@ from andromede.study import (
     PortRef,
     create_component,
 )
+from andromede.study.data import TimeScenarioSeriesData
 from tests.data.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
     GENERATOR_MODEL_WITH_STORAGE,
     NODE_BALANCE_MODEL,
 )
-from tests.unittests.test_utils import generate_scalar_matrix_data
+
+
+def generate_scalar_matrix_data(
+    value: float, horizon: int, scenarios: int
+) -> TimeScenarioSeriesData:
+    data = pd.DataFrame(index=range(horizon), columns=range(scenarios))
+
+    data.fillna(value, inplace=True)
+
+    return TimeScenarioSeriesData(time_scenario_series=data)
 
 
 def test_large_sum_inside_model_with_loop() -> None:

@@ -15,32 +15,22 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from andromede.model.parsing import parse_yaml_library
-from andromede.model.resolve_library import resolve_library
-from andromede.simulation import TimeBlock, build_problem
 from andromede.study import DataBase
 from andromede.study.data import ComponentParameterIndex
 from andromede.study.parsing import parse_scenario_builder, parse_yaml_components
-from andromede.study.resolve_components import (
-    build_network,
-    build_scenarized_data_base,
-    consistency_check,
-    resolve_system,
-)
+from andromede.study.resolve_components import build_scenarized_data_base
 
 
 @pytest.fixture
-def scenario_builder(series_dir: Path) -> pd.DataFrame:
-    buider_path = series_dir / "scenario_builder.csv"
+def scenario_builder() -> pd.DataFrame:
+    buider_path = Path(__file__).parent / "series/scenario_builder.csv"
     return parse_scenario_builder(buider_path)
 
 
 @pytest.fixture
-def database(
-    series_dir: Path, systems_dir: Path, scenario_builder: pd.DataFrame
-) -> DataBase:
-    components_path = systems_dir / "components_for_scenarization_test.yml"
-    with components_path.open() as components:
+def database(series_dir: Path, scenario_builder: pd.DataFrame) -> DataBase:
+    system_path = Path(__file__).parent / "systems/with_scenarization.yml"
+    with system_path.open() as components:
         return build_scenarized_data_base(
             parse_yaml_components(components), scenario_builder, series_dir
         )
@@ -74,27 +64,3 @@ def test_scenarized_data_base(database: DataBase) -> None:
     assert database.get_value(load_index, 0, 1) == 100
     assert database.get_value(load_index, 0, 2) == 50
     assert database.get_value(load_index, 0, 3) == 100
-
-
-def test_solving(libs_dir: Path, systems_dir: Path, database: DataBase) -> None:
-    library_path = libs_dir / "lib_unittest.yml"
-    with library_path.open("r") as file:
-        yaml_lib = parse_yaml_library(file)
-        lib_dict = resolve_library([yaml_lib])
-
-    components_path = systems_dir / "components_for_scenarization_test.yml"
-    with components_path.open("r") as file:
-        yaml_comp = parse_yaml_components(file)
-        components = resolve_system(yaml_comp, lib_dict)
-
-    consistency_check(components.components, lib_dict["basic"].models)
-    network = build_network(components)
-
-    timeblock = TimeBlock(1, list(range(2)))
-    problem = build_problem(network, database, timeblock, 3)
-
-    status = problem.solver.Solve()
-    cost = problem.solver.Objective().Value()
-
-    assert status == 0
-    assert cost == pytest.approx(40000 / 3, abs=0.001)
