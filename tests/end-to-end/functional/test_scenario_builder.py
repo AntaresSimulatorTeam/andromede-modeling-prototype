@@ -29,16 +29,6 @@ from andromede.study.resolve_components import (
 )
 
 
-@pytest.fixture(scope="session")
-def systems_dir() -> Path:
-    return Path(__file__).parents[2] / "data/systems"
-
-
-@pytest.fixture(scope="session")
-def series_dir() -> Path:
-    return Path(__file__).parents[2] / "data/series"
-
-
 @pytest.fixture
 def scenario_builder(series_dir: Path) -> pd.DataFrame:
     buider_path = series_dir / "scenario_builder.csv"
@@ -56,7 +46,9 @@ def database(
         )
 
 
-def test_solving(libs_dir: Path, systems_dir: Path, database: DataBase) -> None:
+def test_system_with_scenarization(
+    libs_dir: Path, systems_dir: Path, database: DataBase
+) -> None:
     library_path = libs_dir / "lib_unittest.yml"
     with library_path.open("r") as file:
         yaml_lib = parse_yaml_library(file)

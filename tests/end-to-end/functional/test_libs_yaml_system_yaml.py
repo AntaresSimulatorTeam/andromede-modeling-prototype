@@ -1,3 +1,41 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+
+
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+"""
+This module contains end-to-end functional tests for systems built by:
+- Reading the model library from a YAML file,
+- Reading the network from a YAML file.
+
+Several cases are tested:
+
+1. **Basic balance using YAML inputs**:
+    - **Function**: `test_basic_balance_using_yaml`
+    - **Description**: Verifies that the system can achieve an optimal balance between supply and demand using basic YAML inputs for the model and network. The test ensures that the solver reaches an optimal solution with the expected objective value.
+
+2. **Basic balance with time-only series**:
+    - **Function**: `test_basic_balance_time_only_series`
+    - **Description**: Tests the system's behavior when time-dependent series are provided, ensuring correct optimization over multiple time steps. The test validates that the solver achieves an optimal solution with the expected objective value for time-only series.
+
+3. **Basic balance with scenario-only series**:
+    - **Function**: `test_basic_balance_scenario_only_series`
+    - **Description**: Evaluates the system's ability to handle scenario-dependent series, ensuring proper optimization across different scenarios. The test confirms that the solver computes the expected weighted objective value for multiple scenarios.
+
+4. **Short-term storage behavior with YAML inputs**:
+    - **Function**: `test_short_term_storage_base_with_yaml`
+    - **Description**: Checks the functionality of short-term storage components, ensuring they operate correctly to satisfy load without spillage or unsupplied energy. The test validates that the solver achieves an optimal solution with no energy spillage or unmet demand, while satisfying storage constraints.
+"""
+
 from pathlib import Path
 from typing import Callable, Tuple
 
@@ -16,32 +54,6 @@ from andromede.study.resolve_components import (
     consistency_check,
     resolve_system,
 )
-
-
-@pytest.fixture
-def systems_dir() -> Path:
-    return Path(__file__).parents[2] / "data/systems"
-
-
-@pytest.fixture
-def series_dir() -> Path:
-    return Path(__file__).parents[2] / "data/series"
-
-
-@pytest.fixture
-def input_system(systems_dir: Path) -> InputSystem:
-    compo_file = systems_dir / "system.yml"
-
-    with compo_file.open() as c:
-        return parse_yaml_components(c)
-
-
-@pytest.fixture
-def input_library() -> InputLibrary:
-    library = Path(__file__).parents[2] / "data/libs/lib_unittest.yml"
-
-    with library.open() as lib:
-        return parse_yaml_library(lib)
 
 
 def test_basic_balance_using_yaml(

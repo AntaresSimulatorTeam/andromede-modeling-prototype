@@ -1,3 +1,35 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+"""
+This module contains end-to-end functional tests for systems built by:
+- Reading the model library from a YAML file,
+- Building the network objet directly in Python.
+
+The tests validate various scenarios involving energy balance, generation, spillage, and demand across nodes and networks.
+
+Tests included:
+1. `test_basic_balance`: Verifies energy balance on a single node with fixed demand and generation for one timestep.
+2. `test_link`: Tests energy balance across two nodes connected by a link with fixed demand and generation for one timestep.
+3. `test_stacking_generation`: Validates energy balance on a single node with fixed demand and two generators having different costs for one timestep.
+4. `test_spillage`: Ensures proper handling of spillage when generation exceeds demand on a single node for one timestep.
+5. `test_min_up_down_times`: Simulates a scenario with minimum up/down times for a thermal generator over three timesteps, ensuring constraints are satisfied.
+6. `test_changing_demand`: Tests energy balance on a single node with changing demand over three timesteps.
+7. `test_min_up_down_times_2`: Similar to `test_min_up_down_times`, but with different minimum up/down time constraints for a thermal generator over three timesteps.
+
+Each test builds a network of nodes and components, defines a database of
+parameters, and solves the problem. Assertions are made to ensure the solver's results meet expected outcomes.
+"""
+
 import pandas as pd
 import pytest
 
@@ -18,29 +50,7 @@ from andromede.study import (
     create_component,
 )
 
-
-def test_network(lib_dict: dict[str, Library]) -> None:
-    network = Network("test")
-    assert network.id == "test"
-    assert list(network.nodes) == []
-    assert list(network.components) == []
-    assert list(network.all_components) == []
-    assert list(network.connections) == []
-
-    with pytest.raises(KeyError):
-        network.get_node("N")
-
-    node_model = lib_dict["basic"].models["node"]
-
-    N1 = Node(model=node_model, id="N1")
-    N2 = Node(model=node_model, id="N2")
-    network.add_node(N1)
-    network.add_node(N2)
-    assert list(network.nodes) == [N1, N2]
-    assert network.get_node(N1.id) == N1
-    assert network.get_component("N1") == Node(model=node_model, id="N1")
-    with pytest.raises(KeyError):
-        network.get_component("unknown")
+# TODO : Use fixtures for models and components used several times to simplify this test file
 
 
 def test_basic_balance(lib_dict: dict[str, Library]) -> None:

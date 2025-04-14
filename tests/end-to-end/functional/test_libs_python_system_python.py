@@ -10,6 +10,29 @@
 #
 # This file is part of the Antares project.
 
+"""
+This module contains end-to-end functional tests for systems built by:
+- Using Python models,
+- Building the network object in Python.
+
+Several cases are tested:
+
+1. **Basic Balance**:
+    - Description: Balance on a single node with fixed demand and generation.
+    - Name: `test_basic_balance`.
+
+2. **Time Series Data**:
+    - Description: Multiple timesteps with varying demand.
+    - Name: `test_timeseries`.
+
+3. **Variable Bounds**:
+    - Description: Generator models with variable bounds, including feasibility and infeasibility cases.
+    - Name: `test_variable_bound`.
+
+4. **Short-Term Storage**:
+    - Description: Short-term storage behavior over different horizons and efficiencies.
+    - Names: `test_short_test_horizon_10`, `test_short_test_horizon_5`.
+"""
 import pandas as pd
 import pytest
 
