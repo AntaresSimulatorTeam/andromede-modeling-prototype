@@ -10,6 +10,10 @@
 #
 # This file is part of the Antares project.
 
+"""
+This file tests that the modeller is able to generate investment problems problems as a single LP problem. Look at `integration/test_benders_decomposed.py` for the generation of decomposed forms of the problem
+"""
+
 import pandas as pd
 import pytest
 
@@ -42,7 +46,7 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
-from tests.data.libs.standard import (
+from tests.e2e.functional.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
     DEMAND_MODEL,

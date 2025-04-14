@@ -25,7 +25,7 @@ from andromede.study import (
     create_component,
 )
 from andromede.study.data import TimeScenarioSeriesData
-from tests.data.libs.standard import (
+from tests.e2e.functional.libs.standard import (
     DEMAND_MODEL,
     NODE_BALANCE_MODEL,
     THERMAL_CLUSTER_MODEL_DHD,

@@ -31,7 +31,7 @@ from andromede.simulation.decision_tree import (
 )
 from andromede.study.data import ConstantData, DataBase, TreeData
 from andromede.study.network import Component, Network, Node, PortRef, create_component
-from tests.data.libs.standard import (
+from tests.e2e.functional.libs.standard import (
     DEMAND_MODEL,
     GENERATOR_MODEL,
     NODE_WITH_SPILL_AND_ENS,
