@@ -31,7 +31,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.data.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
+from tests.e2e.models.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
 
 ELECTRICAL_PORT = PortType(id="electrical_port", fields=[PortField("flow")])
 

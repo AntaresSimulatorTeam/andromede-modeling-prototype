@@ -22,7 +22,7 @@ from andromede.model import (
     model,
 )
 from andromede.model.port import PortFieldDefinition, PortFieldId
-from tests.data.libs.standard import BALANCE_PORT_TYPE, CONSTANT
+from tests.e2e.models.libs.standard import BALANCE_PORT_TYPE, CONSTANT
 
 """
 Simple Convertor model.

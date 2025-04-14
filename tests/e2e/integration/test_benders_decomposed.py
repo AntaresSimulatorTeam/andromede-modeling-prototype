@@ -47,7 +47,7 @@ from andromede.study import (
     TimeSeriesData,
     create_component,
 )
-from tests.data.libs.standard import (
+from tests.e2e.integration.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
     DEMAND_MODEL,

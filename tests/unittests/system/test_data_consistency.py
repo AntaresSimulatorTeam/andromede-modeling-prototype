@@ -40,7 +40,7 @@ from andromede.study import (
     create_component,
 )
 from andromede.study.data import load_ts_from_txt
-from tests.data.libs.standard import (
+from tests.unittests.system.libs.standard import (
     BALANCE_PORT_TYPE,
     CONSTANT,
     DEMAND_MODEL,

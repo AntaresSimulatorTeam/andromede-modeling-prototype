@@ -25,7 +25,7 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.data.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
+from tests.e2e.models.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
 from tests.e2e.models.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
 
 

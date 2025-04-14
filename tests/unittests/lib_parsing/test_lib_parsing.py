@@ -15,6 +15,7 @@ import pytest
 
 from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
+from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.parsing.parse_expression import AntaresParseException
 from andromede.model import (
     Constraint,
@@ -28,7 +29,8 @@ from andromede.model import (
 from andromede.model.model import PortFieldDefinition, PortFieldId
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from tests.data.libs.standard import CONSTANT
+
+CONSTANT = IndexingStructure(False, False)
 
 
 def test_library_parsing(libs_dir: Path) -> None:

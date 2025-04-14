@@ -12,7 +12,7 @@ from andromede.study import (
     TimeScenarioSeriesData,
     create_component,
 )
-from tests.data.libs.standard import (
+from tests.e2e.models.libs.standard import (
     DEMAND_MODEL,
     NODE_BALANCE_MODEL,
     SPILLAGE_MODEL,

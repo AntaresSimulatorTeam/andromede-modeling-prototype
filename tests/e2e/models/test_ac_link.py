@@ -25,7 +25,11 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.data.libs.standard import BALANCE_PORT_TYPE, DEMAND_MODEL, GENERATOR_MODEL
+from tests.e2e.models.libs.standard import (
+    BALANCE_PORT_TYPE,
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+)
 
 
 @pytest.fixture

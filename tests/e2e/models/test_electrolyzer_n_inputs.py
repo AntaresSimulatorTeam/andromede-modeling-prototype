@@ -21,7 +21,11 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.data.libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
+from tests.e2e.models.libs.standard import (
+    DEMAND_MODEL,
+    GENERATOR_MODEL,
+    NODE_BALANCE_MODEL,
+)
 from tests.e2e.models.libs.standard_sc import (
     CONVERTOR_MODEL,
     CONVERTOR_RECEIVE_IN,
