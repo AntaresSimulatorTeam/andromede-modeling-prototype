@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 import cProfile
+import math
 from pstats import SortKey
 from typing import cast
 
@@ -71,8 +72,8 @@ def test_large_sum_inside_model_with_loop() -> None:
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert 1e-6 > abs(
-        problem.solver.Objective().Value() - sum([1 / i for i in range(1, nb_terms)])
+    assert math.isclose(
+        problem.solver.Objective().Value(), sum([1 / i for i in range(1, nb_terms)])
     )
 
 

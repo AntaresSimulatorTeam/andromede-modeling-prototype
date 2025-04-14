@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -28,13 +29,58 @@ from andromede.study.resolve_components import (
 
 
 @pytest.mark.parametrize(
-    "system_file, optim_result_file, timespan, batch, relative_accuracy",
+    "system_file, optim_result_file, timespan, batch, relative_accuracy, data_dir, systems_dir, series_dir",
     [
-        ("dsr_validation.yml", "dsr_case_results.csv", 168, 20, 1e-6),
-        ("base_validation.yml", "base_case_results.csv", 168, 20, 1e-6),
-        ("electrolyser_validation.yml", "electrolyser_case_results.csv", 168, 20, 1e-6),
-        ("storage_validation.yml", "storage_case_results.csv", 168, 20, 1e-6),
-        ("bde_system.yml", "bde_case_results.csv", 168, 20, 1e-6),
+        (
+            "dsr_validation.yml",
+            "dsr_case_results.csv",
+            168,
+            20,
+            1e-6,
+            "tests/data/",
+            "tests/data/systems/",
+            "tests/data/series/",
+        ),
+        (
+            "base_validation.yml",
+            "base_case_results.csv",
+            168,
+            20,
+            1e-6,
+            "tests/data/",
+            "tests/data/systems/",
+            "tests/data/series/",
+        ),
+        (
+            "electrolyser_validation.yml",
+            "electrolyser_case_results.csv",
+            168,
+            20,
+            1e-6,
+            "tests/data/",
+            "tests/data/systems/",
+            "tests/data/series/",
+        ),
+        (
+            "storage_validation.yml",
+            "storage_case_results.csv",
+            168,
+            20,
+            1e-6,
+            "tests/data/",
+            "tests/data/systems/",
+            "tests/data/series/",
+        ),
+        (
+            "bde_system.yml",
+            "bde_case_results.csv",
+            168,
+            20,
+            1e-6,
+            "tests/data/",
+            "tests/data/systems/",
+            "tests/data/series/",
+        ),
     ],
 )
 def test_model_behaviour(
@@ -43,34 +89,45 @@ def test_model_behaviour(
     timespan: int,
     batch: int,
     relative_accuracy: float,
+    data_dir: Path,
+    systems_dir: Path,
+    series_dir: Path,
 ) -> None:
     scenarios = 1
-    syspath = "tests/data/systems/"
-    tspath = "tests/data/series/"
-    respath = "tests/data/results/"
-    libpaths = [
-        "src/andromede/libs/antares_historic/antares_historic.yml",
-        "src/andromede/libs/reference_models/andromede_v1_models.yml",
-    ]
-    compo_file = open(syspath + system_file)
-    input_libraries = [parse_yaml_library(open(libfile)) for libfile in libpaths]
-    input_component = parse_yaml_components(compo_file)
-    result_lib = resolve_library(input_libraries)
-    components_input = resolve_system(input_component, result_lib)
-    database = build_data_base(input_component, Path(tspath))
-    network = build_network(components_input)
-    reference_values = (pd.read_csv(respath + optim_result_file, header=None)).values
-    for k in range(batch):
-        problem = build_problem(
-            network,
-            database,
-            TimeBlock(1, [i for i in range(k * timespan, (k + 1) * timespan)]),
-            scenarios,
-        )
-        status = problem.solver.Solve()
-        assert status == problem.solver.OPTIMAL
-        assert (
-            relative_accuracy
-            > abs(reference_values[k, 0] - problem.solver.Objective().Value())
-            / reference_values[k, 0]
-        )
+
+    with open(systems_dir + system_file) as compo_file:
+        with open(
+            "src/andromede/libs/antares_historic/antares_historic.yml"
+        ) as lib_file1:
+            with open(
+                "src/andromede/libs/reference_models/andromede_v1_models.yml"
+            ) as lib_file2:
+                input_libraries = [
+                    parse_yaml_library(lib_file1),
+                    parse_yaml_library(lib_file2),
+                ]
+                input_component = parse_yaml_components(compo_file)
+                result_lib = resolve_library(input_libraries)
+                components_input = resolve_system(input_component, result_lib)
+                database = build_data_base(input_component, Path(series_dir))
+                network = build_network(components_input)
+
+                reference_values = pd.read_csv(
+                    data_dir + "results/" + optim_result_file, header=None
+                ).values
+                for k in range(batch):
+                    problem = build_problem(
+                        network,
+                        database,
+                        TimeBlock(
+                            1, [i for i in range(k * timespan, (k + 1) * timespan)]
+                        ),
+                        scenarios,
+                    )
+                    status = problem.solver.Solve()
+                    assert status == problem.solver.OPTIMAL
+                    assert math.isclose(
+                        reference_values[k, 0],
+                        problem.solver.Objective().Value(),
+                        rel_tol=relative_accuracy,
+                    )

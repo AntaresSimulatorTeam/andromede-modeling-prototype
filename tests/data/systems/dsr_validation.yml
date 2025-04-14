@@ -1,5 +1,20 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+   # Study 028b DSR - V8.6
+   # Small test case with one node (3 thermal clusters, 1 load, 1 wind, 1 demand-side response model)
+
 system:
-  
+
   components:
     - id: base_zone
       model: antares-historic.area
@@ -91,11 +106,11 @@ system:
         - id: nb_units_max_variation_forward
           scenario-dependent: false
           time-dependent: false
-          value: 5
+          value: 0
         - id: nb_units_max_variation_backward
           scenario-dependent: false
           time-dependent: false
-          value: 5
+          value: 0
 
     - id: oil_base_zone
       scenario-group: sg
@@ -148,11 +163,11 @@ system:
         - id: nb_units_max_variation_forward
           scenario-dependent: false
           time-dependent: false
-          value: 5
+          value: 0
         - id: nb_units_max_variation_backward
           scenario-dependent: false
           time-dependent: false
-          value: 5
+          value: 0
   
     - id: coal_base_zone
       scenario-group: sg
@@ -205,11 +220,11 @@ system:
         - id: nb_units_max_variation_forward
           scenario-dependent: false
           time-dependent: false
-          value: 6
+          value: 0
         - id: nb_units_max_variation_backward
           scenario-dependent: false
           time-dependent: false
-          value: 6
+          value: 0
 
     - id: dsr_base_zone
       scenario-group: sg
