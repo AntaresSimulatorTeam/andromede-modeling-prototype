@@ -10,6 +10,10 @@
 #
 # This file is part of the Antares project.
 
+"""
+This file tests the model of CO2 quota. The models are parsed from a YAML model library.
+"""
+
 import math
 
 from andromede.model.library import Library
@@ -23,10 +27,14 @@ from andromede.study import (
     create_component,
 )
 
-"""
-build the quota CO² test system.
 
-    N1 -----N2----Demand
+def test_quota_co2(
+    lib_dict: dict[str, Library], lib_dict_sc: dict[str, Library]
+) -> None:
+    """
+    Builds the quota CO² test system.
+
+    N1 -----N2----Demand         ^
     |       |
     Oil1    Coal1
     |       |
@@ -34,13 +42,7 @@ build the quota CO² test system.
         |
     QuotaCO2
 
-"""
-""" Test of a generation of energy and co2 with a quota to limit the emission"""
-
-
-def test_quota_co2(
-    lib_dict: dict[str, Library], lib_dict_sc: dict[str, Library]
-) -> None:
+    Test of a generation of energy and co2 with a quota to limit the emission"""
     gen_model = lib_dict_sc["basic"].models["generator_with_co2"]
     node_model = lib_dict["basic"].models["node"]
     quota_co2_model = lib_dict_sc["basic"].models["quota_co2"]

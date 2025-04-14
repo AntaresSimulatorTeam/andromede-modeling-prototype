@@ -10,6 +10,10 @@
 #
 # This file is part of the Antares project.
 
+"""
+This file tests the model of CO2 quota. The models are created in Python directly.
+"""
+
 import math
 
 from andromede.simulation import OutputValues, TimeBlock, build_problem
@@ -22,10 +26,12 @@ from andromede.study import (
     create_component,
 )
 from tests.data.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
-from tests.data.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
+from tests.e2e.models.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
 
-"""
-build the quota CO² test system.
+
+def test_quota_co2() -> None:
+    """
+    Builds the quota CO² test system.
 
     N1 -----N2----Demand         ^
     |       |
@@ -35,11 +41,7 @@ build the quota CO² test system.
         |
     QuotaCO2
 
-"""
-""" Test of a generation of energy and co2 with a quota to limit the emission"""
-
-
-def test_quota_co2() -> None:
+    Test of a generation of energy and co2 with a quota to limit the emission"""
     n1 = Node(model=NODE_BALANCE_MODEL, id="N1")
     n2 = Node(model=NODE_BALANCE_MODEL, id="N2")
     oil1 = create_component(model=C02_POWER_MODEL, id="Oil1")

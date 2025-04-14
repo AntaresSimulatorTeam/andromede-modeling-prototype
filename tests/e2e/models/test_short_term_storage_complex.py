@@ -18,7 +18,7 @@ from tests.data.libs.standard import (
     SPILLAGE_MODEL,
     UNSUPPLIED_ENERGY_MODEL,
 )
-from tests.data.libs.standard_sc import SHORT_TERM_STORAGE_COMPLEX
+from tests.e2e.models.libs.standard_sc import SHORT_TERM_STORAGE_COMPLEX
 
 
 def generate_data(
@@ -89,7 +89,6 @@ def short_term_storage_base(efficiency: float, horizon: int, result: int) -> Non
     network.connect(PortRef(spillage, "balance_port"), PortRef(node, "balance_port"))
     network.connect(PortRef(unsupplied, "balance_port"), PortRef(node, "balance_port"))
 
-    border_management = BlockBorderManagement.CYCLE
     problem = build_problem(
         network,
         database,

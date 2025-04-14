@@ -22,7 +22,7 @@ from andromede.study import (
     create_component,
 )
 from tests.data.libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
-from tests.data.libs.standard_sc import (
+from tests.e2e.models.libs.standard_sc import (
     CONVERTOR_MODEL,
     CONVERTOR_RECEIVE_IN,
     DECOMPOSE_1_FLOW_INTO_2_FLOW,
@@ -31,7 +31,9 @@ from tests.data.libs.standard_sc import (
 )
 
 """
-for every following test we have two electrical productions with an electrolyzer converting to a gaz flow
+This file tests various modellings for an electrolyser with multiple inputs. The models are created in Python directly.
+
+For every following test we have two electrical productions with an electrolyzer converting to a gaz flow
 we always have:
     first electric production:
         - p_max = 70

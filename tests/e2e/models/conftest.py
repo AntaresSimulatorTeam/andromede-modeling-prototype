@@ -19,7 +19,7 @@ from andromede.model.resolve_library import Library, resolve_library
 
 @pytest.fixture(scope="session")
 def libs_dir() -> Path:
-    return Path(__file__).parents[2] / "data/libs"
+    return Path(__file__).parent / "libs"
 
 
 @pytest.fixture(scope="session")
@@ -39,9 +39,8 @@ def lib_dict(libs_dir: Path) -> dict[str, Library]:
 
 
 @pytest.fixture(scope="session")
-def lib_dict_sc() -> dict[str, Library]:
-    libs_path = Path(__file__).parents[2] / "data/libs/"
-    lib_sc_file = libs_path / "standard_sc.yml"
+def lib_dict_sc(libs_dir: Path) -> dict[str, Library]:
+    lib_sc_file = libs_dir / "standard_sc.yml"
 
     with lib_sc_file.open() as f:
         input_lib_sc = parse_yaml_library(f)

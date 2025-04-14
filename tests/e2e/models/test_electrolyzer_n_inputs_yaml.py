@@ -11,7 +11,6 @@
 # This file is part of the Antares project.
 
 import math
-from pathlib import Path
 
 from andromede.model.library import Library
 from andromede.simulation import OutputValues, TimeBlock, build_problem
@@ -25,7 +24,9 @@ from andromede.study import (
 )
 
 """
-for every following test we have two electrical productions with an electrolyzer converting to a gaz flow
+This file tests various modellings for an electrolyser with multiple inputs. The models are read from a YAML model file.
+
+For every following test we have two electrical productions with an electrolyzer converting to a gaz flow
 we always have:
     first electric production:
         - p_max = 70
