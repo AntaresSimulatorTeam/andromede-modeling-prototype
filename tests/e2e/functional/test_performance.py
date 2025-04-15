@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 import cProfile
+import math
 from pstats import SortKey
 from typing import cast
 
@@ -50,6 +51,9 @@ def test_large_sum_inside_model_with_loop() -> None:
     """
     Test performance when the problem involves an expression with a high number of terms.
     Here the objective function is the sum over nb_terms terms on a for-loop inside the model
+
+    This test pass with 476 terms but fails with 477 locally due to recursion depth,
+    and even less terms are possible with Jenkins...
     """
     nb_terms = 500
 
@@ -79,8 +83,8 @@ def test_large_sum_inside_model_with_loop() -> None:
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == sum(
-        [1 / i for i in range(1, nb_terms)]
+    assert math.isclose(
+        problem.solver.Objective().Value(), sum([1 / i for i in range(1, nb_terms)])
     )
 
 
@@ -167,6 +171,9 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
 def test_large_sum_of_port_connections() -> None:
     """
     Test performance when the problem involves a model where several generators are connected to a node.
+
+    This test pass with 470 terms but fails with 471 locally due to recursion depth,
+    and possibly even less terms are possible with Jenkins...
     """
     nb_generators = 500
 
@@ -200,6 +207,8 @@ def test_large_sum_of_port_connections() -> None:
         )
 
     problem = build_problem(network, database, time_block, scenarios)
+
+    # Won't run because last statement will raise the error
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
