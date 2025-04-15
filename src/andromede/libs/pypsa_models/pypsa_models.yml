@@ -11,6 +11,7 @@
 # This file is part of the Antares project.
 
 # Library of models for the emulation of PyPSA
+# References for PyPSA
 # T. Brown, J. Hörsch, D. Schlachtberger, PyPSA: Python for Power System Analysis, 2018, Journal of Open Research Software, 6(1), arXiv:1707.09913, DOI:10.5334/jors.188
 # https://pypsa.readthedocs.io/en/latest/
 
