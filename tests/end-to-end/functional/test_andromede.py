@@ -16,7 +16,7 @@ import pytest
 from andromede.expression import literal, param, var
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import Model, ModelPort, float_parameter, float_variable, model
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.simulation import BlockBorderManagement, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -206,7 +206,7 @@ def test_variable_bound() -> None:
     database = create_simple_database(max_generation=0)  # Equal upper and lower bounds
     with pytest.raises(
         ValueError,
-        match="Upper and lower bounds of variable G_generation_t0_s0 have the same value: 0",
+        match="Upper and lower bounds of variable G_generation have the same value: 0",
     ):
         problem = build_problem(network, database, TimeBlock(1, [0]), 1)
 

@@ -16,6 +16,8 @@ antares-timeseries-generation==0.1.7
     # via antares-craft
 antlr4-python3-runtime==4.13.1
     # via -r requirements.in
+anytree==2.12.1
+    # via -r requirements.in
 certifi==2024.12.14
     # via requests
 charset-normalizer==3.4.0
@@ -67,7 +69,9 @@ requests==2.32.3
 scipy==1.10.1
     # via -r requirements.in
 six==1.17.0
-    # via python-dateutil
+    # via
+    #   anytree
+    #   python-dateutil
 typing-extensions==4.12.2
     # via
     #   pydantic

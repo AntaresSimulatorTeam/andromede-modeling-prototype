@@ -14,7 +14,6 @@ import pandas as pd
 import pytest
 
 from andromede.expression.expression import literal, param, var
-from andromede.expression.indexing_structure import IndexingStructure
 from andromede.model import (
     Constraint,
     Model,
@@ -22,14 +21,17 @@ from andromede.model import (
     ProblemContext,
     float_parameter,
     float_variable,
-    int_variable,
     model,
 )
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.simulation import (
     BendersSolution,
     TimeBlock,
     build_benders_decomposed_problem,
+)
+from andromede.simulation.decision_tree import (
+    DecisionTreeNode,
+    InterDecisionTimeScenarioConfig,
 )
 from andromede.study import (
     Component,
@@ -50,10 +52,8 @@ from tests.data.libs.standard import (
     CONSTANT,
     DEMAND_MODEL,
     GENERATOR_MODEL,
-    NODE_WITH_SPILL_AND_ENS_MODEL,
+    NODE_WITH_SPILL_AND_ENS,
 )
-
-CONSTANT = IndexingStructure(False, False)
 
 INVESTMENT = ProblemContext.INVESTMENT
 OPERATIONAL = ProblemContext.OPERATIONAL
@@ -217,7 +217,7 @@ def test_benders_decomposed_integration(
 
     demand = create_component(model=DEMAND_MODEL, id="D")
 
-    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    node = Node(model=NODE_WITH_SPILL_AND_ENS, id="N")
     network = Network("test")
     network.add_node(node)
     network.add_component(demand)
@@ -231,15 +231,21 @@ def test_benders_decomposed_integration(
         PortRef(cluster_candidate, "balance_port"), PortRef(node, "balance_port")
     )
     scenarios = 1
+    blocks = [TimeBlock(1, [0])]
 
-    xpansion = build_benders_decomposed_problem(
-        network, database, [TimeBlock(1, [0])], scenarios
-    )
+    config = InterDecisionTimeScenarioConfig(blocks, scenarios)
+    decision_tree_root = DecisionTreeNode("", config, network)
+
+    xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
     data = {
         "solution": {
             "overall_cost": 80_000,
-            "values": {"CAND_p_max": 100, "DISCRETE_p_max": 100},
+            "values": {
+                "CAND_p_max": 100,
+                "DISCRETE_p_max": 100,
+                "DISCRETE_nb_units": 10,
+            },
         }
     }
     solution = BendersSolution(data)
@@ -308,7 +314,7 @@ def test_benders_decomposed_multi_time_block_single_scenario(
         id="D",
     )
 
-    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    node = Node(model=NODE_WITH_SPILL_AND_ENS, id="N")
     network = Network("test")
     network.add_node(node)
     network.add_component(demand)
@@ -319,13 +325,12 @@ def test_benders_decomposed_multi_time_block_single_scenario(
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
 
     scenarios = 1
+    blocks = [TimeBlock(1, [0]), TimeBlock(2, [1])]
 
-    xpansion = build_benders_decomposed_problem(
-        network,
-        database,
-        [TimeBlock(1, [0]), TimeBlock(2, [1])],
-        scenarios,
-    )
+    config = InterDecisionTimeScenarioConfig(blocks, scenarios)
+    decision_tree_root = DecisionTreeNode("", config, network)
+
+    xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
     data_output = {
         "solution": {
@@ -374,8 +379,8 @@ def test_benders_decomposed_single_time_block_multi_scenario(
     """
 
     data = {}
-    data[ScenarioIndex(0)] = 200.0
-    data[ScenarioIndex(1)] = 300.0
+    data[ScenarioIndex(0)] = 200
+    data[ScenarioIndex(1)] = 300
 
     demand_data = ScenarioSeriesData(scenario_series=data)
 
@@ -396,7 +401,7 @@ def test_benders_decomposed_single_time_block_multi_scenario(
         id="D",
     )
 
-    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    node = Node(model=NODE_WITH_SPILL_AND_ENS, id="N")
     network = Network("test")
     network.add_node(node)
     network.add_component(demand)
@@ -407,13 +412,12 @@ def test_benders_decomposed_single_time_block_multi_scenario(
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
 
     scenarios = 2
+    blocks = [TimeBlock(1, [0])]
 
-    xpansion = build_benders_decomposed_problem(
-        network,
-        database,
-        [TimeBlock(1, [0])],
-        scenarios,
-    )
+    config = InterDecisionTimeScenarioConfig(blocks, scenarios)
+    decision_tree_root = DecisionTreeNode("", config, network)
+
+    xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
     data_output = {
         "solution": {
@@ -491,7 +495,7 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
         id="D",
     )
 
-    node = Node(model=NODE_WITH_SPILL_AND_ENS_MODEL, id="N")
+    node = Node(model=NODE_WITH_SPILL_AND_ENS, id="N")
     network = Network("test")
     network.add_node(node)
     network.add_component(demand)
@@ -502,13 +506,12 @@ def test_benders_decomposed_multi_time_block_multi_scenario(
     network.connect(PortRef(candidate, "balance_port"), PortRef(node, "balance_port"))
 
     scenarios = 2
+    blocks = [TimeBlock(1, [0]), TimeBlock(2, [1])]
 
-    xpansion = build_benders_decomposed_problem(
-        network,
-        database,
-        [TimeBlock(1, [0]), TimeBlock(2, [1])],
-        scenarios,
-    )
+    config = InterDecisionTimeScenarioConfig(blocks, scenarios)
+    decision_tree_root = DecisionTreeNode("", config, network)
+
+    xpansion = build_benders_decomposed_problem(decision_tree_root, database)
 
     data_output = {
         "solution": {

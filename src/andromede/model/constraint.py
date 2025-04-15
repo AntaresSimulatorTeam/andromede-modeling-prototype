@@ -9,8 +9,9 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-from dataclasses import dataclass
-from typing import Any, Optional
+
+from dataclasses import dataclass, field, replace
+from typing import Any
 
 from andromede.expression.degree import is_constant
 from andromede.expression.equality import (
@@ -21,6 +22,8 @@ from andromede.expression.expression import (
     Comparator,
     ComparisonNode,
     ExpressionNode,
+    is_non_negative,
+    is_unbounded,
     literal,
 )
 from andromede.expression.print import print_expr
@@ -37,58 +40,48 @@ class Constraint:
 
     name: str
     expression: ExpressionNode
-    lower_bound: ExpressionNode
-    upper_bound: ExpressionNode
-    context: ProblemContext
+    lower_bound: ExpressionNode = field(default=literal(-float("inf")))
+    upper_bound: ExpressionNode = field(default=literal(float("inf")))
+    context: ProblemContext = field(default=ProblemContext.OPERATIONAL)
 
-    def __init__(
+    def __post_init__(
         self,
-        name: str,
-        expression: ExpressionNode,
-        lower_bound: Optional[ExpressionNode] = None,
-        upper_bound: Optional[ExpressionNode] = None,
-        context: ProblemContext = ProblemContext.OPERATIONAL,
     ) -> None:
-        self.name = name
-        self.context = context
-
-        if isinstance(expression, ComparisonNode):
-            if lower_bound is not None or upper_bound is not None:
+        if isinstance(self.expression, ComparisonNode):
+            if not is_unbounded(self.lower_bound) or not is_unbounded(self.upper_bound):
                 raise ValueError(
                     "Both comparison between two expressions and a bound are specfied, set either only a comparison between expressions or a single linear expression with bounds."
                 )
 
-            merged_expr = expression.left - expression.right
-            self.expression = merged_expr
-
-            if expression.comparator == Comparator.LESS_THAN:
+            if self.expression.comparator == Comparator.LESS_THAN:
                 # lhs - rhs <= 0
                 self.upper_bound = literal(0)
                 self.lower_bound = literal(-float("inf"))
-            elif expression.comparator == Comparator.GREATER_THAN:
+            elif self.expression.comparator == Comparator.GREATER_THAN:
                 # lhs - rhs >= 0
                 self.lower_bound = literal(0)
                 self.upper_bound = literal(float("inf"))
             else:  # lhs - rhs == 0
                 self.lower_bound = literal(0)
                 self.upper_bound = literal(0)
+
+            self.expression = self.expression.left - self.expression.right
+
         else:
-            for bound in [lower_bound, upper_bound]:
-                if bound is not None and not is_constant(bound):
+            for bound in [self.lower_bound, self.upper_bound]:
+                if not is_constant(bound):
                     raise ValueError(
                         f"The bounds of a constraint should not contain variables, {print_expr(bound)} was given."
                     )
 
-            self.expression = expression
-            if lower_bound is not None:
-                self.lower_bound = lower_bound
-            else:
-                self.lower_bound = literal(-float("inf"))
+            if is_unbounded(self.lower_bound) and is_non_negative(self.lower_bound):
+                raise ValueError("Lower bound should not be +Inf")
 
-            if upper_bound is not None:
-                self.upper_bound = upper_bound
-            else:
-                self.upper_bound = literal(float("inf"))
+            if is_unbounded(self.upper_bound) and not is_non_negative(self.upper_bound):
+                raise ValueError("Upper bound should not be -Inf")
+
+    def replicate(self, /, **changes: Any) -> "Constraint":
+        return replace(self, **changes)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Constraint):

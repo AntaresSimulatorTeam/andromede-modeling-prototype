@@ -21,7 +21,7 @@ from andromede.model import (
     float_variable,
     model,
 )
-from andromede.model.model import PortFieldDefinition, PortFieldId
+from andromede.model.port import PortFieldDefinition, PortFieldId
 from andromede.simulation import TimeBlock, build_problem
 from andromede.study import (
     ConstantData,

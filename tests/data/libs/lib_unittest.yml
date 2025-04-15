@@ -51,7 +51,6 @@ library:
       binding-constraints:
         - id: balance
           expression:  sum_connections(injection_port.flow) = 0
-
     - id: spillage
       description: A basic spillage model
       parameters:
@@ -68,7 +67,6 @@ library:
         - port: injection_port
           field: flow
           definition: -spillage
-
     - id: unsupplied
       description: A basic unsupplied model
       parameters:
