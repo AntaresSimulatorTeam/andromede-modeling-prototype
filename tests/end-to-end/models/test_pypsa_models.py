@@ -25,6 +25,7 @@ from andromede.study.resolve_components import (
     resolve_system,
 )
 
+
 @pytest.mark.parametrize(
     "system_file, systems_dir, series_dir,timespan, target_value, relative_accuracy",
     [
@@ -38,24 +39,19 @@ from andromede.study.resolve_components import (
         ),
     ],
 )
-
 def test_model_behaviour(
     system_file: str,
     systems_dir: Path,
     series_dir: Path,
-    timespan:float,
-    target_value:float,
-    relative_accuracy: float
+    timespan: float,
+    target_value: float,
+    relative_accuracy: float,
 ) -> None:
     scenarios = 1
 
     with open(systems_dir + system_file) as compo_file:
-        with open(
-            "src/andromede/libs/pypsa_models/pypsa_models.yml"
-        ) as lib_file1:
-            input_libraries = [
-                parse_yaml_library(lib_file1)
-            ]
+        with open("src/andromede/libs/pypsa_models/pypsa_models.yml") as lib_file1:
+            input_libraries = [parse_yaml_library(lib_file1)]
             input_component = parse_yaml_components(compo_file)
             result_lib = resolve_library(input_libraries)
             components_input = resolve_system(input_component, result_lib)
@@ -64,11 +60,9 @@ def test_model_behaviour(
             problem = build_problem(
                 network,
                 database,
-                TimeBlock(
-                     1, [i for i in range(0, timespan)]
-                    ),
-                    scenarios,
-                )
+                TimeBlock(1, [i for i in range(0, timespan)]),
+                scenarios,
+            )
             status = problem.solver.Solve()
             print(problem.solver.Objective().Value())
             assert status == problem.solver.OPTIMAL
