@@ -258,6 +258,115 @@ class AntaresStudyConverter:
                 )
         return components, connections
 
+    def _convert_st_storage_to_component_list(
+        self, areas: Iterable[Area], lib_id: str
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
+        components = []
+        connections = []
+        self.logger.info("Converting short-term storages to component list...")
+        # Add thermal components for each area
+        for area in areas:
+            storages = area.get_st_storages()
+            for storage in storages.values():
+                series_path = (
+                    self.study_path
+                    / "input"
+                    / "st-storage"
+                    / "series"
+                    / Path(storage.area_id)
+                    / Path(storage.id)
+                )
+                inflows_path = series_path / "inflows"
+                lower_rule_curve_path = series_path / "lower-rule-curve"
+                pmax_injection_path = series_path / "PMAX-injection"
+                pmax_withdrawal_path = series_path / "PMAX-withdrawal"
+                upper_rule_curve_path = series_path / "upper-rule-curve"
+                components.append(
+                    InputComponent(
+                        id=storage.id,
+                        model=f"{lib_id}.short-term-storage",
+                        parameters=[
+                            InputComponentParameter(
+                                id="efficiency_injection",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=storage.properties.efficiency,
+                            ),
+                            # TODO wait for update of antares craft that support the 9.2 version of Antares
+                            # InputComponentParameter(
+                            #     id="efficiency_withdrawal",
+                            #     time_dependent=False,
+                            #     scenario_dependent=False,
+                            #     value=storage.properties.efficiencywithdrawal,
+                            # ),
+                            InputComponentParameter(
+                                id="initial_level",
+                                time_dependent=False,
+                                scenario_dependent=True,
+                                value=storage.properties.initial_level,
+                            ),
+                            InputComponentParameter(
+                                id="reservoir_capacity",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=storage.properties.reservoir_capacity,
+                            ),
+                            InputComponentParameter(
+                                id="injection_nominal_capacity",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=storage.properties.injection_nominal_capacity,
+                            ),
+                            InputComponentParameter(
+                                id="withdrawal_nominal_capacity",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=storage.properties.withdrawal_nominal_capacity,
+                            ),
+                            InputComponentParameter(
+                                id="inflows",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(inflows_path),
+                            ),
+                            InputComponentParameter(
+                                id="lower_rule_curve",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(lower_rule_curve_path),
+                            ),
+                            InputComponentParameter(
+                                id="upper_rule_curve",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(upper_rule_curve_path),
+                            ),
+                            InputComponentParameter(
+                                id="p_max_injection_modulation",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(pmax_injection_path),
+                            ),
+                            InputComponentParameter(
+                                id="p_max_withdrawal_modulation",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(pmax_withdrawal_path),
+                            ),
+                        ],
+                    )
+                )
+
+                connections.append(
+                    InputPortConnections(
+                        component1=storage.id,
+                        port1="injection_port",
+                        component2=area.id,
+                        port2="balance_port",
+                    )
+                )
+        return components, connections
+
     def _convert_link_to_component_list(
         self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
@@ -451,6 +560,7 @@ class AntaresStudyConverter:
         conversion_methods = [
             self._convert_renewable_to_component_list,
             self._convert_thermal_to_component_list,
+            self._convert_st_storage_to_component_list,
             self._convert_load_to_component_list,
             self._convert_wind_to_component_list,
             self._convert_solar_to_component_list,
