@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 import cProfile
+import math
 from pstats import SortKey
 from typing import cast
 
@@ -79,8 +80,8 @@ def test_large_sum_inside_model_with_loop() -> None:
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == sum(
-        [1 / i for i in range(1, nb_terms)]
+    assert math.isclose(
+        problem.solver.Objective().Value(), sum([1 / i for i in range(1, nb_terms)])
     )
 
 
@@ -167,6 +168,7 @@ def test_large_sum_inside_model_with_sum_operator() -> None:
 def test_large_sum_of_port_connections() -> None:
     """
     Test performance when the problem involves a model where several generators are connected to a node.
+
     """
     nb_generators = 500
 
@@ -200,6 +202,7 @@ def test_large_sum_of_port_connections() -> None:
         )
 
     problem = build_problem(network, database, time_block, scenarios)
+
     status = problem.solver.Solve()
 
     assert status == problem.solver.OPTIMAL
