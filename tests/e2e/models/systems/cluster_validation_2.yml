@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 
-   # Study Cluster Validation 1
+   # Study Cluster Validation 2 : validating the thermal cluster's "fixed cost" parameter
    # Small test case with one node (2 thermal clusters, 1 load)
 
 system:

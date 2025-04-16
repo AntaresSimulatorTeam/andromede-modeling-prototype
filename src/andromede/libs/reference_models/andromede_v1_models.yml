@@ -9,6 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+
 library:
   id: andromede-v1-models
   description: Andromede V1 model library
@@ -44,8 +45,8 @@ library:
     - id: electrolyser
       parameters:
       - id: efficiency
-        scenario-dependent: true
-        time-dependent: true
+        scenario-dependent: false
+        time-dependent: false
       - id: p_max
         scenario-dependent: true
         time-dependent: true
