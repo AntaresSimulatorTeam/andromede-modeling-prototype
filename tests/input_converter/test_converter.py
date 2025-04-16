@@ -10,11 +10,13 @@
 #
 # This file is part of the Antares project.
 
-from typing import Callable, Literal
+from typing import Literal
 
 import pandas as pd
 import pytest
+from antares.craft.model.area import Area
 from antares.craft.model.study import Study
+from antares.craft.model.thermal import ThermalCluster
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.data_preprocessing.thermal import (
@@ -29,21 +31,21 @@ from andromede.study.parsing import (
     InputSystem,
     parse_yaml_components,
 )
+from tests.input_converter.conftest import create_dataframe_from_constant
 
 
 class TestConverter:
-    def _init_area_reading(self, local_study):
+    def _init_study_converter(self, local_study):
         logger = Logger(__name__, local_study.service.config.study_path)
-        converter = AntaresStudyConverter(study_input=local_study, logger=logger)
-        areas = converter.study.get_areas().values()
-        return areas, converter
+        converter: AntaresStudyConverter = AntaresStudyConverter(
+            study_input=local_study, logger=logger
+        )
+        return converter
 
     def test_convert_study_to_input_study(self, local_study_w_areas: Study):
-        logger = Logger(__name__, local_study_w_areas.service.config.study_path)
-        converter = AntaresStudyConverter(
-            study_input=local_study_w_areas, logger=logger
-        )
+        converter = self._init_study_converter(local_study_w_areas)
         input_study = converter.convert_study_to_input_study()
+
         expected_input_study = InputSystem(
             nodes=[
                 InputComponent(
@@ -102,8 +104,8 @@ class TestConverter:
         assert input_study == expected_input_study
 
     def test_convert_area_to_component(self, local_study_w_areas: Study, lib_id: str):
-        areas, converter = self._init_area_reading(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(areas, lib_id)
+        converter = self._init_study_converter(local_study_w_areas)
+        area_components = converter._convert_area_to_component_list(lib_id)
 
         expected_area_components = [
             InputComponent(
@@ -155,17 +157,83 @@ class TestConverter:
         area_components.sort(key=lambda x: x.id)
         assert area_components == expected_area_components
 
+    def test_convert_area_to_yaml(self, local_study_w_areas: Study, lib_id: str):
+        converter = self._init_study_converter(local_study_w_areas)
+        area_components = converter._convert_area_to_component_list(lib_id)
+        input_study = InputSystem(nodes=area_components)
+
+        # Dump model into yaml file
+        yaml_path = converter.study_path / "study_path.yaml"
+        transform_to_yaml(model=input_study, output_path=yaml_path)
+
+        # Open yaml file to validate
+        with open(yaml_path, "r", encoding="utf-8") as yaml_file:
+            validated_data = parse_yaml_components(yaml_file)
+
+        expected_validated_data = InputSystem(
+            nodes=[
+                InputComponent(
+                    id="it",
+                    model="antares-historic.area",
+                    scenario_group=None,
+                    parameters=[
+                        InputComponentParameter(
+                            id="ens_cost",
+                            time_dependent=False,
+                            scenario_dependent=False,
+                            scenario_group=None,
+                            value=0.5,
+                        ),
+                        InputComponentParameter(
+                            id="spillage_cost",
+                            time_dependent=False,
+                            scenario_dependent=False,
+                            scenario_group=None,
+                            value=1.0,
+                        ),
+                    ],
+                ),
+                InputComponent(
+                    id="fr",
+                    model="antares-historic.area",
+                    scenario_group=None,
+                    parameters=[
+                        InputComponentParameter(
+                            id="ens_cost",
+                            time_dependent=False,
+                            scenario_dependent=False,
+                            scenario_group=None,
+                            value=0.5,
+                        ),
+                        InputComponentParameter(
+                            id="spillage_cost",
+                            time_dependent=False,
+                            scenario_dependent=False,
+                            scenario_group=None,
+                            value=1.0,
+                        ),
+                    ],
+                ),
+            ],
+            components=[],
+            connections=[],
+        )
+
+        expected_validated_data.nodes.sort(key=lambda x: x.id)
+        validated_data.nodes.sort(key=lambda x: x.id)
+        assert validated_data == expected_validated_data
+
     def test_convert_renewables_to_component(
         self, local_study_with_renewable: Study, lib_id: str
     ):
-        areas, converter = self._init_area_reading(local_study_with_renewable)
+        converter = self._init_study_converter(local_study_with_renewable)
         study_path = converter.study_path
         (
             renewables_components,
             renewable_connections,
-        ) = converter._convert_renewable_to_component_list(areas, lib_id)
+        ) = converter._convert_renewable_to_component_list(lib_id)
 
-        timeserie_path = str(
+        timeseries_path = str(
             study_path
             / "input"
             / "renewables"
@@ -207,7 +275,7 @@ class TestConverter:
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{timeserie_path}",
+                        value=f"{timeseries_path}",
                     ),
                 ],
             )
@@ -218,12 +286,13 @@ class TestConverter:
     def test_convert_st_storages_to_component(
         self, local_study_with_st_storage, lib_id: str
     ):
-        areas, converter = self._init_area_reading(local_study_with_st_storage)
+        converter = self._init_study_converter(local_study_with_st_storage)
         study_path = converter.study_path
         (
             storage_components,
             storage_connections,
-        ) = converter._convert_st_storage_to_component_list(areas, lib_id)
+        ) = converter._convert_st_storage_to_component_list(lib_id)
+
         default_path = study_path / "input" / "st-storage" / "series" / "fr" / "battery"
         inflows_path = default_path / "inflows"
         lower_rule_curve_path = default_path / "lower-rule-curve"
@@ -317,49 +386,38 @@ class TestConverter:
                 ],
             )
         ]
-        print("actual: ", storage_components)
-        print("epxected: ", expected_storage_component)
+
         assert storage_components == expected_storage_component
         assert storage_connections == expected_storage_connections
 
+    @pytest.mark.parametrize(
+        "local_study_w_thermal",
+        [
+            (
+                create_dataframe_from_constant(lines=840, columns=4),  # modulation
+                create_dataframe_from_constant(lines=840),  # serie
+            )
+        ],
+        indirect=True,
+    )
     def test_convert_thermals_to_component(
         self,
         local_study_w_thermal: Study,
-        create_csv_from_constant_value: Callable[..., None],
         lib_id: str,
     ):
-        areas, converter = self._init_area_reading(local_study_w_thermal)
+        converter = self._init_study_converter(local_study_w_thermal)
         study_path = converter.study_path
-        # I just want to fill the modulation and series files
-        modulation_timeseries = (
-            study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
-        )
-        series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
-        # We have to use a multiple of 168, to match with full weeks
-        create_csv_from_constant_value(modulation_timeseries, "modulation", 840, 4)
-        create_csv_from_constant_value(series_path, "series", 840)
-
-        self._generate_tdp_instance_parameter(
-            areas, study_path, create_dataframes=False
-        )
         (
             thermals_components,
             thermals_connections,
-        ) = converter._convert_thermal_to_component_list(areas, lib_id)
+        ) = converter._convert_thermal_to_component_list(lib_id)
 
         study_path = converter.study_path
-        p_max_timeserie = str(
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "series"
-        )
-        p_min_cluster = str(
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "p_min_cluster"
-        )
-        nb_units_min = str(
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "nb_units_min"
-        )
-        nb_units_max = str(
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / "nb_units_max"
-        )
+        series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
+        p_max_timeseries = str(series_path / "series")
+        p_min_cluster = str(series_path / "p_min_cluster")
+        nb_units_min = str(series_path / "nb_units_min")
+        nb_units_max = str(series_path / "nb_units_max")
         nb_units_max_variation_forward = str(
             study_path
             / "input"
@@ -495,94 +553,27 @@ class TestConverter:
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{p_max_timeserie}",
+                        value=f"{p_max_timeseries}",
                     ),
                 ],
             )
         ]
-        print("ACTUAL:", thermals_components)
-        print("EXPECTED:", expected_thermals_components)
 
         assert thermals_components == expected_thermals_components
         assert thermals_connections == expected_thermals_connections
 
-    def test_convert_area_to_yaml(self, local_study_w_areas: Study, lib_id: str):
-        areas, converter = self._init_area_reading(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(areas, lib_id)
-        input_study = InputSystem(nodes=area_components)
-
-        # Dump model into yaml file
-        yaml_path = converter.study_path / "study_path.yaml"
-        transform_to_yaml(model=input_study, output_path=yaml_path)
-
-        # Open yaml file to validate
-        with open(yaml_path, "r", encoding="utf-8") as yaml_file:
-            validated_data = parse_yaml_components(yaml_file)
-
-        expected_validated_data = InputSystem(
-            nodes=[
-                InputComponent(
-                    id="it",
-                    model="antares-historic.area",
-                    scenario_group=None,
-                    parameters=[
-                        InputComponentParameter(
-                            id="ens_cost",
-                            time_dependent=False,
-                            scenario_dependent=False,
-                            scenario_group=None,
-                            value=0.5,
-                        ),
-                        InputComponentParameter(
-                            id="spillage_cost",
-                            time_dependent=False,
-                            scenario_dependent=False,
-                            scenario_group=None,
-                            value=1.0,
-                        ),
-                    ],
-                ),
-                InputComponent(
-                    id="fr",
-                    model="antares-historic.area",
-                    scenario_group=None,
-                    parameters=[
-                        InputComponentParameter(
-                            id="ens_cost",
-                            time_dependent=False,
-                            scenario_dependent=False,
-                            scenario_group=None,
-                            value=0.5,
-                        ),
-                        InputComponentParameter(
-                            id="spillage_cost",
-                            time_dependent=False,
-                            scenario_dependent=False,
-                            scenario_group=None,
-                            value=1.0,
-                        ),
-                    ],
-                ),
-            ],
-            components=[],
-            connections=[],
-        )
-
-        expected_validated_data.nodes.sort(key=lambda x: x.id)
-        validated_data.nodes.sort(key=lambda x: x.id)
-        assert validated_data == expected_validated_data
-
     def test_convert_solar_to_component(
         self, local_study_w_areas: Study, fr_solar: None, lib_id: str
     ):
-        areas, converter = self._init_area_reading(local_study_w_areas)
+        converter = self._init_study_converter(local_study_w_areas)
 
         solar_components, solar_connection = converter._convert_solar_to_component_list(
-            areas, lib_id
+            lib_id
         )
-        study_path = converter.study_path
 
-        solar_timeseries = str(study_path / "input" / "solar" / "series" / "solar_fr")
+        solar_timeseries = str(
+            converter.study_path / "input" / "solar" / "series" / "solar_fr"
+        )
         expected_solar_connection = [
             InputPortConnections(
                 component1="solar",
@@ -612,14 +603,15 @@ class TestConverter:
     def test_convert_load_to_component(
         self, local_study_w_areas: Study, fr_load: None, lib_id: str
     ):
-        areas, converter = self._init_area_reading(local_study_w_areas)
+        converter = self._init_study_converter(local_study_w_areas)
 
         load_components, load_connection = converter._convert_load_to_component_list(
-            areas, lib_id
+            lib_id
         )
-        study_path = converter.study_path
 
-        load_timeseries = str(study_path / "input" / "load" / "series" / "load_fr")
+        load_timeseries = str(
+            converter.study_path / "input" / "load" / "series" / "load_fr"
+        )
         expected_load_connection = [
             InputPortConnections(
                 component1="load",
@@ -656,14 +648,15 @@ class TestConverter:
     def test_convert_wind_to_component_not_empty_file(
         self, local_study_w_areas: Study, fr_wind: int, lib_id: str
     ):
-        areas, converter = self._init_area_reading(local_study_w_areas)
+        converter = self._init_study_converter(local_study_w_areas)
 
         wind_components, wind_connection = converter._convert_wind_to_component_list(
-            areas, lib_id
+            lib_id
         )
-        study_path = converter.study_path
 
-        wind_timeseries = str(study_path / "input" / "wind" / "series" / "wind_fr")
+        wind_timeseries = str(
+            converter.study_path / "input" / "wind" / "series" / "wind_fr"
+        )
         expected_wind_connection = [
             InputPortConnections(
                 component1="wind",
@@ -700,9 +693,9 @@ class TestConverter:
     def test_convert_wind_to_component_empty_file(
         self, local_study_w_areas: Study, fr_wind: object, lib_id: str
     ):
-        areas, converter = self._init_area_reading(local_study_w_areas)
+        converter = self._init_study_converter(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(areas, lib_id)
+        wind_components, _ = converter._convert_wind_to_component_list(lib_id)
 
         assert wind_components == []
 
@@ -716,14 +709,14 @@ class TestConverter:
     def test_convert_wind_to_component_zero_values(
         self, local_study_w_areas: Study, fr_wind: int, lib_id: str
     ):
-        areas, converter = self._init_area_reading(local_study_w_areas)
+        converter = self._init_study_converter(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(areas, lib_id)
+        wind_components, _ = converter._convert_wind_to_component_list(lib_id)
 
         assert wind_components == []
 
     def test_convert_links_to_component(self, local_study_w_links: Study, lib_id: str):
-        _, converter = self._init_area_reading(local_study_w_links)
+        converter = self._init_study_converter(local_study_w_links)
         study_path = converter.study_path
         (
             links_components,
@@ -847,148 +840,200 @@ class TestConverter:
         )
         assert links_connections == expected_link_connections
 
-    def _generate_tdp_instance_parameter(
-        self, areas, study_path, create_dataframes: bool = True
-    ):
-        if create_dataframes:
-            modulation_timeseries = str(
-                study_path
-                / "input"
-                / "thermal"
-                / "prepro"
-                / "fr"
-                / "gaz"
-                / "modulation.txt"
-            )
-            series_path = (
-                study_path
-                / "input"
-                / "thermal"
-                / "series"
-                / "fr"
-                / "gaz"
-                / "series.txt"
-            )
-            data_p_max = [
-                [1, 1, 1, 2],
-                [2, 2, 2, 6],
-                [3, 3, 3, 1],
-            ]
-            data_series = [
-                [8],
-                [10],
-                [2],
-            ]
-            df = pd.DataFrame(data_p_max)
-            df.to_csv(modulation_timeseries, sep="\t", index=False, header=False)
-
-            df = pd.DataFrame(data_series)
-            df.to_csv(series_path, sep="\t", index=False, header=False)
-
-        for area in areas:
-            thermals = area.get_thermals()
-            for thermal in thermals.values():
-                if thermal.area_id == "fr":
-                    tdp = ThermalDataPreprocessing(thermal, study_path)
-                    return tdp
-
-    def _setup_test(self, local_study_w_thermal, filename):
+    def _setup_preprocessing_thermal(self, local_study_w_thermal, filename):
         """
         Initializes test parameters and returns the instance and expected file path.
         """
-        areas, converter = self._init_area_reading(local_study_w_thermal)
-        study_path = converter.study_path
-        instance = self._generate_tdp_instance_parameter(areas, study_path)
-        expected_path = (
-            study_path / "input" / "thermal" / "series" / "fr" / "gaz" / filename
+
+        logger = Logger(__name__, local_study_w_thermal.service.config.study_path)
+        converter: AntaresStudyConverter = AntaresStudyConverter(
+            study_input=local_study_w_thermal, logger=logger
         )
-        return instance, expected_path
+
+        areas: dict[Area] = converter.study.get_areas().values()
+
+        thermal: ThermalCluster = next(
+            (
+                thermal
+                for area in areas
+                for thermal in area.get_thermals().values()
+                if thermal.area_id == "fr"
+            ),
+            None,
+        )
+        tdp = ThermalDataPreprocessing(thermal, converter.study_path)
+        expected_path = (
+            converter.study_path
+            / "input"
+            / "thermal"
+            / "series"
+            / "fr"
+            / "gaz"
+            / filename
+        )
+        return tdp, expected_path
 
     def _validate_component(
-        self, instance, process_method, expected_path, expected_values
+        self,
+        component: InputComponentParameter,
+        component_id,
+        expected_path,
+        expected_values,
     ):
         """
         Executes the given processing method, validates the component, and compares the output dataframe.
         """
-        component = getattr(instance, process_method)()
+
         expected_component = InputComponentParameter(
-            id=process_method.split("process_")[1],
+            id=component_id,
             time_dependent=True,
             scenario_dependent=True,
-            value=str(expected_path),
+            value=str(expected_path).removesuffix(".txt"),
         )
         current_df = pd.read_csv(expected_path.with_suffix(".txt"), header=None)
         expected_df = pd.DataFrame(expected_values)
         assert current_df.equals(expected_df)
         assert component == expected_component
 
-    def _test_p_min_cluster(self, local_study_w_thermal):
+    @pytest.mark.parametrize(
+        "local_study_w_thermal",
+        [
+            (
+                pd.DataFrame(
+                    [
+                        [1, 1, 1, 2],
+                        [2, 2, 2, 6],
+                        [3, 3, 3, 1],
+                    ]
+                ),  # modulation
+                pd.DataFrame(
+                    [
+                        [8],
+                        [10],
+                        [2],
+                    ]
+                ),  # series
+            ),
+        ],
+        indirect=True,
+    )
+    def test_p_min_cluster(self, local_study_w_thermal):
         """Tests the p_min_cluster parameter processing."""
-        instance, expected_path = self._setup_test(
+        tdp, expected_path = self._setup_preprocessing_thermal(
             local_study_w_thermal, "p_min_cluster.txt"
         )
         expected_values = [
-            [6.0],
+            [4.0],
             [10.0],
             [2.0],
         ]  # min(min_gen_modulation * unit_count * nominal_capacity, p_max_cluster)
+        component = tdp.generate_component("p_min_cluster")
         self._validate_component(
-            instance, "process_p_min_cluster", expected_path, expected_values
+            component, "p_min_cluster", expected_path, expected_values
         )
 
+    @pytest.mark.parametrize(
+        "local_study_w_thermal",
+        [
+            (
+                pd.DataFrame(
+                    [
+                        [1, 1, 1, 2],
+                        [2, 2, 2, 6],
+                        [3, 3, 3, 1],
+                    ]
+                ),  # modulation
+                pd.DataFrame(
+                    [
+                        [8],
+                        [10],
+                        [2],
+                    ]
+                ),  # series
+            ),
+        ],
+        indirect=True,
+    )
     def test_nb_units_min(self, local_study_w_thermal: Study):
         """Tests the nb_units_min parameter processing."""
-        instance, expected_path = self._setup_test(
+        tdp, expected_path = self._setup_preprocessing_thermal(
             local_study_w_thermal, "nb_units_min"
         )
-        instance.process_p_min_cluster()
         expected_values = [[2.0], [5.0], [1.0]]  # ceil(p_min_cluster / p_max_unit)
+
+        tdp.generate_component("p_min_cluster")
+        component = tdp.generate_component("nb_units_min")
+
         self._validate_component(
-            instance, "process_nb_units_min", expected_path, expected_values
+            component, "nb_units_min", expected_path, expected_values
         )
 
+    @pytest.mark.parametrize(
+        "local_study_w_thermal",
+        [
+            (
+                pd.DataFrame(
+                    [
+                        [1, 1, 1, 2],
+                        [2, 2, 2, 6],
+                        [3, 3, 3, 1],
+                    ]
+                ),  # modulation
+                pd.DataFrame(
+                    [
+                        [8],
+                        [10],
+                        [2],
+                    ]
+                ),  # series
+            ),
+        ],
+        indirect=True,
+    )
     def test_nb_units_max(self, local_study_w_thermal: Study):
         """Tests the nb_units_max parameter processing."""
-        instance, expected_path = self._setup_test(
+        tdp, expected_path = self._setup_preprocessing_thermal(
             local_study_w_thermal, "nb_units_max"
         )
-        instance.process_p_min_cluster()
+
         expected_values = [[4.0], [5.0], [1.0]]  # ceil(p_max_cluster / p_max_unit)
+
+        tdp.generate_component("p_min_cluster")
+        component = tdp.generate_component("nb_units_max")
+
         self._validate_component(
-            instance, "process_nb_units_max", expected_path, expected_values
+            component, "nb_units_max", expected_path, expected_values
         )
 
-    @pytest.mark.parametrize("direction", ["forward", "backward"])
-    def test_nb_units_max_variation(
+    def nb_units_max_variation(
         self,
         local_study_w_thermal: Study,
-        create_csv_from_constant_value: Callable[..., None],
         direction: Literal["forward"] | Literal["backward"],
     ):
         """
         Tests nb_units_max_variation_forward and nb_units_max_variation_backward processing.
         """
-        instance, expected_path = self._setup_test(
+
+        tdp, expected_path = self._setup_preprocessing_thermal(
             local_study_w_thermal, f"nb_units_max_variation_{direction}"
         )
-        modulation_timeseries = (
-            instance.study_path / "input" / "thermal" / "prepro" / "fr" / "gaz"
-        )
-        series_path = (
-            instance.study_path / "input" / "thermal" / "series" / "fr" / "gaz"
-        )
-        create_csv_from_constant_value(modulation_timeseries, "modulation", 840, 4)
-        create_csv_from_constant_value(series_path, "series", 840)
-        instance.process_nb_units_max()
-        nb_units_max_output = pd.read_csv(
-            instance.series_path / "nb_units_max.txt", header=None
-        )
 
-        variation_component = getattr(
-            instance, f"process_nb_units_max_variation_{direction}"
-        )()
+        tdp.generate_component("nb_units_max")
+
+        if direction == "forward":
+            variation_component = tdp.generate_component(
+                "nb_units_max_variation_forward"
+            )
+        else:
+            variation_component = tdp.generate_component(
+                "nb_units_max_variation_backward"
+            )
+
         current_df = pd.read_csv(variation_component.value + ".txt", header=None)
 
+        nb_units_max_output = pd.read_csv(
+            tdp.series_path / "nb_units_max.txt", header=None
+        )
         assert current_df[0][0] == max(
             0, nb_units_max_output[0][167] - nb_units_max_output[0][0]
         )
@@ -1000,20 +1045,34 @@ class TestConverter:
         )
         assert variation_component.value == str(expected_path)
 
+    @pytest.mark.parametrize(
+        "local_study_w_thermal",
+        [
+            (
+                create_dataframe_from_constant(lines=840, columns=4),  # modulation
+                create_dataframe_from_constant(lines=840),  # series
+            ),
+        ],
+        indirect=True,
+    )
     def test_nb_units_max_variation_forward(
         self,
         local_study_w_thermal: Study,
-        create_csv_from_constant_value: Callable[..., None],
     ):
-        self.test_nb_units_max_variation(
-            local_study_w_thermal, create_csv_from_constant_value, direction="forward"
-        )
+        self.nb_units_max_variation(local_study_w_thermal, direction="forward")
 
+    @pytest.mark.parametrize(
+        "local_study_w_thermal",
+        [
+            (
+                create_dataframe_from_constant(lines=840, columns=4),  # modulation
+                create_dataframe_from_constant(lines=840),  # series
+            ),
+        ],
+        indirect=True,
+    )
     def test_nb_units_max_variation_backward(
         self,
         local_study_w_thermal: Study,
-        create_csv_from_constant_value: Callable[..., None],
     ):
-        self.test_nb_units_max_variation(
-            local_study_w_thermal, create_csv_from_constant_value, direction="backward"
-        )
+        self.nb_units_max_variation(local_study_w_thermal, direction="backward")

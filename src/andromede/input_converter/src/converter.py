@@ -41,7 +41,7 @@ class AntaresStudyConverter:
         Initialize processor
         """
         self.logger = logger
-        self.period = period if period else 168
+        self.period: int = period if period else 168
 
         if isinstance(study_input, Study):
             self.study = study_input
@@ -55,6 +55,7 @@ class AntaresStudyConverter:
         self.output_path = (
             Path(output_path) if output_path else self.study_path / Path("output.yaml")
         )
+        self.areas: Iterable[Area] = self.study.get_areas().values()
 
     def _check_dataframe_validity(self, df: DataFrame) -> bool:
         """
@@ -69,13 +70,11 @@ class AntaresStudyConverter:
 
         return True
 
-    def _convert_area_to_component_list(
-        self, areas: Iterable[Area], lib_id: str
-    ) -> list[InputComponent]:
+    def _convert_area_to_component_list(self, lib_id: str) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
 
-        for area in areas:
+        for area in self.areas:
             components.append(
                 InputComponent(
                     id=area.id,
@@ -99,12 +98,12 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, areas: Iterable[Area], lib_id: str
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting renewables to component list...")
-        for area in areas:
+        for area in self.areas:
             renewables = area.get_renewables()
             for renewable in renewables.values():
                 series_path = (
@@ -154,14 +153,14 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_thermal_to_component_list(
-        self, areas: Iterable[Area], lib_id: str
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting thermals to component list...")
         # Add thermal components for each area
 
-        for area in areas:
+        for area in self.areas:
             thermals = area.get_thermals()
             for thermal in thermals.values():
                 series_path = (
@@ -179,11 +178,15 @@ class AntaresStudyConverter:
                         id=thermal.id,
                         model=f"{lib_id}.thermal",
                         parameters=[
-                            tdp.process_p_min_cluster(),
-                            tdp.process_nb_units_min(),
-                            tdp.process_nb_units_max(),
-                            tdp.process_nb_units_max_variation_forward(self.period),
-                            tdp.process_nb_units_max_variation_backward(self.period),
+                            tdp.generate_component("p_min_cluster"),
+                            tdp.generate_component("nb_units_min"),
+                            tdp.generate_component("nb_units_max"),
+                            tdp.generate_component(
+                                "nb_units_max_variation_forward", self.period
+                            ),
+                            tdp.generate_component(
+                                "nb_units_max_variation_backward", self.period
+                            ),
                             InputComponentParameter(
                                 id="unit_count",
                                 time_dependent=False,
@@ -259,13 +262,13 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_st_storage_to_component_list(
-        self, areas: Iterable[Area], lib_id: str
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting short-term storages to component list...")
         # Add thermal components for each area
-        for area in areas:
+        for area in self.areas:
             storages = area.get_st_storages()
             for storage in storages.values():
                 series_path = (
@@ -431,12 +434,12 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_wind_to_component_list(
-        self, areas: Iterable[Area], lib_id: str
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting wind to component list...")
-        for area in areas:
+        for area in self.areas:
             series_path = (
                 self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
             )
@@ -468,12 +471,12 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_solar_to_component_list(
-        self, areas: Iterable[Area], lib_id: str
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting solar to component list...")
-        for area in areas:
+        for area in self.areas:
             series_path = (
                 self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
             )
@@ -506,12 +509,12 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_load_to_component_list(
-        self, areas: Iterable[Area], lib_id: str
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting load to component list...")
-        for area in areas:
+        for area in self.areas:
             series_path = (
                 self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
             )
@@ -544,10 +547,7 @@ class AntaresStudyConverter:
 
     def convert_study_to_input_study(self) -> InputSystem:
         antares_historic_lib_id = "antares-historic"
-        areas = self.study.get_areas().values()
-        area_components = self._convert_area_to_component_list(
-            areas, antares_historic_lib_id
-        )
+        area_components = self._convert_area_to_component_list(antares_historic_lib_id)
 
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
@@ -567,7 +567,7 @@ class AntaresStudyConverter:
         ]
 
         for method in conversion_methods:
-            components, connections = method(areas, antares_historic_lib_id)
+            components, connections = method(antares_historic_lib_id)
             list_components.extend(components)
             list_connections.extend(connections)
 
