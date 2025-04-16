@@ -120,12 +120,10 @@ def test_model_behaviour(
         ) as lib_file1:
             lib_historic = parse_yaml_library(lib_file1)
         with open(
-                "src/andromede/libs/reference_models/andromede_v1_models.yml"
+            "src/andromede/libs/reference_models/andromede_v1_models.yml"
         ) as lib_file2:
             lib_v1 = parse_yaml_library(lib_file2)
-        input_libraries = [ lib_historic,
-                    lib_v1
-        ]
+        input_libraries = [lib_historic, lib_v1]
         input_component = parse_yaml_components(compo_file)
         result_lib = resolve_library(input_libraries)
         components_input = resolve_system(input_component, result_lib)
@@ -139,15 +137,13 @@ def test_model_behaviour(
             problem = build_problem(
                 network,
                 database,
-                TimeBlock(
-                    1, [i for i in range(k * timespan, (k + 1) * timespan)]
-                    ),
-                    scenarios,
-                )
+                TimeBlock(1, [i for i in range(k * timespan, (k + 1) * timespan)]),
+                scenarios,
+            )
             status = problem.solver.Solve()
             assert status == problem.solver.OPTIMAL
             assert math.isclose(
-                    reference_values[k, 0],
-                    problem.solver.Objective().Value(),
-                    rel_tol=relative_accuracy,
-                )
+                reference_values[k, 0],
+                problem.solver.Objective().Value(),
+                rel_tol=relative_accuracy,
+            )
