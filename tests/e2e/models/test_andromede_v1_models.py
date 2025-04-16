@@ -12,11 +12,12 @@
 
 import math
 from pathlib import Path
+from typing import List
 
 import pandas as pd
 import pytest
 
-from andromede.model.parsing import parse_yaml_library
+from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation.optimization import build_problem
 from andromede.simulation.time_block import TimeBlock
@@ -46,6 +47,17 @@ def systems_dir(data_dir: Path) -> Path:
 @pytest.fixture
 def series_dir(data_dir: Path) -> Path:
     return data_dir / "series"
+
+
+@pytest.fixture
+def input_libraries() -> List[InputLibrary]:
+    with open("src/andromede/libs/antares_historic/antares_historic.yml") as lib_file:
+        lib_historic = parse_yaml_library(lib_file)
+    with open(
+        "src/andromede/libs/reference_models/andromede_v1_models.yml"
+    ) as lib_file:
+        lib_v1 = parse_yaml_library(lib_file)
+    return [lib_historic, lib_v1]
 
 
 @pytest.mark.parametrize(
@@ -108,42 +120,30 @@ def test_model_behaviour(
     timespan: int,
     batch: int,
     relative_accuracy: float,
+    input_libraries: List[InputLibrary],
     results_dir: Path,
     systems_dir: Path,
     series_dir: Path,
 ) -> None:
     scenarios = 1
-
     with open(systems_dir / system_file) as compo_file:
-        with open(
-            "src/andromede/libs/antares_historic/antares_historic.yml"
-        ) as lib_file1:
-            lib_historic = parse_yaml_library(lib_file1)
-        with open(
-            "src/andromede/libs/reference_models/andromede_v1_models.yml"
-        ) as lib_file2:
-            lib_v1 = parse_yaml_library(lib_file2)
-        input_libraries = [lib_historic, lib_v1]
         input_component = parse_yaml_components(compo_file)
-        result_lib = resolve_library(input_libraries)
-        components_input = resolve_system(input_component, result_lib)
-        database = build_data_base(input_component, Path(series_dir))
-        network = build_network(components_input)
-
-        reference_values = pd.read_csv(
-            results_dir / optim_result_file, header=None
-        ).values
-        for k in range(batch):
-            problem = build_problem(
-                network,
-                database,
-                TimeBlock(1, [i for i in range(k * timespan, (k + 1) * timespan)]),
-                scenarios,
-            )
-            status = problem.solver.Solve()
-            assert status == problem.solver.OPTIMAL
-            assert math.isclose(
-                reference_values[k, 0],
-                problem.solver.Objective().Value(),
-                rel_tol=relative_accuracy,
-            )
+    result_lib = resolve_library(input_libraries)
+    components_input = resolve_system(input_component, result_lib)
+    database = build_data_base(input_component, Path(series_dir))
+    network = build_network(components_input)
+    reference_values = pd.read_csv(results_dir / optim_result_file, header=None).values
+    for k in range(batch):
+        problem = build_problem(
+            network,
+            database,
+            TimeBlock(1, [i for i in range(k * timespan, (k + 1) * timespan)]),
+            scenarios,
+        )
+        status = problem.solver.Solve()
+        assert status == problem.solver.OPTIMAL
+        assert math.isclose(
+            reference_values[k, 0],
+            problem.solver.Objective().Value(),
+            rel_tol=relative_accuracy,
+        )
