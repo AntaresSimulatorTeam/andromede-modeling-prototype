@@ -186,6 +186,11 @@ class PyPSAStudyConverter:
         print(
             "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
         )
+    
+    def __convert_pypsa_global_constraints(self):
+        print(
+            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
+        )
 
     def to_andromede_study(self) -> InputSystem:
         """Function"""
@@ -201,6 +206,7 @@ class PyPSAStudyConverter:
             # self.__convert_pypsa_links,
             # self.__convert_pypsa_stores,
             # self.__convert_pypsa_storages,
+            # self.__convert_pypsa_global_constraints
         ]
 
         for method in methods:
