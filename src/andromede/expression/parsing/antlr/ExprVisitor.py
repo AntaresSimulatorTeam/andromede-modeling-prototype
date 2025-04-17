@@ -10,12 +10,16 @@ else:
 
 
 class ExprVisitor(ParseTreeVisitor):
+    # Visit a parse tree produced by ExprParser#portFieldExpr.
+    def visitPortFieldExpr(self, ctx: ExprParser.PortFieldExprContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by ExprParser#fullexpr.
     def visitFullexpr(self, ctx: ExprParser.FullexprContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#timeSum.
-    def visitTimeSum(self, ctx: ExprParser.TimeSumContext):
+    # Visit a parse tree produced by ExprParser#portFieldSum.
+    def visitPortFieldSum(self, ctx: ExprParser.PortFieldSumContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#negation.
@@ -30,10 +34,6 @@ class ExprVisitor(ParseTreeVisitor):
     def visitExpression(self, ctx: ExprParser.ExpressionContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#timeIndex.
-    def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by ExprParser#comparison.
     def visitComparison(self, ctx: ExprParser.ComparisonContext):
         return self.visitChildren(ctx)
@@ -42,16 +42,16 @@ class ExprVisitor(ParseTreeVisitor):
     def visitAllTimeSum(self, ctx: ExprParser.AllTimeSumContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by ExprParser#timeShift.
-    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext):
-        return self.visitChildren(ctx)
-
-    # Visit a parse tree produced by ExprParser#function.
-    def visitFunction(self, ctx: ExprParser.FunctionContext):
+    # Visit a parse tree produced by ExprParser#timeIndexExpr.
+    def visitTimeIndexExpr(self, ctx: ExprParser.TimeIndexExprContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#addsub.
     def visitAddsub(self, ctx: ExprParser.AddsubContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeShiftExpr.
+    def visitTimeShiftExpr(self, ctx: ExprParser.TimeShiftExprContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#portField.
@@ -60,6 +60,22 @@ class ExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ExprParser#muldiv.
     def visitMuldiv(self, ctx: ExprParser.MuldivContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeSum.
+    def visitTimeSum(self, ctx: ExprParser.TimeSumContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeIndex.
+    def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#timeShift.
+    def visitTimeShift(self, ctx: ExprParser.TimeShiftContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by ExprParser#function.
+    def visitFunction(self, ctx: ExprParser.FunctionContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by ExprParser#number.

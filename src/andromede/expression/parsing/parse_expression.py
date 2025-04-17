@@ -17,7 +17,12 @@ from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from andromede.expression import ExpressionNode, literal, param, var
 from andromede.expression.equality import expressions_equal
-from andromede.expression.expression import Comparator, ComparisonNode, PortFieldNode
+from andromede.expression.expression import (
+    Comparator,
+    ComparisonNode,
+    PortFieldAggregatorNode,
+    PortFieldNode,
+)
 from andromede.expression.parsing.antlr.ExprLexer import ExprLexer
 from andromede.expression.parsing.antlr.ExprParser import ExprParser
 from andromede.expression.parsing.antlr.ExprVisitor import ExprVisitor
@@ -46,6 +51,15 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
     """
 
     identifiers: ModelIdentifiers
+
+    # Visit a parse tree produced by ExprParser#portFieldExpr.
+    def visitPortFieldExpr(
+        self, ctx: ExprParser.PortFieldExprContext
+    ) -> ExpressionNode:
+        return PortFieldNode(
+            port_name=ctx.IDENTIFIER(0).getText(),  # type: ignore
+            field_name=ctx.IDENTIFIER(1).getText(),  # type: ignore
+        )
 
     def visitFullexpr(self, ctx: ExprParser.FullexprContext) -> ExpressionNode:
         return ctx.expr().accept(self)  # type: ignore
@@ -101,10 +115,7 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
     # Visit a parse tree produced by ExprParser#portField.
     def visitPortField(self, ctx: ExprParser.PortFieldContext) -> ExpressionNode:
-        return PortFieldNode(
-            port_name=ctx.IDENTIFIER(0).getText(),  # type: ignore
-            field_name=ctx.IDENTIFIER(1).getText(),  # type: ignore
-        )
+        return ctx.portFieldExpr().accept(self)  # type: ignore
 
     # Visit a parse tree produced by ExprParser#comparison.
     def visitComparison(self, ctx: ExprParser.ComparisonContext) -> ExpressionNode:
@@ -117,6 +128,10 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
             ">=": Comparator.GREATER_THAN,
         }[op]
         return ComparisonNode(exp1, exp2, comp)
+
+    # Visit a parse tree produced by ExprParser#portFieldSum.
+    def visitPortFieldSum(self, ctx: ExprParser.PortFieldSumContext) -> ExpressionNode:
+        return PortFieldAggregatorNode(ctx.portFieldExpr().accept(self), "PortSum")  # type: ignore
 
     # Visit a parse tree produced by ExprParser#timeShift.
     def visitTimeIndex(self, ctx: ExprParser.TimeIndexContext) -> ExpressionNode:
@@ -219,7 +234,6 @@ class ExpressionNodeBuilderVisitor(ExprVisitor):
 
 
 _FUNCTIONS = {
-    "sum_connections": ExpressionNode.sum_connections,
     "expec": ExpressionNode.expec,
 }
 
