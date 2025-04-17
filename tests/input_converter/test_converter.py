@@ -33,6 +33,11 @@ from andromede.study.parsing import (
 )
 from tests.input_converter.conftest import create_dataframe_from_constant
 
+DATAFRAME_PREPRO_THERMAL_CONFIG = (
+    create_dataframe_from_constant(lines=840, columns=4),  # modulation
+    create_dataframe_from_constant(lines=840),  # series
+)
+
 
 class TestConverter:
     def _init_study_converter(self, local_study):
@@ -392,12 +397,7 @@ class TestConverter:
 
     @pytest.mark.parametrize(
         "local_study_w_thermal",
-        [
-            (
-                create_dataframe_from_constant(lines=840, columns=4),  # modulation
-                create_dataframe_from_constant(lines=840),  # serie
-            )
-        ],
+        [DATAFRAME_PREPRO_THERMAL_CONFIG],
         indirect=True,
     )
     def test_convert_thermals_to_component(
@@ -840,7 +840,9 @@ class TestConverter:
         )
         assert links_connections == expected_link_connections
 
-    def _setup_preprocessing_thermal(self, local_study_w_thermal, filename):
+    def _setup_preprocessing_thermal(
+        self, local_study_w_thermal: Study
+    ) -> ThermalDataPreprocessing:
         """
         Initializes test parameters and returns the instance and expected file path.
         """
@@ -850,28 +852,23 @@ class TestConverter:
             study_input=local_study_w_thermal, logger=logger
         )
 
-        areas: dict[Area] = converter.study.get_areas().values()
+        def _get_thermal_prepro_with_first_thermal(
+            converter: AntaresStudyConverter, area_id: str = "fr"
+        ) -> ThermalDataPreprocessing:
+            areas: dict[Area] = converter.study.get_areas().values()
 
-        thermal: ThermalCluster = next(
-            (
-                thermal
-                for area in areas
-                for thermal in area.get_thermals().values()
-                if thermal.area_id == "fr"
-            ),
-            None,
-        )
-        tdp = ThermalDataPreprocessing(thermal, converter.study_path)
-        expected_path = (
-            converter.study_path
-            / "input"
-            / "thermal"
-            / "series"
-            / "fr"
-            / "gaz"
-            / filename
-        )
-        return tdp, expected_path
+            thermal: ThermalCluster = next(
+                (
+                    thermal
+                    for area in areas
+                    for thermal in area.get_thermals().values()
+                    if thermal.area_id == area_id
+                ),
+                None,
+            )
+            return ThermalDataPreprocessing(thermal, converter.study_path)
+
+        return _get_thermal_prepro_with_first_thermal(converter)
 
     def _validate_component(
         self,
@@ -890,7 +887,7 @@ class TestConverter:
             scenario_dependent=True,
             value=str(expected_path).removesuffix(".txt"),
         )
-        current_df = pd.read_csv(expected_path.with_suffix(".txt"), header=None)
+        current_df = pd.read_csv(expected_path, header=None)
         expected_df = pd.DataFrame(expected_values)
         assert current_df.equals(expected_df)
         assert component == expected_component
@@ -919,15 +916,22 @@ class TestConverter:
     )
     def test_p_min_cluster(self, local_study_w_thermal):
         """Tests the p_min_cluster parameter processing."""
-        tdp, expected_path = self._setup_preprocessing_thermal(
-            local_study_w_thermal, "p_min_cluster.txt"
+        tdp = self._setup_preprocessing_thermal(local_study_w_thermal)
+        expected_path = (
+            local_study_w_thermal.service.config.study_path
+            / "input"
+            / "thermal"
+            / "series"
+            / "fr"
+            / "gaz"
+            / "p_min_cluster.txt"
         )
         expected_values = [
             [4.0],
             [10.0],
             [2.0],
         ]  # min(min_gen_modulation * unit_count * nominal_capacity, p_max_cluster)
-        component = tdp.generate_component("p_min_cluster")
+        component = tdp.generate_component_parameter("p_min_cluster")
         self._validate_component(
             component, "p_min_cluster", expected_path, expected_values
         )
@@ -956,13 +960,20 @@ class TestConverter:
     )
     def test_nb_units_min(self, local_study_w_thermal: Study):
         """Tests the nb_units_min parameter processing."""
-        tdp, expected_path = self._setup_preprocessing_thermal(
-            local_study_w_thermal, "nb_units_min"
+        tdp = self._setup_preprocessing_thermal(local_study_w_thermal)
+        expected_path = (
+            local_study_w_thermal.service.config.study_path
+            / "input"
+            / "thermal"
+            / "series"
+            / "fr"
+            / "gaz"
+            / "nb_units_min.txt"
         )
         expected_values = [[2.0], [5.0], [1.0]]  # ceil(p_min_cluster / p_max_unit)
 
-        tdp.generate_component("p_min_cluster")
-        component = tdp.generate_component("nb_units_min")
+        tdp.generate_component_parameter("p_min_cluster")
+        component = tdp.generate_component_parameter("nb_units_min")
 
         self._validate_component(
             component, "nb_units_min", expected_path, expected_values
@@ -992,14 +1003,20 @@ class TestConverter:
     )
     def test_nb_units_max(self, local_study_w_thermal: Study):
         """Tests the nb_units_max parameter processing."""
-        tdp, expected_path = self._setup_preprocessing_thermal(
-            local_study_w_thermal, "nb_units_max"
+        tdp = self._setup_preprocessing_thermal(local_study_w_thermal)
+        expected_path = (
+            local_study_w_thermal.service.config.study_path
+            / "input"
+            / "thermal"
+            / "series"
+            / "fr"
+            / "gaz"
+            / "nb_units_max.txt"
         )
-
         expected_values = [[4.0], [5.0], [1.0]]  # ceil(p_max_cluster / p_max_unit)
 
-        tdp.generate_component("p_min_cluster")
-        component = tdp.generate_component("nb_units_max")
+        tdp.generate_component_parameter("p_min_cluster")
+        component = tdp.generate_component_parameter("nb_units_max")
 
         self._validate_component(
             component, "nb_units_max", expected_path, expected_values
@@ -1014,65 +1031,45 @@ class TestConverter:
         Tests nb_units_max_variation_forward and nb_units_max_variation_backward processing.
         """
 
-        tdp, expected_path = self._setup_preprocessing_thermal(
-            local_study_w_thermal, f"nb_units_max_variation_{direction}"
+        tdp = self._setup_preprocessing_thermal(local_study_w_thermal)
+        expected_path = (
+            local_study_w_thermal.service.config.study_path
+            / "input"
+            / "thermal"
+            / "series"
+            / "fr"
+            / "gaz"
+            / f"nb_units_max_variation_{direction}.txt"
         )
+        tdp.generate_component_parameter("nb_units_max")
 
-        tdp.generate_component("nb_units_max")
-
-        if direction == "forward":
-            variation_component = tdp.generate_component(
-                "nb_units_max_variation_forward"
-            )
-        else:
-            variation_component = tdp.generate_component(
-                "nb_units_max_variation_backward"
-            )
+        variation_component = tdp.generate_component_parameter(
+            f"nb_units_max_variation_{direction}"
+        )
 
         current_df = pd.read_csv(variation_component.value + ".txt", header=None)
 
         nb_units_max_output = pd.read_csv(
             tdp.series_path / "nb_units_max.txt", header=None
         )
-        assert current_df[0][0] == max(
-            0, nb_units_max_output[0][167] - nb_units_max_output[0][0]
-        )
-        assert current_df[0][3] == max(
-            0, nb_units_max_output[0][2] - nb_units_max_output[0][3]
-        )
-        assert current_df[0][168] == max(
-            0, nb_units_max_output[0][335] - nb_units_max_output[0][168]
-        )
-        assert variation_component.value == str(expected_path)
+
+        diff = nb_units_max_output.shift(-1) - nb_units_max_output
+
+        # La valeur ne peut pas etre au dessous de 0 et si il manque une ligne tout en bas, la rajoute
+        expected_df = diff.clip(lower=0).fillna(0)
+
+        pd.testing.assert_frame_equal(current_df, expected_df, check_dtype=False)
+        assert variation_component.value == str(expected_path).removesuffix(".txt")
 
     @pytest.mark.parametrize(
-        "local_study_w_thermal",
+        "direction, local_study_w_thermal",
         [
-            (
-                create_dataframe_from_constant(lines=840, columns=4),  # modulation
-                create_dataframe_from_constant(lines=840),  # series
-            ),
+            ("forward", DATAFRAME_PREPRO_THERMAL_CONFIG),
+            ("backward", DATAFRAME_PREPRO_THERMAL_CONFIG),
         ],
-        indirect=True,
+        indirect=["local_study_w_thermal"],
     )
-    def test_nb_units_max_variation_forward(
-        self,
-        local_study_w_thermal: Study,
+    def test_nb_units_max_variation(
+        self, local_study_w_thermal: Study, direction: Literal["forward", "backward"]
     ):
-        self.nb_units_max_variation(local_study_w_thermal, direction="forward")
-
-    @pytest.mark.parametrize(
-        "local_study_w_thermal",
-        [
-            (
-                create_dataframe_from_constant(lines=840, columns=4),  # modulation
-                create_dataframe_from_constant(lines=840),  # series
-            ),
-        ],
-        indirect=True,
-    )
-    def test_nb_units_max_variation_backward(
-        self,
-        local_study_w_thermal: Study,
-    ):
-        self.nb_units_max_variation(local_study_w_thermal, direction="backward")
+        self.nb_units_max_variation(local_study_w_thermal, direction)

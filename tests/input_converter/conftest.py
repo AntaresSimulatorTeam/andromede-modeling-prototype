@@ -86,7 +86,7 @@ def local_study_w_links(local_study_w_areas) -> Study:
 
 
 @pytest.fixture
-def local_study_w_thermal(local_study_w_links: Study, request) -> Study:
+def local_study_w_thermal(local_study_w_links: Study, request: pytest.FixtureRequest) -> Study:
     """
     Create an empty study
     Create 2 areas with custom area properties

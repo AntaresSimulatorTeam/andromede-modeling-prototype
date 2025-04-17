@@ -1,5 +1,6 @@
+from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -9,9 +10,13 @@ from andromede.study.data import load_ts_from_txt
 from andromede.study.parsing import InputComponentParameter
 
 
+class Direction(Enum):
+    FORWARD = "forward"
+    BACKWARD = "backward"
+
+
 class ThermalDataPreprocessing:
     DEFAULT_PERIOD: int = 168
-    VARIATION_DIRECTIONS = Literal["forward", "backward"]
 
     def __init__(self, thermal: ThermalCluster, study_path: Path):
         self.thermal = thermal
@@ -56,20 +61,19 @@ class ThermalDataPreprocessing:
         )
 
     def _compute_nb_units_max_variation(
-        self, direction: VARIATION_DIRECTIONS, period: int = DEFAULT_PERIOD
+        self, direction: Direction, period: int = DEFAULT_PERIOD
     ) -> pd.DataFrame:
         nb_units_max = load_ts_from_txt("nb_units_max", self.series_path)
         previous_indices = []
-
         indices = np.arange(len(nb_units_max))
         previous_indices = (indices - 1) % period + (indices // period) * period
 
         variation = pd.DataFrame()
-        if direction == "backward":
+        if direction.value == "backward":
             variation = nb_units_max.reset_index(drop=True) - nb_units_max.iloc[
                 previous_indices
             ].reset_index(drop=True)
-        elif direction == "forward":
+        elif direction.value == "forward":
             variation = nb_units_max.iloc[previous_indices].reset_index(
                 drop=True
             ) - nb_units_max.reset_index(drop=True)
@@ -77,37 +81,38 @@ class ThermalDataPreprocessing:
         # Utilisation d'une opération vectorisée au lieu de applymap
         variation = variation.clip(lower=0)
         return variation.rename(
-            columns={variation.columns[0]: f"nb_units_max_variation_{direction}"}
+            columns={variation.columns[0]: f"nb_units_max_variation_{direction.value}"}
         )
 
     def _build_csv_path(self, component_id: str, suffix: str = ".txt") -> Path:
         return self.series_path / Path(f"{component_id}").with_suffix(suffix)
 
-    def generate_component(
-        self, component_id: str, period: int = 0
+    def generate_component_parameter(
+        self, parameter_id: str, period: int = 0
     ) -> InputComponentParameter:
-        match component_id:
-            case "p_min_cluster":
-                df = self._compute_p_min_cluster()
-                csv_path = self._build_csv_path(component_id)
-            case "nb_units_min":
-                df = self._compute_nb_units_min()
-                csv_path = self._build_csv_path(component_id)
-            case "nb_units_max":
-                df = self._compute_nb_units_max()
-                csv_path = self._build_csv_path(component_id)
-            case "nb_units_max_variation_forward":
-                df = self._compute_nb_units_max_variation("forward", period)
-                csv_path = self._build_csv_path(component_id)
-            case "nb_units_max_variation_backward":
-                df = self._compute_nb_units_max_variation("backward", period)
-                csv_path = self._build_csv_path(component_id)
+        prepro_parameter_function: dict[str, Callable[[], pd.DataFrame]] = {
+            "p_min_cluster": self._compute_p_min_cluster,
+            "nb_units_min": self._compute_nb_units_min,
+            "nb_units_max": self._compute_nb_units_max,
+            "nb_units_max_variation_forward": lambda: self._compute_nb_units_max_variation(
+                Direction.FORWARD, period
+            ),
+            "nb_units_max_variation_backward": lambda: self._compute_nb_units_max_variation(
+                Direction.BACKWARD, period
+            ),
+        }
+
+        if parameter_id not in prepro_parameter_function:
+            raise ValueError(f"Unsupported parameter_id: {parameter_id}")
+
+        df = prepro_parameter_function[parameter_id]()
+        csv_path = self._build_csv_path(parameter_id)
 
         # This separator is chosen to comply with the antares_craft timeseries creation
         df.to_csv(csv_path, sep="\t", index=False, header=False)
 
         return InputComponentParameter(
-            id=component_id,
+            id=parameter_id,
             time_dependent=True,
             scenario_dependent=True,
             value=str(csv_path).removesuffix(".txt"),
