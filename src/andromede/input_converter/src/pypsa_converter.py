@@ -11,13 +11,12 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Optional
 
 
 from pandas import DataFrame
 
 
-from andromede.input_converter.src.utils import resolve_path, transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
@@ -47,23 +46,27 @@ class PyPSAStudyConverter:
 
     def __convert_pypsa_class(
         self,
-        pypsa_df,
-        pypsa_dft,
-        andromede_model,
-        pypsa_to_andromede_params,
-        pypsa_to_andromede_connections,
+        pypsa_df: DataFrame,
+        pypsa_dft: DataFrame,
+        andromede_model: str,
+        pypsa_params_to_andromede_params: dict,
+        pypsa_params_to_andromede_connections: dict,
     ):
         self.logger.info(f"Creating objects of type: {andromede_model}. ")
 
         # We test wether the keys of the conversion dictionnary given in input concern
-        assert set(pypsa_to_andromede_params).issubset(set(pypsa_df.columns))
-        assert set(pypsa_to_andromede_connections).issubset(set(pypsa_df.columns))
+        assert set(pypsa_params_to_andromede_params).issubset(set(pypsa_df.columns))
+        assert set(pypsa_params_to_andromede_connections).issubset(
+            set(pypsa_df.columns)
+        )
 
         # List of params and vars that may be time-dependant in the pypsa model
         pypsa_timedep = set(pypsa_dft.keys())
 
         # List of params that may be time-dependant in the pypsa model, among those we want to keep
-        timedep_params = set(pypsa_to_andromede_params).intersection(pypsa_timedep)
+        timedep_params = set(pypsa_params_to_andromede_params).intersection(
+            pypsa_timedep
+        )
 
         timedep_comp_param = dict()
 
@@ -71,15 +74,15 @@ class PyPSAStudyConverter:
         for param in timedep_params:
             timedf = pypsa_dft[param]
             for component in timedf.columns:
-                tsname = self.system_name + " " + component + "_" + param
+                tsname = self.system_name + "_" + component + "_" + param
                 timedep_comp_param[(component, param)] = tsname
                 timedf[[component]].to_csv(
                     self.series_dir / Path(tsname + ".txt"), index=False, header=False
                 )
 
         connections, components = [], []
-        if len(pypsa_to_andromede_connections) > 0:
-            for bus, model_port in pypsa_to_andromede_connections.items():
+        if len(pypsa_params_to_andromede_connections) > 0:
+            for bus, model_port in pypsa_params_to_andromede_connections.items():
                 assert model_port != None
                 buses = pypsa_df[bus].values
                 for i, component in enumerate(pypsa_df.index):
@@ -109,19 +112,14 @@ class PyPSAStudyConverter:
                                 else pypsa_df.loc[component, param]
                             ),
                         )
-                        for param in pypsa_to_andromede_params
+                        for param in pypsa_params_to_andromede_params
                     ],
                 )
             )
         return components, connections
 
-    def to_andromede_study(self) -> InputSystem:
-
-        self.logger.info("Study conversion started")
-        list_components, list_connections = [], []
-
-        # Convert buses
-        components, connections = self.__convert_pypsa_class(
+    def __convert_pypsa_buses(self):
+        return self.__convert_pypsa_class(
             self.pypsa_network.buses,
             self.pypsa_network.buses_t,
             "bus",
@@ -135,10 +133,9 @@ class PyPSAStudyConverter:
             },
             {},
         )
-        list_components.extend(components)
-        list_connections.extend(connections)
-        # Convert loads
-        components, connections = self.__convert_pypsa_class(
+
+    def __convert_pypsa_loads(self):
+        return self.__convert_pypsa_class(
             self.pypsa_network.loads,
             self.pypsa_network.loads_t,
             "load",
@@ -150,10 +147,9 @@ class PyPSAStudyConverter:
             },
             {"bus": "p_balance_port"},
         )
-        list_components.extend(components)
-        list_connections.extend(connections)
-        # Convert generators (V0)
-        components, connections = self.__convert_pypsa_class(
+
+    def __convert_pypsa_generatorsv0(self):
+        return self.__convert_pypsa_class(
             self.pypsa_network.generators,
             self.pypsa_network.generators_t,
             "generator_v0",
@@ -163,8 +159,43 @@ class PyPSAStudyConverter:
             },
             {"bus": "p_balance_port"},
         )
-        list_components.extend(components)
-        list_connections.extend(connections)
+
+    def __convert_pypsa_generators(self):
+        print(
+            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
+        )
+
+    def __convert_pypsa_links(self):
+        print(
+            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
+        )
+        "The dictionnary pypsa_params_to_andromede_connections will have the form bus0: out_port, bus1:in_port... or the reverse!"
+
+    def __convert_pypsa_stores(self):
+        print(
+            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
+        )
+
+    def __convert_pypsa_storage(self):
+        print(
+            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
+        )
+
+    def to_andromede_study(self) -> InputSystem:
+        """Function"""
+
+        self.logger.info("Study conversion started")
+        list_components, list_connections = [], []
+        methods = [
+            self.__convert_pypsa_buses,
+            self.__convert_pypsa_loads,
+            self.__convert_pypsa_generatorsv0,
+        ]
+
+        for method in methods:
+            components, connections = method()
+            list_components.extend(components)
+            list_connections.extend(connections)
 
         return InputSystem(
             nodes=[], components=list_components, connections=list_connections

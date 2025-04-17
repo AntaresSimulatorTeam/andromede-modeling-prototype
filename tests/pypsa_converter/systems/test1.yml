@@ -33,7 +33,7 @@ system:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: Demo pypsaload_p_set
+      value: Demo_pypsaload_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false

@@ -40,7 +40,6 @@ from andromede.study.resolve_components import (
 
 
 def test_v1(systems_dir: Path, series_dir: Path) -> None:
-
     # Building the PyPSA test problem
     T = 10
     n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
