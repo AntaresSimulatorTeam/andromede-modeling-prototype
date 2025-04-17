@@ -35,27 +35,23 @@ def local_study(tmp_path) -> Study:
     return create_study_local(study_name, study_version, tmp_path.absolute())
 
 
-@pytest.fixture
-def create_csv_from_constant_value():
-    def _create_csv_from_constant_value(
-        path, filename: str, lines: int, columns: int = 1, value: int = 1
-    ) -> None:
-        path = path / filename
+def create_dataframe_from_constant(
+    lines: int,
+    columns: int = 1,
+    value: int = 1,
+) -> pd.DataFrame:
+    """
+    Creates a DataFrame filled with a constant value for testing.
 
-        # Generate the data
-        data = {f"col_{i+1}": [value] * lines for i in range(columns)}
-        df = pd.DataFrame(data)
-
-        # Write the data to a file
-        df.to_csv(
-            path.with_suffix(".txt"),
-            sep="\t",
-            index=False,
-            header=False,
-            encoding="utf-8",
-        )
-
-    return _create_csv_from_constant_value
+    Args:
+        lines (int): Number of rows in the DataFrame.
+        columns (int, optional): Number of columns. Defaults to 1.
+        value (int, optional): Constant value to fill the DataFrame. Defaults to 1.
+    Returns:
+        pd.DataFrame: A DataFrame with the specified dimensions, filled with the constant value.
+    """
+    data = {f"col_{i+1}": [value] * lines for i in range(columns)}
+    return pd.DataFrame(data)
 
 
 @pytest.fixture
@@ -90,7 +86,7 @@ def local_study_w_links(local_study_w_areas) -> Study:
 
 
 @pytest.fixture
-def local_study_w_thermal(local_study_w_links) -> Study:
+def local_study_w_thermal(local_study_w_links: Study, request: pytest.FixtureRequest) -> Study:
     """
     Create an empty study
     Create 2 areas with custom area properties
@@ -98,9 +94,21 @@ def local_study_w_thermal(local_study_w_links) -> Study:
     Create a thermal cluster
     """
     thermal_name = "gaz"
-    local_study_w_links.get_areas()["fr"].create_thermal_cluster(
-        thermal_name, ThermalClusterProperties(unit_count=1, nominal_capacity=2.0)
-    )
+    if hasattr(request, "param"):
+        modulation_df, series_df = request.param
+        local_study_w_links.get_areas()["fr"].create_thermal_cluster(
+            thermal_name,
+            ThermalClusterProperties(unit_count=1, nominal_capacity=2.0),
+            prepro=None,
+            modulation=modulation_df,
+            series=series_df,
+            co2_cost=None,
+            fuel_cost=None,
+        )
+    else:
+        local_study_w_links.get_areas()["fr"].create_thermal_cluster(
+            thermal_name, ThermalClusterProperties(unit_count=1, nominal_capacity=2.0)
+        )
     return local_study_w_links
 
 
@@ -114,7 +122,7 @@ def local_study_with_renewable(local_study_w_thermal) -> Study:
     Create a renewable cluster
     """
     renewable_cluster_name = "generation"
-    time_serie = pd.DataFrame(
+    timeseries = pd.DataFrame(
         [
             [-9999999980506447872, 0, 9999999980506447872],
             [0, "fr", 0],
@@ -122,7 +130,7 @@ def local_study_with_renewable(local_study_w_thermal) -> Study:
         dtype="object",
     )
     local_study_w_thermal.get_areas()["fr"].create_renewable_cluster(
-        renewable_cluster_name, RenewableClusterProperties(), series=time_serie
+        renewable_cluster_name, RenewableClusterProperties(), series=timeseries
     )
     return local_study_w_thermal
 
