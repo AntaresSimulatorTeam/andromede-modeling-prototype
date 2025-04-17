@@ -44,6 +44,8 @@ class PyPSAStudyConverter:
         self.pypsalib_id = "pypsa_models"
         self.system_name = pypsa_network.name
 
+        assert len(pypsa_network.investment_periods) == 0
+
     def __convert_pypsa_class(
         self,
         pypsa_df: DataFrame,
@@ -155,6 +157,7 @@ class PyPSAStudyConverter:
         )
 
     def __convert_pypsa_generatorsv0(self):
+        assert sum(self.pypsa_network.generators["committable"] == 0)
         return self.__convert_pypsa_class(
             self.pypsa_network.generators,
             self.pypsa_network.generators_t,
@@ -172,10 +175,23 @@ class PyPSAStudyConverter:
         )
 
     def __convert_pypsa_links(self):
-        print(
-            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
+        return self.__convert_pypsa_class(
+            self.pypsa_network.links,
+            self.pypsa_network.links_t,
+            "link",
+            {
+                "efficiency": "efficiency",
+                "active": "active",
+                "p_nom": "p_nom",
+                "p_min_pu": "p_min_pu",
+                "p_max_pu": "p_max_pu",
+                "marginal_cost": "marginal_cost",
+            },
+            {
+                "bus0": ("p0_port", "p_balance_port"),
+                "bus1": ("p1_port", "p_balance_port"),
+            },
         )
-        "The dictionnary pypsa_params_to_andromede_connections will have the form bus0: (p_out_port, p_balance_port), bus1:(p_in_port, p_balance_port)... or the reverse!"
 
     def __convert_pypsa_stores(self):
         print(
@@ -186,7 +202,7 @@ class PyPSAStudyConverter:
         print(
             "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
         )
-    
+
     def __convert_pypsa_global_constraints(self):
         print(
             "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
@@ -203,7 +219,7 @@ class PyPSAStudyConverter:
             self.__convert_pypsa_loads,
             self.__convert_pypsa_generatorsv0,
             # self.__convert_pypsa_generators,
-            # self.__convert_pypsa_links,
+            self.__convert_pypsa_links,
             # self.__convert_pypsa_stores,
             # self.__convert_pypsa_storages,
             # self.__convert_pypsa_global_constraints

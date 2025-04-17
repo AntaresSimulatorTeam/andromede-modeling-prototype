@@ -17,7 +17,8 @@
 
 library:
   id: pypsa_models
-  description: PyPSA model library
+  description: PyPSA model library 
+  #https://pypsa.readthedocs.io/en/latest/user-guide/components.html#
 
   port-types:
     - id: flow
@@ -27,17 +28,21 @@ library:
 
   models:
     - id: bus
-    #Final model for PyPSA bus
+    #Model for PyPSA bus: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#bus
       parameters:
         - id: v_nom
           time-dependent: false
           scenario-dependent: false
+        #- id: type #Parameter not instantiated for now
         - id: x
           time-dependent: false
           scenario-dependent: false
         - id: y
           time-dependent: false
           scenario-dependent: false
+        #- id : carrier #Parameter not instantiated for now
+        #- id : unit #Parameter not instantiated for now
+        #- id : location #Parameter not instantiated for now
         - id: v_mag_pu_set
           time-dependent: true
           scenario-dependent: false
@@ -59,8 +64,10 @@ library:
           expression: sum_connections(q_balance_port.flow) = 0
     
     - id: load
-      #Final model for PyPSA load
+      #Model for PyPSA load: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#load
       parameters:
+        #- id : carrier #Parameter not instantiated for now
+        #- id : type #Parameter not instantiated for now
         - id: p_set
           time-dependent: true
           scenario-dependent: true
@@ -87,13 +94,14 @@ library:
           definition: sign * q_set
 
     - id: generator_v0
-    #temporary (v0) model for PyPSA generator
+    #Temporary (v0) model for PyPSA generator: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#generator
+    #to be completed with the exhaustive list of parameters, including parameters not instantiated for now
       parameters:
         - id: p_nom
           time-dependent: false
           scenario-dependent: false
         - id: marginal_cost
-          time-dependent: false
+          time-dependent: true
           scenario-dependent: false
       variables:
         - id: p
@@ -113,3 +121,83 @@ library:
         #  field: flow
         #  definition: q
       objective: expec(sum(marginal_cost * p))
+
+    
+    - id: link
+    #Todel for PyPSA link: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#link
+      parameters:
+        #- id: type #Parameter not instantiated for now
+        #- id: carrier #Parameter not instantiated for now
+        - id: efficiency
+          time-dependent: true
+          scenario-dependent: false
+        - id: active
+          time-dependent: false
+          scenario-dependent: false
+        #- id: build_year #Parameter not instantiated for now
+        #- id: lifetime #Parameter not instantiated for now
+        - id: p_nom
+          time-dependent: false
+          scenario-dependent: false
+        #- id: p_nom_mod
+        #- id: p_nom_extendable #Parameter not instantiated for now
+        #- id: p_nom_min #Parameter not instantiated for now
+        #- id: p_nom_max #Parameter not instantiated for now
+        #- id: p_set
+        - id: p_min_pu
+          time-dependent: true
+          scenario-dependent: false
+        - id: p_max_pu
+          time-dependent: true
+          scenario-dependent: false
+        #- id: capital_cost #Parameter not instantiated for now
+        - id: marginal_cost
+          time-dependent: true
+          scenario-dependent: false
+        #- id: marginal_cost_quadratic #Parameter not instantiated for now
+        #- id: stand_by_cost #Parameter not instantiated for now
+        #- id: length #Parameter not instantiated for now
+        #- id: terrain_factor #Parameter not instantiated for now
+        #- id: committable #Parameter not instantiated for now
+        #- id: start_up_cost #Parameter not instantiated for now
+        #- id: shut_down_cost #Parameter not instantiated for now
+        #- id: min_up_time #Parameter not instantiated for now
+        #- id: min_down_time #Parameter not instantiated for now
+        #- id: up_time_before #Parameter not instantiated for now
+        #- id: down_time_before #Parameter not instantiated for now
+        #- id: ramp_limit_up #Parameter not instantiated for now
+        #- id: ramp_limit_down #Parameter not instantiated for now
+        #- id: ramp_limit_start_up #Parameter not instantiated for now
+        #- id: ramp_limit_shut_down #Parameter not instantiated for now
+      variables:
+        - id: p0
+          lower-bound: p_min_pu*p_nom
+          upper-bound: p_max_pu*p_nom
+        - id: p1
+        #- id: p_nom_opt
+        #- id: status
+        #- id: start_up
+        #- id: shut_down
+      ports:
+        - id: p0_port
+          type: flow
+        #- id: q_0_port
+        #  type: flow
+        - id: p1_port
+          type: flow
+        #- id: q_1_port
+        #  type: flow
+      port-field-definitions:
+        - port: p0_port
+          field: flow
+          definition: -p0
+        - port: p1_port
+          field: flow
+          definition: -p1
+        #- port: q_balance_port
+        #  field: flow
+        #  definition: q
+      constraints:
+        - id: balance
+          expression: p1 = - efficiency * p0
+      objective: expec(sum(marginal_cost * p0))

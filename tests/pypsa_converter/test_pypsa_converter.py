@@ -37,9 +37,7 @@ from andromede.study.resolve_components import (
 )
 
 
-
-
-def test_v1(systems_dir: Path, series_dir: Path) -> None:
+def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
     # Building the PyPSA test problem
     T = 10
     n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
@@ -67,10 +65,10 @@ def test_v1(systems_dir: Path, series_dir: Path) -> None:
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    conversion_testing(n1,n1.objective, "test1.yml", systems_dir, series_dir)
+    conversion_testing(n1, n1.objective, "test1.yml", systems_dir, series_dir)
 
 
-def test_v2(systems_dir: Path, series_dir: Path) -> None:
+def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
     T = 10
     n1 = pypsa.Network(name="Demo2", snapshots=[i for i in range(T)])
     n1.add("Bus", "pypsatown", v_nom=1)
@@ -95,7 +93,7 @@ def test_v2(systems_dir: Path, series_dir: Path) -> None:
         p_nom=50,  # MW
     )
     n1.add("Bus", "paris", v_nom=1)
-    n1.add("Load", "parisload", bus="paris", p_set=100, qset=0)
+    n1.add("Load", "parisload", bus="paris", p_set=200, qset=0)
     n1.add(
         "Generator",
         "pypsagenerator3",
@@ -104,10 +102,21 @@ def test_v2(systems_dir: Path, series_dir: Path) -> None:
         marginal_cost=200,  # €/MWh
         p_nom=200,  # MW
     )
+    n1.add(
+        "Link",
+        "link-paris-pypsatown",
+        bus0="pypsatown",
+        bus1="paris",
+        efficiency = 0.9,
+        marginal_cost = 0.5,
+        p_nom=50,
+        p_min_pu=-1,
+        p_max_pu=[i / T for i in range(T)],
+    )
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    conversion_testing(n1,n1.objective, "test2.yml", systems_dir, series_dir)
+    conversion_testing(n1, n1.objective, "test2.yml", systems_dir, series_dir)
 
 
 def conversion_testing(
@@ -139,7 +148,7 @@ def conversion_testing(
     status = problem.solver.Solve()
     print(problem.solver.Objective().Value())
     assert status == problem.solver.OPTIMAL
-    assert math.isclose(problem.solver.Objective().Value(),target_value,rel_tol = 1e-6)
+    assert math.isclose(problem.solver.Objective().Value(), target_value, rel_tol=1e-6)
 
     # Test through saving to yaml, and then reading the yaml
     transform_to_yaml(model=input_component, output_path=systems_dir / filename)
@@ -159,4 +168,4 @@ def conversion_testing(
     status2 = problem2.solver.Solve()
     print(problem2.solver.Objective().Value())
     assert status2 == problem2.solver.OPTIMAL
-    assert math.isclose(problem2.solver.Objective().Value(),target_value,rel_tol = 1e-6)
+    assert math.isclose(problem2.solver.Objective().Value(), target_value, rel_tol=1e-6)

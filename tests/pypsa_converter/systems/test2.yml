@@ -98,7 +98,7 @@ system:
     - id: p_set
       scenario-dependent: false
       time-dependent: false
-      value: 100.0
+      value: 200.0
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -144,6 +144,33 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 200.0
+  - id: link-paris-pypsatown
+    model: pypsa_models.link
+    parameters:
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.9
+    - id: active
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: p_nom
+      scenario-dependent: false
+      time-dependent: false
+      value: 50.0
+    - id: p_min_pu
+      scenario-dependent: false
+      time-dependent: false
+      value: -1.0
+    - id: p_max_pu
+      scenario-dependent: false
+      time-dependent: true
+      value: Demo2_link-paris-pypsatown_p_max_pu
+    - id: marginal_cost
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.5
   connections:
   - component1: pypsatown
     component2: pypsaload
@@ -169,4 +196,12 @@ system:
     component2: pypsagenerator3
     port1: p_balance_port
     port2: p_balance_port
+  - component1: pypsatown
+    component2: link-paris-pypsatown
+    port1: p_balance_port
+    port2: p0_port
+  - component1: paris
+    component2: link-paris-pypsatown
+    port1: p_balance_port
+    port2: p1_port
   nodes: []
