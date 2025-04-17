@@ -11,7 +11,21 @@
 # This file is part of the Antares project.
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
+
+
+# TODO: Move keys elsewhere as variables have no sense in this file
+@dataclass(eq=True, frozen=True)
+class TimestepComponentVariableKey:
+    """
+    Identifies the solver variable for one timestep and one component variable.
+    """
+
+    tree_node_name: str
+    component_id: str
+    variable_name: str
+    block_timestep: Optional[int] = None
+    scenario: Optional[int] = None
 
 
 @dataclass(frozen=True)

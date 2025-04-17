@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 from typing import Dict, List, Optional, Set
 
-from andromede.expression import ExpressionNode
+from andromede.expression import ExpressionNode, literal
 from andromede.expression.indexing_structure import IndexingStructure
 from andromede.expression.parsing.parse_expression import (
     ModelIdentifiers,
@@ -30,7 +30,6 @@ from andromede.model import (
     model,
 )
 from andromede.model.library import Library
-from andromede.model.model import PortFieldDefinition, port_field_def
 from andromede.model.parsing import (
     InputConstraint,
     InputField,
@@ -42,6 +41,7 @@ from andromede.model.parsing import (
     InputPortType,
     InputVariable,
 )
+from andromede.model.port import PortFieldDefinition, port_field_def
 
 
 def resolve_library(
@@ -238,9 +238,11 @@ def _to_variable(var: InputVariable, identifiers: ModelIdentifiers) -> Variable:
 def _to_constraint(
     constraint: InputConstraint, identifiers: ModelIdentifiers
 ) -> Constraint:
+    lb = _to_expression_if_present(constraint.lower_bound, identifiers)
+    ub = _to_expression_if_present(constraint.upper_bound, identifiers)
     return Constraint(
         name=constraint.id,
         expression=parse_expression(constraint.expression, identifiers),
-        lower_bound=_to_expression_if_present(constraint.lower_bound, identifiers),
-        upper_bound=_to_expression_if_present(constraint.upper_bound, identifiers),
+        lower_bound=(lb if lb is not None else literal(-float("inf"))),
+        upper_bound=(ub if ub is not None else literal(float("inf"))),
     )
