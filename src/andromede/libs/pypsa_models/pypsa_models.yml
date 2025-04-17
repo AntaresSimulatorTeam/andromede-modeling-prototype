@@ -1,0 +1,115 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+# Library of models for the emulation of PyPSA
+# References for PyPSA
+# T. Brown, J. Hörsch, D. Schlachtberger, PyPSA: Python for Power System Analysis, 2018, Journal of Open Research Software, 6(1), arXiv:1707.09913, DOI:10.5334/jors.188
+# https://pypsa.readthedocs.io/en/latest/
+
+library:
+  id: pypsa_models
+  description: PyPSA model library
+
+  port-types:
+    - id: flow
+      description: A port which transfers power flow
+      fields:
+        - id: flow
+
+  models:
+    - id: bus
+    #Final model for PyPSA bus
+      parameters:
+        - id: v_nom
+          time-dependent: false
+          scenario-dependent: false
+        - id: x
+          time-dependent: false
+          scenario-dependent: false
+        - id: y
+          time-dependent: false
+          scenario-dependent: false
+        - id: v_mag_pu_set
+          time-dependent: true
+          scenario-dependent: false
+        - id: v_mag_pu_min
+          time-dependent: false
+          scenario-dependent: false
+        - id: v_mag_pu_max
+          time-dependent: false
+          scenario-dependent: false
+      ports:
+        - id: p_balance_port
+          type: flow
+        - id: q_balance_port
+          type: flow
+      binding-constraints:
+        - id: p_balance
+          expression: sum_connections(p_balance_port.flow) = 0
+        - id: q_balance
+          expression: sum_connections(q_balance_port.flow) = 0
+    
+    - id: load
+      #Final model for PyPSA load
+      parameters:
+        - id: p_set
+          time-dependent: true
+          scenario-dependent: true
+        - id: q_set
+          time-dependent: true
+          scenario-dependent: true
+        - id: sign #default value = -1
+          time-dependent: false
+          scenario-dependent: false
+        - id: active
+          time-dependent: false
+          scenario-dependent: false
+      ports:
+        - id: p_balance_port
+          type: flow
+        - id: q_balance_port
+          type: flow
+      port-field-definitions:
+        - port: p_balance_port
+          field: flow
+          definition: sign * p_set
+        - port: q_balance_port
+          field: flow
+          definition: sign * q_set
+
+    - id: generator_v0
+    #temporary (v0) model for PyPSA generator
+      parameters:
+        - id: p_nom
+          time-dependent: false
+          scenario-dependent: false
+        - id: marginal_cost
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - id: p
+          lower-bound: 0
+          upper-bound: p_nom
+        #- id: q
+      ports:
+        - id: p_balance_port
+          type: flow
+        #- id: q_balance_port
+        #  type: flow
+      port-field-definitions:
+        - port: p_balance_port
+          field: flow
+          definition: p
+        #- port: q_balance_port
+        #  field: flow
+        #  definition: q
+      objective: expec(sum(marginal_cost * p))
