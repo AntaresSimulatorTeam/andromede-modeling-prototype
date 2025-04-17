@@ -65,7 +65,9 @@ class ThermalDataPreprocessing:
     ) -> pd.DataFrame:
         nb_units_max = load_ts_from_txt("nb_units_max", self.series_path)
         indices = np.arange(len(nb_units_max))
-        previous_indices: np.ndarray = (indices - 1) % period + (indices // period) * period
+        previous_indices: np.ndarray = (indices - 1) % period + (
+            indices // period
+        ) * period
 
         variation = pd.DataFrame()
         if direction.value == "backward":
