@@ -19,12 +19,7 @@ from andromede.expression.expression import (
     PortFieldAggregatorNode,
     PortFieldNode,
 )
-
-
-@dataclass(frozen=True)
-class PortFieldId:
-    port_name: str
-    field_name: str
+from andromede.model.port import PortFieldId
 
 
 @dataclass(eq=True, frozen=True)
