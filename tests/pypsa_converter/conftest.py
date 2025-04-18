@@ -10,9 +10,9 @@
 #
 # This file is part of the Antares project.
 from pathlib import Path
+
 import pandas as pd
 import pytest
-
 
 
 @pytest.fixture

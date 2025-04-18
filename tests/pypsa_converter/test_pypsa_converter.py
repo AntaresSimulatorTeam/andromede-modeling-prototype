@@ -13,15 +13,12 @@
 import math
 from pathlib import Path
 
-
 import pandas as pd
 import pypsa
 import pytest
 
-
-from andromede.input_converter.src.pypsa_converter import PyPSAStudyConverter
-
 from andromede.input_converter.src.logger import Logger
+from andromede.input_converter.src.pypsa_converter import PyPSAStudyConverter
 from andromede.input_converter.src.utils import transform_to_yaml
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
@@ -107,8 +104,8 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
         "link-paris-pypsatown",
         bus0="pypsatown",
         bus1="paris",
-        efficiency = 0.9,
-        marginal_cost = 0.5,
+        efficiency=0.9,
+        marginal_cost=0.5,
         p_nom=50,
         p_min_pu=-1,
         p_max_pu=[i / T for i in range(T)],
