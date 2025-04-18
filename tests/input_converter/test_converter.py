@@ -394,6 +394,8 @@ class TestConverter:
         assert storage_components == expected_storage_component
         assert storage_connections == expected_storage_connections
 
+    # This parametrize allows to pass the parameter "DATAFRAME_PREPRO_THERMAL_CONFIG" inside the fixture
+    # To specify the modulation and series dataframes
     @pytest.mark.parametrize(
         "local_study_w_thermal",
         [DATAFRAME_PREPRO_THERMAL_CONFIG],
