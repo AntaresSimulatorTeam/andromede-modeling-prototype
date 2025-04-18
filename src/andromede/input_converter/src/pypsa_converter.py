@@ -11,7 +11,7 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Any, Dict
 
 from pandas import DataFrame
 from pypsa import Network
@@ -43,6 +43,13 @@ class PyPSAStudyConverter:
         self.system_name = pypsa_network.name
 
         assert len(pypsa_network.investment_periods) == 0
+
+    def __any_to_float(self, el: Any) -> float:
+        """Auxiliary function for type consistency"""
+        try:
+            return float(el)
+        except:
+            raise TypeError
 
     def __convert_pypsa_class(
         self,
@@ -115,7 +122,7 @@ class PyPSAStudyConverter:
                             value=(
                                 timedep_comp_param[(component, param)]
                                 if (component, param) in timedep_comp_param
-                                else pypsa_df.loc[component, param]
+                                else self.__any_to_float(pypsa_df.loc[component, param])
                             ),
                         )
                         for param in pypsa_params_to_andromede_params
