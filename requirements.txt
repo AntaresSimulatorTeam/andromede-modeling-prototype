@@ -50,6 +50,8 @@ protobuf==5.29.2
     # via ortools
 psutil==7.0.0
     # via antares-craft
+pypsa == 0.34.1
+    #for the PyPSA converter
 pydantic==2.7.4
     # via
     #   -r requirements.in
