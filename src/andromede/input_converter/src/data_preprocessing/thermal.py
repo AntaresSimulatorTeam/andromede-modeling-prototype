@@ -29,6 +29,17 @@ class ThermalDataPreprocessing:
             / self.thermal.area_id
             / self.thermal.id
         )
+        self._prepro_parameter_functions: dict[str, Callable[[int], pd.DataFrame]] = {
+            "p_min_cluster": lambda period: self._compute_p_min_cluster(),
+            "nb_units_min": lambda period: self._compute_nb_units_min(),
+            "nb_units_max": lambda period: self._compute_nb_units_max(),
+            "nb_units_max_variation_forward": lambda period: self._compute_nb_units_max_variation(
+                Direction.FORWARD, period
+            ),
+            "nb_units_max_variation_backward": lambda period: self._compute_nb_units_max_variation(
+                Direction.BACKWARD, period
+            ),
+        }
 
     def _compute_p_min_cluster(self) -> pd.DataFrame:
         modulation_data: pd.Series = self.thermal.get_prepro_modulation_matrix().iloc[
@@ -45,9 +56,7 @@ class ThermalDataPreprocessing:
         return min_values.to_frame(name="p_min_cluster")
 
     def _compute_nb_units_min(self) -> pd.DataFrame:
-        p_min_cluster: pd.DataFrame = load_ts_from_txt(
-            "p_min_cluster", self.series_path
-        )
+        p_min_cluster: pd.DataFrame = self._compute_p_min_cluster()
         nominal_capacity: float = self.thermal.properties.nominal_capacity
         return pd.DataFrame(
             np.ceil(p_min_cluster / nominal_capacity),
@@ -63,23 +72,24 @@ class ThermalDataPreprocessing:
     def _compute_nb_units_max_variation(
         self, direction: Direction, period: int = DEFAULT_PERIOD
     ) -> pd.DataFrame:
-        nb_units_max = load_ts_from_txt("nb_units_max", self.series_path)
+        nb_units_max = self._compute_nb_units_max()
         indices = np.arange(len(nb_units_max))
         previous_indices: np.ndarray = (indices - 1) % period + (
             indices // period
         ) * period
 
         variation = pd.DataFrame()
-        if direction.value == "backward":
+        if direction == Direction.BACKWARD:
             variation = nb_units_max.reset_index(drop=True) - nb_units_max.iloc[
                 previous_indices
             ].reset_index(drop=True)
-        elif direction.value == "forward":
+        elif direction == Direction.FORWARD:
             variation = nb_units_max.iloc[previous_indices].reset_index(
                 drop=True
             ) - nb_units_max.reset_index(drop=True)
 
-        # Utilisation d'une opération vectorisée au lieu de applymap
+        # Usage of vectorized operation instead of applymap
+        # It is the equivalent of max(0, variation(x))
         variation = variation.clip(lower=0)
         return variation.rename(
             columns={variation.columns[0]: f"nb_units_max_variation_{direction.value}"}
@@ -91,22 +101,10 @@ class ThermalDataPreprocessing:
     def generate_component_parameter(
         self, parameter_id: str, period: int = 0
     ) -> InputComponentParameter:
-        prepro_parameter_function: dict[str, Callable[[], pd.DataFrame]] = {
-            "p_min_cluster": self._compute_p_min_cluster,
-            "nb_units_min": self._compute_nb_units_min,
-            "nb_units_max": self._compute_nb_units_max,
-            "nb_units_max_variation_forward": lambda: self._compute_nb_units_max_variation(
-                Direction.FORWARD, period
-            ),
-            "nb_units_max_variation_backward": lambda: self._compute_nb_units_max_variation(
-                Direction.BACKWARD, period
-            ),
-        }
-
-        if parameter_id not in prepro_parameter_function:
+        if parameter_id not in self._prepro_parameter_functions:
             raise ValueError(f"Unsupported parameter_id: {parameter_id}")
 
-        df = prepro_parameter_function[parameter_id]()
+        df = self._prepro_parameter_functions[parameter_id](period)
         csv_path = self._build_csv_path(parameter_id)
 
         # This separator is chosen to comply with the antares_craft timeseries creation

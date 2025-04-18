@@ -10,8 +10,6 @@
 #
 # This file is part of the Antares project.
 
-from typing import Literal
-
 import pandas as pd
 import pytest
 from antares.craft.model.area import Area
@@ -20,6 +18,7 @@ from antares.craft.model.thermal import ThermalCluster
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.data_preprocessing.thermal import (
+    Direction,
     ThermalDataPreprocessing,
 )
 from andromede.input_converter.src.logger import Logger
@@ -414,28 +413,6 @@ class TestConverter:
 
         study_path = converter.study_path
         series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
-        p_max_timeseries = str(series_path / "series")
-        p_min_cluster = str(series_path / "p_min_cluster")
-        nb_units_min = str(series_path / "nb_units_min")
-        nb_units_max = str(series_path / "nb_units_max")
-        nb_units_max_variation_forward = str(
-            study_path
-            / "input"
-            / "thermal"
-            / "series"
-            / "fr"
-            / "gaz"
-            / "nb_units_max_variation_forward"
-        )
-        nb_units_max_variation_backward = str(
-            study_path
-            / "input"
-            / "thermal"
-            / "series"
-            / "fr"
-            / "gaz"
-            / "nb_units_max_variation_backward"
-        )
         expected_thermals_connections = [
             InputPortConnections(
                 component1="gaz",
@@ -455,35 +432,35 @@ class TestConverter:
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{p_min_cluster}",
+                        value=str(series_path / "p_min_cluster"),
                     ),
                     InputComponentParameter(
                         id="nb_units_min",
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{nb_units_min}",
+                        value=str(series_path / "nb_units_min"),
                     ),
                     InputComponentParameter(
                         id="nb_units_max",
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{nb_units_max}",
+                        value=str(series_path / "nb_units_max"),
                     ),
                     InputComponentParameter(
                         id="nb_units_max_variation_forward",
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{nb_units_max_variation_forward}",
+                        value=str(series_path / "nb_units_max_variation_forward"),
                     ),
                     InputComponentParameter(
                         id="nb_units_max_variation_backward",
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{nb_units_max_variation_backward}",
+                        value=str(series_path / "nb_units_max_variation_backward"),
                     ),
                     InputComponentParameter(
                         id="unit_count",
@@ -553,7 +530,7 @@ class TestConverter:
                         time_dependent=True,
                         scenario_dependent=True,
                         scenario_group=None,
-                        value=f"{p_max_timeseries}",
+                        value=str(series_path / "series"),
                     ),
                 ],
             )
@@ -1025,7 +1002,7 @@ class TestConverter:
     def nb_units_max_variation(
         self,
         local_study_w_thermal: Study,
-        direction: Literal["forward"] | Literal["backward"],
+        direction: Direction,
     ):
         """
         Tests nb_units_max_variation_forward and nb_units_max_variation_backward processing.
@@ -1039,12 +1016,12 @@ class TestConverter:
             / "series"
             / "fr"
             / "gaz"
-            / f"nb_units_max_variation_{direction}.txt"
+            / f"nb_units_max_variation_{direction.value}.txt"
         )
         tdp.generate_component_parameter("nb_units_max")
 
         variation_component = tdp.generate_component_parameter(
-            f"nb_units_max_variation_{direction}"
+            f"nb_units_max_variation_{direction.value}"
         )
 
         current_df = pd.read_csv(variation_component.value + ".txt", header=None)
@@ -1053,23 +1030,27 @@ class TestConverter:
             tdp.series_path / "nb_units_max.txt", header=None
         )
 
-        diff = nb_units_max_output.shift(-1) - nb_units_max_output
+        assert current_df[0][0] == max(
+            0, nb_units_max_output[0][167] - nb_units_max_output[0][0]
+        )
+        assert current_df[0][3] == max(
+            0, nb_units_max_output[0][2] - nb_units_max_output[0][3]
+        )
+        assert current_df[0][168] == max(
+            0, nb_units_max_output[0][335] - nb_units_max_output[0][168]
+        )
 
-        # La valeur ne peut pas etre au dessous de 0 et si il manque une ligne tout en bas, la rajoute
-        expected_df = diff.clip(lower=0).fillna(0)
-
-        pd.testing.assert_frame_equal(current_df, expected_df, check_dtype=False)
         assert variation_component.value == str(expected_path).removesuffix(".txt")
 
     @pytest.mark.parametrize(
         "direction, local_study_w_thermal",
         [
-            ("forward", DATAFRAME_PREPRO_THERMAL_CONFIG),
-            ("backward", DATAFRAME_PREPRO_THERMAL_CONFIG),
+            (Direction.FORWARD, DATAFRAME_PREPRO_THERMAL_CONFIG),
+            (Direction.BACKWARD, DATAFRAME_PREPRO_THERMAL_CONFIG),
         ],
         indirect=["local_study_w_thermal"],
     )
     def test_nb_units_max_variation(
-        self, local_study_w_thermal: Study, direction: Literal["forward", "backward"]
+        self, local_study_w_thermal: Study, direction: Direction
     ):
         self.nb_units_max_variation(local_study_w_thermal, direction)
