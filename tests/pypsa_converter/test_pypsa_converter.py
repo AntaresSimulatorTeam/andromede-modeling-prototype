@@ -127,42 +127,37 @@ def conversion_testing(
     logger = Logger(__name__, Path(""))
     converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
     T = len(pypsa_network.timesteps)
-    input_component = converter.to_andromede_study()
+    input_component1 = converter.to_andromede_study()
+    transform_to_yaml(model=input_component1, output_path=systems_dir / filename)
 
-    # Comparing PyPSA result with Andromede result - direct approach using the input_component object
+    # Loading the model library
     with open("src/andromede/libs/pypsa_models/pypsa_models.yml") as lib_file:
         input_libraries = [parse_yaml_library(lib_file)]
     result_lib = resolve_library(input_libraries)
-    resolved_system = resolve_system(input_component, result_lib)
-    database = build_data_base(input_component, Path(series_dir))
-    network = build_network(resolved_system)
-    problem = build_problem(
-        network,
-        database,
-        TimeBlock(1, [i for i in range(T)]),
-        1,
-    )
-    status = problem.solver.Solve()
-    print(problem.solver.Objective().Value())
-    assert status == problem.solver.OPTIMAL
-    assert math.isclose(problem.solver.Objective().Value(), target_value, rel_tol=1e-6)
 
-    # Test through saving to yaml, and then reading the yaml
-    transform_to_yaml(model=input_component, output_path=systems_dir / filename)
-
+    # Comparing PyPSA result with Andromede result - direct approach using the InputSystem
+    resolved_system1 = resolve_system(input_component1, result_lib)
+    # Saving to yaml, and then reading the yaml and loading the InputSystem
     with open(systems_dir / filename) as compo_file:
         input_component2 = parse_yaml_components(compo_file)
     resolved_system2 = resolve_system(input_component2, result_lib)
-    database2 = build_data_base(input_component2, Path(series_dir))
-    network2 = build_network(resolved_system2)
-    problem2 = build_problem(
-        network2,
-        database2,
-        TimeBlock(1, [i for i in range(T)]),
-        1,
-    )
 
-    status2 = problem2.solver.Solve()
-    print(problem2.solver.Objective().Value())
-    assert status2 == problem2.solver.OPTIMAL
-    assert math.isclose(problem2.solver.Objective().Value(), target_value, rel_tol=1e-6)
+    # Testing both InputSystem objects
+    for resolved_system, input_component in [
+        (resolved_system1, input_component1),
+        (resolved_system2, input_component2),
+    ]:
+        database = build_data_base(input_component, Path(series_dir))
+        network = build_network(resolved_system)
+        problem = build_problem(
+            network,
+            database,
+            TimeBlock(1, [i for i in range(T)]),
+            1,
+        )
+        status = problem.solver.Solve()
+        print(problem.solver.Objective().Value())
+        assert status == problem.solver.OPTIMAL
+        assert math.isclose(
+            problem.solver.Objective().Value(), target_value, rel_tol=1e-6
+        )
