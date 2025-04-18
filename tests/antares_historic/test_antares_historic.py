@@ -217,22 +217,6 @@ def test_thermal_balance_using_converter(
     """
     Test thermal study balance using the converter.
     """
-    problem = problem_builder(study_component_thermal, input_library)
-
-    status = problem.solver.Solve()
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 165
-
-
-def test_storage_balance_using_converter(
-    study_component_st_storage: InputSystem, input_library: InputLibrary
-) -> None:
-    """
-    Test storage study balance using the converter.
-    """
-    # Wait for new version 0.92 of antares craft  which include efficiencywithdrawalparameter
-    problem = problem_builder(study_component_st_storage, input_library)
-
-    status = problem.solver.Solve()
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 165
+    factory_balance_using_converter(
+        study_component_thermal, input_library, expected_value=165
+    )
