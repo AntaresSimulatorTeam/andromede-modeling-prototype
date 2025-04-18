@@ -11,11 +11,10 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Optional
-
+from typing import Optional,Dict
 
 from pandas import DataFrame
-
+from pypsa import Network
 
 from andromede.study.parsing import (
     InputComponent,
@@ -23,7 +22,6 @@ from andromede.study.parsing import (
     InputPortConnections,
     InputSystem,
 )
-from pypsa import Network
 
 
 class PyPSAStudyConverter:
@@ -31,8 +29,8 @@ class PyPSAStudyConverter:
         self,
         pypsa_network: Network,
         logger: logging.Logger,
-        system_dir: Optional[Path] = None,
-        series_dir: Optional[Path] = None,
+        system_dir: Path,
+        series_dir: Path,
     ):
         """
         Initialize processor
@@ -49,11 +47,11 @@ class PyPSAStudyConverter:
     def __convert_pypsa_class(
         self,
         pypsa_df: DataFrame,
-        pypsa_dft: dict[DataFrame],
+        pypsa_dft: Dict[str,DataFrame],
         andromede_model: str,
-        pypsa_params_to_andromede_params: dict,
-        pypsa_params_to_andromede_connections: dict,
-    ):
+        pypsa_params_to_andromede_params: Dict[str,str],
+        pypsa_params_to_andromede_connections: Dict[str,tuple[str,str]],
+    )-> tuple[list[InputComponent], list[InputPortConnections]]:
         """
         Generic function to handle the different PyPSA classes
         pypsa_df: DataFrame : dataframe listing the components in the PyPSA class. Ex: pypsa_network.loads
@@ -117,7 +115,7 @@ class PyPSAStudyConverter:
                             value=(
                                 timedep_comp_param[(component, param)]
                                 if (component, param) in timedep_comp_param
-                                else pypsa_df.loc[component, param]
+                                else float(pypsa_df.loc[component, param])
                             ),
                         )
                         for param in pypsa_params_to_andromede_params
@@ -126,7 +124,7 @@ class PyPSAStudyConverter:
             )
         return components, connections
 
-    def __convert_pypsa_buses(self):
+    def __convert_pypsa_buses(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         return self.__convert_pypsa_class(
             self.pypsa_network.buses,
             self.pypsa_network.buses_t,
@@ -142,7 +140,7 @@ class PyPSAStudyConverter:
             {},
         )
 
-    def __convert_pypsa_loads(self):
+    def __convert_pypsa_loads(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         return self.__convert_pypsa_class(
             self.pypsa_network.loads,
             self.pypsa_network.loads_t,
@@ -156,7 +154,7 @@ class PyPSAStudyConverter:
             {"bus": ("p_balance_port", "p_balance_port")},
         )
 
-    def __convert_pypsa_generatorsv0(self):
+    def __convert_pypsa_generatorsv0(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         assert sum(self.pypsa_network.generators["committable"] == 0)
         return self.__convert_pypsa_class(
             self.pypsa_network.generators,
@@ -169,12 +167,12 @@ class PyPSAStudyConverter:
             {"bus": ("p_balance_port", "p_balance_port")},
         )
 
-    def __convert_pypsa_generators(self):
+    """def __convert_pypsa_generators(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         print(
             "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
-        )
+        )"""
 
-    def __convert_pypsa_links(self):
+    def __convert_pypsa_links(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         return self.__convert_pypsa_class(
             self.pypsa_network.links,
             self.pypsa_network.links_t,
@@ -193,20 +191,21 @@ class PyPSAStudyConverter:
             },
         )
 
-    def __convert_pypsa_stores(self):
+    """def __convert_pypsa_stores(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         print(
             "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
         )
 
-    def __convert_pypsa_storages(self):
+    def __convert_pypsa_storages(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         print(
             "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
         )
 
-    def __convert_pypsa_global_constraints(self):
+    def __convert_pypsa_global_constraints(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
         print(
             "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
         )
+    """
 
     def to_andromede_study(self) -> InputSystem:
         """Function"""
