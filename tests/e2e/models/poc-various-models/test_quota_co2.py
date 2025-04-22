@@ -16,6 +16,9 @@ This file tests the model of CO2 quota. The models are created in Python directl
 
 import math
 
+from libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
+from libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
+
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -25,8 +28,6 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.e2e.models.libs.standard import DEMAND_MODEL, LINK_MODEL, NODE_BALANCE_MODEL
-from tests.e2e.models.libs.standard_sc import C02_POWER_MODEL, QUOTA_CO2_MODEL
 
 
 def test_quota_co2() -> None:

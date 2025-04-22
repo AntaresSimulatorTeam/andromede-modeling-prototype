@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+from libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
+
 from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
 from andromede.model import (
@@ -31,7 +33,6 @@ from andromede.study import (
     PortRef,
     create_component,
 )
-from tests.e2e.models.libs.standard import CONSTANT, TIME_AND_SCENARIO_FREE
 
 ELECTRICAL_PORT = PortType(id="electrical_port", fields=[PortField("flow")])
 

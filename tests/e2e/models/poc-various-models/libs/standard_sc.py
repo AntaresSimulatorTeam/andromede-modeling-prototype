@@ -10,6 +10,8 @@
 #
 # This file is part of the Antares project.
 
+from libs.standard import BALANCE_PORT_TYPE, CONSTANT
+
 from andromede.expression import literal, param, var
 from andromede.expression.expression import port_field
 from andromede.model import (
@@ -22,7 +24,6 @@ from andromede.model import (
     model,
 )
 from andromede.model.port import PortFieldDefinition, PortFieldId
-from tests.e2e.models.libs.standard import BALANCE_PORT_TYPE, CONSTANT
 
 """
 Simple Convertor model.
