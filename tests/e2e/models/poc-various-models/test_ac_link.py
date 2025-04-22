@@ -12,6 +12,7 @@
 from pathlib import Path
 
 import pytest
+from libs.standard import BALANCE_PORT_TYPE, DEMAND_MODEL, GENERATOR_MODEL
 
 from andromede.model.library import Library, library
 from andromede.model.parsing import parse_yaml_library
@@ -24,11 +25,6 @@ from andromede.study import (
     Node,
     PortRef,
     create_component,
-)
-from tests.e2e.models.libs.standard import (
-    BALANCE_PORT_TYPE,
-    DEMAND_MODEL,
-    GENERATOR_MODEL,
 )
 
 
