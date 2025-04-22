@@ -12,6 +12,15 @@
 
 import math
 
+from libs.standard import DEMAND_MODEL, GENERATOR_MODEL, NODE_BALANCE_MODEL
+from libs.standard_sc import (
+    CONVERTOR_MODEL,
+    CONVERTOR_RECEIVE_IN,
+    DECOMPOSE_1_FLOW_INTO_2_FLOW,
+    NODE_BALANCE_MODEL_MOD,
+    TWO_INPUTS_CONVERTOR_MODEL,
+)
+
 from andromede.simulation import OutputValues, TimeBlock, build_problem
 from andromede.study import (
     ConstantData,
@@ -20,18 +29,6 @@ from andromede.study import (
     Node,
     PortRef,
     create_component,
-)
-from tests.e2e.models.libs.standard import (
-    DEMAND_MODEL,
-    GENERATOR_MODEL,
-    NODE_BALANCE_MODEL,
-)
-from tests.e2e.models.libs.standard_sc import (
-    CONVERTOR_MODEL,
-    CONVERTOR_RECEIVE_IN,
-    DECOMPOSE_1_FLOW_INTO_2_FLOW,
-    NODE_BALANCE_MODEL_MOD,
-    TWO_INPUTS_CONVERTOR_MODEL,
 )
 
 """
