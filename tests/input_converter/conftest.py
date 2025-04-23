@@ -18,6 +18,7 @@ from antares.craft.model.st_storage import STStorageProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.model.thermal import ThermalClusterProperties
 
+
 @pytest.fixture
 def lib_id() -> str:
     return "antares-historic"
@@ -133,7 +134,6 @@ def local_study_with_renewable(local_study_w_thermal) -> Study:
         renewable_cluster_name, RenewableClusterProperties(), series=timeseries
     )
     return local_study_w_thermal
-
 
 
 @pytest.fixture
