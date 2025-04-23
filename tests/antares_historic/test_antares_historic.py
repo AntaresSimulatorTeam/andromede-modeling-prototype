@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +9,7 @@ from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
+from andromede.simulation.optimization import OptimizationProblem
 from andromede.study.data import load_ts_from_txt
 from andromede.study.parsing import InputSystem, parse_yaml_components
 from andromede.study.resolve_components import (
@@ -16,6 +18,12 @@ from andromede.study.resolve_components import (
     consistency_check,
     resolve_system,
 )
+
+
+@dataclass(frozen=True)
+class ToolTestStudy:
+    study_component_data: InputSystem
+    study_path: Path
 
 
 def create_csv_from_constant_value(
@@ -124,7 +132,7 @@ def fill_timeseries(study_path) -> None:
     create_csv_from_constant_value(path=series_path, filename="nb_units_max", lines=3)
 
 
-def _setup_study_component(study, period=None) -> tuple:
+def _setup_study_component(study, period=None) -> ToolTestStudy:
     """
     Helper function to reduce redundancy in study component setup.
     """
@@ -142,17 +150,22 @@ def _setup_study_component(study, period=None) -> tuple:
 
     compo_file = converter.output_path
     with compo_file.open() as c:
-        return parse_yaml_components(c), study_path
+        return ToolTestStudy(parse_yaml_components(c), study_path)
 
 
 @pytest.fixture
-def study_component_basic(local_study_end_to_end_simple) -> tuple:
+def study_component_basic(local_study_end_to_end_simple) -> ToolTestStudy:
     return _setup_study_component(local_study_end_to_end_simple)
 
 
 @pytest.fixture
-def study_component_thermal(local_study_end_to_end_w_thermal) -> tuple:
+def study_component_thermal(local_study_end_to_end_w_thermal) -> ToolTestStudy:
     return _setup_study_component(local_study_end_to_end_w_thermal, period=3)
+
+
+@pytest.fixture
+def study_component_st_storage(local_study_with_st_storage) -> ToolTestStudy:
+    return _setup_study_component(local_study_with_st_storage, period=3)
 
 
 @pytest.fixture
@@ -171,9 +184,9 @@ def input_library(
         return parse_yaml_library(lib)
 
 
-def factory_balance_using_converter(
-    input_system: InputSystem, input_library: InputLibrary, expected_value: int
-) -> None:
+def problem_builder(
+    study_test_component: ToolTestStudy, input_library: InputLibrary
+) -> OptimizationProblem:
     """
     - Resolves the input library.
     - Constructs components and connections.
@@ -181,8 +194,8 @@ def factory_balance_using_converter(
     - Builds the database and network.
     - Solves the optimization problem and verifies results.
     """
-    study_path = input_system[1]
-    study_component_data = input_system[0]
+    study_path = study_test_component.study_path
+    study_component_data = study_test_component.study_component_data
 
     result_lib = resolve_library([input_library])
     components_input = resolve_system(study_component_data, result_lib)
@@ -194,10 +207,7 @@ def factory_balance_using_converter(
     network = build_network(components_input)
 
     scenarios = 1
-    problem = build_problem(network, database, TimeBlock(1, [0, 1]), scenarios)
-    status = problem.solver.Solve()
-    assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == expected_value
+    return build_problem(network, database, TimeBlock(1, [0, 1]), scenarios)
 
 
 def test_basic_balance_using_converter(
@@ -206,9 +216,10 @@ def test_basic_balance_using_converter(
     """
     Test basic study balance using the converter.
     """
-    factory_balance_using_converter(
-        study_component_basic, input_library, expected_value=150
-    )
+    problem = problem_builder(study_component_basic, input_library)
+    status = problem.solver.Solve()
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 150
 
 
 def test_thermal_balance_using_converter(
@@ -217,6 +228,23 @@ def test_thermal_balance_using_converter(
     """
     Test thermal study balance using the converter.
     """
-    factory_balance_using_converter(
-        study_component_thermal, input_library, expected_value=165
-    )
+    problem = problem_builder(study_component_thermal, input_library)
+
+    status = problem.solver.Solve()
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 165
+
+
+@pytest.skip("Pass test for the moment")
+def test_storage_balance_using_converter(
+    study_component_st_storage: InputSystem, input_library: InputLibrary
+) -> None:
+    """
+    Test storage study balance using the converter.
+    """
+    # Wait for new version 0.92 of antares craft  which include efficiencywithdrawalparameter
+    problem = problem_builder(study_component_st_storage, input_library)
+
+    status = problem.solver.Solve()
+    assert status == problem.solver.OPTIMAL
+    assert problem.solver.Objective().Value() == 165
