@@ -5,35 +5,48 @@
 #    pip-compile --output-file=requirements-dev.txt requirements-dev.in
 #
 absl-py==2.1.0
-    # via ortools
+    # via
+    #   -r requirements.txt
+    #   ortools
 annotated-types==0.7.0
-    # via pydantic
-antares-craft==0.2.1
-    # via -r requirements.in
+    # via
+    #   -r requirements.txt
+    #   pydantic
+antares-craft==0.2.6
+    # via -r requirements.txt
 antares-study-version==1.0.9
-    # via antares-craft
+    # via
+    #   -r requirements.txt
+    #   antares-craft
 antares-timeseries-generation==0.1.7
-    # via antares-craft
+    # via
+    #   -r requirements.txt
+    #   antares-craft
 antlr4-python3-runtime==4.13.1
-    # via -r requirements.in
+    # via -r requirements.txt
 antlr4-tools==0.2.1
     # via -r requirements-dev.in
+anytree==2.12.1
+    # via -r requirements.txt
 attrs==24.3.0
     # via pytest
 black==23.7.0
     # via -r requirements-dev.in
 certifi==2024.12.14
-    # via requests
+    # via
+    #   -r requirements.txt
+    #   requests
 cfgv==3.4.0
     # via pre-commit
 charset-normalizer==3.4.0
-    # via requests
+    # via
+    #   -r requirements.txt
+    #   requests
 click==8.1.8
     # via
+    #   -r requirements.txt
     #   antares-study-version
     #   black
-configparser==5.0.2
-    # via antares-craft
 coverage[toml]==7.6.9
     # via pytest-cov
 distlib==0.3.9
@@ -43,9 +56,13 @@ filelock==3.16.1
 identify==2.6.3
     # via pre-commit
 idna==3.10
-    # via requests
+    # via
+    #   -r requirements.txt
+    #   requests
 immutabledict==4.2.1
-    # via ortools
+    # via
+    #   -r requirements.txt
+    #   ortools
 iniconfig==2.0.0
     # via pytest
 install-jdk==1.1.0
@@ -62,7 +79,7 @@ nodeenv==1.9.1
     # via pre-commit
 numpy==1.26.4
     # via
-    #   -r requirements.in
+    #   -r requirements.txt
     #   antares-craft
     #   antares-timeseries-generation
     #   ortools
@@ -70,7 +87,7 @@ numpy==1.26.4
     #   pandas-stubs
     #   scipy
 ortools==9.9.3963
-    # via -r requirements.in
+    # via -r requirements.txt
 packaging==24.2
     # via
     #   black
@@ -78,6 +95,7 @@ packaging==24.2
 pandas==2.2.3
     # via
     #   -r requirements-dev.in
+    #   -r requirements.txt
     #   antares-craft
     #   antares-study-version
     #   antares-timeseries-generation
@@ -95,17 +113,23 @@ pluggy==1.5.0
 pre-commit==3.5.0
     # via -r requirements-dev.in
 protobuf==5.29.2
-    # via ortools
+    # via
+    #   -r requirements.txt
+    #   ortools
 psutil==7.0.0
-    # via antares-craft
+    # via
+    #   -r requirements.txt
+    #   antares-craft
 py==1.11.0
     # via pytest
-pydantic==2.7.4
+pydantic==2.10.6
     # via
-    #   -r requirements.in
+    #   -r requirements.txt
     #   antares-craft
-pydantic-core==2.18.4
-    # via pydantic
+pydantic-core==2.27.2
+    # via
+    #   -r requirements.txt
+    #   pydantic
 pytest==7.0.1
     # via
     #   -r requirements-dev.in
@@ -113,20 +137,29 @@ pytest==7.0.1
 pytest-cov==6.0.0
     # via -r requirements-dev.in
 python-dateutil==2.9.0.post0
-    # via pandas
+    # via
+    #   -r requirements.txt
+    #   pandas
 pytz==2024.2
-    # via pandas
+    # via
+    #   -r requirements.txt
+    #   pandas
 pyyaml==6.0.2
     # via
-    #   -r requirements.in
+    #   -r requirements.txt
     #   antares-timeseries-generation
     #   pre-commit
 requests==2.32.3
-    # via antares-craft
+    # via
+    #   -r requirements.txt
+    #   antares-craft
 scipy==1.10.1
-    # via -r requirements.in
+    # via -r requirements.txt
 six==1.17.0
-    # via python-dateutil
+    # via
+    #   -r requirements.txt
+    #   anytree
+    #   python-dateutil
 tomli==2.2.1
     # via pytest
 types-pytz==2024.2.0.20241003
@@ -135,12 +168,17 @@ types-pyyaml==6.0.12.20240917
     # via -r requirements-dev.in
 typing-extensions==4.12.2
     # via
+    #   -r requirements.txt
     #   mypy
     #   pydantic
     #   pydantic-core
 tzdata==2024.2
-    # via pandas
+    # via
+    #   -r requirements.txt
+    #   pandas
 urllib3==2.2.3
-    # via requests
+    # via
+    #   -r requirements.txt
+    #   requests
 virtualenv==20.28.0
     # via pre-commit
