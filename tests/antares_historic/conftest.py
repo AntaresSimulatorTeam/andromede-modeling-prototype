@@ -113,7 +113,7 @@ def default_st_storage_cluster_properties() -> STStorageProperties:
     return STStorageProperties(
         injection_nominal_capacity=10,
         withdrawal_nominal_capacity=10,
-        reservoir_capacity=0,
+        reservoir_capacity=150,
         efficiency=1,
         initial_level=0.5,
         initial_level_optim=False,

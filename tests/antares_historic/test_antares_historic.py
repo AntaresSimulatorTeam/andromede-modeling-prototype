@@ -26,7 +26,7 @@ class ToolTestStudy:
     study_path: Path
 
 
-def create_csv_from_constant_value(
+def write_csv_with_constant_value(
     path, filename: str, lines: int, columns: int = 1, value: float = 1
 ) -> None:
     """
@@ -39,28 +39,15 @@ def create_csv_from_constant_value(
         columns (int): Number of columns in the file.
         value (float): Value to fill in the columns.
 
-    Returns:
-        Path: Path to the created file.
     """
-    # Create the directory if it does not exist
-    Path(path).mkdir(parents=True, exist_ok=True)
-    path = path / filename
 
     # Generate the data
     data = {f"col_{i+1}": [value] * lines for i in range(columns)}
     df = pd.DataFrame(data)
-
-    # Write the data to a file
-    df.to_csv(
-        path.with_suffix(".txt"),
-        sep="\t",
-        index=False,
-        header=False,
-        encoding="utf-8",
-    )
+    write_csv_with_df(path, filename, df)
 
 
-def write_df_to_csv(path, filename: str, df: pd.DataFrame) -> None:
+def write_csv_with_df(path, filename: str, df: pd.DataFrame) -> None:
     """
     Creates a file from an existing DataFrame.
 
@@ -68,9 +55,6 @@ def write_df_to_csv(path, filename: str, df: pd.DataFrame) -> None:
         path (Path): Path to the directory where the file will be created.
         filename (str): Name of the file to be created.
         df (pd.DataFrame): DataFrame containing the data to be written.
-
-    Returns:
-        Path: Path to the created file.
     """
     # Create the directory if it does not exist
     Path(path).mkdir(parents=True, exist_ok=True)
@@ -94,7 +78,7 @@ def data_dir() -> Path:
     Returns:
         Path: Path to the data directory.
     """
-    return Path(__file__).parent.parent.parent
+    return Path(__file__).parents[2]
 
 
 def fill_timeseries(study_path) -> None:
@@ -120,16 +104,16 @@ def fill_timeseries(study_path) -> None:
     )
 
     # Create the files with the data
-    write_df_to_csv(path=load_timeseries, filename="load_fr", df=demand_data)
-    create_csv_from_constant_value(
+    write_csv_with_df(path=load_timeseries, filename="load_fr", df=demand_data)
+    write_csv_with_constant_value(
         path=prepro_path, filename="modulation", lines=3, columns=4, value=0
     )
-    create_csv_from_constant_value(
+    write_csv_with_constant_value(
         path=series_path, filename="series", lines=3, columns=1, value=151
     )
-    create_csv_from_constant_value(path=series_path, filename="p_min_cluster", lines=3)
-    create_csv_from_constant_value(path=series_path, filename="nb_units_min", lines=3)
-    create_csv_from_constant_value(path=series_path, filename="nb_units_max", lines=3)
+    write_csv_with_constant_value(path=series_path, filename="p_min_cluster", lines=3)
+    write_csv_with_constant_value(path=series_path, filename="nb_units_min", lines=3)
+    write_csv_with_constant_value(path=series_path, filename="nb_units_max", lines=3)
 
 
 def _setup_study_component(study, period=None) -> ToolTestStudy:
@@ -184,7 +168,7 @@ def input_library(
         return parse_yaml_library(lib)
 
 
-def problem_builder(
+def build_test_problem(
     study_test_component: ToolTestStudy, input_library: InputLibrary
 ) -> OptimizationProblem:
     """
@@ -202,7 +186,6 @@ def problem_builder(
     consistency_check(
         components_input.components, result_lib["antares-historic"].models
     )
-
     database = build_data_base(study_component_data, study_path)
     network = build_network(components_input)
 
@@ -216,7 +199,7 @@ def test_basic_balance_using_converter(
     """
     Test basic study balance using the converter.
     """
-    problem = problem_builder(study_component_basic, input_library)
+    problem = build_test_problem(study_component_basic, input_library)
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 150
@@ -228,23 +211,22 @@ def test_thermal_balance_using_converter(
     """
     Test thermal study balance using the converter.
     """
-    problem = problem_builder(study_component_thermal, input_library)
+    problem = build_test_problem(study_component_thermal, input_library)
 
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
     assert problem.solver.Objective().Value() == 165
 
 
-@pytest.mark.skip("Pass test for the moment")
+# @pytest.mark.skip("Pass test for the moment")
 def test_storage_balance_using_converter(
     study_component_st_storage: InputSystem, input_library: InputLibrary
 ) -> None:
     """
     Test storage study balance using the converter.
     """
-    # Wait for new version 0.92 of antares craft  which include efficiencywithdrawalparameter
-    problem = problem_builder(study_component_st_storage, input_library)
+    problem = build_test_problem(study_component_st_storage, input_library)
 
     status = problem.solver.Solve()
     assert status == problem.solver.OPTIMAL
-    assert problem.solver.Objective().Value() == 165
+    assert int(problem.solver.Objective().Value()) == 165
