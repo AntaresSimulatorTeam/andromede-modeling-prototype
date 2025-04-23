@@ -17,8 +17,6 @@ from antares.craft.model.renewable import RenewableClusterProperties
 from antares.craft.model.st_storage import STStorageProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.model.thermal import ThermalClusterProperties
-from antares.craft.tools.ini_tool import IniFile, InitializationFilesTypes
-
 
 @pytest.fixture
 def lib_id() -> str:
@@ -136,17 +134,6 @@ def local_study_with_renewable(local_study_w_thermal) -> Study:
     )
     return local_study_w_thermal
 
-
-@pytest.fixture
-def actual_renewable_list_ini(local_study_with_renewable) -> IniFile:
-    """
-    return Ini file from the fixture local_study_with_renewable
-    """
-    return IniFile(
-        local_study_with_renewable.service.config.study_path,
-        InitializationFilesTypes.RENEWABLES_LIST_INI,
-        area_id="fr",
-    )
 
 
 @pytest.fixture

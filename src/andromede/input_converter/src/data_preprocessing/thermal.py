@@ -30,9 +30,9 @@ class ThermalDataPreprocessing:
             / self.thermal.id
         )
         self._prepro_parameter_functions: dict[str, Callable[[int], pd.DataFrame]] = {
-            "p_min_cluster": lambda period: self._compute_p_min_cluster(),
-            "nb_units_min": lambda period: self._compute_nb_units_min(),
-            "nb_units_max": lambda period: self._compute_nb_units_max(),
+            "p_min_cluster": lambda _: self._compute_p_min_cluster(),
+            "nb_units_min": lambda _: self._compute_nb_units_min(),
+            "nb_units_max": lambda _: self._compute_nb_units_max(),
             "nb_units_max_variation_forward": lambda period: self._compute_nb_units_max_variation(
                 Direction.FORWARD, period
             ),
