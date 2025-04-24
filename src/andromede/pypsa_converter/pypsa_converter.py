@@ -11,9 +11,9 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Union
 
-from pandas import DataFrame
+import pandas as pd
 from pypsa import Network
 
 from andromede.pypsa_converter.utils import any_to_float
@@ -23,6 +23,15 @@ from andromede.study.parsing import (
     InputPortConnections,
     InputSystem,
 )
+
+
+def check_pypsa_params_consistency(
+    pypsa_params: Union[dict[str, str], dict[str, tuple[str, str]]],
+    data: pd.DataFrame,
+) -> None:
+    for key in pypsa_params:
+        if key not in data.columns:
+            raise ValueError(f"Parameter {key} not available in data")
 
 
 class PyPSAStudyConverter:
@@ -43,7 +52,7 @@ class PyPSAStudyConverter:
         self.pypsalib_id = "pypsa_models"
         self.system_name = pypsa_network.name
 
-        self.components = {}
+        self.model_to_components = {}
         self._set_pypsa_models()
 
         assert len(pypsa_network.investment_periods) == 0
@@ -114,16 +123,19 @@ class PyPSAStudyConverter:
     def _register_pypsa_model(
         self,
         pypsa_model_id: str,
-        pypsa_df: DataFrame,
-        pypsa_dft: Dict[str, DataFrame],
-        andromede_model: str,
-        pypsa_params_to_andromede_params: Dict[str, str],
-        pypsa_params_to_andromede_connections: Dict[str, tuple[str, str]],
+        constant_data: pd.DataFrame,
+        time_dependent_data: dict[str, pd.DataFrame],
+        andromede_model_id: str,
+        pypsa_params_to_andromede_params: dict[str, str],
+        pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
     ) -> None:
-        self.components[pypsa_model_id] = {
-            "pypsa_df": pypsa_df,
-            "pypsa_dft": pypsa_dft,
-            "andromede_model": andromede_model,
+        if pypsa_model_id in self.model_to_components:
+            raise ValueError(f"{pypsa_model_id} already registered !")
+
+        self.model_to_components[pypsa_model_id] = {
+            "constant_data": constant_data,
+            "time_dependent_data": time_dependent_data,
+            "andromede_model_id": andromede_model_id,
             "pypsa_params_to_andromede_params": pypsa_params_to_andromede_params,
             "pypsa_params_to_andromede_connections": pypsa_params_to_andromede_connections,
         }
@@ -131,8 +143,8 @@ class PyPSAStudyConverter:
     def _convert(
         self, model_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-        components_from_model_id = self.components[model_id]
-        return self._convert_pypsa_component(**components_from_model_id)
+        components_from_model_id = self.model_to_components[model_id]
+        return self._convert_pypsa_components_of_given_model(**components_from_model_id)
 
     def to_andromede_study(self) -> InputSystem:
         """Function"""
@@ -140,7 +152,7 @@ class PyPSAStudyConverter:
         self.logger.info("Study conversion started")
         list_components, list_connections = [], []
 
-        for model_id in self.components:
+        for model_id in self.model_to_components:
             components, connections = self._convert(model_id)
             list_components.extend(components)
             list_connections.extend(connections)
@@ -149,82 +161,133 @@ class PyPSAStudyConverter:
             nodes=[], components=list_components, connections=list_connections
         )
 
-    def _convert_pypsa_component(
+    def _convert_pypsa_components_of_given_model(
         self,
-        pypsa_df: DataFrame,
-        pypsa_dft: Dict[str, DataFrame],
-        andromede_model: str,
-        pypsa_params_to_andromede_params: Dict[str, str],
-        pypsa_params_to_andromede_connections: Dict[str, tuple[str, str]],
+        constant_data: pd.DataFrame,
+        time_dependent_data: dict[str, pd.DataFrame],
+        andromede_model_id: str,
+        pypsa_params_to_andromede_params: dict[str, str],
+        pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         """
         Generic function to handle the different PyPSA classes
-        pypsa_df: DataFrame : dataframe listing the components in the PyPSA class. Ex: pypsa_network.loads
-        pypsa_dft: dict[DataFrame] : dictionnary of dataframe, one for each parameter or variable that is time-varying for some compoentns. Ex: pypsa_network.loads_t
-        andromede_model: str : id of the model in the Andromede library
-        pypsa_params_to_andromede_params: dict : for each parameter of the PyPSA class that is to be exported in the Andromede model as a parameter, the name of the corresponding parameter in the Andromede model
-        pypsa_params_to_andromede_connections: dict, for each parameter of the PyPSA class that is to be exported in the Andromede model as a connection, a couple (model_port, bus_port)
+
+        Parameters
+        -----------
+        constant_data: pd.DataFrame
+            Dataframe listing the components in the PyPSA class. Ex: pypsa_network.loads
+        time_dependent_data: dict[str, pd.DataFrame]
+            Dictionary of dataframe, one for each parameter or variable that is time-varying for some compoentns. Ex: pypsa_network.loads_t
+        andromede_model_id: str
+            Id of the model in the Andromede library
+        pypsa_params_to_andromede_params: dict
+            For each parameter of the PyPSA class that is to be exported in the Andromede model as a parameter, the name of the corresponding parameter in the Andromede model
+        pypsa_params_to_andromede_connections: dict
+            For each parameter of the PyPSA class that is to be exported in the Andromede model as a connection, a couple (model_port, bus_port)
+
+        Returns
+        ----------
+        tuple[list[InputComponent], list[InputPortConnections]]
+            A tuple containing the list of InputComponent and the list of InputPortConnections that represent the PyPSA components in the modeler format
         """
 
-        self.logger.info(f"Creating objects of type: {andromede_model}. ")
+        self.logger.info(f"Creating objects of type: {andromede_model_id}. ")
 
-        # We test wether the keys of the conversion dictionnary given in input concern
-        assert set(pypsa_params_to_andromede_params).issubset(set(pypsa_df.columns))
-        assert set(pypsa_params_to_andromede_connections).issubset(
-            set(pypsa_df.columns)
+        # We test whether the keys of the conversion dictionary are allowed in the PyPSA model : all authorized parameters are columns in the constant data frame (even though they are specified as time-varying values in the time-varying data frame)
+        check_pypsa_params_consistency(pypsa_params_to_andromede_params, constant_data)
+        check_pypsa_params_consistency(
+            pypsa_params_to_andromede_connections, constant_data
         )
 
-        # List of params and vars that may be time-dependant in the pypsa model
-        pypsa_timedep = set(pypsa_dft.keys())
-
-        # List of params that may be time-dependant in the pypsa model, among those we want to keep
-        timedep_params = set(pypsa_params_to_andromede_params).intersection(
-            pypsa_timedep
+        # List of params that may be time-dependent in the pypsa model, among those we want to keep
+        time_dependent_params = set(pypsa_params_to_andromede_params).intersection(
+            set(time_dependent_data.keys())
         )
-        # Save time series and memorize the time-dependant parameters
-        timedep_comp_param = dict()
-        for param in timedep_params:
-            timedf = pypsa_dft[param]
-            for component in timedf.columns:
-                tsname = self.system_name + "_" + component + "_" + param
-                timedep_comp_param[(component, param)] = tsname
-                timedf[[component]].to_csv(
-                    self.series_dir / Path(tsname + ".txt"), index=False, header=False
+        # Save time series and memorize the time-dependent parameters
+        comp_param_to_timeseries_name = self._write_and_register_timeseries(
+            time_dependent_data, time_dependent_params
+        )
+
+        connections = self._create_andromede_connections(
+            constant_data, pypsa_params_to_andromede_connections
+        )
+
+        components = self._create_andromede_components(
+            constant_data,
+            andromede_model_id,
+            pypsa_params_to_andromede_params,
+            comp_param_to_timeseries_name,
+        )
+        return components, connections
+
+    def _write_and_register_timeseries(
+        self,
+        time_dependent_data: dict[str, pd.DataFrame],
+        time_dependent_params: set[str],
+    ) -> dict[tuple[str, str], str]:
+        comp_param_to_timeseries_name = dict()
+        for param in time_dependent_params:
+            param_df = time_dependent_data[param]
+            for component in param_df.columns:
+                timeseries_name = self.system_name + "_" + component + "_" + param
+                comp_param_to_timeseries_name[(component, param)] = timeseries_name
+                param_df[[component]].to_csv(
+                    self.series_dir / Path(timeseries_name + ".txt"),
+                    index=False,
+                    header=False,
                 )
 
-        connections, components = [], []
+        return comp_param_to_timeseries_name
 
-        for bus_id, couple in pypsa_params_to_andromede_connections.items():
-            model_port, bus_port = couple
-            buses = pypsa_df[bus_id].values
-            for i, component in enumerate(pypsa_df.index):
-                connections.append(
-                    InputPortConnections(
-                        component1=buses[i],
-                        port1=bus_port,
-                        component2=component,
-                        port2=model_port,
-                    )
-                )
-
-        for component in pypsa_df.index:
+    def _create_andromede_components(
+        self,
+        constant_data: pd.DataFrame,
+        andromede_model_id: str,
+        pypsa_params_to_andromede_params: dict[str, str],
+        comp_param_to_timeseries_name: dict[tuple[str, str], str],
+    ) -> list[InputComponent]:
+        components = []
+        for component in constant_data.index:
             components.append(
                 InputComponent(
                     id=component,
-                    model=f"{self.pypsalib_id}.{andromede_model}",
+                    model=f"{self.pypsalib_id}.{andromede_model_id}",
                     parameters=[
                         InputComponentParameter(
                             id=param,
-                            time_dependent=(component, param) in timedep_comp_param,
+                            time_dependent=(component, param)
+                            in comp_param_to_timeseries_name,
                             scenario_dependent=False,
                             value=(
-                                timedep_comp_param[(component, param)]
-                                if (component, param) in timedep_comp_param
-                                else any_to_float(pypsa_df.loc[component, param])
+                                comp_param_to_timeseries_name[(component, param)]
+                                if (component, param) in comp_param_to_timeseries_name
+                                else any_to_float(constant_data.loc[component, param])
                             ),
                         )
                         for param in pypsa_params_to_andromede_params
                     ],
                 )
             )
-        return components, connections
+        return components
+
+    def _create_andromede_connections(
+        self,
+        constant_data: pd.DataFrame,
+        pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
+    ) -> list[InputPortConnections]:
+        connections = []
+        for bus_id, (
+            model_port,
+            bus_port,
+        ) in pypsa_params_to_andromede_connections.items():
+            buses = constant_data[bus_id].values
+            for component_id, component in enumerate(constant_data.index):
+                connections.append(
+                    InputPortConnections(
+                        component1=buses[component_id],
+                        port1=bus_port,
+                        component2=component,
+                        port2=model_port,
+                    )
+                )
+        return connections
