@@ -52,7 +52,7 @@ class PyPSAStudyConverter:
         self.pypsalib_id = "pypsa_models"
         self.system_name = pypsa_network.name
 
-        self.model_to_components = {}
+        self.model_to_components: dict[str, dict] = {}
         self._set_pypsa_models()
 
         assert len(pypsa_network.investment_periods) == 0
