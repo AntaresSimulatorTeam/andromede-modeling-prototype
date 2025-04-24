@@ -11,11 +11,12 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 
 from pandas import DataFrame
 from pypsa import Network
 
+from andromede.pypsa_converter.utils import any_to_float
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
@@ -42,16 +43,113 @@ class PyPSAStudyConverter:
         self.pypsalib_id = "pypsa_models"
         self.system_name = pypsa_network.name
 
+        self.components = {}
+        self._set_pypsa_models()
+
         assert len(pypsa_network.investment_periods) == 0
 
-    def __any_to_float(self, el: Any) -> float:
-        """Auxiliary function for type consistency"""
-        try:
-            return float(el)
-        except:
-            raise TypeError
+    def _set_pypsa_models(self) -> None:
+        self._register_pypsa_model(
+            "generatorsv0",
+            self.pypsa_network.generators,
+            self.pypsa_network.generators_t,
+            "generator_v0",
+            {
+                "p_nom": "p_nom",
+                "marginal_cost": "marginal_cost",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
+        self._register_pypsa_model(
+            "loads",
+            self.pypsa_network.loads,
+            self.pypsa_network.loads_t,
+            "load",
+            {
+                "p_set": "p_set",
+                "q_set": "q_set",
+                "sign": "sign",
+                "active": "active",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
+        self._register_pypsa_model(
+            "buses",
+            self.pypsa_network.buses,
+            self.pypsa_network.buses_t,
+            "bus",
+            {
+                "v_nom": "v_nom",
+                "x": "x",
+                "y": "y",
+                "v_mag_pu_set": "v_mag_pu_set",
+                "v_mag_pu_min": "v_mag_pu_min",
+                "v_mag_pu_max": "v_mag_pu_max",
+            },
+            {},
+        )
+        self._register_pypsa_model(
+            "links",
+            self.pypsa_network.links,
+            self.pypsa_network.links_t,
+            "link",
+            {
+                "efficiency": "efficiency",
+                "active": "active",
+                "p_nom": "p_nom",
+                "p_min_pu": "p_min_pu",
+                "p_max_pu": "p_max_pu",
+                "marginal_cost": "marginal_cost",
+            },
+            {
+                "bus0": ("p0_port", "p_balance_port"),
+                "bus1": ("p1_port", "p_balance_port"),
+            },
+        )
+        # TODO: Stoers, storages, global_constraints
+        # self._register_pypsa_model("stores")
+        # self._register_pypsa_model("storage_units")
+        # self._register_pypsa_model("global_constraints")
 
-    def __convert_pypsa_class(
+    def _register_pypsa_model(
+        self,
+        pypsa_model_id: str,
+        pypsa_df: DataFrame,
+        pypsa_dft: Dict[str, DataFrame],
+        andromede_model: str,
+        pypsa_params_to_andromede_params: Dict[str, str],
+        pypsa_params_to_andromede_connections: Dict[str, tuple[str, str]],
+    ) -> None:
+        self.components[pypsa_model_id] = {
+            "pypsa_df": pypsa_df,
+            "pypsa_dft": pypsa_dft,
+            "andromede_model": andromede_model,
+            "pypsa_params_to_andromede_params": pypsa_params_to_andromede_params,
+            "pypsa_params_to_andromede_connections": pypsa_params_to_andromede_connections,
+        }
+
+    def _convert(
+        self, model_id: str
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
+        components_from_model_id = self.components[model_id]
+        return self._convert_pypsa_component(**components_from_model_id)
+
+    def to_andromede_study(self) -> InputSystem:
+        """Function"""
+
+        self.logger.info("Study conversion started")
+        list_components, list_connections = [], []
+
+        for model_id in self.components:
+            components, connections = self._convert(model_id)
+            list_components.extend(components)
+            list_connections.extend(connections)
+
+        return InputSystem(
+            nodes=[], components=list_components, connections=list_connections
+        )
+
+    def _convert_pypsa_component(
         self,
         pypsa_df: DataFrame,
         pypsa_dft: Dict[str, DataFrame],
@@ -122,7 +220,7 @@ class PyPSAStudyConverter:
                             value=(
                                 timedep_comp_param[(component, param)]
                                 if (component, param) in timedep_comp_param
-                                else self.__any_to_float(pypsa_df.loc[component, param])
+                                else any_to_float(pypsa_df.loc[component, param])
                             ),
                         )
                         for param in pypsa_params_to_andromede_params
@@ -130,120 +228,3 @@ class PyPSAStudyConverter:
                 )
             )
         return components, connections
-
-    def __convert_pypsa_buses(
-        self,
-    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-        return self.__convert_pypsa_class(
-            self.pypsa_network.buses,
-            self.pypsa_network.buses_t,
-            "bus",
-            {
-                "v_nom": "v_nom",
-                "x": "x",
-                "y": "y",
-                "v_mag_pu_set": "v_mag_pu_set",
-                "v_mag_pu_min": "v_mag_pu_min",
-                "v_mag_pu_max": "v_mag_pu_max",
-            },
-            {},
-        )
-
-    def __convert_pypsa_loads(
-        self,
-    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-        return self.__convert_pypsa_class(
-            self.pypsa_network.loads,
-            self.pypsa_network.loads_t,
-            "load",
-            {
-                "p_set": "p_set",
-                "q_set": "q_set",
-                "sign": "sign",
-                "active": "active",
-            },
-            {"bus": ("p_balance_port", "p_balance_port")},
-        )
-
-    def __convert_pypsa_generatorsv0(
-        self,
-    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-        assert sum(self.pypsa_network.generators["committable"] == 0)
-        return self.__convert_pypsa_class(
-            self.pypsa_network.generators,
-            self.pypsa_network.generators_t,
-            "generator_v0",
-            {
-                "p_nom": "p_nom",
-                "marginal_cost": "marginal_cost",
-            },
-            {"bus": ("p_balance_port", "p_balance_port")},
-        )
-
-    """def __convert_pypsa_generators(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
-        print(
-            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
-        )"""
-
-    def __convert_pypsa_links(
-        self,
-    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-        return self.__convert_pypsa_class(
-            self.pypsa_network.links,
-            self.pypsa_network.links_t,
-            "link",
-            {
-                "efficiency": "efficiency",
-                "active": "active",
-                "p_nom": "p_nom",
-                "p_min_pu": "p_min_pu",
-                "p_max_pu": "p_max_pu",
-                "marginal_cost": "marginal_cost",
-            },
-            {
-                "bus0": ("p0_port", "p_balance_port"),
-                "bus1": ("p1_port", "p_balance_port"),
-            },
-        )
-
-    """def __convert_pypsa_stores(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
-        print(
-            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
-        )
-
-    def __convert_pypsa_storages(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
-        print(
-            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
-        )
-
-    def __convert_pypsa_global_constraints(self)-> tuple[list[InputComponent], list[InputPortConnections]]:
-        print(
-            "To be implemented, calling self.__convert_pypsa_class() with the right parameters"
-        )
-    """
-
-    def to_andromede_study(self) -> InputSystem:
-        """Function"""
-
-        self.logger.info("Study conversion started")
-        list_components, list_connections = [], []
-
-        methods = [
-            self.__convert_pypsa_buses,
-            self.__convert_pypsa_loads,
-            self.__convert_pypsa_generatorsv0,
-            # self.__convert_pypsa_generators,
-            self.__convert_pypsa_links,
-            # self.__convert_pypsa_stores,
-            # self.__convert_pypsa_storages,
-            # self.__convert_pypsa_global_constraints
-        ]
-
-        for method in methods:
-            components, connections = method()
-            list_components.extend(components)
-            list_connections.extend(connections)
-
-        return InputSystem(
-            nodes=[], components=list_components, connections=list_connections
-        )
