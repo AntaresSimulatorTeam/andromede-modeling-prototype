@@ -13,21 +13,18 @@
 import math
 from pathlib import Path
 
-import pandas as pd
 import pypsa
-import pytest
 
 from andromede.input_converter.src.logger import Logger
-from andromede.input_converter.src.pypsa_converter import PyPSAStudyConverter
-from andromede.input_converter.src.utils import transform_to_yaml
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.simulation.optimization import build_problem
+from andromede.pypsa_converter.pypsa_converter import PyPSAStudyConverter
+from andromede.pypsa_converter.utils import transform_to_yaml
+from andromede.simulation.optimization import OptimizationProblem, build_problem
 from andromede.simulation.time_block import TimeBlock
-from andromede.study.parsing import (
-    parse_yaml_components,
-)
+from andromede.study.parsing import InputSystem, parse_yaml_components
 from andromede.study.resolve_components import (
+    System,
     build_data_base,
     build_network,
     resolve_system,
@@ -62,7 +59,7 @@ def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    conversion_testing(n1, n1.objective, "test1.yml", systems_dir, series_dir)
+    run_conversion_test(n1, n1.objective, "test1.yml", systems_dir, series_dir)
 
 
 def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
@@ -113,47 +110,49 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    conversion_testing(n1, n1.objective, "test2.yml", systems_dir, series_dir)
+    run_conversion_test(n1, n1.objective, "test2.yml", systems_dir, series_dir)
 
 
-def conversion_testing(
+def run_conversion_test(
     pypsa_network: pypsa.Network,
     target_value: float,
-    filename: str,
+    system_filename: str,
     systems_dir: Path,
     series_dir: Path,
 ):
-    # Conversion to Andromede System
-    logger = Logger(__name__, Path(""))
-    converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
     T = len(pypsa_network.timesteps)
-    input_component1 = converter.to_andromede_study()
-    transform_to_yaml(model=input_component1, output_path=systems_dir / filename)
+
+    # Conversion to Andromede System
+    input_system_from_pypsa_converter = convert_pypsa_network(
+        pypsa_network, systems_dir, series_dir
+    )
 
     # Loading the model library
     with open("src/andromede/libs/pypsa_models/pypsa_models.yml") as lib_file:
         input_libraries = [parse_yaml_library(lib_file)]
     result_lib = resolve_library(input_libraries)
 
-    # Comparing PyPSA result with Andromede result - direct approach using the InputSystem
-    resolved_system1 = resolve_system(input_component1, result_lib)
-    # Saving to yaml, and then reading the yaml and loading the InputSystem
-    with open(systems_dir / filename) as compo_file:
-        input_component2 = parse_yaml_components(compo_file)
-    resolved_system2 = resolve_system(input_component2, result_lib)
+    # Approach 1 : Comparing PyPSA result with Andromede result using the InputSystem directly
+    resolved_system_from_pypsa_converter = resolve_system(
+        input_system_from_pypsa_converter, result_lib
+    )
+
+    # Approcach 2 : Saving the InputSystem to yaml, reading it the yaml and loading the InputSystem
+    transform_to_yaml(
+        model=input_system_from_pypsa_converter,
+        output_path=systems_dir / system_filename,
+    )
+    with open(systems_dir / system_filename) as system_file:
+        input_system_from_yaml = parse_yaml_components(system_file)
+    resolved_system_from_yaml = resolve_system(input_system_from_yaml, result_lib)
 
     # Testing both InputSystem objects
-    for resolved_system, input_component in [
-        (resolved_system1, input_component1),
-        (resolved_system2, input_component2),
+    for resolved_system, input_system in [
+        (resolved_system_from_pypsa_converter, input_system_from_pypsa_converter),
+        (resolved_system_from_yaml, input_system_from_yaml),
     ]:
-        database = build_data_base(input_component, Path(series_dir))
-        network = build_network(resolved_system)
-        problem = build_problem(
-            network,
-            database,
-            TimeBlock(1, [i for i in range(T)]),
-            1,
+        problem = build_problem_from_system(
+            resolved_system, input_system, series_dir, T
         )
         status = problem.solver.Solve()
         print(problem.solver.Objective().Value())
@@ -161,3 +160,30 @@ def conversion_testing(
         assert math.isclose(
             problem.solver.Objective().Value(), target_value, rel_tol=1e-6
         )
+
+
+def convert_pypsa_network(
+    pypsa_network: pypsa.Network,
+    systems_dir: Path,
+    series_dir: Path,
+) -> InputSystem:
+    logger = Logger(__name__, Path(""))
+    converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
+    input_system_from_pypsa_converter = converter.to_andromede_study()
+
+    return input_system_from_pypsa_converter
+
+
+def build_problem_from_system(
+    resolved_system: System, input_system: InputSystem, series_dir: Path, timesteps: int
+) -> OptimizationProblem:
+    database = build_data_base(input_system, Path(series_dir))
+    network = build_network(resolved_system)
+    problem = build_problem(
+        network,
+        database,
+        TimeBlock(1, [i for i in range(timesteps)]),
+        1,
+    )
+
+    return problem
