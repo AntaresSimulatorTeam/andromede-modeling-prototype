@@ -40,7 +40,7 @@ class PyPSAComponentData:
         for key in self.pypsa_params_to_andromede_connections:
             self._check_key_in_constant_data(key)
 
-    def _check_key_in_constant_data(self, key):
+    def _check_key_in_constant_data(self, key: str) -> None:
         if key not in self.constant_data.columns:
             raise ValueError(
                 f"Parameter {key} not available in constant data, defining all available paramters for model {self.pypsa_model_id}"
