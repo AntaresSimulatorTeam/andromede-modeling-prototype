@@ -296,16 +296,17 @@ class AntaresStudyConverter:
                                 value=storage.properties.efficiency,
                             ),
                             # TODO wait for update of antares craft that support the 9.2 version of Antares
-                            # InputComponentParameter(
-                            #     id="efficiency_withdrawal",
-                            #     time_dependent=False,
-                            #     scenario_dependent=False,
-                            #     value=storage.properties.efficiencywithdrawal,
-                            # ),
+                            InputComponentParameter(
+                                id="efficiency_withdrawal",
+                                time_dependent=False,
+                                scenario_dependent=False,
+                                value=1,
+                                # value=storage.properties.efficiencywithdrawal,
+                            ),
                             InputComponentParameter(
                                 id="initial_level",
                                 time_dependent=False,
-                                scenario_dependent=True,
+                                scenario_dependent=False,
                                 value=storage.properties.initial_level,
                             ),
                             InputComponentParameter(

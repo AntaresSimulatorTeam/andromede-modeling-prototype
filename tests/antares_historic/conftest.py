@@ -11,6 +11,7 @@
 # This file is part of the Antares project.
 import pytest
 from antares.craft.model.area import AreaProperties
+from antares.craft.model.st_storage import STStorageProperties
 from antares.craft.model.study import Study, create_study_local
 from antares.craft.model.thermal import (
     LawOption,
@@ -105,3 +106,33 @@ def local_study_end_to_end_w_thermal(local_study, default_thermal_cluster_proper
         thermal_name, properties=default_thermal_cluster_properties
     )
     return local_study
+
+
+@pytest.fixture
+def default_st_storage_cluster_properties() -> STStorageProperties:
+    return STStorageProperties(
+        injection_nominal_capacity=10,
+        withdrawal_nominal_capacity=10,
+        reservoir_capacity=150,
+        efficiency=1,
+        initial_level=0.5,
+        initial_level_optim=False,
+        enabled=True,
+    )
+
+
+@pytest.fixture
+def local_study_with_st_storage(
+    local_study_end_to_end_w_thermal, default_st_storage_cluster_properties
+) -> Study:
+    """
+    Create an empty study
+    Create an area with custom area properties
+    Create a thermal cluster with custom thermal properties
+    Create a short term storage
+    """
+    storage_name = "battery"
+    local_study_end_to_end_w_thermal.get_areas()["fr"].create_st_storage(
+        storage_name, properties=default_st_storage_cluster_properties
+    )
+    return local_study_end_to_end_w_thermal
