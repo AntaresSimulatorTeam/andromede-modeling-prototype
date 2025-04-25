@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
@@ -25,13 +26,26 @@ from andromede.study.parsing import (
 )
 
 
-def check_pypsa_params_consistency(
-    pypsa_params: Union[dict[str, str], dict[str, tuple[str, str]]],
-    data: pd.DataFrame,
-) -> None:
-    for key in pypsa_params:
-        if key not in data.columns:
-            raise ValueError(f"Parameter {key} not available in data")
+@dataclass
+class PyPSAComponentData:
+    pypsa_model_id: str
+    constant_data: pd.DataFrame
+    time_dependent_data: dict[str, pd.DataFrame]
+    andromede_model_id: str
+    pypsa_params_to_andromede_params: dict[str, str]
+    pypsa_params_to_andromede_connections: dict[str, tuple[str, str]]
+
+    def check_params_consistency(self) -> None:
+        for key in self.pypsa_params_to_andromede_params:
+            self._check_key_in_constant_data(key)
+        for key in self.pypsa_params_to_andromede_connections:
+            self._check_key_in_constant_data(key)
+
+    def _check_key_in_constant_data(self, key):
+        if key not in self.constant_data.columns:
+            raise ValueError(
+                f"Parameter {key} not available in constant data, defining all available paramters for model {self.pypsa_model_id}"
+            )
 
 
 class PyPSAStudyConverter:
@@ -52,13 +66,13 @@ class PyPSAStudyConverter:
         self.pypsalib_id = "pypsa_models"
         self.system_name = pypsa_network.name
 
-        self.model_to_components: dict[str, dict] = {}
-        self._set_pypsa_models()
+        self.pypsa_components_data: dict[str, PyPSAComponentData] = {}
+        self._register_pypsa_components()
 
         assert len(pypsa_network.investment_periods) == 0
 
-    def _set_pypsa_models(self) -> None:
-        self._register_pypsa_model(
+    def _register_pypsa_components(self) -> None:
+        self._register_pypsa_components_of_given_model(
             "generatorsv0",
             self.pypsa_network.generators,
             self.pypsa_network.generators_t,
@@ -69,7 +83,7 @@ class PyPSAStudyConverter:
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
-        self._register_pypsa_model(
+        self._register_pypsa_components_of_given_model(
             "loads",
             self.pypsa_network.loads,
             self.pypsa_network.loads_t,
@@ -82,7 +96,7 @@ class PyPSAStudyConverter:
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
-        self._register_pypsa_model(
+        self._register_pypsa_components_of_given_model(
             "buses",
             self.pypsa_network.buses,
             self.pypsa_network.buses_t,
@@ -97,7 +111,7 @@ class PyPSAStudyConverter:
             },
             {},
         )
-        self._register_pypsa_model(
+        self._register_pypsa_components_of_given_model(
             "links",
             self.pypsa_network.links,
             self.pypsa_network.links_t,
@@ -116,11 +130,11 @@ class PyPSAStudyConverter:
             },
         )
         # TODO: Stoers, storages, global_constraints
-        # self._register_pypsa_model("stores")
-        # self._register_pypsa_model("storage_units")
-        # self._register_pypsa_model("global_constraints")
+        # self._register_pypsa_components_of_given_model("stores")
+        # self._register_pypsa_components_of_given_model("storage_units")
+        # self._register_pypsa_components_of_given_model("global_constraints")
 
-    def _register_pypsa_model(
+    def _register_pypsa_components_of_given_model(
         self,
         pypsa_model_id: str,
         constant_data: pd.DataFrame,
@@ -129,22 +143,17 @@ class PyPSAStudyConverter:
         pypsa_params_to_andromede_params: dict[str, str],
         pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
     ) -> None:
-        if pypsa_model_id in self.model_to_components:
+        if pypsa_model_id in self.pypsa_components_data:
             raise ValueError(f"{pypsa_model_id} already registered !")
 
-        self.model_to_components[pypsa_model_id] = {
-            "constant_data": constant_data,
-            "time_dependent_data": time_dependent_data,
-            "andromede_model_id": andromede_model_id,
-            "pypsa_params_to_andromede_params": pypsa_params_to_andromede_params,
-            "pypsa_params_to_andromede_connections": pypsa_params_to_andromede_connections,
-        }
-
-    def _convert(
-        self, model_id: str
-    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-        components_from_model_id = self.model_to_components[model_id]
-        return self._convert_pypsa_components_of_given_model(**components_from_model_id)
+        self.pypsa_components_data[pypsa_model_id] = PyPSAComponentData(
+            pypsa_model_id,
+            constant_data,
+            time_dependent_data,
+            andromede_model_id,
+            pypsa_params_to_andromede_params,
+            pypsa_params_to_andromede_connections,
+        )
 
     def to_andromede_study(self) -> InputSystem:
         """Function"""
@@ -152,8 +161,10 @@ class PyPSAStudyConverter:
         self.logger.info("Study conversion started")
         list_components, list_connections = [], []
 
-        for model_id in self.model_to_components:
-            components, connections = self._convert(model_id)
+        for pypsa_components_data in self.pypsa_components_data.values():
+            components, connections = self._convert_pypsa_components_of_given_model(
+                pypsa_components_data
+            )
             list_components.extend(components)
             list_connections.extend(connections)
 
@@ -162,12 +173,7 @@ class PyPSAStudyConverter:
         )
 
     def _convert_pypsa_components_of_given_model(
-        self,
-        constant_data: pd.DataFrame,
-        time_dependent_data: dict[str, pd.DataFrame],
-        andromede_model_id: str,
-        pypsa_params_to_andromede_params: dict[str, str],
-        pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
+        self, pysa_components_data: PyPSAComponentData
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         """
         Generic function to handle the different PyPSA classes
@@ -191,31 +197,31 @@ class PyPSAStudyConverter:
             A tuple containing the list of InputComponent and the list of InputPortConnections that represent the PyPSA components in the modeler format
         """
 
-        self.logger.info(f"Creating objects of type: {andromede_model_id}. ")
+        self.logger.info(
+            f"Creating objects of type: {pysa_components_data.andromede_model_id}. "
+        )
 
         # We test whether the keys of the conversion dictionary are allowed in the PyPSA model : all authorized parameters are columns in the constant data frame (even though they are specified as time-varying values in the time-varying data frame)
-        check_pypsa_params_consistency(pypsa_params_to_andromede_params, constant_data)
-        check_pypsa_params_consistency(
-            pypsa_params_to_andromede_connections, constant_data
-        )
+        pysa_components_data.check_params_consistency()
 
         # List of params that may be time-dependent in the pypsa model, among those we want to keep
-        time_dependent_params = set(pypsa_params_to_andromede_params).intersection(
-            set(time_dependent_data.keys())
-        )
+        time_dependent_params = set(
+            pysa_components_data.pypsa_params_to_andromede_params
+        ).intersection(set(pysa_components_data.time_dependent_data.keys()))
         # Save time series and memorize the time-dependent parameters
         comp_param_to_timeseries_name = self._write_and_register_timeseries(
-            time_dependent_data, time_dependent_params
+            pysa_components_data.time_dependent_data, time_dependent_params
         )
 
         connections = self._create_andromede_connections(
-            constant_data, pypsa_params_to_andromede_connections
+            pysa_components_data.constant_data,
+            pysa_components_data.pypsa_params_to_andromede_connections,
         )
 
         components = self._create_andromede_components(
-            constant_data,
-            andromede_model_id,
-            pypsa_params_to_andromede_params,
+            pysa_components_data.constant_data,
+            pysa_components_data.andromede_model_id,
+            pysa_components_data.pypsa_params_to_andromede_params,
             comp_param_to_timeseries_name,
         )
         return components, connections
@@ -275,6 +281,7 @@ class PyPSAStudyConverter:
         constant_data: pd.DataFrame,
         pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
     ) -> list[InputPortConnections]:
+        # Weird, seems to be a static method, as does not depend on self, should this be a method of PyPSAComponentData ? Also weird as conversion responsibility is for PyPSAConverter. Design to rethink somehow
         connections = []
         for bus_id, (
             model_port,
