@@ -318,9 +318,16 @@ class TestConverter:
                         value=1,
                     ),
                     InputComponentParameter(
+                        id="efficiency_withdrawal",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        scenario_group=None,
+                        value=1,
+                    ),
+                    InputComponentParameter(
                         id="initial_level",
                         time_dependent=False,
-                        scenario_dependent=True,
+                        scenario_dependent=False,
                         scenario_group=None,
                         value=0.5,
                     ),

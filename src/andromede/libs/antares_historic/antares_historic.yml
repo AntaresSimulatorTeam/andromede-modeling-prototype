@@ -201,7 +201,7 @@ library:
           scenario-dependent: true
         - id: initial_level
           time-dependent: false
-          scenario-dependent: true
+          scenario-dependent: false
       variables:
         - id: p_injection
           lower-bound: 0
