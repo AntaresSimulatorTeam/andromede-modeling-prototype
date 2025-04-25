@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pypsa
 
+from andromede import lib_path
 from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
@@ -128,7 +129,7 @@ def run_conversion_test(
     )
 
     # Loading the model library
-    with open("src/andromede/libs/pypsa_models/pypsa_models.yml") as lib_file:
+    with open(lib_path / "pypsa_models" / "pypsa_models.yml") as lib_file:
         input_libraries = [parse_yaml_library(lib_file)]
     result_lib = resolve_library(input_libraries)
 
