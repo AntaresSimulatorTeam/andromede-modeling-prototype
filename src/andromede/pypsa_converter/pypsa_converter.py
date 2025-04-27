@@ -128,8 +128,7 @@ class PyPSAStudyConverter:
                 "bus1": ("p1_port", "p_balance_port"),
             },
         )
-        # TODO: Stoers, global_constraints
-        # self._register_pypsa_components_of_given_model("stores")
+        # TODO: global_constraints
         self._register_pypsa_components_of_given_model(
             "storage_units",
             self.pypsa_network.storage_units,
@@ -155,6 +154,28 @@ class PyPSAStudyConverter:
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
+        self._register_pypsa_components_of_given_model(
+            "stores",
+            self.pypsa_network.stores,
+            self.pypsa_network.stores_t,
+            "store",
+            {
+                "e_nom": "e_nom",
+                "e_nom_extendable": "e_nom_extendable",
+                "e_nom_min": "e_nom_min",
+                "e_nom_max": "e_nom_max",
+                "e_initial": "e_initial",
+                "e_cyclic": "e_cyclic",
+                "e_min_pu": "e_min_pu",
+                "e_max_pu": "e_max_pu",
+                "standing_loss": "standing_loss",
+                "marginal_cost": "marginal_cost",
+                "capital_cost": "capital_cost",
+                "active": "active",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
+
         # self._register_pypsa_components_of_given_model("global_constraints")
 
     def _register_pypsa_components_of_given_model(

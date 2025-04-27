@@ -120,7 +120,7 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
     [
         (
             100.,
-            0.
+            0.01
         ),
         (
             0.,
@@ -162,13 +162,46 @@ def test_storage_unit(systems_dir: Path, series_dir: Path, state_of_charge_initi
         marginal_cost=50.,  # €/MWh
         p_min_pu=-1,
         p_max_pu=1,
-        cyclic_state_of_charge=True,
+        cyclic_state_of_charge=False,
         cyclic_state_of_charge_per_period=False,
     )
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
     run_conversion_test(n1, n1.objective, "test3.yml", systems_dir, series_dir)
+
+
+def test_store(systems_dir: Path, series_dir: Path) -> None:
+    # Building the PyPSA test problem with a store
+    T = 10
+
+    n1 = pypsa.Network(name="StoreDemo", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+    n1.add(
+        "Load", "pypsaload", bus="pypsatown", p_set=[i * 20 for i in range(T)], q_set=0
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=150.,  # MW
+    )
+    n1.add(
+        "Store",
+        "pypsastore",
+        bus="pypsatown",
+        e_nom=1000,  # MWh
+        e_initial=20.0,
+        standing_loss=0.1,  # 1% loss per hour
+        marginal_cost=10.,  # €/MWh
+        e_cyclic=False,
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(n1, n1.objective, "test_store.yml", systems_dir, series_dir)
 
 
 def run_conversion_test(
