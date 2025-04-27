@@ -458,9 +458,13 @@ def _create_constraint(
 
     for block_timestep in context.get_time_indices(constraint_indexing):
         for scenario in context.get_scenario_indices(constraint_indexing):
-            linear_expr_at_t = context.linearize_expression(
-                expanded, block_timestep, scenario
-            )
+
+            try:
+                linear_expr_at_t = context.linearize_expression(
+                    expanded, block_timestep, scenario
+                )
+            except:
+                pass
 
             # What happens if there is some time_operator in the bounds ?
             constraint_data = ConstraintData(

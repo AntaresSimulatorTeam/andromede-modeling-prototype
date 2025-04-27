@@ -128,9 +128,33 @@ class PyPSAStudyConverter:
                 "bus1": ("p1_port", "p_balance_port"),
             },
         )
-        # TODO: Stoers, storages, global_constraints
+        # TODO: Stoers, global_constraints
         # self._register_pypsa_components_of_given_model("stores")
-        # self._register_pypsa_components_of_given_model("storage_units")
+        self._register_pypsa_components_of_given_model(
+            "storage_units",
+            self.pypsa_network.storage_units,
+            self.pypsa_network.storage_units_t,
+            "storage_unit",
+            {
+                "p_nom": "p_nom",
+                "p_nom_extendable": "p_nom_extendable",
+                "p_nom_min": "p_nom_min",
+                "p_nom_max": "p_nom_max",
+                "p_min_pu": "p_min_pu",
+                "p_max_pu": "p_max_pu",
+                "efficiency_store": "efficiency_store",
+                "efficiency_dispatch": "efficiency_dispatch",
+                "standing_loss": "standing_loss",
+                "state_of_charge_initial": "state_of_charge_initial",
+                "state_of_charge_set": "state_of_charge_set",
+                "max_hours": "max_hours",
+                "cyclic_state_of_charge": "cyclic_state_of_charge",
+                "marginal_cost": "marginal_cost",
+                "capital_cost": "capital_cost",
+                "active": "active",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
         # self._register_pypsa_components_of_given_model("global_constraints")
 
     def _register_pypsa_components_of_given_model(

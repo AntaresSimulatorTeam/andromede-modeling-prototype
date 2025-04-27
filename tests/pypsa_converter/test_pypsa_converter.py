@@ -14,6 +14,7 @@ import math
 from pathlib import Path
 
 import pypsa
+import pytest
 
 from andromede import lib_path
 from andromede.input_converter.src.logger import Logger
@@ -21,6 +22,7 @@ from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.pypsa_converter.pypsa_converter import PyPSAStudyConverter
 from andromede.pypsa_converter.utils import transform_to_yaml
+from andromede.simulation import OutputValues
 from andromede.simulation.optimization import OptimizationProblem, build_problem
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.parsing import InputSystem, parse_yaml_components
@@ -112,6 +114,61 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
 
     # Testing the PyPSA_to_Andromede converter
     run_conversion_test(n1, n1.objective, "test2.yml", systems_dir, series_dir)
+
+@pytest.mark.parametrize(
+    "state_of_charge_initial, standing_loss",
+    [
+        (
+            100.,
+            0.
+        ),
+        (
+            0.,
+            0.01
+        ),
+        (
+            100.,
+            0.01
+        ),
+    ],
+)
+def test_storage_unit(systems_dir: Path, series_dir: Path, state_of_charge_initial: float, standing_loss: float) -> None:
+    # Building the PyPSA test problem with a storage unit
+    T = 10
+
+    n1 = pypsa.Network(name="Demo3", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+    n1.add(
+        "Load", "pypsaload", bus="pypsatown", p_set=[i * 20 for i in range(T)], q_set=0
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=150.,  # MW
+    )
+    n1.add(
+        "StorageUnit",
+        "pypsastorage",
+        bus="pypsatown",
+        p_nom=100,  # MW
+        max_hours=10,  # Hours of storage at full output
+        efficiency_store=0.9,
+        efficiency_dispatch=0.85,
+        standing_loss=standing_loss,
+        state_of_charge_initial=state_of_charge_initial,
+        marginal_cost=50.,  # €/MWh
+        p_min_pu=-1,
+        p_max_pu=1,
+        cyclic_state_of_charge=True,
+        cyclic_state_of_charge_per_period=False,
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(n1, n1.objective, "test3.yml", systems_dir, series_dir)
 
 
 def run_conversion_test(
