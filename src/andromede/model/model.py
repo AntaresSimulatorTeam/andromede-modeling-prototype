@@ -171,16 +171,18 @@ def model(
     return Model(
         id=id,
         constraints={c.name: c for c in constraints} if constraints else {},
-        binding_constraints={c.name: c for c in binding_constraints}
-        if binding_constraints
-        else {},
+        binding_constraints=(
+            {c.name: c for c in binding_constraints} if binding_constraints else {}
+        ),
         parameters={p.name: p for p in parameters} if parameters else {},
         variables={v.name: v for v in variables} if variables else {},
         objective_operational_contribution=objective_operational_contribution,
         objective_investment_contribution=objective_investment_contribution,
         inter_block_dyn=inter_block_dyn,
         ports=existing_port_names,
-        port_fields_definitions={d.port_field: d for d in port_fields_definitions}
-        if port_fields_definitions
-        else {},
+        port_fields_definitions=(
+            {d.port_field: d for d in port_fields_definitions}
+            if port_fields_definitions
+            else {}
+        ),
     )

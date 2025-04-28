@@ -25,6 +25,10 @@ library:
       description: A port which transfers power flow
       fields:
         - id: flow
+    - id: emission
+      description: A port which accounts for CO2 emissions
+      fields:
+        - id: emission
 
   models:
     - id: bus
@@ -111,12 +115,17 @@ library:
       ports:
         - id: p_balance_port
           type: flow
+#        - id: emission_port
+#          type: emission
         #- id: q_balance_port
         #  type: flow
       port-field-definitions:
         - port: p_balance_port
           field: flow
           definition: p
+#        - port: emission_port
+#          field: emission
+#          definition: p * emission_factor
         #- port: q_balance_port
         #  field: flow
         #  definition: q
@@ -208,15 +217,6 @@ library:
         - id: p_nom
           time-dependent: false
           scenario-dependent: false
-        - id: p_nom_extendable
-          time-dependent: false
-          scenario-dependent: false
-        - id: p_nom_min
-          time-dependent: false
-          scenario-dependent: false
-        - id: p_nom_max
-          time-dependent: false
-          scenario-dependent: false
         - id: p_min_pu
           time-dependent: true
           scenario-dependent: false
@@ -235,9 +235,6 @@ library:
         - id: state_of_charge_initial
           time-dependent: false
           scenario-dependent: false
-        - id: state_of_charge_set
-          time-dependent: true
-          scenario-dependent: false
         - id: max_hours
           time-dependent: false
           scenario-dependent: false
@@ -246,12 +243,6 @@ library:
           scenario-dependent: false
         - id: marginal_cost
           time-dependent: true
-          scenario-dependent: false
-        - id: capital_cost
-          time-dependent: false
-          scenario-dependent: false
-        - id: active
-          time-dependent: false
           scenario-dependent: false
       variables:
         - id: p_store
@@ -331,3 +322,25 @@ library:
         - id: energy_balance
           expression: e[t+1] = e[t] - standing_loss * e[t] - p[t+1]
       objective: expec(sum(marginal_cost * p))
+
+    - id: global_constraint
+      #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint
+      parameters:
+        - id: type
+          time-dependent: false
+          scenario-dependent: false
+        - id: carrier_attribute
+          time-dependent: false
+          scenario-dependent: false
+        - id: sense
+          time-dependent: false
+          scenario-dependent: false
+        - id: constant
+          time-dependent: false
+          scenario-dependent: false
+      ports:
+        - id: emission_port
+          type: emission
+#      constraints:
+#        - id: constraint_expression
+#          expression: sum_connections(emission_port.emission) ≤ constant
