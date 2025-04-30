@@ -323,7 +323,8 @@ library:
           expression: e[t+1] = e[t] - standing_loss * e[t] - p[t+1]
       objective: expec(sum(marginal_cost * p))
 
-    - id: global_constraint
+    - id: global_constraint_inf_co2
+
       #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint
       parameters:
         - id: type
@@ -341,6 +342,6 @@ library:
       ports:
         - id: emission_port
           type: emission
-#      constraints:
-#        - id: constraint_expression
-#          expression: sum_connections(emission_port.emission) ≤ constant
+      binding-constraints:
+        - id: constraint_expression
+          expression: sum_connections(emission_port.emission) ≤ constant

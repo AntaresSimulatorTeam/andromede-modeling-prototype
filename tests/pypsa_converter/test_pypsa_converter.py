@@ -23,7 +23,11 @@ from andromede.model.resolve_library import resolve_library
 from andromede.pypsa_converter.pypsa_converter import PyPSAStudyConverter
 from andromede.pypsa_converter.utils import transform_to_yaml
 from andromede.simulation import OutputValues
-from andromede.simulation.optimization import OptimizationProblem, build_problem
+from andromede.simulation.optimization import (
+    BlockBorderManagement,
+    OptimizationProblem,
+    build_problem,
+)
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.parsing import InputSystem, parse_yaml_components
 from andromede.study.resolve_components import (
@@ -159,7 +163,7 @@ def test_storage_unit(
         marginal_cost=50.0,  # €/MWh
         p_min_pu=-1,
         p_max_pu=1,
-        cyclic_state_of_charge=True,
+        cyclic_state_of_charge=False,
         cyclic_state_of_charge_per_period=False,
     )
     n1.optimize()
@@ -298,10 +302,21 @@ def run_conversion_test(
         )
         status = problem.solver.Solve()
         print(problem.solver.Objective().Value())
+
         assert status == problem.solver.OPTIMAL
         assert math.isclose(
             problem.solver.Objective().Value(), target_value, rel_tol=1e-6
         )
+
+
+def compare_results(
+    pypsa_network: pypsa.Network,
+    problem: OptimizationProblem,
+    component_name: str,
+    variable_name: str,
+    tolerance: float = 1e-6,
+):
+    output_values = OutputValues(problem)
 
 
 def convert_pypsa_network(
@@ -326,6 +341,7 @@ def build_problem_from_system(
         database,
         TimeBlock(1, [i for i in range(timesteps)]),
         1,
+        # border_management=BlockBorderManagement.IGNORE_OUT_OF_FRAME,
     )
 
     return problem
