@@ -25,6 +25,10 @@ library:
       description: A port which transfers power flow
       fields:
         - id: flow
+    - id: emission
+      description: A port which accounts for CO2 emissions
+      fields:
+        - id: emission
 
   models:
     - id: bus
@@ -124,7 +128,7 @@ library:
 
     
     - id: link
-    #Todel for PyPSA link: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#link
+    #Model for PyPSA link: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#link
       parameters:
         #- id: type #Parameter not instantiated for now
         #- id: carrier #Parameter not instantiated for now
@@ -143,7 +147,7 @@ library:
         #- id: p_nom_extendable #Parameter not instantiated for now
         #- id: p_nom_min #Parameter not instantiated for now
         #- id: p_nom_max #Parameter not instantiated for now
-        #- id: p_set
+        #- id: p_set #Parameter not instantiated for now
         - id: p_min_pu
           time-dependent: true
           scenario-dependent: false
@@ -201,3 +205,143 @@ library:
         - id: balance
           expression: p1 = - efficiency * p0
       objective: expec(sum(marginal_cost * p0))
+
+  
+    - id: storage_unit
+     #Model for PyPSA storage unit: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#storage-unit
+      parameters:
+          #- id: control #Parameter not instantiated for now
+          #- id: type #Parameter not instantiated for now
+        - id: p_nom
+          time-dependent: false
+          scenario-dependent: false
+        #- id: p_nom_mod
+        #- id: p_nom_extendable #Parameter not instantiated for now
+        #- id: p_nom_min #Parameter not instantiated for now
+        #- id: p_nom_max #Parameter not instantiated for now
+        - id: p_min_pu
+          time-dependent: true
+          scenario-dependent: false
+        - id: p_max_pu
+          time-dependent: true
+          scenario-dependent: false
+        - id: efficiency_store
+          time-dependent: true
+          scenario-dependent: false
+        - id: efficiency_dispatch
+          time-dependent: true
+          scenario-dependent: false
+        - id: standing_loss
+          time-dependent: true
+          scenario-dependent: false
+        - id: state_of_charge_initial
+          time-dependent: false
+          scenario-dependent: false
+        - id: max_hours
+          time-dependent: false
+          scenario-dependent: false
+        - id: cyclic_state_of_charge
+          time-dependent: false
+          scenario-dependent: false
+        - id: marginal_cost
+          time-dependent: true
+          scenario-dependent: false
+      variables:
+        - id: p_store
+          lower-bound: 0
+          upper-bound: p_max_pu*p_nom
+        - id: p_dispatch
+          lower-bound: 0
+          upper-bound: p_max_pu*p_nom
+        - id: state_of_charge
+          lower-bound: 0
+          upper-bound: max_hours*p_nom
+      ports:
+        - id: p_balance_port
+          type: flow
+      port-field-definitions:
+        - port: p_balance_port
+          field: flow
+          definition: p_dispatch - p_store
+      constraints:
+        - id: initial_state_of_charge
+          expression: state_of_charge[0] = state_of_charge_initial + efficiency_store * p_store[0] - p_dispatch[0] / efficiency_dispatch - standing_loss * state_of_charge_initial
+        - id: state_of_charge_balance
+          expression: state_of_charge[t+1] = state_of_charge + efficiency_store * p_store[t+1] - p_dispatch[t+1] / efficiency_dispatch - standing_loss * state_of_charge
+      objective: expec(sum(marginal_cost * p_dispatch))
+
+    - id: store
+      #Model for PyPSA store: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#store
+      parameters:
+        - id: e_nom
+          time-dependent: false
+          scenario-dependent: false
+        - id: e_nom_extendable
+          time-dependent: false
+          scenario-dependent: false
+        - id: e_nom_min
+          time-dependent: false
+          scenario-dependent: false
+        - id: e_nom_max
+          time-dependent: false
+          scenario-dependent: false
+        - id: e_initial
+          time-dependent: false
+          scenario-dependent: false
+        - id: e_min_pu
+          time-dependent: true
+          scenario-dependent: false
+        - id: e_max_pu
+          time-dependent: true
+          scenario-dependent: false
+        - id: standing_loss
+          time-dependent: true
+          scenario-dependent: false
+        - id: marginal_cost
+          time-dependent: true
+          scenario-dependent: false
+        #- id: capital_cost
+        - id: active
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - id: e
+          lower-bound: e_min_pu * e_nom
+          upper-bound: e_max_pu * e_nom
+        - id: p
+      ports:
+        - id: p_balance_port
+          type: flow
+      port-field-definitions:
+        - port: p_balance_port
+          field: flow
+          definition: p
+      constraints:
+        - id: initial_state
+          expression: e[0] = e_initial - standing_loss * e_initial - p[0]
+        - id: energy_balance
+          expression: e[t+1] = e[t] - standing_loss * e[t] - p[t+1]
+      objective: expec(sum(marginal_cost * p))
+
+    #- id: global_constraint_inf_co2
+    #  #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint
+    #  # Case CO2, <=
+    #  parameters:
+    #    - id: type
+    #      time-dependent: false
+    #      scenario-dependent: false
+    #    - id: carrier_attribute
+    #      time-dependent: false
+    #      scenario-dependent: false
+    #    - id: sense
+    #      time-dependent: false
+    #      scenario-dependent: false
+    #    - id: constant
+    #      time-dependent: false
+    #      scenario-dependent: false
+    #  ports:
+    #    - id: emission_port
+    #      type: emission
+    #  binding-constraints:
+    #    - id: constraint_expression
+    #      expression: sum_connections(emission_port.emission) <= constant"""

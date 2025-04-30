@@ -128,10 +128,61 @@ class PyPSAStudyConverter:
                 "bus1": ("p1_port", "p_balance_port"),
             },
         )
-        # TODO: Stoers, storages, global_constraints
-        # self._register_pypsa_components_of_given_model("stores")
-        # self._register_pypsa_components_of_given_model("storage_units")
-        # self._register_pypsa_components_of_given_model("global_constraints")
+        self._register_pypsa_components_of_given_model(
+            "storage_units",
+            self.pypsa_network.storage_units,
+            self.pypsa_network.storage_units_t,
+            "storage_unit",
+            {
+                "p_nom": "p_nom",
+                "p_min_pu": "p_min_pu",
+                "p_max_pu": "p_max_pu",
+                "efficiency_store": "efficiency_store",
+                "efficiency_dispatch": "efficiency_dispatch",
+                "standing_loss": "standing_loss",
+                "state_of_charge_initial": "state_of_charge_initial",
+                "max_hours": "max_hours",
+                "cyclic_state_of_charge": "cyclic_state_of_charge",
+                "marginal_cost": "marginal_cost",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
+        self._register_pypsa_components_of_given_model(
+            "stores",
+            self.pypsa_network.stores,
+            self.pypsa_network.stores_t,
+            "store",
+            {
+                "e_nom": "e_nom",
+                "e_nom_extendable": "e_nom_extendable",
+                "e_nom_min": "e_nom_min",
+                "e_nom_max": "e_nom_max",
+                "e_initial": "e_initial",
+                "e_cyclic": "e_cyclic",
+                "e_min_pu": "e_min_pu",
+                "e_max_pu": "e_max_pu",
+                "standing_loss": "standing_loss",
+                "marginal_cost": "marginal_cost",
+                "active": "active",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
+
+        
+        # TODO:  global_constraints
+        # self._register_pypsa_components_of_given_model(
+        #    "global_constraints",
+        #    self.pypsa_network.global_constraints,
+        #    {},
+        #    "global_constraint",
+        #    {
+        #        "type": "type",
+        #        "carrier_attribute": "carrier_attribute",
+        #        "sense": "sense",
+        #        "constant": "constant",
+        #    },
+        #    {},
+        #)
 
     def _register_pypsa_components_of_given_model(
         self,

@@ -15,9 +15,10 @@ from pathlib import Path
 
 import pytest
 
+from andromede import lib_path
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.simulation.optimization import build_problem
+from andromede.simulation.optimization import BlockBorderManagement, build_problem
 from andromede.simulation.time_block import TimeBlock
 from andromede.study.parsing import parse_yaml_components
 from andromede.study.resolve_components import (
@@ -66,7 +67,7 @@ def test_model_behaviour(
     with open(systems_dir / system_file) as compo_file:
         input_component = parse_yaml_components(compo_file)
 
-    with open("src/andromede/libs/pypsa_models/pypsa_models.yml") as lib_file1:
+    with open(lib_path / "pypsa_models" / "pypsa_models.yml") as lib_file1:
         input_libraries = [parse_yaml_library(lib_file1)]
 
     result_lib = resolve_library(input_libraries)
