@@ -14,7 +14,6 @@ import math
 from pathlib import Path
 
 import pypsa
-
 import pytest
 
 from andromede.input_converter.src.logger import Logger
