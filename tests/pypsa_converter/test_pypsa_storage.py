@@ -77,6 +77,6 @@ def test_storage_unit(
     )
 
     n1.optimize()
-    
+
     print(n1.storage_units_t["state_of_charge"])
     print(n1.storage_units_t["p"])

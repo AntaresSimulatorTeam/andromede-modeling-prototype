@@ -168,7 +168,6 @@ class PyPSAStudyConverter:
             {"bus": ("p_balance_port", "p_balance_port")},
         )
 
-        
         # TODO:  global_constraints
         # self._register_pypsa_components_of_given_model(
         #    "global_constraints",
@@ -182,7 +181,7 @@ class PyPSAStudyConverter:
         #        "constant": "constant",
         #    },
         #    {},
-        #)
+        # )
 
     def _register_pypsa_components_of_given_model(
         self,

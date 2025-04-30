@@ -312,7 +312,7 @@ def run_conversion_test(
     system_filename: str,
     systems_dir: Path,
     series_dir: Path,
-)->None:
+) -> None:
     T = len(pypsa_network.timesteps)
 
     # Conversion to Andromede System
