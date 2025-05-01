@@ -225,6 +225,36 @@ library:
         - id: p_max_pu
           time-dependent: true
           scenario-dependent: false
+        #- id: p_set #Parameter not instantiated for now
+        #- id: q_set #Parameter not instantiated for now
+        - id: sign #default value = 1
+          time-dependent: false
+          scenario-dependent: false
+        #- id: carrier #Parameter not instantiated for now
+        - id: spill_cost #Parameter not instantiated for now
+          time-dependent: true
+          scenario-dependent: false
+        - id: marginal_cost
+          time-dependent: true
+          scenario-dependent: false
+        #- id: marginal_cost_quadratic #Parameter not instantiated for now
+        - id: marginal_cost_storage 
+          time-dependent: true
+          scenario-dependent: false
+        #- id: capital_cost #Parameter not instantiated for now
+        - id: active
+          time-dependent: false
+          scenario-dependent: false
+        #- id: build_year #Parameter not instantiated for now
+        #- id: lifetime #Parameter not instantiated for now
+        #- id: state_of_charge_initial #Parameter not instantiated for now
+        #- id: state_of_charge_initial_per_period #Parameter not instantiated for now
+        #- id: state_pf_charge_set #Parameter not instantiated for now
+        #- id: cyclic_state_of_charge #Parameter not instantiated for now
+        #- id: cyclic_state_of_charge_per_period #Parameter not instantiated for now
+        - id: max_hours
+          time-dependent: false
+          scenario-dependent: false
         - id: efficiency_store
           time-dependent: true
           scenario-dependent: false
@@ -234,18 +264,9 @@ library:
         - id: standing_loss
           time-dependent: true
           scenario-dependent: false
-        - id: state_of_charge_initial
-          time-dependent: false
-          scenario-dependent: false
-        - id: max_hours
-          time-dependent: false
-          scenario-dependent: false
-        - id: cyclic_state_of_charge
-          time-dependent: false
-          scenario-dependent: false
-        - id: marginal_cost
+        - id: inflow
           time-dependent: true
-          scenario-dependent: false
+          scenario-dependent: true
       variables:
         - id: p_store
           lower-bound: 0
@@ -256,6 +277,8 @@ library:
         - id: state_of_charge
           lower-bound: 0
           upper-bound: max_hours*p_nom
+        - id: spill
+          lower-bound: 0
       ports:
         - id: p_balance_port
           type: flow
@@ -264,18 +287,19 @@ library:
           field: flow
           definition: p_dispatch - p_store
       constraints:
-        - id: initial_state_of_charge
-          expression: state_of_charge[0] = state_of_charge_initial + efficiency_store * p_store[0] - p_dispatch[0] / efficiency_dispatch - standing_loss * state_of_charge_initial
         - id: state_of_charge_balance
-          expression: state_of_charge[t+1] = state_of_charge + efficiency_store * p_store[t+1] - p_dispatch[t+1] / efficiency_dispatch - standing_loss * state_of_charge
-      objective: expec(sum(marginal_cost * p_dispatch))
+          expression: state_of_charge = (1- standing_loss) * state_of_charge[t-1] + efficiency_store * p_store - p_dispatch / efficiency_dispatch  + inflow - spill
+      objective: expec(sum(marginal_cost * p_dispatch + spill_cost*spill + marginal_cost_storage * state_of_charge))
 
     - id: store
       #Model for PyPSA store: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#store
       parameters:
+        #- id: type #Parameter not instantiated for now
+        #- id: carrier #Parameter not instantiated for now
         - id: e_nom
           time-dependent: false
           scenario-dependent: false
+        #- id: e_nom_mod #Parameter not instantiated for now
         - id: e_nom_extendable
           time-dependent: false
           scenario-dependent: false
@@ -285,25 +309,37 @@ library:
         - id: e_nom_max
           time-dependent: false
           scenario-dependent: false
-        - id: e_initial
-          time-dependent: false
-          scenario-dependent: false
         - id: e_min_pu
           time-dependent: true
           scenario-dependent: false
         - id: e_max_pu
           time-dependent: true
           scenario-dependent: false
-        - id: standing_loss
-          time-dependent: true
+        #- id: e_initial #Parameter not instantiated for now
+        #- id: e_initial_per_period #Parameter not instantiated for now
+        #- id: e_cyclic #Parameter not instantiated for now
+        #- id: e_cyclic_per_period #Parameter not instantiated for now
+        #- id: p_set #Parameter not instantiated for now
+        #- id: q_set #Parameter not instantiated for now
+        - id: sign #default value = 1
+          time-dependent: false
           scenario-dependent: false
         - id: marginal_cost
           time-dependent: true
           scenario-dependent: false
-        #- id: capital_cost
+        #- id: marginal_cost_quadratic #Parameter not instantiated for now
+        - id: marginal_cost_storage
+          time-dependent: true
+          scenario-dependent: false
+        #- id: capital_cost #Parameter not instantiated for now
+        - id: standing_loss
+          time-dependent: true
+          scenario-dependent: false
         - id: active
           time-dependent: false
           scenario-dependent: false
+        #- id: build_year #Parameter not instantiated for now
+        #- id: lifetime #Parameter not instantiated for now
       variables:
         - id: e
           lower-bound: e_min_pu * e_nom
@@ -317,11 +353,9 @@ library:
           field: flow
           definition: p
       constraints:
-        - id: initial_state
-          expression: e[0] = e_initial - standing_loss * e_initial - p[0]
         - id: energy_balance
-          expression: e[t+1] = e[t] - standing_loss * e[t] - p[t+1]
-      objective: expec(sum(marginal_cost * p))
+          expression: e = (1 - standing_loss) * e[t-1] - p
+      objective: expec(sum(marginal_cost * p + marginal_cost_storage * e))
 
     #- id: global_constraint_inf_co2
     #  #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint

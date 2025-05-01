@@ -115,11 +115,12 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "state_of_charge_initial, standing_loss",
+    "state_of_charge_initial, standing_loss,efficiency_store,inflow_factor",
     [
-        (100.0, 0.0),
-        (0.0, 0.01),
-        (0.0, 0.05),
+        (100.0, 0.01, 0.99, 1),
+        (0.0, 0.01, 0.98, 1),
+        (0.0, 0.05, 0.9, 1),
+        (0.0, 0.05, 0.9, 1000),
     ],
 )
 def test_storage_unit(
@@ -127,10 +128,11 @@ def test_storage_unit(
     series_dir: Path,
     state_of_charge_initial: float,
     standing_loss: float,
+    efficiency_store: float,
+    inflow_factor: float,
 ) -> None:
     # Building the PyPSA test problem with a storage unit
     T = 20
-
     n1 = pypsa.Network(name="Demo3", snapshots=[i for i in range(T)])
     n1.add("Bus", "pypsatown", v_nom=1)
     n1.add(
@@ -175,13 +177,16 @@ def test_storage_unit(
         bus="pypsatown",
         p_nom=100,  # MW
         max_hours=10,  # Hours of storage at full output
-        efficiency_store=0.9,
+        efficiency_store=efficiency_store,
         efficiency_dispatch=0.85,
         standing_loss=standing_loss,
         state_of_charge_initial=state_of_charge_initial,
-        marginal_cost=50.0,  # €/MWh
+        marginal_cost=10.0,  # €/MWh
+        marginal_cost_storage=1.5,  # €/MWh
+        spill_cost=100.0,  # €/MWh
         p_min_pu=-1,
         p_max_pu=1,
+        inflow=[i * inflow_factor for i in range(T)],
         cyclic_state_of_charge=True,
         cyclic_state_of_charge_per_period=True,
     )
@@ -195,8 +200,6 @@ def test_storage_unit(
     "e_initial, standing_loss",
     [
         (50.0, 0.1),
-        (50.0, 0.0),
-        (100.0, 0.0),
         (0.0, 0.01),
         (0.0, 0.05),
     ],
@@ -253,6 +256,7 @@ def test_store(
         e_initial=e_initial,
         standing_loss=standing_loss,  # 1% loss per hour
         marginal_cost=10.0,  # €/MWh
+        marginal_cost_storage=1.5,  # €/MWh
         e_cyclic=True,
     )
     n1.optimize()

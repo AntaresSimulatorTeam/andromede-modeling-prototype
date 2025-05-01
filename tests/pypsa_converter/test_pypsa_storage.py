@@ -19,7 +19,7 @@ def test_storage_unit(
     cyclic: bool,
 ) -> None:
     # Building the PyPSA test problem with a storage unit
-    T = 10
+    T = 20
 
     n1 = pypsa.Network(name="Demo3", snapshots=[i for i in range(T)])
     n1.add("Bus", "pypsatown", v_nom=1)
