@@ -16,11 +16,15 @@ import numpy as np
 import yaml
 from pydantic import BaseModel
 
+PYPSA_CONVERTER_MAX_FLOAT = 1e20
+
 
 def any_to_float(el: Any) -> float:
     """Auxiliary function for type consistency"""
     try:
-        return max(min(float(el), np.finfo(float).max), np.finfo(float).min)
+        return max(
+            min(float(el), PYPSA_CONVERTER_MAX_FLOAT), PYPSA_CONVERTER_MAX_FLOAT * -1
+        )
     except:
         raise TypeError(f"Could not convert {el} to float")
 
