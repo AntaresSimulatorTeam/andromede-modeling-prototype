@@ -216,7 +216,8 @@ class PyPSAStudyConverter:
         #    },
         #    {},
         # )
-        # TODO: Look for the list
+        # TODO: Look for the list of generators, store and storage units contribuiting to the global constraints
+        # Add the corresponding connections to the list of connections
 
     def _register_pypsa_components_of_given_model(
         self,
