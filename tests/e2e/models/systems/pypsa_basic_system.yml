@@ -67,7 +67,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: pypsagenerator
-      model: pypsa_models.generator_v0
+      model: pypsa_models.generator
       parameters:
         - id: p_nom
           time-dependent: false
