@@ -75,7 +75,9 @@ class PyPSAStudyConverter:
         if not (all((self.pypsa_network.generators["active"] == 1))):
             raise ValueError(f"Converter supports only Generators with active = 1")
         if not (all((self.pypsa_network.generators["commitable"] == False))):
-            raise ValueError(f"Converter supports only Generators with commitable = False")
+            raise ValueError(
+                f"Converter supports only Generators with commitable = False"
+            )
         self._register_pypsa_components_of_given_model(
             "generators",
             self.pypsa_network.generators,
