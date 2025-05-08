@@ -415,8 +415,8 @@ library:
         #-carrier_attribute = CO2_emissions
         #sense = <=
        - id: constant
-          time-dependent: false
-          scenario-dependent: false
+         time-dependent: false
+         scenario-dependent: false
       ports:
         - id: emission_port
           type: emission
