@@ -97,35 +97,6 @@ library:
           field: flow
           definition: sign * q_set
 
-    - id: generator_v0
-    #Temporary (v0) model for PyPSA generator: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#generator
-    #to be completed with the exhaustive list of parameters, including parameters not instantiated for now
-      parameters:
-        - id: p_nom
-          time-dependent: false
-          scenario-dependent: false
-        - id: marginal_cost
-          time-dependent: true
-          scenario-dependent: false
-      variables:
-        - id: p
-          lower-bound: 0
-          upper-bound: p_nom
-        #- id: q
-      ports:
-        - id: p_balance_port
-          type: flow
-        #- id: q_balance_port
-        #  type: flow
-      port-field-definitions:
-        - port: p_balance_port
-          field: flow
-          definition: p
-        #- port: q_balance_port
-        #  field: flow
-        #  definition: q
-      objective: expec(sum(marginal_cost * p))
-
     - id: generator
     #Model for PyPSA generator: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#generator
       parameters:
