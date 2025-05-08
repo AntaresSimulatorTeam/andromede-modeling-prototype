@@ -146,12 +146,12 @@ library:
           scenario-dependent: false
         #- id: p_set #Parameter not instantiated for now
         #- id: q_set #Parameter not instantiated for now
-        - id: e_sum_min
-          time-dependent: false
-          scenario-dependent: false
-        - id: e_sum_max
-          time-dependent: false
-          scenario-dependent: false
+        #- id: e_sum_min
+        #  time-dependent: false
+        #  scenario-dependent: false
+        #- id: e_sum_max
+        #  time-dependent: false
+        #  scenario-dependent: false
         - id: sign #default value = 1
           time-dependent: false
           scenario-dependent: false
@@ -195,11 +195,11 @@ library:
         #- port: q_balance_port
         #  field: flow
         #  definition: q*sign
-      constraints:
-      - id: min_production
-        expression: sum(p) >= e_sum_min
-      - id: max_production
-        expression: sum(p) <= e_sum_max
+      #constraints:
+      #- id: min_production
+      #  expression: sum(p) >= e_sum_min
+      #- id: max_production
+      #  expression: sum(p) <= e_sum_max
       objective: expec(sum(marginal_cost * p))
 
     
