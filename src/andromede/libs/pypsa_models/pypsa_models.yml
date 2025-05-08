@@ -126,6 +126,82 @@ library:
         #  definition: q
       objective: expec(sum(marginal_cost * p))
 
+    - id: generator
+    #Model for PyPSA generator: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#generator
+      parameters:
+        #- id: control #Parameter not instantiated for now
+        #- id: type #Parameter not instantiated for now
+        - id: p_nom
+          time-dependent: false
+          scenario-dependent: false
+        #- id: p_nom_mod #Parameter not instantiated for now
+        #- id: p_nom_extendable #Parameter not instantiated for now
+        #- id: p_nom_min #Parameter not instantiated for now
+        #- id: p_nom_max #Parameter not instantiated for now
+        - id: p_min_pu
+          time-dependent: true
+          scenario-dependent: false
+        - id: p_max_pu
+          time-dependent: true
+          scenario-dependent: false
+        #- id: p_set #Parameter not instantiated for now
+        #- id: q_set #Parameter not instantiated for now
+        - id: e_sum_min
+          time-dependent: false
+          scenario-dependent: false
+        - id: e_sum_max
+          time-dependent: false
+          scenario-dependent: false
+        - id: sign #default value = 1
+          time-dependent: false
+          scenario-dependent: false
+        #- id: carrier #Parameter not instantiated for now
+        - id: marginal_cost
+          time-dependent: true
+          scenario-dependent: false
+        #- id: marginal_cost_quadratic #Parameter not instantiated for now
+        #- id: active #Parameter not instantiated for now
+        #- id: build_year #Parameter not instantiated for now
+        #- id: lifetime #Parameter not instantiated for now
+        #- id: capital_cost #Parameter not instantiated for now
+        #- id: efficiency #Parameter not instantiated for now
+        #- id: committable #Parameter not instantiated for now
+        #- id: start_up_cost #Parameter not instantiated for now
+        #- id: shut_down_cost #Parameter not instantiated for now
+        #- id: stand_by_cost #Parameter not instantiated for now
+        #- id: min_up_time #Parameter not instantiated for now
+        #- id: min_down_time #Parameter not instantiated for now
+        #- id: up_time_before #Parameter not instantiated for now
+        #- id: down_time_before #Parameter not instantiated for now
+        #- id: ramp_limit_up #Parameter not instantiated for now
+        #- id: ramp_limit_down #Parameter not instantiated for now
+        #- id: ramp_limit_start_up #Parameter not instantiated for now
+        #- id: ramp_limit_shut_down #Parameter not instantiated for now
+        #- id: weight #Parameter not instantiated for now
+      variables:
+        - id: p
+          lower-bound: p_nom*p_min_pu
+          upper-bound: p_nom*p_max_pu
+        #- id: q
+      ports:
+        - id: p_balance_port
+          type: flow
+        #- id: q_balance_port
+        #  type: flow
+      port-field-definitions:
+        - port: p_balance_port
+          field: flow
+          definition: p*sign
+        #- port: q_balance_port
+        #  field: flow
+        #  definition: q*sign
+      constraints:
+      - id: min_production
+        expression: sum(p) >= e_sum_min
+      - id: max_production
+        expression: sum(p) <= e_sum_max
+      objective: expec(sum(marginal_cost * p))
+
     
     - id: link
     #Model for PyPSA link: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#link
