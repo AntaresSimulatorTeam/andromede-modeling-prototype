@@ -212,13 +212,11 @@ class PyPSAStudyConverter:
         #    {},
         #    "global_constraint",
         #    {
-        #        "type": "type",
-        #        "carrier_attribute": "carrier_attribute",
-        #        "sense": "sense",
         #        "constant": "constant",
         #    },
         #    {},
         # )
+        # TODO: Look for the list
 
     def _register_pypsa_components_of_given_model(
         self,

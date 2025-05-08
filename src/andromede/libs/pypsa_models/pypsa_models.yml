@@ -159,6 +159,9 @@ library:
           type: flow
         #- id: q_balance_port
         #  type: flow
+        #- id: emission_port
+        #  type: emission
+        #  definition: p * emission_factor /efficiency
       port-field-definitions:
         - port: p_balance_port
           field: flow
@@ -404,25 +407,19 @@ library:
           expression: e = (1 - standing_loss) * e[t-1] - p
       objective: expec(sum(marginal_cost * p + marginal_cost_storage * e))
 
-    #- id: global_constraint_inf_co2
-    #  #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint
-    #  # Case CO2, <=
-    #  parameters:
-    #    - id: type
-    #      time-dependent: false
-    #      scenario-dependent: false
-    #    - id: carrier_attribute
-    #      time-dependent: false
-    #      scenario-dependent: false
-    #    - id: sense
-    #      time-dependent: false
-    #      scenario-dependent: false
-    #    - id: constant
-    #      time-dependent: false
-    #      scenario-dependent: false
-    #  ports:
-    #    - id: emission_port
-    #      type: emission
-    #  binding-constraints:
-    #    - id: constraint_expression
-    #      expression: sum_connections(emission_port.emission) <= constant"""
+    - id: global_constraint_co2_max
+      #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint
+      # Case CO2, <=
+      parameters:
+        #-type = Primary energy
+        #-carrier_attribute = CO2_emissions
+        #sense = <=
+       - id: constant
+          time-dependent: false
+          scenario-dependent: false
+      ports:
+        - id: emission_port
+          type: emission
+      binding-constraints:
+        - id: constraint_expression
+          expression: sum_connections(emission_port.emission) <= constant
