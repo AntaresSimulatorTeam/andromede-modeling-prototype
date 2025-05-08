@@ -12,6 +12,7 @@
 
 from typing import Any
 
+import numpy as np
 import yaml
 from pydantic import BaseModel
 
@@ -19,7 +20,7 @@ from pydantic import BaseModel
 def any_to_float(el: Any) -> float:
     """Auxiliary function for type consistency"""
     try:
-        return float(el)
+        return max(min(float(el), np.finfo(float).max), np.finfo(float).min)
     except:
         raise TypeError(f"Could not convert {el} to float")
 
