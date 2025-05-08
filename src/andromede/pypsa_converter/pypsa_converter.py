@@ -71,14 +71,24 @@ class PyPSAStudyConverter:
         assert len(pypsa_network.investment_periods) == 0
 
     def _register_pypsa_components(self) -> None:
+        ### PyPSA components : Generators
+        if not (all((self.pypsa_network.generators["active"] == 1))):
+            raise ValueError(f"Converter supports only Generators with active = 1")
+        if not (all((self.pypsa_network.generators["commitable"] == False))):
+            raise ValueError(f"Converter supports only Generators with commitable = False")
         self._register_pypsa_components_of_given_model(
-            "generatorsv0",
+            "generators",
             self.pypsa_network.generators,
             self.pypsa_network.generators_t,
-            "generator_v0",
+            "generator",
             {
                 "p_nom": "p_nom",
+                "p_min_pu": "p_min_pu",
+                "p_max_pu": "p_max_pu",
                 "marginal_cost": "marginal_cost",
+                "e_sum_min": "e_sum_min",
+                "e_sum_max": "e_sum_max",
+                "sign": "sign",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
