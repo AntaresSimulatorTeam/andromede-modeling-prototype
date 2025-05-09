@@ -1,0 +1,97 @@
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+# Configuration file to convert a complex modelling artefact in an Antares study into an Andromede model.
+
+loop: 
+    
+  iteration-key: area #Key on which we iterate (for a given list of area, we want to execute a loop : for area in list_area)
+
+  andromede-component-id: battery_$area$
+
+  andromede-model: antares-historic.short-term-storage
+
+  parameters:
+  
+    - id: reservoir_capacity
+      time-dependent: true
+      scenario-dependent: true
+      value: 
+      - path: input/thermal/series/z_batteries/z_batteries_batteries_$area$_1/series.txt
+      - multiplication_factor: 1
+    - id: injection_nominal_capacity 
+      time-dependent: true
+      scenario-dependent: true
+      value:
+      - link: $area$%z_batteries #TODO: change for path mention
+      - field: direct_capacity
+      - multiplication_factor: 1
+    - id: withdrawal_nominal_capacity
+      time-dependent: true
+      scenario-dependent: true
+      value:  
+      - path: input/thermal/series/$area$/$area$_batteries_inj/series.txt
+      - multiplication_factor: 1
+    - id: efficiency_injection  
+      time-dependent: false  
+      scenario-dependent: false  
+      value: 
+      - binding_constraint: batteries_$area$ #TODO: change for path mention ?
+      - field : $area$%z_batteries  
+      - multiplication_factor: -1
+    - id: efficiency_withdrawal
+      time-dependent: false
+      scenario-dependent: false
+      value: 
+      - binding_constraint: batteries_$area$ #TODO: change for path mention ?
+      - field : $area$.$area$_batteries_inj  
+      - multiplication_factor: 1
+    - id: lower_rule_curve
+      time-dependent: false
+      scenario-dependent: false
+      value: 0 #TODO : check if correct if the case in BP23 model
+    - id: upper_rule_curve
+      time-dependent: true
+      scenario-dependent: true
+      value: 1 #TODO : check if correct if the case in BP23 model
+    #- id: p_max_injection_modulation   #TODO Could this be read from the link profile between the physical area and z_batteries ?
+    #  time-dependent: true
+    #  scenario-dependent: true
+    #- id: p_max_withdrawal_modulation # # TODO Could this be read from the availability series of thermal clusters in z_batteries ? 
+    #  time-dependent: true
+    #  scenario-dependent: true
+    - id: inflows
+      time-dependent: false
+      scenario-dependent: false
+      value: 0
+    - id: initial_level
+      time-dependent: false
+      scenario-dependent: false
+      value: 0.5 #TODO : check if correct if the case in BP23 model
+
+
+  area-connections: #Syntax for hybrid connections: https://antares-simulator.readthedocs.io/en/latest/user-guide/solver/08-hybrid-studies/
+    -  component: battery_$area$
+       port: injection_port
+       area: $area$
+
+  legacy-objects-to-delete:
+    - binding_constraints:
+      - id : batteries_$area$
+      - id : battery_level_$area$
+    - links: 
+      - id : $area$%z_batteries
+    - nodes:
+      - id : z_batteries #Warning: does not depend on area
+    - thermal_clusters:
+      - id : $area$.$area$_batteries_inj
+      - id : z_batteries.z_batteries_batteries_$area$_1
+      - id : z_batteries.z_batteries_batteries_$area$_2

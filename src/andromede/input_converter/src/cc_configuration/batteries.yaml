@@ -1,0 +1,119 @@
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+# Configuration file to convert a complex modelling artefact in an Antares study into an Andromede model.
+
+loop: 
+    
+  iteration_key: zone #Key on which we iterate (for a given list of zone, we want to execute a loop : for zone in list_zone)
+  #In the following, the notation $zone$ means the value of the string variable "zone"
+  andromede-model: antares-historic.short-term-storage #we want to create components of such a model, with id being indexed by the iteration_key
+  andromede-component-id : battery_$zone$
+
+      
+  andromede-model-parameters-to-set-a-priori:
+    #TODO : we still have to see if the following parameters can be set a priori or have to be read in the Antares study,during the conversion.
+    #- id: lower_rule_curve
+    #- id: lower_rule_curve
+    #- id: p_max_injection_modulation  # Read in p_max_injection 
+    #- id: p_max_withdrawal_modulation # Read in p_max_withdrawal
+    
+    
+    - id: initial_level
+      time-dependent: false
+      scenario-dependent: false
+      value: -1.0 #TODO : The initial stock level constraint must be disabled or deleted in the Andromede ST storage model
+              
+    - id: inflows #No inflows in a battery model!
+      time-dependent: false
+      scenario-dependent: false
+      value: 0.0
+
+          
+    
+  antares-coupling-constraints-to-visit:
+      
+    - id : batteries_$zone$
+      name: batteries_$zone$
+      to-delete: True #This flag means that the constraint should be deleted from the Antares Study, if hybrid mode is targetted
+      parameters-to-store:
+        - id-target-andromede-model-parameter: efficiency_injection #target parameter in the andromede-model
+          location-in-legacy-study: $zone$%z_batteries #where to read the parameter in the Antares coupling constraint
+          multiplication-factor: -1 # The parameter we read in Antares coupling constraint should be multiplied by -1 to create target param
+        - id-target-andromede-model-parameter: efficiency_withdrawal #there are different naming conventions between Antares CC model for batteries and the short-term storage model
+          #=> therefore there is an intervertion between injection and withdrawal (this is no mistake)
+          location-in-legacy-study: $zone$.$zone$_batteries_inj 
+          multiplication-factor: 1
+
+
+    - id : battery_level_$zone$
+      name : Battery_level_$zone$
+      to-delete: True
+      parameters-to-store: /
+      
+
+  antares-links-to-visit:
+    - id : $zone$%z_batteries
+      name : $zone$%z_batteries
+      to-delete: True
+      parameters-to-store:
+        - id-target-andromede-model-parameter : injection_nominal_capacity 
+          location-in-legacy-study: link_capacity #TODO : find the right id to describe link capacity? @tbittar
+          multiplication-factor: 1
+
+
+  antares-nodes-to-visit: /
+
+  antares-clusters-to-visit:
+    - node.cluster_id: $zone$.$zone$_batteries_inj #node.cluster
+      to-delete: True
+      parameters-to-store:
+          - id-target-andromede-model-parameter : withdrawal_nominal_capacity
+            location-in-legacy-study: p_max_cluster #TODO : find the right id to describe cluster pmax? @tbittar
+            multiplication-factor: 1
+    - node.cluster_id : z_batteries.z_batteries_batteries_$zone$_1 #node.cluster in Antares study
+      to-delete: True
+      parameters-to-store:
+          - id-target-andromede-model-parameter : reservoir_capacity
+            location-in-legacy-study: p_max_cluster #TODO : find the right id to describe cluster pmax? @tbittar
+            multiplication-factor: 1
+    - node.cluster_id : z_batteries.z_batteries_batteries_$zone$_2 #node.cluster in Antares study
+      to-delete: True
+      parameters-to-store: /
+  
+  antares-load-to-visit: /
+
+  andromede-connection-to-create: /
+
+  area-connections-to-create: #Hybrid connection to create
+      - component: battery_$zone$
+        port: injection
+        area: $zone$
+
+
+
+
+#We also have to delete the fictive node "z_batteries"
+
+loop:
+  iteration_key: / #No loop, just 1 iteration.
+  andromede-model : /
+  andromede-component-id : /
+  antares-nodes-to-visit:
+        - id : z_batteries
+          name: z_batteries #TBC
+          to-delete: True 
+          parameters-to-store: /
+  antares-nodes-to-visit: /
+  antares-clusters-to-visit:
+  antares-load-to-visit: /
+  andromede-connection-to-create: /
+  hybrid-connection-to-create: /
