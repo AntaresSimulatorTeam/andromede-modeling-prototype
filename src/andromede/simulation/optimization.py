@@ -680,11 +680,11 @@ class OptimizationProblem:
                         component.id, model_var.name, t, s
                     )
 
-                    if math.isclose(lower_bound, upper_bound):
-                        raise ValueError(
-                            f"Upper and lower bounds of variable {solver_var_name} have the same value: {lower_bound}"
-                        )
-                    elif lower_bound > upper_bound:
+                    # if math.isclose(lower_bound, upper_bound):
+                    #     raise ValueError(
+                    #         f"Upper and lower bounds of variable {solver_var_name} have the same value: {lower_bound}"
+                    #     )
+                    if lower_bound > upper_bound:
                         raise ValueError(
                             f"Upper bound ({upper_bound}) must be strictly greater than lower bound ({lower_bound}) for variable {solver_var_name}"
                         )
@@ -829,11 +829,9 @@ def fusion_problems(
                 root_var = root_vars[var.name()]
                 root_var.SetLb(var.lb())
                 root_var.SetUb(var.ub())
-                root_master.context._solver_variables[
-                    var.name()
-                ].is_in_objective = context._solver_variables[
-                    var.name()
-                ].is_in_objective
+                root_master.context._solver_variables[var.name()].is_in_objective = (
+                    context._solver_variables[var.name()].is_in_objective
+                )
 
             for cstr in master.solver.constraints():
                 coeff = cstr.GetCoefficient(var)
