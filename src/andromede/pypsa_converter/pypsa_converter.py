@@ -71,17 +71,32 @@ class PyPSAStudyConverter:
         assert len(pypsa_network.investment_periods) == 0
 
     def _register_pypsa_components(self) -> None:
+        ### PyPSA components : Generators
+        if not (all((self.pypsa_network.generators["active"] == 1))):
+            raise ValueError(f"Converter supports only Generators with active = 1")
+        if not (all((self.pypsa_network.generators["committable"] == False))):
+            raise ValueError(
+                f"Converter supports only Generators with commitable = False"
+            )
         self._register_pypsa_components_of_given_model(
-            "generatorsv0",
+            "generators",
             self.pypsa_network.generators,
             self.pypsa_network.generators_t,
-            "generator_v0",
+            "generator",
             {
                 "p_nom": "p_nom",
+                "p_min_pu": "p_min_pu",
+                "p_max_pu": "p_max_pu",
                 "marginal_cost": "marginal_cost",
+                "e_sum_min": "e_sum_min",
+                "e_sum_max": "e_sum_max",
+                "sign": "sign",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
+        ### PyPSA components : Loads
+        if not (all((self.pypsa_network.loads["active"] == 1))):
+            raise ValueError(f"Converter supports only Loads with active = 1")
         self._register_pypsa_components_of_given_model(
             "loads",
             self.pypsa_network.loads,
@@ -95,6 +110,7 @@ class PyPSAStudyConverter:
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
+        ### PyPSA components : Buses
         self._register_pypsa_components_of_given_model(
             "buses",
             self.pypsa_network.buses,
@@ -110,6 +126,9 @@ class PyPSAStudyConverter:
             },
             {},
         )
+        ### PyPSA components : Links
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Links with active = 1")
         self._register_pypsa_components_of_given_model(
             "links",
             self.pypsa_network.links,
@@ -128,10 +147,78 @@ class PyPSAStudyConverter:
                 "bus1": ("p1_port", "p_balance_port"),
             },
         )
-        # TODO: Stoers, storages, global_constraints
-        # self._register_pypsa_components_of_given_model("stores")
-        # self._register_pypsa_components_of_given_model("storage_units")
-        # self._register_pypsa_components_of_given_model("global_constraints")
+        ### PyPSA components : Storage Units
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Storage Units with active = 1")
+        if not (all((self.pypsa_network.storage_units["sign"] == 1))):
+            raise ValueError(f"Converter supports only Storage Units with sign = 1")
+        if not (all((self.pypsa_network.storage_units["cyclic_state_of_charge"] == 1))):
+            raise ValueError(
+                f"Converter supports only Storage Units with cyclic_state_of_charge"
+            )
+        self._register_pypsa_components_of_given_model(
+            "storage_units",
+            self.pypsa_network.storage_units,
+            self.pypsa_network.storage_units_t,
+            "storage_unit",
+            {
+                "p_nom": "p_nom",
+                "p_min_pu": "p_min_pu",
+                "p_max_pu": "p_max_pu",
+                "sign": "sign",
+                "active": "active",
+                "efficiency_store": "efficiency_store",
+                "efficiency_dispatch": "efficiency_dispatch",
+                "standing_loss": "standing_loss",
+                "max_hours": "max_hours",
+                "marginal_cost": "marginal_cost",
+                "marginal_cost_storage": "marginal_cost_storage",
+                "spill_cost": "spill_cost",
+                "inflow": "inflow",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
+        ### PyPSA components : Stores
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Stores with active = 1")
+        if not (all((self.pypsa_network.stores["sign"] == 1))):
+            raise ValueError(f"Converter supports only Stores with sign = 1")
+        if not (all((self.pypsa_network.stores["e_cyclic"] == 1))):
+            raise ValueError(f"Converter supports only Stores with e_cyclic = True")
+        self._register_pypsa_components_of_given_model(
+            "stores",
+            self.pypsa_network.stores,
+            self.pypsa_network.stores_t,
+            "store",
+            {
+                "sign": "sign",
+                "e_nom": "e_nom",
+                "e_nom_extendable": "e_nom_extendable",
+                "e_nom_min": "e_nom_min",
+                "e_nom_max": "e_nom_max",
+                "e_min_pu": "e_min_pu",
+                "e_max_pu": "e_max_pu",
+                "standing_loss": "standing_loss",
+                "marginal_cost": "marginal_cost",
+                "marginal_cost_storage": "marginal_cost_storage",
+                "active": "active",
+            },
+            {"bus": ("p_balance_port", "p_balance_port")},
+        )
+        # TODO:  global_constraints
+        # self._register_pypsa_components_of_given_model(
+        #    "global_constraints",
+        #    self.pypsa_network.global_constraints,
+        #    {},
+        #    "global_constraint",
+        #    {
+        #        "constant": "constant",
+        #    },
+        #    {},
+        # )
+        # TODO: Look for the list of generators, store and storage units contribuiting to the global constraints
+        # Add the corresponding connections to the list of connections
+        # Implement a dedicated function to register global constraints?
 
     def _register_pypsa_components_of_given_model(
         self,
