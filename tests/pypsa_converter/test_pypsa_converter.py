@@ -60,7 +60,76 @@ def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    run_conversion_test(n1, n1.objective, "test1.yml", systems_dir, series_dir)
+    run_conversion_test(n1, n1.objective, "test_load_gen.yml", systems_dir, series_dir)
+
+
+def test_load_gen_pmin(systems_dir: Path, series_dir: Path) -> None:
+    # Testing pmin_pu and pmax_pu parameters for Generator component
+
+    # Building the PyPSA test problem
+    T = 10
+    n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=100, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        pmin_pu=0.1,
+        pmax_pu=[0.8 + 0.1 * i for i in range(T)],
+        p_nom_extendable=False,
+        marginal_cost=10,  # €/MWh
+        p_nom=50,  # MW
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_pmin.yml", systems_dir, series_dir
+    )
+
+
+def test_load_gen_sum(systems_dir: Path, series_dir: Path) -> None:
+    # Testing e_sum parameters for Generator component
+
+    # Building the PyPSA test problem
+    T = 10
+    n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=100, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        e_sum_max=200,
+        p_nom_extendable=False,
+        marginal_cost=10,  # €/MWh
+        p_nom=50,  # MW
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_sum.yml", systems_dir, series_dir
+    )
 
 
 def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
@@ -111,7 +180,9 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    run_conversion_test(n1, n1.objective, "test2.yml", systems_dir, series_dir)
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_link.yml", systems_dir, series_dir
+    )
 
 
 @pytest.mark.parametrize(
@@ -193,7 +264,9 @@ def test_storage_unit(
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    run_conversion_test(n1, n1.objective, "test3.yml", systems_dir, series_dir)
+    run_conversion_test(
+        n1, n1.objective, "test_storage_unit.yml", systems_dir, series_dir
+    )
 
 
 @pytest.mark.parametrize(
