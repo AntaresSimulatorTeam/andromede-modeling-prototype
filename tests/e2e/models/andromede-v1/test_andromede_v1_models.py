@@ -143,6 +143,11 @@ def test_model_behaviour(
         status = problem.solver.Solve()
         assert status == problem.solver.OPTIMAL
         assert math.isclose(
+            problem.solver.Objective().Value(),
+            problem.solver.Objective().BestBound(),
+            rel_tol=relative_accuracy,
+        )
+        assert math.isclose(
             reference_values[k, 0],
             problem.solver.Objective().Value(),
             rel_tol=relative_accuracy,
