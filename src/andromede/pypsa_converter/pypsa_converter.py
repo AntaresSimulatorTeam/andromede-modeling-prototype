@@ -106,7 +106,6 @@ class PyPSAStudyConverter:
                 "p_set": "p_set",
                 "q_set": "q_set",
                 "sign": "sign",
-                "active": "active",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
@@ -136,7 +135,6 @@ class PyPSAStudyConverter:
             "link",
             {
                 "efficiency": "efficiency",
-                "active": "active",
                 "p_nom": "p_nom",
                 "p_min_pu": "p_min_pu",
                 "p_max_pu": "p_max_pu",
@@ -166,7 +164,6 @@ class PyPSAStudyConverter:
                 "p_min_pu": "p_min_pu",
                 "p_max_pu": "p_max_pu",
                 "sign": "sign",
-                "active": "active",
                 "efficiency_store": "efficiency_store",
                 "efficiency_dispatch": "efficiency_dispatch",
                 "standing_loss": "standing_loss",
@@ -201,7 +198,6 @@ class PyPSAStudyConverter:
                 "standing_loss": "standing_loss",
                 "marginal_cost": "marginal_cost",
                 "marginal_cost_storage": "marginal_cost_storage",
-                "active": "active",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
@@ -212,7 +208,7 @@ class PyPSAStudyConverter:
         #    {},
         #    "global_constraint",
         #    {
-        #        "constant": "constant",
+        #        "quota": "quota",
         #    },
         #    {},
         # )

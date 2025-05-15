@@ -81,9 +81,7 @@ library:
         - id: sign #default value = -1
           time-dependent: false
           scenario-dependent: false
-        - id: active
-          time-dependent: false
-          scenario-dependent: false
+        #- id: active #Parameter not instantiated for now
       ports:
         - id: p_balance_port
           type: flow
@@ -185,9 +183,7 @@ library:
         - id: efficiency
           time-dependent: true
           scenario-dependent: false
-        - id: active
-          time-dependent: false
-          scenario-dependent: false
+        #- id: active #Parameter not instantiated for now
         #- id: build_year #Parameter not instantiated for now
         #- id: lifetime #Parameter not instantiated for now
         - id: p_nom
@@ -292,9 +288,7 @@ library:
           time-dependent: true
           scenario-dependent: false
         #- id: capital_cost #Parameter not instantiated for now
-        - id: active
-          time-dependent: false
-          scenario-dependent: false
+        #- id: active #Parameter not instantiated for now
         #- id: build_year #Parameter not instantiated for now
         #- id: lifetime #Parameter not instantiated for now
         #- id: state_of_charge_initial #Parameter not instantiated for now
@@ -385,9 +379,9 @@ library:
         - id: standing_loss
           time-dependent: true
           scenario-dependent: false
-        - id: active
-          time-dependent: false
-          scenario-dependent: false
+        #- id: active
+        #  time-dependent: false
+        #  scenario-dependent: false
         #- id: build_year #Parameter not instantiated for now
         #- id: lifetime #Parameter not instantiated for now
       variables:
@@ -414,7 +408,7 @@ library:
         #-type = Primary energy
         #-carrier_attribute = CO2_emissions
         #sense = <=
-       - id: constant
+       - id: quota
          time-dependent: false
          scenario-dependent: false
       ports:
@@ -422,4 +416,4 @@ library:
           type: emission
       binding-constraints:
         - id: constraint_expression
-          expression: sum_connections(emission_port.emission) <= constant
+          expression: sum_connections(emission_port.emission) <= quota
