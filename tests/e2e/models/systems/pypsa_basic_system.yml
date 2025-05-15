@@ -67,7 +67,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: pypsagenerator
-      model: pypsa_models.generator_v0
+      model: pypsa_models.generator
       parameters:
         - id: p_nom
           time-dependent: false
@@ -77,7 +77,26 @@ system:
           time-dependent: false
           scenario-dependent: false
           value: 50.0
-
+        - id: p_min_pu
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.0
+        - id: p_max_pu
+          time-dependent: false
+          scenario-dependent: false
+          value: 1.0
+        - id: sign
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: e_sum_min
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.0
+        - id: e_sum_max
+          time-dependent: false
+          scenario-dependent: false
+          value: 100000000
   connections:
     - component1: pypsatown
       port1: p_balance_port
