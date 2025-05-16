@@ -67,7 +67,7 @@ library:
           field: flow
           definition: efficiency * power
 
-    - id: battery_BP23
+    - id: battery
       parameters:
         - id: reservoir_capacity
           time-dependent: false
