@@ -1,0 +1,597 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
+# Andromede system file: defines the components of a test case > instantiation of 
+# Test case : 3 nodes study case for the MuESSLi project
+
+system:
+
+  components:
+  ### Zone : CH
+    - id: ch
+      model: muessli-lib.area
+      parameters:
+      - id: ens_cost
+        scenario-dependent: false
+        time-dependent: false
+        value: 3000.0
+      - id: spillage_cost
+        scenario-dependent: false
+        time-dependent: false
+        value: 0.0
+    - id: residual_load_ch #Used here to represent the residual load. RES_LOAD = LOAD – RUN_OF_RIVER – WIND – SOLAR + (EXPORT - IMPORT from countries not modelled here). 
+      model: muessli-lib.load 
+      parameters:
+      - id: load
+        scenario-dependent: true
+        time-dependent: true
+        value: residual_load_ch
+    - id: hydro_ch
+      model: muessli-lib.long-term-storage 
+      parameters:
+        - id: injection_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.1
+        - id: withdrawal_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 8152
+        - id: pumping_efficiency
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.75
+        - id: p_max_injection_modulation  
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: p_max_withdrawal_modulation 
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: weekly_allocation #Default value, to be changed (by script) before constructing the optimization problem
+          time-dependent: false
+          scenario-dependent: false
+          value: 300000 
+    - id: gas_ch
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 810
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_gas_ch
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 810
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 57
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+    - id: nuclear_ch
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 2930
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_nuclear_ch
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 2930
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 6.23
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+  ### Zone : DE
+    - id: de
+      model: muessli-lib.area
+      parameters:
+      - id: ens_cost
+        scenario-dependent: false
+        time-dependent: false
+        value: 3000.0
+      - id: spillage_cost
+        scenario-dependent: false
+        time-dependent: false
+        value: 0.0
+    - id: hydro_de
+      model: muessli-lib.long-term-storage 
+      parameters:
+        - id: injection_nominal_capacity #Pumping capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 1361
+        - id: withdrawal_nominal_capacity #Generation capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 2755
+        - id: pumping_efficiency
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.75
+        - id: p_max_injection_modulation  
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: p_max_withdrawal_modulation 
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: weekly_allocation #Default value, to be changed (by script) before constructing the optimization problem
+          time-dependent: false
+          scenario-dependent: false
+          value: 7000 
+    - id: residual_load_de #Used here to represent the residual load. RES_LOAD = LOAD – RUN_OF_RIVER – WIND – SOLAR + (EXPORT - IMPORT from countries not modelled here). 
+      model: muessli-lib.load
+      parameters:
+      - id: load
+        scenario-dependent: true
+        time-dependent: true
+        value: residual_load_de
+    - id: coal_de
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 16779.5
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_coal_de
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 16779.5
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 40.4
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+    - id: gas_de
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 33183.2
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_gas_de
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 33183.2
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 49.8
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+    - id: lignite_de
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 14822.3
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_lignite_de
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 14822.3
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 24.99
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+    - id: oil_de
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 980.0
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_oil_de
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 980.0
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 99.39
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+  ### Zone : FR
+    - id: fr
+      model: muessli-lib.area
+      parameters:
+      - id: ens_cost
+        scenario-dependent: false
+        time-dependent: false
+        value: 3000.0
+      - id: spillage_cost
+        scenario-dependent: false
+        time-dependent: false
+        value: 0.0
+    - id: residual_load_fr #Used here to represent the residual load. RES_LOAD = LOAD – RUN_OF_RIVER – WIND – SOLAR + (EXPORT - IMPORT from countries not modelled here). 
+      model: muessli-lib.load
+      parameters:
+      - id: load
+        scenario-dependent: true
+        time-dependent: true
+        value: residual_load_fr
+    - id: hydro_fr
+      model: muessli-lib.long-term-storage 
+      parameters:
+        - id: injection_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 1850
+        - id: withdrawal_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 7939
+        - id: pumping_efficiency
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.75
+        - id: p_max_injection_modulation  
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: p_max_withdrawal_modulation 
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: weekly_allocation #Default value, to be changed (by script) before constructing the optimization problem
+          time-dependent: false
+          scenario-dependent: false
+          value: 200000 
+    - id: gas_fr
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 12761.1
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_gas_fr
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 12761.1
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 52.5
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+    - id: nuclear_fr
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 61371.2
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_nuclear_fr
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 61371.2
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 5.13
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+    - id: oil_fr
+      model: muessli-lib.thermal
+      parameters:
+        - id: p_max_cluster_nominal 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1834.3
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+          scenario-dependent: true
+          time-dependent: true
+          value: modulation_oil_fr
+        - id: p_min_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: p_max_unit
+          scenario-dependent: false
+          time-dependent: false
+          value: 1834.3
+        - id: generation_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 98.29
+        - id: startup_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: fixed_cost
+          scenario-dependent: false
+          time-dependent: false
+          value: 0
+        - id: nb_units 
+          scenario-dependent: false
+          time-dependent: false
+          value: 1
+  ### Link components
+    - id: ch_de_link
+      model: muessli-lib.link
+      parameters:
+      - id: capacity_direct
+        scenario-dependent: false
+        time-dependent: false
+        value: 4000
+      - id: capacity_indirect
+        scenario-dependent: false
+        time-dependent: false
+        value: 1700
+    - id: ch_fr_link
+      model: muessli-lib.link
+      parameters:
+      - id: capacity_direct
+        scenario-dependent: false
+        time-dependent: false
+        value: 1300
+      - id: capacity_indirect
+        scenario-dependent: false
+        time-dependent: false
+        value: 2800
+    - id: de_fr_link
+      model: muessli-lib.link
+      parameters:
+      - id: capacity_direct
+        scenario-dependent: false
+        time-dependent: false
+        value: 3300
+      - id: capacity_indirect
+        scenario-dependent: false
+        time-dependent: false
+        value: 3300
+
+  connections: #We define the connections between components
+  ### Zone : CH
+  - component1: residual_load_ch
+    component2: ch
+    port1: balance_port
+    port2: balance_port
+  - component1: hydro_ch
+    component2: ch
+    port1: balance_port
+    port2: balance_port
+  - component1: gas_ch
+    component2: ch
+    port1: balance_port
+    port2: balance_port
+  - component1: nuclear_ch
+    component2: ch
+    port1: balance_port
+    port2: balance_port
+  ### Zone : DE    
+  - component1: residual_load_de
+    component2: de
+    port1: balance_port
+    port2: balance_port
+  - component1: hydro_de
+    component2: de
+    port1: balance_port
+    port2: balance_port
+  - component1: coal_de
+    component2: de
+    port1: balance_port
+    port2: balance_port
+  - component1: lignite_de
+    component2: de
+    port1: balance_port
+    port2: balance_port
+  - component1: gas_de
+    component2: de
+    port1: balance_port
+    port2: balance_port
+  - component1: oil_de
+    component2: de
+    port1: balance_port
+    port2: balance_port
+  #### Zone : FR
+  - component1: residual_load_fr
+    component2: fr
+    port1: balance_port
+    port2: balance_port
+  - component1: hydro_fr
+    component2: fr
+    port1: balance_port
+    port2: balance_port
+  - component1: gas_fr
+    component2: fr
+    port1: balance_port
+    port2: balance_port
+  - component1: nuclear_fr
+    component2: fr
+    port1: balance_port
+    port2: balance_port
+  - component1: oil_fr
+    component2: fr
+    port1: balance_port
+    port2: balance_port
+  ### Inter-zones
+  - component1: ch_de_link
+    component2: ch
+    port1: in_port
+    port2: balance_port
+  - component1: ch_de_link
+    component2: de
+    port1: out_port
+    port2: balance_port
+  - component1: ch_fr_link
+    component2: ch
+    port1: in_port
+    port2: balance_port
+  - component1: ch_fr_link
+    component2: fr
+    port1: out_port
+    port2: balance_port
+  - component1: de_fr_link
+    component2: de
+    port1: in_port
+    port2: balance_port
+  - component1: de_fr_link
+    component2: fr
+    port1: out_port
+    port2: balance_port
+
+
