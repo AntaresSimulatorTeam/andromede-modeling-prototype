@@ -16,6 +16,7 @@
 
 template:
   name: battery
+  generator-version-compatibility: X.Y #TODO: find this information
   model: andromede-v1-models.battery
   template-parameters:
     - name: area
