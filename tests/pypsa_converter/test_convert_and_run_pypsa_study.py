@@ -10,7 +10,6 @@ from pathlib import Path
 
 import numpy as np
 
-
 from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
@@ -61,12 +60,14 @@ def load_pypsa_study():
 
     return network
 
+
 def set_capital_costs(network):
     network.generators["capital_cost"] = 0
     network.stores["capital_cost"] = 0
     network.storage_units["capital_cost"] = 0
     network.links["capital_cost"] = 0
     return network
+
 
 def rename_pypsa_loads(network):
 
@@ -76,6 +77,7 @@ def rename_pypsa_loads(network):
 
     return network
 
+
 def rename_pypsa_storage(network):
 
     network.storage_units.index += " storage"
@@ -83,6 +85,7 @@ def rename_pypsa_storage(network):
         val.columns = val.columns + " storage"
 
     return network
+
 
 def rename_pypsa_stores(network):
 
@@ -92,8 +95,9 @@ def rename_pypsa_stores(network):
 
     return network
 
+
 def extend_quota(network):
-    
+
     network.global_constraints["constant"][0] = 10000000000
     return network
 
@@ -128,7 +132,7 @@ def replace_lines_by_links(network):
         s_nom = line["s_nom"]
 
         # Calculate efficiency based on line resistance and reactance
-        if False:#"r" in line and "x" in line and (line["r"] > 0 or line["x"] > 0):
+        if False:  # "r" in line and "x" in line and (line["r"] > 0 or line["x"] > 0):
             # Simple model: efficiency is reduced based on resistance
             r_pu = line["r"]
             efficiency = 1 / (1 + r_pu)
@@ -139,11 +143,11 @@ def replace_lines_by_links(network):
         # Add forward link
         network.add(
             "Link",
-            link_name_forward+bus0+bus1,
+            link_name_forward + bus0 + bus1,
             bus0=bus0,
             bus1=bus1,
-            p_min_pu = -1,
-            p_max_pu = 1,
+            p_min_pu=-1,
+            p_max_pu=1,
             p_nom=s_nom,  # Use line capacity as link capacity
             efficiency=efficiency,
         )
@@ -157,7 +161,7 @@ def replace_lines_by_links(network):
             p_nom=10^6,
             efficiency=efficiency,
         )"""
-    network.remove("Line",lines.index)
+    network.remove("Line", lines.index)
     """# Remove the original lines
     network.lines = network.lines.drop(lines.index)
 
@@ -243,9 +247,9 @@ def test_main():
     logger.info(
         f"Loaded PyPSA network with {len(pypsa_network.buses)} buses and {len(pypsa_network.generators)} generators"
     )
-    #logger.info("Solving PyPSA network before line to link...")
-    #pypsa_network.optimize()
-    #logger.info(f"PyPSA objective value: {pypsa_network.objective}")
+    # logger.info("Solving PyPSA network before line to link...")
+    # pypsa_network.optimize()
+    # logger.info(f"PyPSA objective value: {pypsa_network.objective}")
     logger.info("Replacing line by links")
     pypsa_network = replace_lines_by_links(pypsa_network)
     pypsa_network = extend_quota(pypsa_network)
@@ -291,9 +295,10 @@ def test_main():
     )
 
     # Solve the problem
+    problem.solver.EnableOutput()
     status = problem.solver.Solve()
 
-    with open("andromede.txt","x") as f:
+    with open("andromede.txt", "x") as f:
         f.write(problem.solver.ExportModelAsLpFormat(False))
         f.close()
 
@@ -303,13 +308,13 @@ def test_main():
         logger.info(f"Objective value: {problem.solver.Objective().Value()}")
     else:
         logger.error(f"Failed to solve optimization problem. Status: {status}")
-    
+
     # Optimize PyPSA network
     logger.info("Solving PyPSA network after line to link...")
     pypsa_network.optimize()
-    pypsa_network.model.to_file("pypsa.lp",explicit_coordinate_names=True)
+    pypsa_network.model.to_file("pypsa.lp", explicit_coordinate_names=True)
     print(pypsa_network.objective)
     logger.info(f"PyPSA objective value: {pypsa_network.objective}")
-    assert(math.isclose(pypsa_network.objective,24*problem.solver.Objective().Value()))
-
-
+    assert math.isclose(
+        pypsa_network.objective, 24 * problem.solver.Objective().Value()
+    )
