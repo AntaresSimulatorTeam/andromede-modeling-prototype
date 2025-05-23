@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from antares.craft.model.thermal import ThermalCluster
 
-from andromede.study.data import load_ts_from_txt
 from andromede.study.parsing import InputComponentParameter
 
 

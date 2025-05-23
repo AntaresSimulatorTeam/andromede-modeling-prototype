@@ -128,8 +128,10 @@ def _setup_study_component(study, period=None) -> ToolTestStudy:
     path = study_path / "input" / "load" / "series"
     timeseries = load_ts_from_txt("load_fr", path)
     area_fr.set_load(pd.DataFrame(timeseries))
-
+    # todo test
+    # study = Path.cwd().parent.parent.parent.parent / "mnt/c/Users/killian.pirot/Desktop/rte/modeleur_converter/studies/big_study_for_bc/ok"
     converter = AntaresStudyConverter(study_input=study, logger=logger, period=period)
+
     converter.process_all()
 
     compo_file = converter.output_path
