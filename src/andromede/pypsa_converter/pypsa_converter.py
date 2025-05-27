@@ -398,7 +398,6 @@ class PyPSAStudyConverter:
         constant_data: pd.DataFrame,
         pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
     ) -> list[InputPortConnections]:
-
         connections = []
         for bus_id, (
             model_port,
