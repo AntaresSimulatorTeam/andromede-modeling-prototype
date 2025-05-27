@@ -47,7 +47,7 @@ def load_pypsa_study():
     current_dir = Path(__file__).parent
 
     # Define the relative path to the input file
-    input_file = current_dir / "pypsa_input_files" / "base_s_6_elec_lvopt_.nc"
+    input_file = current_dir / "pypsa_input_files" / "base_s_4_elec.nc"
 
     # Load the PyPSA network from the file
     network = pypsa.Network(input_file)
@@ -57,6 +57,7 @@ def load_pypsa_study():
     network = rename_pypsa_stores(network)
     network = rename_pypsa_storage(network)
     network = set_capital_costs(network)
+    network = scale_load(network, 0.8)
 
     return network
 
@@ -71,7 +72,7 @@ def set_capital_costs(network):
 
 def rename_pypsa_loads(network):
 
-    network.loads.index += " load"
+    network.loads.index = network.loads.index.astype(str) + " load"
     for key, val in network.loads_t.items():
         val.columns = val.columns + " load"
 
@@ -80,7 +81,7 @@ def rename_pypsa_loads(network):
 
 def rename_pypsa_storage(network):
 
-    network.storage_units.index += " storage"
+    network.storage_units.index = network.storage_units.index.astype(str) + " storage"
     for key, val in network.storage_units_t.items():
         val.columns = val.columns + " storage"
 
@@ -89,7 +90,7 @@ def rename_pypsa_storage(network):
 
 def rename_pypsa_stores(network):
 
-    network.stores.index += " stores"
+    network.stores.index = network.stores.index.astype(str) + " stores"
     for key, val in network.stores_t.items():
         val.columns = val.columns + " stores"
 
@@ -99,6 +100,13 @@ def rename_pypsa_stores(network):
 def extend_quota(network):
 
     network.global_constraints["constant"][0] = 10000000000
+    return network
+
+
+def scale_load(network, factor):
+
+    network.loads_t["p_set"] *= factor
+
     return network
 
 
@@ -289,15 +297,18 @@ def test_main():
     resolved_system = resolve_system(input_system_from_pypsa_converter, result_lib)
 
     # Build and solve the optimization problem
-    logger.info("Building and solving the optimization problem...")
+    logger.info("Building the optimization problem...")
     problem = build_problem_from_system(
         resolved_system, input_system_from_pypsa_converter, series_dir, T
     )
 
+    logger.info("Solving the optimization problem...")
     # Solve the problem
     problem.solver.EnableOutput()
     status = problem.solver.Solve()
 
+    if Path("andromede.txt").exists():
+        Path("andromede.txt").unlink()
     with open("andromede.txt", "x") as f:
         f.write(problem.solver.ExportModelAsLpFormat(False))
         f.close()
@@ -313,8 +324,9 @@ def test_main():
     logger.info("Solving PyPSA network after line to link...")
     pypsa_network.optimize()
     pypsa_network.model.to_file("pypsa.lp", explicit_coordinate_names=True)
-    print(pypsa_network.objective)
     logger.info(f"PyPSA objective value: {pypsa_network.objective}")
-    assert math.isclose(
-        pypsa_network.objective, 24 * problem.solver.Objective().Value()
-    )
+    assert math.isclose(pypsa_network.objective, problem.solver.Objective().Value())
+
+
+if __name__ == "__main__":
+    test_main()
