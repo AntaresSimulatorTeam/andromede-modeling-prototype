@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 
 import numpy as np
+from pypsa import Network
 
 from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import parse_yaml_library
@@ -26,7 +27,7 @@ from andromede.study.resolve_components import (
 )
 
 
-def load_pypsa_study():
+def load_pypsa_study(file: str, load_scaling: float) -> Network:
     """
     Load a PyPSA study from a NetCDF file, preparing it for analysis or manipulation.
 
@@ -47,70 +48,31 @@ def load_pypsa_study():
     current_dir = Path(__file__).parent
 
     # Define the relative path to the input file
-    input_file = current_dir / "pypsa_input_files" / "base_s_4_elec.nc"
+    input_file = current_dir / "pypsa_input_files" / file
 
     # Load the PyPSA network from the file
     network = pypsa.Network(input_file)
 
-    # Rename the loads and links to avoid duplicate names with corresponding buses
-    network = rename_pypsa_loads(network)
-    network = rename_pypsa_stores(network)
-    network = rename_pypsa_storage(network)
-    network = set_capital_costs(network)
-    network = scale_load(network, 0.8)
+    # Scale the load to make the test case feasible
+    network = scale_load(network, load_scaling)
 
     return network
 
 
-def set_capital_costs(network):
-    network.generators["capital_cost"] = 0
-    network.stores["capital_cost"] = 0
-    network.storage_units["capital_cost"] = 0
-    network.links["capital_cost"] = 0
-    return network
-
-
-def rename_pypsa_loads(network):
-
-    network.loads.index = network.loads.index.astype(str) + " load"
-    for key, val in network.loads_t.items():
-        val.columns = val.columns + " load"
-
-    return network
-
-
-def rename_pypsa_storage(network):
-
-    network.storage_units.index = network.storage_units.index.astype(str) + " storage"
-    for key, val in network.storage_units_t.items():
-        val.columns = val.columns + " storage"
-
-    return network
-
-
-def rename_pypsa_stores(network):
-
-    network.stores.index = network.stores.index.astype(str) + " stores"
-    for key, val in network.stores_t.items():
-        val.columns = val.columns + " stores"
-
-    return network
-
-
-def extend_quota(network):
-
+def extend_quota(network: Network) -> Network:
+    # Temporary function, used while the GlobalConstraint model is not implemented yet.
+    # Set the CO2 bound to very alrge value
     network.global_constraints["constant"][0] = 10000000000
+
     return network
 
 
-def scale_load(network, factor):
-
+def scale_load(network: Network, factor: float) -> Network:
     network.loads_t["p_set"] *= factor
-
     return network
 
 
-def replace_lines_by_links(network):
+def replace_lines_by_links(network: Network) -> Network:
     """
     Replace lines in a PyPSA network with equivalent links.
 
@@ -130,10 +92,6 @@ def replace_lines_by_links(network):
 
     # For each line, create two links (one for each direction)
     for idx, line in lines.iterrows():
-        # Create a unique name for the links
-        link_name_forward = f"{idx} link forward"
-        link_name_backward = f"{idx} link backward"
-
         # Get line parameters
         bus0 = line["bus0"]
         bus1 = line["bus1"]
@@ -151,7 +109,7 @@ def replace_lines_by_links(network):
         # Add forward link
         network.add(
             "Link",
-            link_name_forward + bus0 + bus1,
+            f"{idx}-link-{bus0}-{bus1}",
             bus0=bus0,
             bus1=bus1,
             p_min_pu=-1,
@@ -159,32 +117,12 @@ def replace_lines_by_links(network):
             p_nom=s_nom,  # Use line capacity as link capacity
             efficiency=efficiency,
         )
-
-        """# Add backward link
-        network.add(
-            "Link",
-            link_name_backward,
-            bus0=bus1,  # Reversed direction
-            bus1=bus0,  # Reversed direction
-            p_nom=10^6,
-            efficiency=efficiency,
-        )"""
     network.remove("Line", lines.index)
-    """# Remove the original lines
-    network.lines = network.lines.drop(lines.index)
-
-    # Clean up lines_t time series if they exist
-    for key in list(network.lines_t.keys()):
-        if not network.lines_t[key].empty:
-            network.lines_t[key] = network.lines_t[key].drop(
-                columns=lines.index, errors="ignore"
-            )
-    """
     return network
 
 
 def convert_pypsa_network(
-    pypsa_network,
+    pypsa_network: Network,
     systems_dir: Path,
     series_dir: Path,
 ) -> InputSystem:
@@ -199,10 +137,9 @@ def convert_pypsa_network(
     Returns:
         InputSystem: The converted Andromede InputSystem
     """
-    logger = Logger(__name__, Path(""))
+    logger = Logger(__name__, "")
     converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
     input_system_from_pypsa_converter = converter.to_andromede_study()
-
     return input_system_from_pypsa_converter
 
 
@@ -229,16 +166,15 @@ def build_problem_from_system(
         TimeBlock(1, [i for i in range(timesteps)]),
         1,
     )
-
     return problem
 
 
-def test_main():
+def main(file: str, load_scaling: float, activate_quota: bool) -> None:
     """
     Main function to convert a PyPSA study to Andromede format and run it.
     """
     # Set up logger
-    logger = Logger(__name__, Path(""))
+    logger = Logger(__name__, "")
 
     # Define directories for systems and series
     current_dir = Path(__file__).parent
@@ -251,17 +187,16 @@ def test_main():
 
     # Load the PyPSA study
     logger.info("Loading PyPSA study...")
-    pypsa_network = load_pypsa_study()
+    pypsa_network = load_pypsa_study(file, load_scaling)
     logger.info(
         f"Loaded PyPSA network with {len(pypsa_network.buses)} buses and {len(pypsa_network.generators)} generators"
     )
-    # logger.info("Solving PyPSA network before line to link...")
-    # pypsa_network.optimize()
-    # logger.info(f"PyPSA objective value: {pypsa_network.objective}")
-    logger.info("Replacing line by links")
+    logger.info(f"Replacing {len(pypsa_network.lines)} Lines by links")
     pypsa_network = replace_lines_by_links(pypsa_network)
-    pypsa_network = extend_quota(pypsa_network)
-    pypsa_network.export_to_csv_folder("test")
+    logger.info(f"Extending the CO2 quota to make it not binding.")
+    if not (activate_quota):
+        pypsa_network = extend_quota(pypsa_network)
+
     # Get the number of timesteps
     T = len(pypsa_network.snapshots)
     logger.info(f"Number of timesteps: {T}")
@@ -307,12 +242,6 @@ def test_main():
     problem.solver.EnableOutput()
     status = problem.solver.Solve()
 
-    if Path("andromede.txt").exists():
-        Path("andromede.txt").unlink()
-    with open("andromede.txt", "x") as f:
-        f.write(problem.solver.ExportModelAsLpFormat(False))
-        f.close()
-
     # Log the results
     if status == problem.solver.OPTIMAL:
         logger.info("Optimization problem solved successfully!")
@@ -323,10 +252,15 @@ def test_main():
     # Optimize PyPSA network
     logger.info("Solving PyPSA network after line to link...")
     pypsa_network.optimize()
-    pypsa_network.model.to_file("pypsa.lp", explicit_coordinate_names=True)
     logger.info(f"PyPSA objective value: {pypsa_network.objective}")
-    assert math.isclose(pypsa_network.objective, problem.solver.Objective().Value())
+    assert math.isclose(
+        pypsa_network.objective, problem.solver.Objective().Value(), rel_tol=1e-6
+    )
+
+
+def test_case_pypsaeur_operational() -> None:
+    main("base_s_4_elec.nc", 0.8, False)
 
 
 if __name__ == "__main__":
-    test_main()
+    test_case_pypsaeur_operational()
