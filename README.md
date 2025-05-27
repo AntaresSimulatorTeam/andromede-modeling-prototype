@@ -1,8 +1,10 @@
 # andromede-modeling-prototype
 
+Andromede is an open-source tool, developed in Python, for the modeling and the simulation of complex energy systems under uncertainty.
+
 ## The vision
 
-This Python project introduces a novel approach to modeling and simulating energy systems, centered around a simple yet powerful principle: getting models out of the code.
+Andromede introduces a novel approach to modeling and simulating energy systems, centered around a simple principle: getting models out of the code.
 
 To develop and test new models of energy system components, writing software code should not be a prerequisite. This is where the Andromede 'modeler' package excels, offering users a "no-code" modeling experience with unparalleled versatility.
 
