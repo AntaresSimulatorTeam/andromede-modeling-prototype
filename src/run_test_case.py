@@ -304,7 +304,7 @@ class TestCase:
 
 ##### Example of use ######
 system_folder = "./tests/muessli/case_3_nodes/" #You can keep this path
-data_folder = "../muessli_cases/case_3_nodes/timeseries" #This path has to be changed depending on where you saved the timeseries folder.
+data_folder = "../../3_MuESSLi/Génération données/case_3_nodes/case_3_nodes/timeseries" #This path has to be changed depending on where you saved the timeseries folder.
 #For instance, the path to credits_fr.txt file is data_folder+"/credits_fr.txt"
 case = TestCase(system_folder, data_folder)
 T,W = 5, 52
