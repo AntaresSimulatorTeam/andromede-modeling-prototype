@@ -66,8 +66,6 @@ library:
           lower-bound: 0
           upper-bound: capacity_indirect
         - id: flow
-          lower-bound: -capacity_indirect
-          upper-bound: capacity_indirect
       ports:
         - id: out_port
           type: flow
