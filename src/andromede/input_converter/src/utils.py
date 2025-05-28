@@ -38,7 +38,8 @@ def transform_to_yaml(model: BaseModel, output_path: str) -> None:
             allow_unicode=True,
         )
 
-def read_yaml_file(file_path: Path)-> dict[str, any]:
+
+def read_yaml_file(file_path: Path) -> dict[str, any]:
     if not file_path.exists():
         raise FileNotFoundError(f"The file {file_path} does not exists")
     with file_path.open("r", encoding="utf-8") as file:

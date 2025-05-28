@@ -15,22 +15,29 @@ from typing import Iterable, Optional, Union
 
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
-from antares.craft.model.binding_constraint import BindingConstraint
 from pandas import DataFrame
+
+from andromede.input_converter.src.data_preprocessing.binding_constraints import (
+    BindingConstraintsPreprocessing,
+)
 from andromede.input_converter.src.data_preprocessing.thermal import (
     ThermalDataPreprocessing,
 )
-from andromede.input_converter.src.utils import resolve_path, transform_to_yaml, read_yaml_file
+from andromede.input_converter.src.utils import (
+    read_yaml_file,
+    resolve_path,
+    transform_to_yaml,
+)
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
     InputPortConnections,
     InputSystem,
-    InputAreaConnections,
 )
-from andromede.input_converter.src.data_preprocessing.binding_constraints import BindingConstraintsPreprocessing
+
 BC_FILENAME = "battery.yaml"
 BC_AREA_PATTERN = "${area}"
+
 
 class AntaresStudyConverter:
     def __init__(
@@ -59,9 +66,6 @@ class AntaresStudyConverter:
             Path(output_path) if output_path else self.study_path / Path("output.yaml")
         )
         self.areas: Iterable[Area] = self.study.get_areas().values()
-        # bc: BindingConstraint = self.study.get_binding_constraints()
-        # print("test: ", bc["battery_level_ie"].get_terms())
-
 
     def _check_dataframe_validity(self, df: DataFrame) -> bool:
         """
@@ -551,62 +555,67 @@ class AntaresStudyConverter:
                     )
 
         return components, connections
-    
+
     def _convert_cc_to_component_list(
-            self, lib_id: str
-        ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-            components = []
-            connections = []
-            self.logger.info("Converting binding constraints to component list...")
-            bc_config_path = Path(__file__).resolve().parent.parent / "data" / "cc_configuration" / BC_FILENAME
-            bc_data = read_yaml_file(bc_config_path).get("template")
-            
-            def __match_area_pattern(object, param_values: dict[str, str]) -> any:
-                if isinstance(object, dict):
-                    return {__match_area_pattern(k, param_values): __match_area_pattern(v, param_values) for k, v in object.items()}
-                elif isinstance(object, list):
-                    return [__match_area_pattern(elem, param_values) for elem in object]
-                elif isinstance(object, str):
-                    return object.replace(BC_AREA_PATTERN, param_values)
-                else:
-                    return object
+        self, lib_id: str
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
+        components = []
+        connections = []
+        self.logger.info("Converting binding constraints to component list...")
+        bc_config_path = (
+            Path(__file__).resolve().parent.parent
+            / "data"
+            / "cc_configuration"
+            / BC_FILENAME
+        )
+        bc_data = read_yaml_file(bc_config_path).get("template")
 
-            for area in self.areas:
-                bc_with_area = __match_area_pattern(bc_data, area.id)
-                bcp = BindingConstraintsPreprocessing(self.study)
-                components.append(
-                    InputComponent(
-                        id=bc_with_area["component"]["id"],
-                        model=bc_with_area["model"],
-                        parameters=[
-                            InputComponentParameter(
-                                id=str(param.get("id")),
-                                time_dependent=str(param.get("time-dependent")),
-                                scenario_dependent=str(param.get("scenario-dependent")),
-                                value=bcp.convert_param_value(param.get("id"), param.get("value"))
-                            )
-                            for param in bc_with_area["component"]["parameters"]
-                        ]
+        def __match_area_pattern(object, param_values: dict[str, str]) -> any:
+            if isinstance(object, dict):
+                return {
+                    __match_area_pattern(k, param_values): __match_area_pattern(
+                        v, param_values
                     )
-                )
+                    for k, v in object.items()
+                }
+            elif isinstance(object, list):
+                return [__match_area_pattern(elem, param_values) for elem in object]
+            elif isinstance(object, str):
+                return object.replace(BC_AREA_PATTERN, param_values)
+            else:
+                return object
 
-                connections.append(
-                    InputPortConnections(
-                        component1=bc_with_area["component"]["id"],
-                        port1="injection_port",
-                        component2=area.id,
-                        port2="balance_port",
-                    )
+        for area in self.areas:
+            bc_with_area = __match_area_pattern(bc_data, area.id)
+            bcp = BindingConstraintsPreprocessing(self.study)
+            components.append(
+                InputComponent(
+                    id=bc_with_area["component"]["id"],
+                    model=bc_with_area["model"],
+                    parameters=[
+                        InputComponentParameter(
+                            id=str(param.get("id")),
+                            time_dependent=str(param.get("time-dependent")),
+                            scenario_dependent=str(param.get("scenario-dependent")),
+                            value=bcp.convert_param_value(
+                                param.get("id"), param.get("value")
+                            ),
+                        )
+                        for param in bc_with_area["component"]["parameters"]
+                    ],
                 )
-                # connections.append(
-                #     InputAreaConnections(
-                #         component=bc_with_area["area-connections"][0]["component"],
-                #         port=bc_with_area["area-connections"][0]["port"],
-                #         area=bc_with_area["area-connections"][0]["area"],
-                #     )
-                # )
+            )
 
-            return components, connections
+            connections.append(
+                InputPortConnections(
+                    component1=bc_with_area["component"]["id"],
+                    port1="injection_port",
+                    component2=area.id,
+                    port2="balance_port",
+                )
+            )
+
+        return components, connections
 
     def convert_study_to_input_study(self) -> InputSystem:
         antares_historic_lib_id = "antares-historic"

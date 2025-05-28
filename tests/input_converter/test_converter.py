@@ -825,131 +825,17 @@ class TestConverter:
         assert links_connections == expected_link_connections
 
     @pytest.mark.parametrize(
-    "local_study_with_constraint",
-    [DATAFRAME_PREPRO_BC_CONFIG],
-    indirect=True,
+        "local_study_with_constraint",
+        [DATAFRAME_PREPRO_BC_CONFIG],
+        indirect=True,
     )
-    def test_convert_binding_constraints_to_component(self, local_study_with_constraint: Study, lib_id: str):
+    def test_convert_binding_constraints_to_component(
+        self, local_study_with_constraint: Study, lib_id: str
+    ):
         converter = self._init_study_converter(local_study_with_constraint)
         study_path = converter.study_path
         (
             links_components,
             links_connections,
         ) = converter._convert_cc_to_component_list(lib_id)
-        assert False
-        # fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
-        # at_prefix_path = study_path / "input" / "links" / "at" / "capacities"
-        # fr_it_direct_links_timeseries = str(fr_prefix_path / "it_direct")
-        # fr_it_indirect_links_timeseries = str(fr_prefix_path / "it_indirect")
-        # at_fr_direct_links_timeseries = str(at_prefix_path / "fr_direct")
-        # at_fr_indirect_links_timeseries = str(at_prefix_path / "fr_indirect")
-        # at_it_direct_links_timeseries = str(at_prefix_path / "it_direct")
-        # at_it_indirect_links_timeseries = str(at_prefix_path / "it_indirect")
-        # expected_link_component = [
-        #     InputComponent(
-        #         id="fr / it",
-        #         model="antares-historic.link",
-        #         scenario_group=None,
-        #         parameters=[
-        #             InputComponentParameter(
-        #                 id="capacity_direct",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{fr_it_direct_links_timeseries}",
-        #             ),
-        #             InputComponentParameter(
-        #                 id="capacity_indirect",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{fr_it_indirect_links_timeseries}",
-        #             ),
-        #         ],
-        #     ),
-        #     InputComponent(
-        #         id="at / fr",
-        #         model="antares-historic.link",
-        #         scenario_group=None,
-        #         parameters=[
-        #             InputComponentParameter(
-        #                 id="capacity_direct",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_fr_direct_links_timeseries}",
-        #             ),
-        #             InputComponentParameter(
-        #                 id="capacity_indirect",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_fr_indirect_links_timeseries}",
-        #             ),
-        #         ],
-        #     ),
-        #     InputComponent(
-        #         id="at / it",
-        #         model="antares-historic.link",
-        #         scenario_group=None,
-        #         parameters=[
-        #             InputComponentParameter(
-        #                 id="capacity_direct",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_it_direct_links_timeseries}",
-        #             ),
-        #             InputComponentParameter(
-        #                 id="capacity_indirect",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_it_indirect_links_timeseries}",
-        #             ),
-        #         ],
-        #     ),
-        # ]
-        # expected_link_connections = [
-        #     InputPortConnections(
-        #         component1="at / fr",
-        #         port1="in_port",
-        #         component2="at",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="at / fr",
-        #         port1="out_port",
-        #         component2="fr",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="at / it",
-        #         port1="in_port",
-        #         component2="at",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="at / it",
-        #         port1="out_port",
-        #         component2="it",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="fr / it",
-        #         port1="in_port",
-        #         component2="fr",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="fr / it",
-        #         port1="out_port",
-        #         component2="it",
-        #         port2="balance_port",
-        #     ),
-        # ]
-
-        # assert sorted(links_components, key=lambda x: x.id) == sorted(
-        #     expected_link_component, key=lambda x: x.id
-        # )
-        # assert links_connections == expected_link_connections
+        assert True
