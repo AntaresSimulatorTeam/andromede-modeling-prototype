@@ -93,6 +93,7 @@ template:
           data:
             area: z_batteries
             cluster: z_batteries_batteries_${area}_1
+            field: series
             column: 0
             operation:
               divide_by: reservoir_capacity
@@ -118,6 +119,7 @@ template:
           data:
             area: ${area}
             cluster: ${area}_batteries_inj
+            field: series
             column: 0
             operation:
               divide_by: withdrawal_nominal_capacity
