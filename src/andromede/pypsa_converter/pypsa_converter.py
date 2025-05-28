@@ -43,7 +43,7 @@ class PyPSAComponentData:
     def _check_key_in_constant_data(self, key: str) -> None:
         if key not in self.constant_data.columns:
             raise ValueError(
-                f"Parameter {key} not available in constant data, defining all available paramters for model {self.pypsa_model_id}"
+                f"Parameter {key} not available in constant data, defining all available parameters for model {self.pypsa_model_id}"
             )
 
 
@@ -65,13 +65,48 @@ class PyPSAStudyConverter:
         self.pypsalib_id = "pypsa_models"
         self.system_name = pypsa_network.name
 
+        self._rename_network_components()
         self.pypsa_components_data: dict[str, PyPSAComponentData] = {}
         self._register_pypsa_components()
 
         assert len(pypsa_network.investment_periods) == 0
 
+    def _rename_network_components(self) -> None:
+        ### Rename PyPSA components, to make sure that the names are uniques (used as id in the Andromede model)
+        self.pypsa_network.loads.index = (
+            self.pypsa_network.loads.index.astype(str) + "_load"
+        )
+        for key, val in self.pypsa_network.loads_t.items():
+            val.columns = val.columns + "_load"
+
+        self.pypsa_network.generators.index = (
+            self.pypsa_network.generators.index.astype(str) + "_generator"
+        )
+        for key, val in self.pypsa_network.generators_t.items():
+            val.columns = val.columns + "_generator"
+
+        self.pypsa_network.loads.index = (
+            self.pypsa_network.loads.index.astype(str) + "_load"
+        )
+        for key, val in self.pypsa_network.loads_t.items():
+            val.columns = val.columns + "_load"
+
+        self.pypsa_network.storage_units.index = (
+            self.pypsa_network.storage_units.index.astype(str) + "_storage"
+        )
+        for key, val in self.pypsa_network.storage_units_t.items():
+            val.columns = val.columns + "_storage"
+
+        self.pypsa_network.stores.index = (
+            self.pypsa_network.stores.index.astype(str) + "_store"
+        )
+        for key, val in self.pypsa_network.stores_t.items():
+            val.columns = val.columns + "_store"
+
     def _register_pypsa_components(self) -> None:
         ### PyPSA components : Generators
+        if not (all((self.pypsa_network.generators["marginal_cost_quadratic"] == 0))):
+            raise ValueError(f"Converter supports only Generators with linear cost")
         if not (all((self.pypsa_network.generators["active"] == 1))):
             raise ValueError(f"Converter supports only Generators with active = 1")
         if not (all((self.pypsa_network.generators["committable"] == False))):
@@ -363,7 +398,6 @@ class PyPSAStudyConverter:
         constant_data: pd.DataFrame,
         pypsa_params_to_andromede_connections: dict[str, tuple[str, str]],
     ) -> list[InputPortConnections]:
-        # Weird, seems to be a static method, as does not depend on self, should this be a method of PyPSAComponentData ? Also weird as conversion responsibility is for PyPSAConverter. Design to rethink somehow
         connections = []
         for bus_id, (
             model_port,

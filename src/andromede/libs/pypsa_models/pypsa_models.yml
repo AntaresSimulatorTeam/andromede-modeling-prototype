@@ -174,7 +174,6 @@ library:
         expression: sum(p) <= e_sum_max
       objective: expec(sum(marginal_cost * p))
 
-    
     - id: link
     #Model for PyPSA link: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#link
       parameters:
@@ -223,7 +222,6 @@ library:
         - id: p0
           lower-bound: p_min_pu*p_nom
           upper-bound: p_max_pu*p_nom
-        - id: p1
         #- id: p_nom_opt
         #- id: status
         #- id: start_up
@@ -243,13 +241,10 @@ library:
           definition: -p0
         - port: p1_port
           field: flow
-          definition: -p1
+          definition: efficiency * p0
         #- port: q_balance_port
         #  field: flow
         #  definition: q
-      constraints:
-        - id: balance
-          expression: p1 = - efficiency * p0
       objective: expec(sum(marginal_cost * p0))
 
   
