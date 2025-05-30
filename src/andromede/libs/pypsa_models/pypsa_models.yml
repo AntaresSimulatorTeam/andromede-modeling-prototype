@@ -133,7 +133,9 @@ library:
         #- id: build_year #Parameter not instantiated for now
         #- id: lifetime #Parameter not instantiated for now
         #- id: capital_cost #Parameter not instantiated for now
-        #- id: efficiency #Parameter not instantiated for now
+        - id: efficiency
+          time_dependent: true
+          scenario_dependent: false
         #- id: committable #Parameter not instantiated for now
         #- id: start_up_cost #Parameter not instantiated for now
         #- id: shut_down_cost #Parameter not instantiated for now
@@ -147,6 +149,11 @@ library:
         #- id: ramp_limit_start_up #Parameter not instantiated for now
         #- id: ramp_limit_shut_down #Parameter not instantiated for now
         #- id: weight #Parameter not instantiated for now
+        ##Additional parameters that are not stored in the PyPSA Generator object, but in a Carrier object
+        - id: emission_factor
+          time_dependent: false
+          scenario_dependent: false
+        
       variables:
         - id: p
           lower-bound: p_nom*p_min_pu
@@ -155,6 +162,8 @@ library:
       ports:
         - id: p_balance_port
           type: flow
+        - id: emission_port
+          type: emission
         #- id: q_balance_port
         #  type: flow
         #- id: emission_port
@@ -164,6 +173,9 @@ library:
         - port: p_balance_port
           field: flow
           definition: p*sign
+        - port: emission_port
+          field: emission
+          definition: p*emission_factor/efficiency
         #- port: q_balance_port
         #  field: flow
         #  definition: q*sign
@@ -396,6 +408,10 @@ library:
           expression: e = (1 - standing_loss) * e[t-1] - p
       objective: expec(sum(marginal_cost * p + marginal_cost_storage * e))
 
+
+
+#### Models for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint ###
+
     - id: global_constraint_co2_max
       #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint
       # Case CO2, <=
@@ -411,4 +427,4 @@ library:
           type: emission
       binding-constraints:
         - id: constraint_expression
-          expression: sum_connections(emission_port.emission) <= quota
+          expression: sum(sum_connections(emission_port.emission)) <= quota

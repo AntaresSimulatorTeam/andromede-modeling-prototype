@@ -11,9 +11,11 @@
 # This file is part of the Antares project.
 import logging
 from dataclasses import dataclass
+from math import inf
 from pathlib import Path
 
 import pandas as pd
+from pandas import DataFrame
 from pypsa import Network
 
 from andromede.pypsa_converter.utils import any_to_float
@@ -63,15 +65,21 @@ class PyPSAStudyConverter:
         self.series_dir = series_dir
         self.pypsa_network = pypsa_network
         self.pypsalib_id = "pypsa_models"
+        self.null_carrier_id = "null"
         self.system_name = pypsa_network.name
 
-        self._rename_network_components()
+        self._pypsa_network_preprocessing()
+        self._pypsa_generator_preprocessing()
         self.pypsa_components_data: dict[str, PyPSAComponentData] = {}
         self._register_pypsa_components()
 
         assert len(pypsa_network.investment_periods) == 0
+        assert (pypsa_network.snapshot_weightings.values==1.).all()
 
-    def _rename_network_components(self) -> None:
+    def _pypsa_network_preprocessing(self) -> None:
+        ###Add fictitious carrier
+        self.pypsa_network.add("Carrier", self.null_carrier_id, co2_emissions = 0, max_growth = any_to_float(inf))
+        
         ### Rename PyPSA components, to make sure that the names are uniques (used as id in the Andromede model)
         self.pypsa_network.loads.index = (
             self.pypsa_network.loads.index.astype(str) + "_load"
@@ -103,6 +111,13 @@ class PyPSAStudyConverter:
         for key, val in self.pypsa_network.stores_t.items():
             val.columns = val.columns + "_store"
 
+    def _pypsa_generator_preprocessing(self)-> None:
+        
+        #Adding generators information related to carriers
+        self.pypsa_network.carriers["carrier"] = self.pypsa_network.carriers.index.values
+        self.pypsa_network.generators["carrier"].fillna(self.null_carrier_id)
+        self.pypsa_network.generators = self.pypsa_network.generators.join(self.pypsa_network.carriers,on = "carrier",how='left',rsuffix='_carrier')
+    
     def _register_pypsa_components(self) -> None:
         ### PyPSA components : Generators
         if not (all((self.pypsa_network.generators["marginal_cost_quadratic"] == 0))):
@@ -126,6 +141,8 @@ class PyPSAStudyConverter:
                 "e_sum_min": "e_sum_min",
                 "e_sum_max": "e_sum_max",
                 "sign": "sign",
+                "efficiency" : "efficiency",
+                "co2_emissions" : "emission_factor",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
@@ -290,7 +307,7 @@ class PyPSAStudyConverter:
         )
 
     def _convert_pypsa_components_of_given_model(
-        self, pysa_components_data: PyPSAComponentData
+        self, pypsa_components_data: PyPSAComponentData
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         """
         Generic function to handle the different PyPSA classes
@@ -315,30 +332,30 @@ class PyPSAStudyConverter:
         """
 
         self.logger.info(
-            f"Creating objects of type: {pysa_components_data.andromede_model_id}. "
+            f"Creating objects of type: {pypsa_components_data.andromede_model_id}. "
         )
 
         # We test whether the keys of the conversion dictionary are allowed in the PyPSA model : all authorized parameters are columns in the constant data frame (even though they are specified as time-varying values in the time-varying data frame)
-        pysa_components_data.check_params_consistency()
+        pypsa_components_data.check_params_consistency()
 
         # List of params that may be time-dependent in the pypsa model, among those we want to keep
         time_dependent_params = set(
-            pysa_components_data.pypsa_params_to_andromede_params
-        ).intersection(set(pysa_components_data.time_dependent_data.keys()))
+            pypsa_components_data.pypsa_params_to_andromede_params
+        ).intersection(set(pypsa_components_data.time_dependent_data.keys()))
         # Save time series and memorize the time-dependent parameters
         comp_param_to_timeseries_name = self._write_and_register_timeseries(
-            pysa_components_data.time_dependent_data, time_dependent_params
+            pypsa_components_data.time_dependent_data, time_dependent_params
         )
 
         connections = self._create_andromede_connections(
-            pysa_components_data.constant_data,
-            pysa_components_data.pypsa_params_to_andromede_connections,
+            pypsa_components_data.constant_data,
+            pypsa_components_data.pypsa_params_to_andromede_connections,
         )
 
         components = self._create_andromede_components(
-            pysa_components_data.constant_data,
-            pysa_components_data.andromede_model_id,
-            pysa_components_data.pypsa_params_to_andromede_params,
+            pypsa_components_data.constant_data,
+            pypsa_components_data.andromede_model_id,
+            pypsa_components_data.pypsa_params_to_andromede_params,
             comp_param_to_timeseries_name,
         )
         return components, connections
@@ -377,7 +394,7 @@ class PyPSAStudyConverter:
                     model=f"{self.pypsalib_id}.{andromede_model_id}",
                     parameters=[
                         InputComponentParameter(
-                            id=param,
+                            id=pypsa_params_to_andromede_params[param],
                             time_dependent=(component, param)
                             in comp_param_to_timeseries_name,
                             scenario_dependent=False,

@@ -58,7 +58,7 @@ def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
         p_nom=50,  # MW
     )
     n1.optimize()
-
+    
     # Testing the PyPSA_to_Andromede converter
     run_conversion_test(n1, n1.objective, "test_load_gen.yml", systems_dir, series_dir)
 
