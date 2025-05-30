@@ -63,6 +63,64 @@ def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
     run_conversion_test(n1, n1.objective, "test_load_gen.yml", systems_dir, series_dir)
 
 
+@pytest.mark.parametrize(
+    "ratio, sense",
+    [
+        (0, "<="),
+        (0.2, "<="),
+        (0.5,"<="),
+        (1.0,"<="),
+        (0.5,"=="),
+        (0.2, "==")
+    ],
+)
+
+def test_load_gen_emissions(systems_dir: Path, series_dir: Path, ratio: float, sense : str) -> None:
+    # Testing PyPSA Generators with CO2 constraints
+    T,min_emissions, max_emissions = 10,10,20
+    n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
+    n1.add("Carrier", "fictive_fuel_one", co2_emissions = min_emissions)
+    n1.add("Carrier", "fictive_fuel_two", co2_emissions = max_emissions)
+    n1.add("Bus", "pypsatown", v_nom=1)
+    load1 = [i * 10 for i in range(T)]
+    n1.add(
+        "Load", "pypsaload", bus="pypsatown", p_set=load1, q_set=0
+    )
+    load2 = [100 for i in range(T)]
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=load2, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        carrier = "fictive_fuel_one",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        carrier = "fictive_fuel_two",
+        p_nom_extendable=False,
+        marginal_cost=40,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator3_emissions_free",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=10,  # MW
+    )
+    quota = (ratio * min_emissions + (1-ratio)*max_emissions) * (sum(load1)+sum(load2))
+    n1.add("GlobalConstraint",name = "co2_budget", sense = "<=", constant = quota)
+    n1.optimize()
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(n1, n1.objective, "test_load_gen_emissions.yml", systems_dir, series_dir)
+
+
 def test_load_gen_pmin(systems_dir: Path, series_dir: Path) -> None:
     # Testing pmin_pu and pmax_pu parameters for Generator component
 

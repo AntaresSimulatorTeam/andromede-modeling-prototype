@@ -31,6 +31,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.5269171689220138
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.198
   - id: DE0 0 OCGT_generator
     model: pypsa_models.generator
     parameters:
@@ -62,6 +70,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.45308568398727467
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.198
   - id: DE0 0 biomass_generator
     model: pypsa_models.generator
     parameters:
@@ -93,6 +109,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.46799999999999997
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0 coal_generator
     model: pypsa_models.generator
     parameters:
@@ -124,6 +148,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.33070406912017614
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.3361
   - id: DE0 0 lignite_generator
     model: pypsa_models.generator
     parameters:
@@ -155,6 +187,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.377582818332281
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.4069
   - id: DE0 0 oil_generator
     model: pypsa_models.generator
     parameters:
@@ -186,6 +226,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.37767379284413494
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.2571
   - id: ES0 0 CCGT_generator
     model: pypsa_models.generator
     parameters:
@@ -217,6 +265,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.5564475829630047
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.198
   - id: ES0 0 biomass_generator
     model: pypsa_models.generator
     parameters:
@@ -248,6 +304,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.46799999999999997
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 coal_generator
     model: pypsa_models.generator
     parameters:
@@ -279,6 +343,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.32999999999999996
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.3361
   - id: ES0 0 nuclear_generator
     model: pypsa_models.generator
     parameters:
@@ -310,6 +382,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.326
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 oil_generator
     model: pypsa_models.generator
     parameters:
@@ -341,6 +421,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.35
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.2571
   - id: ES1 0 CCGT_generator
     model: pypsa_models.generator
     parameters:
@@ -372,6 +460,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.5281945869065703
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.198
   - id: ES1 0 biomass_generator
     model: pypsa_models.generator
     parameters:
@@ -403,6 +499,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.468
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 coal_generator
     model: pypsa_models.generator
     parameters:
@@ -434,6 +538,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.33
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.3361
   - id: ES1 0 nuclear_generator
     model: pypsa_models.generator
     parameters:
@@ -465,6 +577,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.326
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 oil_generator
     model: pypsa_models.generator
     parameters:
@@ -496,6 +616,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.35
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.2571
   - id: FR0 0 CCGT_generator
     model: pypsa_models.generator
     parameters:
@@ -527,6 +655,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.5700900217045326
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.198
   - id: FR0 0 biomass_generator
     model: pypsa_models.generator
     parameters:
@@ -558,6 +694,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.4680000000000001
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 coal_generator
     model: pypsa_models.generator
     parameters:
@@ -589,6 +733,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.33
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.3361
   - id: FR0 0 lignite_generator
     model: pypsa_models.generator
     parameters:
@@ -620,6 +772,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.33
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.4069
   - id: FR0 0 nuclear_generator
     model: pypsa_models.generator
     parameters:
@@ -651,6 +811,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.32599999999999996
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 oil_generator
     model: pypsa_models.generator
     parameters:
@@ -682,6 +850,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.35
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.2571
   - id: DE0 0 0 onwind_generator
     model: pypsa_models.generator
     parameters:
@@ -713,6 +889,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 0 onwind_generator
     model: pypsa_models.generator
     parameters:
@@ -744,6 +928,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 0 onwind_generator
     model: pypsa_models.generator
     parameters:
@@ -775,6 +967,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 0 onwind_generator
     model: pypsa_models.generator
     parameters:
@@ -806,6 +1006,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0 0 solar_generator
     model: pypsa_models.generator
     parameters:
@@ -837,6 +1045,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 0 solar_generator
     model: pypsa_models.generator
     parameters:
@@ -868,6 +1084,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 0 solar_generator
     model: pypsa_models.generator
     parameters:
@@ -899,6 +1123,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 0 solar_generator
     model: pypsa_models.generator
     parameters:
@@ -930,6 +1162,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0 0 solar-hsat_generator
     model: pypsa_models.generator
     parameters:
@@ -961,6 +1201,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 0 solar-hsat_generator
     model: pypsa_models.generator
     parameters:
@@ -992,6 +1240,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 0 solar-hsat_generator
     model: pypsa_models.generator
     parameters:
@@ -1023,6 +1279,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 0 solar-hsat_generator
     model: pypsa_models.generator
     parameters:
@@ -1054,6 +1318,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0 0 offwind-ac_generator
     model: pypsa_models.generator
     parameters:
@@ -1085,6 +1357,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 0 offwind-ac_generator
     model: pypsa_models.generator
     parameters:
@@ -1116,6 +1396,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 0 offwind-ac_generator
     model: pypsa_models.generator
     parameters:
@@ -1147,6 +1435,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 0 offwind-ac_generator
     model: pypsa_models.generator
     parameters:
@@ -1178,6 +1474,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0 0 offwind-float_generator
     model: pypsa_models.generator
     parameters:
@@ -1209,6 +1513,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 0 offwind-float_generator
     model: pypsa_models.generator
     parameters:
@@ -1240,6 +1552,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 0 offwind-float_generator
     model: pypsa_models.generator
     parameters:
@@ -1271,6 +1591,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 0 offwind-float_generator
     model: pypsa_models.generator
     parameters:
@@ -1302,6 +1630,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0 0 offwind-dc_generator
     model: pypsa_models.generator
     parameters:
@@ -1333,6 +1669,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 0 offwind-dc_generator
     model: pypsa_models.generator
     parameters:
@@ -1364,6 +1708,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 1.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0 ror_generator
     model: pypsa_models.generator
     parameters:
@@ -1395,6 +1747,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.9
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 ror_generator
     model: pypsa_models.generator
     parameters:
@@ -1426,6 +1786,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.9
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 ror_generator
     model: pypsa_models.generator
     parameters:
@@ -1457,6 +1825,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.9
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 ror_generator
     model: pypsa_models.generator
     parameters:
@@ -1488,6 +1864,14 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 1.0
+    - id: efficiency
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.9
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: DE0 0_load_load
     model: pypsa_models.load
     parameters:
@@ -1822,6 +2206,10 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 PHS_storage
     model: pypsa_models.storage_unit
     parameters:
@@ -1870,6 +2258,10 @@ system:
       time-dependent: false
       value: 0.0
     - id: inflow
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
+    - id: emission_factor
       scenario-dependent: false
       time-dependent: false
       value: 0.0
@@ -1924,6 +2316,10 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 PHS_storage
     model: pypsa_models.storage_unit
     parameters:
@@ -1972,6 +2368,10 @@ system:
       time-dependent: false
       value: 0.0
     - id: inflow
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
+    - id: emission_factor
       scenario-dependent: false
       time-dependent: false
       value: 0.0
@@ -2026,6 +2426,10 @@ system:
       scenario-dependent: false
       time-dependent: true
       value: _DE0 0 hydro_storage_inflow
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES0 0 hydro_storage
     model: pypsa_models.storage_unit
     parameters:
@@ -2077,6 +2481,10 @@ system:
       scenario-dependent: false
       time-dependent: true
       value: _ES0 0 hydro_storage_inflow
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: ES1 0 hydro_storage
     model: pypsa_models.storage_unit
     parameters:
@@ -2128,6 +2536,10 @@ system:
       scenario-dependent: false
       time-dependent: true
       value: _ES1 0 hydro_storage_inflow
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   - id: FR0 0 hydro_storage
     model: pypsa_models.storage_unit
     parameters:
@@ -2179,6 +2591,10 @@ system:
       scenario-dependent: false
       time-dependent: true
       value: _FR0 0 hydro_storage_inflow
+    - id: emission_factor
+      scenario-dependent: false
+      time-dependent: false
+      value: 0.0
   connections:
   - component1: DE0 0
     component2: DE0 0 CCGT_generator

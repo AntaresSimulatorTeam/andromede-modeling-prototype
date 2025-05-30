@@ -149,7 +149,7 @@ library:
         #- id: ramp_limit_start_up #Parameter not instantiated for now
         #- id: ramp_limit_shut_down #Parameter not instantiated for now
         #- id: weight #Parameter not instantiated for now
-        ##Additional parameters that are not stored in the PyPSA Generator object, but in a Carrier object
+        ##Additional parameters that are not stored in the PyPSA object, but in a Carrier object
         - id: emission_factor
           time_dependent: false
           scenario_dependent: false
@@ -318,6 +318,10 @@ library:
         - id: inflow
           time-dependent: true
           scenario-dependent: true
+      ##Additional parameters that are not stored in the PyPSA object, but in a Carrier object
+        - id: emission_factor
+          time_dependent: false
+          scenario_dependent: false
       variables:
         - id: p_store
           lower-bound: 0
@@ -333,10 +337,15 @@ library:
       ports:
         - id: p_balance_port
           type: flow
+        - id: emission_port
+          type: emission
       port-field-definitions:
         - port: p_balance_port
           field: flow
           definition: p_dispatch - p_store
+        - port: emission_port
+          field: emission
+          definition: emission_factor * 0 #Since we assume here cyclity of StorageUnits, in the future, for non-cyclic Store: (e[-1] - e[T-1])*emission_factor
       constraints:
         - id: state_of_charge_balance
           expression: state_of_charge = (1- standing_loss) * state_of_charge[t-1] + efficiency_store * p_store - p_dispatch / efficiency_dispatch  + inflow - spill
@@ -391,6 +400,10 @@ library:
         #  scenario-dependent: false
         #- id: build_year #Parameter not instantiated for now
         #- id: lifetime #Parameter not instantiated for now
+      ##Additional parameters that are not stored in the PyPSA object, but in a Carrier object
+        - id: emission_factor
+          time_dependent: false
+          scenario_dependent: false
       variables:
         - id: e
           lower-bound: e_min_pu * e_nom
@@ -399,10 +412,15 @@ library:
       ports:
         - id: p_balance_port
           type: flow
+        - id: emission_port
+          type: emission
       port-field-definitions:
         - port: p_balance_port
           field: flow
           definition: p
+        - port: emission_port
+          field: emission
+          definition: emission_factor * 0 #Since we assume here cyclity of stores, in the future, for non-cyclic Store: (e[-1] - e[T-1])*emission_factor
       constraints:
         - id: energy_balance
           expression: e = (1 - standing_loss) * e[t-1] - p
@@ -428,3 +446,20 @@ library:
       binding-constraints:
         - id: constraint_expression
           expression: sum(sum_connections(emission_port.emission)) <= quota
+    
+    - id: global_constraint_co2_eq
+      #Model for PyPSA global constraint: https://pypsa.readthedocs.io/en/latest/user-guide/components.html#global-constraint
+      # Case CO2, ==
+      parameters:
+        #-type = Primary energy
+        #-carrier_attribute = CO2_emissions
+        #sense = ==
+       - id: quota
+         time-dependent: false
+         scenario-dependent: false
+      ports:
+        - id: emission_port
+          type: emission
+      binding-constraints:
+        - id: constraint_expression
+          expression: sum(sum_connections(emission_port.emission)) = quota
