@@ -118,7 +118,9 @@ class PyPSAStudyConverter:
             raise ValueError(
                 f"Converter supports only Storage Units with cyclic_state_of_charge"
             )
-        if not (all((self.pypsa_network.storage_units["marginal_cost_quadratic"] == 0))):
+        if not (
+            all((self.pypsa_network.storage_units["marginal_cost_quadratic"] == 0))
+        ):
             raise ValueError(f"Converter supports only Storage Units with linear cost")
         ### PyPSA components : Stores
         if not (all((self.pypsa_network.links["active"] == 1))):
@@ -329,19 +331,19 @@ class PyPSAStudyConverter:
         andromede_components_and_ports = [
             (gen, "emission_port") 
             for gen in self.pypsa_network.generators[
-                self.pypsa_network.generators["carrier"]!=self.null_carrier_id
+                self.pypsa_network.generators["carrier"] != self.null_carrier_id
             ].index
         ]
         andromede_components_and_ports += [
             (st, "emission_port") 
             for st in self.pypsa_network.stores[
-                self.pypsa_network.stores["carrier"]!=self.null_carrier_id
+                self.pypsa_network.stores["carrier"] != self.null_carrier_id
             ].index
         ]
         andromede_components_and_ports += [
             (st, "emission_port") 
             for st in self.pypsa_network.storage_units[
-                self.pypsa_network.storage_units["carrier"]!=self.null_carrier_id
+                self.pypsa_network.storage_units["carrier"] != self.null_carrier_id
             ].index
         ]
 
