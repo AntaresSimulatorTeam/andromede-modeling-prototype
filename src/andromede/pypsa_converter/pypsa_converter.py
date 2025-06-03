@@ -91,6 +91,7 @@ class PyPSAStudyConverter:
         self._register_pypsa_globalconstraints()
 
     def _pypsa_network_assertion(self) -> None:
+        """Assertion function to keep trace of the limitations of the converter"""
         assert len(self.pypsa_network.investment_periods) == 0
         assert (self.pypsa_network.snapshot_weightings.values == 1.0).all()
         ### PyPSA components : Generators
@@ -117,6 +118,8 @@ class PyPSAStudyConverter:
             raise ValueError(
                 f"Converter supports only Storage Units with cyclic_state_of_charge"
             )
+        if not (all((self.pypsa_network.storage_units["marginal_cost_quadratic"] == 0))):
+            raise ValueError(f"Converter supports only Storage Units with linear cost")
         ### PyPSA components : Stores
         if not (all((self.pypsa_network.links["active"] == 1))):
             raise ValueError(f"Converter supports only Stores with active = 1")
@@ -124,6 +127,8 @@ class PyPSAStudyConverter:
             raise ValueError(f"Converter supports only Stores with sign = 1")
         if not (all((self.pypsa_network.stores["e_cyclic"] == 1))):
             raise ValueError(f"Converter supports only Stores with e_cyclic = True")
+        if not (all((self.pypsa_network.stores["marginal_cost_quadratic"] == 0))):
+            raise ValueError(f"Converter supports only Stores with linear cost")
         ### PyPSA components : GlobalConstraint
         for pypsa_model_id in self.pypsa_network.global_constraints.index:
             assert (
@@ -131,7 +136,9 @@ class PyPSAStudyConverter:
                 == "primary_energy"
             )
             assert (
-                self.pypsa_network.global_constraints.loc[pypsa_model_id, "carrier_attribute"]
+                self.pypsa_network.global_constraints.loc[
+                    pypsa_model_id, "carrier_attribute"
+                ]
                 == "co2_emissions"
             )
 
@@ -319,15 +326,23 @@ class PyPSAStudyConverter:
         )
 
     def _register_pypsa_globalconstraints(self) -> None:
-        # TODO: modify to keep only the object with nonnull carrier
         andromede_components_and_ports = [
-            (gen, "emission_port") for gen in self.pypsa_network.generators[self.pypsa_network.generators["carrier"]!=self.null_carrier_id].index
+            (gen, "emission_port") 
+            for gen in self.pypsa_network.generators[
+                self.pypsa_network.generators["carrier"]!=self.null_carrier_id
+            ].index
         ]
         andromede_components_and_ports += [
-            (st, "emission_port") for st in self.pypsa_network.stores[self.pypsa_network.stores["carrier"]!=self.null_carrier_id].index
+            (st, "emission_port") 
+            for st in self.pypsa_network.stores[
+                self.pypsa_network.stores["carrier"]!=self.null_carrier_id
+            ].index
         ]
         andromede_components_and_ports += [
-            (st, "emission_port") for st in self.pypsa_network.storage_units[self.pypsa_network.storage_units["carrier"]!=self.null_carrier_id].index
+            (st, "emission_port") 
+            for st in self.pypsa_network.storage_units[
+                self.pypsa_network.storage_units["carrier"]!=self.null_carrier_id
+            ].index
         ]
 
         for pypsa_model_id in self.pypsa_network.global_constraints.index:
@@ -338,7 +353,6 @@ class PyPSAStudyConverter:
                     pypsa_model_id, "carrier_attribute"
                 ],
             )
-            
             if carrier_attribute == "co2_emissions" and sense == "<=":
                 self.pypsa_globalconstraints_data[
                     pypsa_model_id
@@ -353,7 +367,6 @@ class PyPSAStudyConverter:
                     "emission_port",
                     andromede_components_and_ports,
                 )
-
             if carrier_attribute == "co2_emissions" and sense == "==":
                 self.pypsa_globalconstraints_data[
                     pypsa_model_id
