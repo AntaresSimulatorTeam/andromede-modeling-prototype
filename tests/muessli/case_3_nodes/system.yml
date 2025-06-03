@@ -473,33 +473,33 @@ system:
     - id: ch_de_link
       model: muessli-lib.link
       parameters:
-      - id: capacity_direct
+      - id: capacity_direct_nominal
         scenario-dependent: false
         time-dependent: false
         value: 4000
-      - id: capacity_indirect
+      - id: capacity_indirect_nominal
         scenario-dependent: false
         time-dependent: false
         value: 1700
     - id: ch_fr_link
       model: muessli-lib.link
       parameters:
-      - id: capacity_direct
+      - id: capacity_direct_nominal
         scenario-dependent: false
         time-dependent: false
         value: 1300
-      - id: capacity_indirect
+      - id: capacity_indirect_nominal
         scenario-dependent: false
         time-dependent: false
         value: 2800
     - id: de_fr_link
       model: muessli-lib.link
       parameters:
-      - id: capacity_direct
+      - id: capacity_direct_nominal
         scenario-dependent: false
         time-dependent: false
         value: 3300
-      - id: capacity_indirect
+      - id: capacity_indirect_nominal
         scenario-dependent: false
         time-dependent: false
         value: 3300

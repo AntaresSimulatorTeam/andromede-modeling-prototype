@@ -28,9 +28,10 @@ class TestCase:
         self.tspath = data_folder
         self.system_file_path = system_folder + "/system.yml"
         self.library_file_path = system_folder + "/library.yml"
-        self.areatype, self.clustertype = (
+        self.areatype, self.clustertype, self.linktype = (
             "muessli-lib.area",
             "muessli-lib.thermal",
+            "muessli-lib.link",
         )
          
         (
@@ -71,23 +72,26 @@ class TestCase:
             TimeBlock(1, [i for i in range(0, self.timespan)]),
             1,
         )
-        del database
         print("Problem built.")
-        self.__build_local_db()
+        self.__build_local_db(database)
         print("Local object database built.")
+        del database
 
-    def __build_local_db(self):
+    def __build_local_db(self,database):
         ### Temporary function. Builds the local database used to update the optimization problem object (self.problem).
         ### Will be useless once the build_problem function's implementation will be optimized to reduce overhead of building problem
 
         # Building list of clusters and areas
         self.areas = []
         self.clusters = []
+        self.links = []
         for el in self.input_component.components:
             if el.model == self.areatype:
                 self.areas.append(el.id)
             if el.model == self.clustertype:
                 self.clusters.append(el.id)
+            if el.model == self.linktype:
+                self.links.append(el.id)
         # Building database of load profiles
         self.local_db_load = {}
         for area in self.areas:
@@ -106,6 +110,18 @@ class TestCase:
                 self.T,
                 self.scenario_number,
             )
+
+        # Building database of reference nominal capacities for thermal clusters
+        self.reference_thermal_capacities = {}
+        for cluster in self.clusters:
+            self.reference_thermal_capacities[cluster] = database.get_data(cluster,"p_max_cluster_nominal").get_value(0,0)
+        
+        # Building database of reference nominal capacities for links
+        self.reference_link_direct_capacities = {}
+        self.reference_link_indirect_capacities = {}
+        for link in self.links:
+            self.reference_link_direct_capacities[link] = database.get_data(link,"capacity_direct_nominal").get_value(0,0)
+            self.reference_link_indirect_capacities[link] = database.get_data(link,"capacity_indirect_nominal").get_value(0,0)
 
         # Building database of storage credits
         self.reference_turbining_credits = {}
@@ -215,18 +231,29 @@ class TestCase:
                     -temp[i],
                 )
 
+    def __update_thermal_capacities(self, thermal_capacities):
+        for cluster in self.clusters:
+            self.problem.solver.LookupVariable(cluster + "_p_max_cluster").SetBounds(0, thermal_capacities[cluster])
+    
+    def __update_link_capacities(self, link_direct_capacities,link_indirect_capacities):
+        for link in self.links:
+            self.problem.solver.LookupVariable(link + "_capacity_direct").SetBounds(0, link_direct_capacities[link])
+            self.problem.solver.LookupVariable(link + "_capacity_indirect").SetBounds(0, link_indirect_capacities[link])
+
     def __update_credits(self, turbining_credits):
         for area in self.areas:
             self.problem.solver.LookupConstraint(
                 f"hydro_{area}_net_injection_credit_t0_s0"
             ).SetUb(turbining_credits[area])
 
-    def __update_problem(self, week_index, scenario_index, turbining_credits):
+    def __update_problem(self, week_index, scenario_index, turbining_credits,thermal_capacities,link_direct_capacities,link_indirect_capacities):
         ### Temporary function. Builds the local database used to update the optimization problem object (self.problem).
         ### Will be useless when the build_problem function's implementation will be optimized to reduce overhead of building problem
         self.__update_load(week_index, scenario_index)
         self.__update_modulation(week_index, scenario_index)
         self.__update_credits(turbining_credits)
+        self.__update_thermal_capacities(thermal_capacities)
+        self.__update_link_capacities(link_direct_capacities,link_indirect_capacities)
 
     def simulation(
         self,
@@ -234,6 +261,8 @@ class TestCase:
         scenario_index,
         turbining_credits=None,
         thermal_capacities=None,
+        link_direct_capacities=None,
+        link_indirect_capacities=None,
         export_opt_file=None,
     ):
         ### Function building and solving the optimization related to a week, a climate scenario, a set of turbining credits for each zone (dict) and a set of installed capacities for each cluster (dict)
@@ -242,18 +271,22 @@ class TestCase:
             turbining_credits = self.reference_turbining_credits[
                 (week_index, scenario_index)
             ]
+        ### Exemple of value for thermal_capacities : {'gas_ch': 810.0, 'nuclear_ch': 2930.0, 'coal_de': 16779.5, 'gas_de': 33183.2, 'lignite_de': 14822.3, 'oil_de': 980.0, 'gas_fr': 12761.1, 'nuclear_fr': 61371.2, 'oil_fr': 1834.3}
+        if thermal_capacities == None:
+            thermal_capacities = self.reference_thermal_capacities
+        ### Exemple of value for link_direct_capacities : {'ch_de_link': 4000.0, 'ch_fr_link': 1300.0, 'de_fr_link': 3300.0}
+        if link_direct_capacities == None:
+            link_direct_capacities = self.reference_link_direct_capacities
+        ### Exemple of value for link_indirect_capacities : {'ch_de_link': 1700.0, 'ch_fr_link': 2800.0, 'de_fr_link': 3300.0}
+        if link_indirect_capacities == None:
+            link_indirect_capacities = self.reference_link_indirect_capacities
         ### self.__update_problem = Temporary code 
         ### Instead of building a new optimization problem, we update the existing one to reduce the overhead
         ### The future implementation of the function  "build_problem" from andromede.simulation.optimization should be way more efficient: its overhead will be reduced
         ### Hence, the line below could then be replaced by self.problem = build_problem(...) since it will be easier (for data tracability) for to just build the optimization problem from scratch, rather than updating the previous one
-        self.__update_problem(week_index, scenario_index, turbining_credits)
+        self.__update_problem(week_index, scenario_index, turbining_credits,thermal_capacities,link_direct_capacities,link_indirect_capacities)
         #self.problem = build_problem(...)
         
-        ### Setting thermal capacities
-        if thermal_capacities != None:
-            raise ValueError(
-                "Changing the capacity of the thermal generation unit should be implemented."
-            )
         
         ### Problem solution ; logging of output
         self.problem.solver.Solve()
@@ -304,10 +337,9 @@ class TestCase:
 
 ##### Example of use ######
 system_folder = "./tests/muessli/case_3_nodes/" #You can keep this path
-data_folder = "../../3_MuESSLi/Génération données/case_3_nodes/case_3_nodes/timeseries" #This path has to be changed depending on where you saved the timeseries folder.
-#For instance, the path to credits_fr.txt file is data_folder+"/credits_fr.txt"
+data_folder = "../muessli_cases/case_3_nodes/timeseries" #This path has to be changed depending on where you saved the timeseries folder.
 case = TestCase(system_folder, data_folder)
-T,W = 5, 52
+T,W = 1, 52
 
 
 for scenario_index in range(T):
@@ -323,3 +355,8 @@ for scenario_index in range(T):
         # res_load_fr = case.get_load("fr",week_index,scenario_index)
         # modulation_nuclear_fr = case.get_availability("nuclear_fr",week_index,scenario_index)
 
+# test with alternative link capacities
+alternative_direct_capacities = {'ch_de_link': 5000.0, 'ch_fr_link': 2000.0, 'de_fr_link': 3300.0}
+alternative_indirect_capacities = {'ch_de_link': 2000.0, 'ch_fr_link': 3000.0, 'de_fr_link': 3300.0}
+print(case.simulation(week_index, scenario_index,link_direct_capacities=alternative_direct_capacities,link_indirect_capacities=alternative_indirect_capacities))
+print(case.simulation(week_index, scenario_index))

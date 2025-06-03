@@ -55,19 +55,27 @@ library:
 
     - id: link
       parameters:
-        - id: capacity_direct
-          time-dependent: true
-          scenario-dependent: true
-        - id: capacity_indirect
-          time-dependent: true
-          scenario-dependent: true
+        - id: capacity_direct_nominal
+          time-dependent: false
+          scenario-dependent: false
+        - id: capacity_indirect_nominal
+          time-dependent: false
+          scenario-dependent: false
       variables:
         - id: flow_direct
           lower-bound: 0
-          upper-bound: capacity_direct
+        - id: capacity_direct
+          time-dependent: false
+          scenario-dependent: false
+          lower-bound: 0
+          upper-bound: capacity_direct_nominal
         - id: flow_indirect
           lower-bound: 0
-          upper-bound: capacity_indirect
+        - id: capacity_indirect
+          time-dependent: false
+          scenario-dependent: false
+          lower-bound: 0
+          upper-bound: capacity_indirect_nominal
         - id: flow
       ports:
         - id: out_port
@@ -82,6 +90,10 @@ library:
           field: flow
           definition: -flow
       constraints:
+        - id: upper_bound_direct_flow
+          expression: flow_direct <= capacity_direct
+        - id: upper_bound_indirect_flow
+          expression: flow_indirect <= capacity_indirect
         - id: flow_direct_indirect
           expression: flow = flow_direct - flow_indirect
 
