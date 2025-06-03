@@ -97,6 +97,14 @@ system:
           time-dependent: false
           scenario-dependent: false
           value: 100000000
+        - id: efficiency
+          time_dependent: false
+          scenario_dependent: false
+          value: 1
+        - id: emission_factor
+          time_dependent: false
+          scenario_dependent: false
+          value: 0
   connections:
     - component1: pypsatown
       port1: p_balance_port

@@ -93,6 +93,47 @@ class PyPSAStudyConverter:
     def _pypsa_network_assertion(self) -> None:
         assert len(self.pypsa_network.investment_periods) == 0
         assert (self.pypsa_network.snapshot_weightings.values == 1.0).all()
+        ### PyPSA components : Generators
+        if not (all((self.pypsa_network.generators["marginal_cost_quadratic"] == 0))):
+            raise ValueError(f"Converter supports only Generators with linear cost")
+        if not (all((self.pypsa_network.generators["active"] == 1))):
+            raise ValueError(f"Converter supports only Generators with active = 1")
+        if not (all((self.pypsa_network.generators["committable"] == False))):
+            raise ValueError(
+                f"Converter supports only Generators with commitable = False"
+            )
+        ### PyPSA components : Loads
+        if not (all((self.pypsa_network.loads["active"] == 1))):
+            raise ValueError(f"Converter supports only Loads with active = 1")
+        ### PyPSA components : Links
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Links with active = 1")
+        ### PyPSA components : Storage Units
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Storage Units with active = 1")
+        if not (all((self.pypsa_network.storage_units["sign"] == 1))):
+            raise ValueError(f"Converter supports only Storage Units with sign = 1")
+        if not (all((self.pypsa_network.storage_units["cyclic_state_of_charge"] == 1))):
+            raise ValueError(
+                f"Converter supports only Storage Units with cyclic_state_of_charge"
+            )
+        ### PyPSA components : Stores
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Stores with active = 1")
+        if not (all((self.pypsa_network.stores["sign"] == 1))):
+            raise ValueError(f"Converter supports only Stores with sign = 1")
+        if not (all((self.pypsa_network.stores["e_cyclic"] == 1))):
+            raise ValueError(f"Converter supports only Stores with e_cyclic = True")
+        ### PyPSA components : GlobalConstraint
+        for pypsa_model_id in self.pypsa_network.global_constraints.index:
+            assert (
+                self.pypsa_network.global_constraints.loc[pypsa_model_id, "type"]
+                == "primary_energy"
+            )
+            assert (
+                self.pypsa_network.global_constraints.loc[pypsa_model_id, "carrier_attribute"]
+                == "co2_emissions"
+            )
 
     def _pypsa_network_preprocessing(self) -> None:
         ###Add fictitious carrier
@@ -167,14 +208,6 @@ class PyPSAStudyConverter:
 
     def _register_pypsa_components(self) -> None:
         ### PyPSA components : Generators
-        if not (all((self.pypsa_network.generators["marginal_cost_quadratic"] == 0))):
-            raise ValueError(f"Converter supports only Generators with linear cost")
-        if not (all((self.pypsa_network.generators["active"] == 1))):
-            raise ValueError(f"Converter supports only Generators with active = 1")
-        if not (all((self.pypsa_network.generators["committable"] == False))):
-            raise ValueError(
-                f"Converter supports only Generators with commitable = False"
-            )
         self._register_pypsa_components_of_given_model(
             "generators",
             self.pypsa_network.generators,
@@ -194,8 +227,6 @@ class PyPSAStudyConverter:
             {"bus": ("p_balance_port", "p_balance_port")},
         )
         ### PyPSA components : Loads
-        if not (all((self.pypsa_network.loads["active"] == 1))):
-            raise ValueError(f"Converter supports only Loads with active = 1")
         self._register_pypsa_components_of_given_model(
             "loads",
             self.pypsa_network.loads,
@@ -225,8 +256,6 @@ class PyPSAStudyConverter:
             {},
         )
         ### PyPSA components : Links
-        if not (all((self.pypsa_network.links["active"] == 1))):
-            raise ValueError(f"Converter supports only Links with active = 1")
         self._register_pypsa_components_of_given_model(
             "links",
             self.pypsa_network.links,
@@ -245,14 +274,6 @@ class PyPSAStudyConverter:
             },
         )
         ### PyPSA components : Storage Units
-        if not (all((self.pypsa_network.links["active"] == 1))):
-            raise ValueError(f"Converter supports only Storage Units with active = 1")
-        if not (all((self.pypsa_network.storage_units["sign"] == 1))):
-            raise ValueError(f"Converter supports only Storage Units with sign = 1")
-        if not (all((self.pypsa_network.storage_units["cyclic_state_of_charge"] == 1))):
-            raise ValueError(
-                f"Converter supports only Storage Units with cyclic_state_of_charge"
-            )
         self._register_pypsa_components_of_given_model(
             "storage_units",
             self.pypsa_network.storage_units,
@@ -276,12 +297,6 @@ class PyPSAStudyConverter:
             {"bus": ("p_balance_port", "p_balance_port")},
         )
         ### PyPSA components : Stores
-        if not (all((self.pypsa_network.links["active"] == 1))):
-            raise ValueError(f"Converter supports only Stores with active = 1")
-        if not (all((self.pypsa_network.stores["sign"] == 1))):
-            raise ValueError(f"Converter supports only Stores with sign = 1")
-        if not (all((self.pypsa_network.stores["e_cyclic"] == 1))):
-            raise ValueError(f"Converter supports only Stores with e_cyclic = True")
         self._register_pypsa_components_of_given_model(
             "stores",
             self.pypsa_network.stores,
@@ -306,13 +321,13 @@ class PyPSAStudyConverter:
     def _register_pypsa_globalconstraints(self) -> None:
         # TODO: modify to keep only the object with nonnull carrier
         andromede_components_and_ports = [
-            (gen, "emission_port") for gen in self.pypsa_network.generators.index
+            (gen, "emission_port") for gen in self.pypsa_network.generators[self.pypsa_network.generators["carrier"]!=self.null_carrier_id].index
         ]
         andromede_components_and_ports += [
-            (st, "emission_port") for st in self.pypsa_network.stores.index
+            (st, "emission_port") for st in self.pypsa_network.stores[self.pypsa_network.stores["carrier"]!=self.null_carrier_id].index
         ]
         andromede_components_and_ports += [
-            (st, "emission_port") for st in self.pypsa_network.storage_units.index
+            (st, "emission_port") for st in self.pypsa_network.storage_units[self.pypsa_network.storage_units["carrier"]!=self.null_carrier_id].index
         ]
 
         for pypsa_model_id in self.pypsa_network.global_constraints.index:
@@ -323,11 +338,7 @@ class PyPSAStudyConverter:
                     pypsa_model_id, "carrier_attribute"
                 ],
             )
-            assert (
-                self.pypsa_network.global_constraints.loc[pypsa_model_id, "type"]
-                == "primary_energy"
-            )
-
+            
             if carrier_attribute == "co2_emissions" and sense == "<=":
                 self.pypsa_globalconstraints_data[
                     pypsa_model_id
