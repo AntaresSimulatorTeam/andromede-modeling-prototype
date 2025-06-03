@@ -12,7 +12,7 @@
 
 import pytest
 from antares.craft.model.study import Study
-
+from pathlib import Path
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.logger import Logger
 from andromede.input_converter.src.utils import transform_to_yaml
@@ -24,6 +24,7 @@ from andromede.study.parsing import (
     parse_yaml_components,
 )
 from tests.input_converter.conftest import create_dataframe_from_constant
+RESOURCES_FOLDER = Path(__file__).parents[2] / "src" / "andromede" / "input_converter" / "data" / "model_configuration"
 
 DATAFRAME_PREPRO_THERMAL_CONFIG = (
     create_dataframe_from_constant(lines=840, columns=4),  # modulation
@@ -589,7 +590,7 @@ class TestConverter:
     ):
         converter = self._init_study_converter(local_study_w_areas)
 
-        load_components, load_connection = converter._convert_load_to_component_list(
+        load_components, load_connection = converter._convert_model_to_component_list(
             lib_id
         )
 
@@ -598,14 +599,15 @@ class TestConverter:
         )
         expected_load_connection = [
             InputPortConnections(
-                component1="load",
+                component1="load_fr",
                 port1="balance_port",
                 component2="fr",
                 port2="balance_port",
             )
         ]
+
         expected_load_components = InputComponent(
-            id="load",
+            id="load_fr",
             model="antares-historic.load",
             scenario_group=None,
             parameters=[
@@ -619,8 +621,8 @@ class TestConverter:
             ],
         )
 
-        assert load_components[0] == expected_load_components
-        assert load_connection == expected_load_connection
+        assert load_components[1] == expected_load_components
+        assert load_connection[1] == expected_load_connection[0]
 
     @pytest.mark.parametrize(
         "fr_wind",
@@ -831,125 +833,11 @@ class TestConverter:
     )
     def test_convert_binding_constraints_to_component(self, local_study_with_constraint: Study, lib_id: str):
         converter = self._init_study_converter(local_study_with_constraint)
-        study_path = converter.study_path
-        (
-            links_components,
-            links_connections,
-        ) = converter._convert_cc_to_component_list(lib_id)
+        for file in RESOURCES_FOLDER.iterdir():
+            if file.is_file() and file.name.endswith(".yaml"):
+                if file.name == "battery.yaml":
+                    (
+                        links_components,
+                        links_connections,
+                    ) = converter._convert_model_to_component_list(file)
         assert False
-        # fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
-        # at_prefix_path = study_path / "input" / "links" / "at" / "capacities"
-        # fr_it_direct_links_timeseries = str(fr_prefix_path / "it_direct")
-        # fr_it_indirect_links_timeseries = str(fr_prefix_path / "it_indirect")
-        # at_fr_direct_links_timeseries = str(at_prefix_path / "fr_direct")
-        # at_fr_indirect_links_timeseries = str(at_prefix_path / "fr_indirect")
-        # at_it_direct_links_timeseries = str(at_prefix_path / "it_direct")
-        # at_it_indirect_links_timeseries = str(at_prefix_path / "it_indirect")
-        # expected_link_component = [
-        #     InputComponent(
-        #         id="fr / it",
-        #         model="antares-historic.link",
-        #         scenario_group=None,
-        #         parameters=[
-        #             InputComponentParameter(
-        #                 id="capacity_direct",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{fr_it_direct_links_timeseries}",
-        #             ),
-        #             InputComponentParameter(
-        #                 id="capacity_indirect",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{fr_it_indirect_links_timeseries}",
-        #             ),
-        #         ],
-        #     ),
-        #     InputComponent(
-        #         id="at / fr",
-        #         model="antares-historic.link",
-        #         scenario_group=None,
-        #         parameters=[
-        #             InputComponentParameter(
-        #                 id="capacity_direct",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_fr_direct_links_timeseries}",
-        #             ),
-        #             InputComponentParameter(
-        #                 id="capacity_indirect",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_fr_indirect_links_timeseries}",
-        #             ),
-        #         ],
-        #     ),
-        #     InputComponent(
-        #         id="at / it",
-        #         model="antares-historic.link",
-        #         scenario_group=None,
-        #         parameters=[
-        #             InputComponentParameter(
-        #                 id="capacity_direct",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_it_direct_links_timeseries}",
-        #             ),
-        #             InputComponentParameter(
-        #                 id="capacity_indirect",
-        #                 time_dependent=True,
-        #                 scenario_dependent=True,
-        #                 scenario_group=None,
-        #                 value=f"{at_it_indirect_links_timeseries}",
-        #             ),
-        #         ],
-        #     ),
-        # ]
-        # expected_link_connections = [
-        #     InputPortConnections(
-        #         component1="at / fr",
-        #         port1="in_port",
-        #         component2="at",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="at / fr",
-        #         port1="out_port",
-        #         component2="fr",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="at / it",
-        #         port1="in_port",
-        #         component2="at",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="at / it",
-        #         port1="out_port",
-        #         component2="it",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="fr / it",
-        #         port1="in_port",
-        #         component2="fr",
-        #         port2="balance_port",
-        #     ),
-        #     InputPortConnections(
-        #         component1="fr / it",
-        #         port1="out_port",
-        #         component2="it",
-        #         port2="balance_port",
-        #     ),
-        # ]
-
-        # assert sorted(links_components, key=lambda x: x.id) == sorted(
-        #     expected_link_component, key=lambda x: x.id
-        # )
-        # assert links_connections == expected_link_connections

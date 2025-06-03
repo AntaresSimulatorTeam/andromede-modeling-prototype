@@ -10,9 +10,10 @@
 #
 # This file is part of the Antares project.
 import logging
+import yaml
 from pathlib import Path
 from typing import Iterable, Optional, Union
-
+from antares.craft.tools.time_series_tool import TimeSeriesFileType
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 from antares.craft.model.binding_constraint import BindingConstraint
@@ -20,7 +21,13 @@ from pandas import DataFrame
 from andromede.input_converter.src.data_preprocessing.thermal import (
     ThermalDataPreprocessing,
 )
-from andromede.input_converter.src.utils import resolve_path, transform_to_yaml, read_yaml_file
+from andromede.input_converter.src.utils import (
+    resolve_path,
+    transform_to_yaml,
+    read_yaml_file,
+    check_dataframe_validity,
+    check_file_exists,
+)
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
@@ -28,9 +35,15 @@ from andromede.study.parsing import (
     InputSystem,
     InputAreaConnections,
 )
-from andromede.input_converter.src.data_preprocessing.binding_constraints import BindingConstraintsPreprocessing
-BC_FILENAME = "battery.yaml"
-BC_AREA_PATTERN = "${area}"
+from andromede.input_converter.src.data_preprocessing.models_preprocessing import (
+    BindingConstraintsPreprocessing,
+)
+
+LOAD_FILENAME = "load.yaml"
+RESOURCES_FOLDER = Path(__file__).parents[1] / "data" / "model_configuration"
+
+AREA_PATTERN = "${area}"
+
 
 class AntaresStudyConverter:
     def __init__(
@@ -62,19 +75,20 @@ class AntaresStudyConverter:
         # bc: BindingConstraint = self.study.get_binding_constraints()
         # print("test: ", bc["battery_level_ie"].get_terms())
 
-
-    def _check_dataframe_validity(self, df: DataFrame) -> bool:
-        """
-        Check and validate the following conditions:
-        1. The dataframe from this path is not empty.
-        2. The dataframe does not contains only zero values.
-
-        :param df: dataframe to validate.
-        """
-        if df.empty or (df == 0).all().all():
-            return False
-
-        return True
+    def _match_area_pattern(self, object, param_values: dict[str, str]) -> any:
+        if isinstance(object, dict):
+            return {
+                self._match_area_pattern(k, param_values): self._match_area_pattern(
+                    v, param_values
+                )
+                for k, v in object.items()
+            }
+        elif isinstance(object, list):
+            return [self._match_area_pattern(elem, param_values) for elem in object]
+        elif isinstance(object, str):
+            return object.replace(AREA_PATTERN, param_values)
+        else:
+            return object
 
     def _convert_area_to_component_list(self, lib_id: str) -> list[InputComponent]:
         components = []
@@ -450,30 +464,31 @@ class AntaresStudyConverter:
             series_path = (
                 self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
             )
-            if series_path.exists():
-                if self._check_dataframe_validity(area.get_wind_matrix()):
-                    components.append(
-                        InputComponent(
-                            id=area.id,
-                            model=f"{lib_id}.wind",
-                            parameters=[
-                                InputComponentParameter(
-                                    id="wind",
-                                    time_dependent=True,
-                                    scenario_dependent=True,
-                                    value=str(series_path).removesuffix(".txt"),
-                                )
-                            ],
-                        )
+            if check_file_exists(series_path) and check_dataframe_validity(
+                area.get_wind_matrix()
+            ):
+                components.append(
+                    InputComponent(
+                        id=area.id,
+                        model=f"{lib_id}.wind",
+                        parameters=[
+                            InputComponentParameter(
+                                id="wind",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(series_path).removesuffix(".txt"),
+                            )
+                        ],
                     )
-                    connections.append(
-                        InputPortConnections(
-                            component1="wind",
-                            port1="balance_port",
-                            component2=area.id,
-                            port2="balance_port",
-                        )
+                )
+                connections.append(
+                    InputPortConnections(
+                        component1="wind",
+                        port1="balance_port",
+                        component2=area.id,
+                        port2="balance_port",
                     )
+                )
 
         return components, connections
 
@@ -487,33 +502,96 @@ class AntaresStudyConverter:
             series_path = (
                 self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
             )
-
-            if series_path.exists():
-                if self._check_dataframe_validity(area.get_solar_matrix()):
-                    components.append(
-                        InputComponent(
-                            id=area.id,
-                            model=f"{lib_id}.solar",
-                            parameters=[
-                                InputComponentParameter(
-                                    id="solar",
-                                    time_dependent=True,
-                                    scenario_dependent=True,
-                                    value=str(series_path).removesuffix(".txt"),
-                                )
-                            ],
-                        )
+            if check_file_exists(series_path) and check_dataframe_validity(
+                area.get_solar_matrix()
+            ):
+                components.append(
+                    InputComponent(
+                        id=area.id,
+                        model=f"{lib_id}.solar",
+                        parameters=[
+                            InputComponentParameter(
+                                id="solar",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(series_path).removesuffix(".txt"),
+                            )
+                        ],
                     )
-                    connections.append(
-                        InputPortConnections(
-                            component1="solar",
-                            port1="balance_port",
-                            component2=area.id,
-                            port2="balance_port",
-                        )
+                )
+                connections.append(
+                    InputPortConnections(
+                        component1="solar",
+                        port1="balance_port",
+                        component2=area.id,
+                        port2="balance_port",
                     )
+                )
 
         return components, connections
+
+    # def _convert_from_series_path(
+    #     self,
+    #     lib_id: str,
+    #     area: Area,
+    #     type: str,
+    #     ts_file_type: TimeSeriesFileType,
+    #     port1: str,
+    #     port2: str,
+    # ) -> Union[tuple[InputComponent, InputPortConnections], None]:
+    #     series_path = self.study_path / ts_file_type.value.format(area_id=area.id)
+    #     if check_file_exists(series_path) and check_dataframe_validity(
+    #         area.get_load_matrix()
+    #     ):
+    #         input_component = InputComponent(
+    #             id=f"{type}_{area.id}",
+    #             model=f"{lib_id}.{type}",
+    #             parameters=[
+    #                 InputComponentParameter(
+    #                     id=f"{type}",
+    #                     time_dependent=True,
+    #                     scenario_dependent=True,
+    #                     value=str(series_path).removesuffix(".txt"),
+    #                 )
+    #             ],
+    #         )
+    #         input_port = InputPortConnections(
+    #             component1=f"{type}_{area.id}",
+    #             port1=port1,
+    #             component2=area.id,
+    #             port2=port2,
+    #         )
+    #         return input_component, input_port
+    #     return None
+
+    # @staticmethod
+    # def _convert_from_config_template(
+    #     data: dict,
+    #     area: Area,
+    #     bcp: BindingConstraintsPreprocessing,
+    #     port1: str,
+    #     port2: str,
+    # ) -> tuple[InputComponent, InputPortConnections]:
+    #     input_component = InputComponent(
+    #         id=data["component"]["id"],
+    #         model=data["model"],
+    #         parameters=[
+    #             InputComponentParameter(
+    #                 id=str(param.get("id")),
+    #                 time_dependent=str(param.get("time-dependent")),
+    #                 scenario_dependent=str(param.get("scenario-dependent")),
+    #                 value=bcp.convert_param_value(param.get("id"), param.get("value")),
+    #             )
+    #             for param in data["component"]["parameters"]
+    #         ],
+    #     )
+    #     input_port = InputPortConnections(
+    #         component1=data["component"]["id"],
+    #         port1=port1,
+    #         component2=area.id,
+    #         port2=port2,
+    #     )
+    #     return input_component, input_port
 
     def _convert_load_to_component_list(
         self, lib_id: str
@@ -525,88 +603,72 @@ class AntaresStudyConverter:
             series_path = (
                 self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
             )
-            if series_path.exists():
-                if self._check_dataframe_validity(area.get_load_matrix()):
-                    components.append(
-                        InputComponent(
-                            id="load",
-                            model=f"{lib_id}.load",
-                            parameters=[
-                                InputComponentParameter(
-                                    id="load",
-                                    time_dependent=True,
-                                    scenario_dependent=True,
-                                    value=str(series_path).removesuffix(".txt"),
-                                )
-                            ],
-                        )
-                    )
-                    connections.append(
-                        InputPortConnections(
-                            component1="load",
-                            port1="balance_port",
-                            component2=area.id,
-                            port2="balance_port",
-                        )
-                    )
-
-        return components, connections
-    
-    def _convert_cc_to_component_list(
-            self, lib_id: str
-        ) -> tuple[list[InputComponent], list[InputPortConnections]]:
-            components = []
-            connections = []
-            self.logger.info("Converting binding constraints to component list...")
-            bc_config_path = Path(__file__).resolve().parent.parent / "data" / "cc_configuration" / BC_FILENAME
-            bc_data = read_yaml_file(bc_config_path).get("template")
-            
-            def __match_area_pattern(object, param_values: dict[str, str]) -> any:
-                if isinstance(object, dict):
-                    return {__match_area_pattern(k, param_values): __match_area_pattern(v, param_values) for k, v in object.items()}
-                elif isinstance(object, list):
-                    return [__match_area_pattern(elem, param_values) for elem in object]
-                elif isinstance(object, str):
-                    return object.replace(BC_AREA_PATTERN, param_values)
-                else:
-                    return object
-
-            for area in self.areas:
-                bc_with_area = __match_area_pattern(bc_data, area.id)
-                bcp = BindingConstraintsPreprocessing(self.study)
+            if check_file_exists(series_path) and check_dataframe_validity(
+            area.get_load_matrix()
+            ):
                 components.append(
                     InputComponent(
-                        id=bc_with_area["component"]["id"],
-                        model=bc_with_area["model"],
+                        id="load",
+                        model=f"{lib_id}.load",
                         parameters=[
                             InputComponentParameter(
-                                id=str(param.get("id")),
-                                time_dependent=str(param.get("time-dependent")),
-                                scenario_dependent=str(param.get("scenario-dependent")),
-                                value=bcp.convert_param_value(param.get("id"), param.get("value"))
+                                id="load",
+                                time_dependent=True,
+                                scenario_dependent=True,
+                                value=str(series_path).removesuffix(".txt"),
                             )
-                            for param in bc_with_area["component"]["parameters"]
-                        ]
+                        ],
                     )
                 )
-
                 connections.append(
                     InputPortConnections(
-                        component1=bc_with_area["component"]["id"],
-                        port1="injection_port",
+                        component1="load",
+                        port1="balance_port",
                         component2=area.id,
                         port2="balance_port",
                     )
                 )
-                # connections.append(
-                #     InputAreaConnections(
-                #         component=bc_with_area["area-connections"][0]["component"],
-                #         port=bc_with_area["area-connections"][0]["port"],
-                #         area=bc_with_area["area-connections"][0]["area"],
-                #     )
-                # )
 
-            return components, connections
+        return components, connections
+
+    def _convert_model_to_component_list(
+        self, model_config_path: Path
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
+        components = []
+        connections = []
+        self.logger.info("Converting model to component list...")
+        data = read_yaml_file(model_config_path).get("template")
+
+        for area in self.areas:
+            data_with_area = self._match_area_pattern(data, area.id)
+            bcp = BindingConstraintsPreprocessing(self.study)
+            components.append(
+                InputComponent(
+                    id=data_with_area["component"]["id"],
+                    model=data_with_area["model"],
+                    parameters=[
+                        InputComponentParameter(
+                            id=str(param.get("id")),
+                            time_dependent=str(param.get("time-dependent")),
+                            scenario_dependent=str(param.get("scenario-dependent")),
+                            value=bcp.convert_param_value(
+                                param.get("id"), param.get("value")
+                            ),
+                        )
+                        for param in data_with_area["component"]["parameters"]
+                    ],
+                )
+            )
+            connections.append(
+                InputPortConnections(
+                    component1=data_with_area["component"]["id"],
+                    port1="injection_port",
+                    component2=area.id,
+                    port2="balance_port",
+                )
+            )
+
+        return components, connections
 
     def convert_study_to_input_study(self) -> InputSystem:
         antares_historic_lib_id = "antares-historic"
@@ -615,25 +677,11 @@ class AntaresStudyConverter:
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
 
-        components, connections = self._convert_link_to_component_list(
-            antares_historic_lib_id
-        )
-        list_components.extend(components)
-        list_connections.extend(connections)
-        conversion_methods = [
-            self._convert_renewable_to_component_list,
-            self._convert_thermal_to_component_list,
-            self._convert_st_storage_to_component_list,
-            self._convert_load_to_component_list,
-            self._convert_wind_to_component_list,
-            self._convert_solar_to_component_list,
-            self._convert_cc_to_component_list,
-        ]
-
-        for method in conversion_methods:
-            components, connections = method(antares_historic_lib_id)
-            list_components.extend(components)
-            list_connections.extend(connections)
+        for file in RESOURCES_FOLDER.iterdir():
+            if file.is_file() and file.name.endswith(".yaml"):
+                components, connections = self._convert_model_to_component_list(file)
+                list_components.extend(components)
+                list_connections.extend(connections)
 
         self.logger.info(
             "Converting node, components and connections into Input study..."

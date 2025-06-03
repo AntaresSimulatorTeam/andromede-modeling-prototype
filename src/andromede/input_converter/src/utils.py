@@ -13,6 +13,7 @@ from pathlib import Path
 
 import yaml
 from pydantic import BaseModel
+from pandas import DataFrame
 
 
 def resolve_path(path_str: Path) -> Path:
@@ -30,6 +31,20 @@ def check_file_exists(input_path: Path) -> bool:
     return False
 
 
+def check_dataframe_validity(df: DataFrame) -> bool:
+    """
+    Check and validate the following conditions:
+    1. The dataframe from this path is not empty.
+    2. The dataframe does not contains only zero values.
+
+    :param df: dataframe to validate.
+    """
+    if df.empty or (df == 0).all().all():
+        return False
+
+    return True
+
+
 def transform_to_yaml(model: BaseModel, output_path: str) -> None:
     with open(output_path, "w", encoding="utf-8") as yaml_file:
         yaml.dump(
@@ -38,7 +53,8 @@ def transform_to_yaml(model: BaseModel, output_path: str) -> None:
             allow_unicode=True,
         )
 
-def read_yaml_file(file_path: Path)-> dict[str, any]:
+
+def read_yaml_file(file_path: Path) -> dict[str, any]:
     if not file_path.exists():
         raise FileNotFoundError(f"The file {file_path} does not exists")
     with file_path.open("r", encoding="utf-8") as file:

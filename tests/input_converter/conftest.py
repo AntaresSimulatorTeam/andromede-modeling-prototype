@@ -247,10 +247,10 @@ def local_study_with_constraint(local_study_w_areas_for_battery, request: pytest
         object_link: Link = local_study_w_areas_for_battery.create_link(area_from=area_from, area_to=area_to)
         if parameters_df is not None:
             object_link.set_parameters(parameters_df)
-
         if capacities_df is not None:
             object_link.set_capacity_direct(capacities_df)
             object_link.set_capacity_indirect(capacities_df)
+
     # Add thermal clusters
     for area_id in ["fr", "z_batteries"]:
         local_study_w_areas_for_battery.get_areas()[area_id].create_thermal_cluster(
@@ -274,6 +274,6 @@ def local_study_with_constraint(local_study_w_areas_for_battery, request: pytest
 
 
     # Add binding constraint
-    local_study_w_areas_for_battery.create_binding_constraint(name="test constraint")
+    local_study_w_areas_for_battery.create_binding_constraint(name="batteries_fr")
 
     return local_study_w_areas_for_battery

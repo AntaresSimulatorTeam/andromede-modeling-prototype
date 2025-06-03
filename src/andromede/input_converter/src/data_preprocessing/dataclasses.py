@@ -28,12 +28,13 @@ class Operation:
             return initial_value / resolve(self.divide_by)
 
         raise ValueError("Operation must have at least one of 'multiply_by', 'divide_by', or 'type'")
+
+
 @dataclass
 class TimeseriesData:
     path: Path
     column: int
     operation: Optional[Operation] = None
-
 
 @dataclass
 class BindingConstraintData:
@@ -45,34 +46,51 @@ class BindingConstraintData:
 class ThermalData:
     area: str
     cluster: str
-    field: Union[str, float]
+    column: Optional[int] = None
+    field: Optional[Union[str, float]] = None
+    operation: Optional[Operation] = None
+    timeseries_file_type: Optional[str] = None
 
 @dataclass
 class LoadData:
     area: str
     column: int
+    timeseries_file_type: str
     operation: Optional[Operation] = None
+
 
 @dataclass
 class WindData:
     area: str
     column: int
+    timeseries_file_type: str
     operation: Optional[Operation] = None
 
 @dataclass
 class SolarData:
     area: str
     column: int
+    timeseries_file_type: str
     operation: Optional[Operation] = None
 
 @dataclass
 class ReservesData:
     area: str
     column: int
+    timeseries_file_type: str
     operation: Optional[Operation] = None
 
 @dataclass
 class MiscGenData:
     area: str
     column: int
+    timeseries_file_type: str
+    operation: Optional[Operation] = None
+
+@dataclass
+class LinksData:
+    column: int
+    area_from: str
+    area_to: str
+    timeseries_file_type: str
     operation: Optional[Operation] = None
