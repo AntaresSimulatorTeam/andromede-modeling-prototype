@@ -13,6 +13,7 @@
 import pytest
 from antares.craft.model.study import Study
 
+from pathlib import Path
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.logger import Logger
 from andromede.input_converter.src.utils import transform_to_yaml
@@ -24,6 +25,8 @@ from andromede.study.parsing import (
     parse_yaml_components,
 )
 from tests.input_converter.conftest import create_dataframe_from_constant
+
+RESOURCES_FOLDER = Path(__file__).parents[2] / "src" / "andromede" / "input_converter" / "data" / "model_configuration"
 
 DATAFRAME_PREPRO_THERMAL_CONFIG = (
     create_dataframe_from_constant(lines=840, columns=4),  # modulation
@@ -825,9 +828,9 @@ class TestConverter:
         assert links_connections == expected_link_connections
 
     @pytest.mark.parametrize(
-        "local_study_with_constraint",
-        [DATAFRAME_PREPRO_BC_CONFIG],
-        indirect=True,
+    "local_study_with_constraint",
+    [DATAFRAME_PREPRO_BC_CONFIG],
+    indirect=True,
     )
     def test_convert_binding_constraints_to_component(
         self, local_study_with_constraint: Study, lib_id: str

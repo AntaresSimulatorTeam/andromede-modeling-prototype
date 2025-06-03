@@ -15,7 +15,6 @@ from typing import Iterable, Optional, Union
 
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
-from pandas import DataFrame
 
 from andromede.input_converter.src.data_preprocessing.binding_constraints import (
     BindingConstraintsPreprocessing,
@@ -24,6 +23,7 @@ from andromede.input_converter.src.data_preprocessing.thermal import (
     ThermalDataPreprocessing,
 )
 from andromede.input_converter.src.utils import (
+    check_dataframe_validity,
     read_yaml_file,
     resolve_path,
     transform_to_yaml,
@@ -65,26 +65,28 @@ class AntaresStudyConverter:
         self.output_path = (
             Path(output_path) if output_path else self.study_path / Path("output.yaml")
         )
-        self.areas: Iterable[Area] = self.study.get_areas().values()
+        self.areas: Iterable[Area] = self.study.get_areas()
 
-    def _check_dataframe_validity(self, df: DataFrame) -> bool:
-        """
-        Check and validate the following conditions:
-        1. The dataframe from this path is not empty.
-        2. The dataframe does not contains only zero values.
-
-        :param df: dataframe to validate.
-        """
-        if df.empty or (df == 0).all().all():
-            return False
-
-        return True
+    def _match_area_pattern(self, object, param_values: dict[str, str]) -> any:
+        if isinstance(object, dict):
+            return {
+                self._match_area_pattern(k, param_values): self._match_area_pattern(
+                    v, param_values
+                )
+                for k, v in object.items()
+            }
+        elif isinstance(object, list):
+            return [self._match_area_pattern(elem, param_values) for elem in object]
+        elif isinstance(object, str):
+            return object.replace(BC_AREA_PATTERN, param_values)
+        else:
+            return object
 
     def _convert_area_to_component_list(self, lib_id: str) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
 
-        for area in self.areas:
+        for area in self.areas.values():
             components.append(
                 InputComponent(
                     id=area.id,
@@ -113,7 +115,7 @@ class AntaresStudyConverter:
         components = []
         connections = []
         self.logger.info("Converting renewables to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             renewables = area.get_renewables()
             for renewable in renewables.values():
                 series_path = (
@@ -170,7 +172,7 @@ class AntaresStudyConverter:
         self.logger.info("Converting thermals to component list...")
         # Add thermal components for each area
 
-        for area in self.areas:
+        for area in self.areas.values():
             thermals = area.get_thermals()
             for thermal in thermals.values():
                 series_path = (
@@ -278,7 +280,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting short-term storages to component list...")
         # Add thermal components for each area
-        for area in self.areas:
+        for area in self.areas.values():
             storages = area.get_st_storages()
             for storage in storages.values():
                 series_path = (
@@ -450,12 +452,12 @@ class AntaresStudyConverter:
         components = []
         connections = []
         self.logger.info("Converting wind to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             series_path = (
                 self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
             )
             if series_path.exists():
-                if self._check_dataframe_validity(area.get_wind_matrix()):
+                if check_dataframe_validity(area.get_wind_matrix()):
                     components.append(
                         InputComponent(
                             id=area.id,
@@ -487,13 +489,13 @@ class AntaresStudyConverter:
         components = []
         connections = []
         self.logger.info("Converting solar to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             series_path = (
                 self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
             )
 
             if series_path.exists():
-                if self._check_dataframe_validity(area.get_solar_matrix()):
+                if check_dataframe_validity(area.get_solar_matrix()):
                     components.append(
                         InputComponent(
                             id=area.id,
@@ -525,12 +527,12 @@ class AntaresStudyConverter:
         components = []
         connections = []
         self.logger.info("Converting load to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             series_path = (
                 self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
             )
             if series_path.exists():
-                if self._check_dataframe_validity(area.get_load_matrix()):
+                if check_dataframe_validity(area.get_load_matrix()):
                     components.append(
                         InputComponent(
                             id="load",
@@ -565,33 +567,27 @@ class AntaresStudyConverter:
         bc_config_path = (
             Path(__file__).resolve().parent.parent
             / "data"
-            / "cc_configuration"
+            / "model_configuration"
             / BC_FILENAME
         )
         bc_data = read_yaml_file(bc_config_path).get("template")
 
-        def __match_area_pattern(object, param_values: dict[str, str]) -> any:
-            if isinstance(object, dict):
-                return {
-                    __match_area_pattern(k, param_values): __match_area_pattern(
-                        v, param_values
-                    )
-                    for k, v in object.items()
+        valid_areas: dict = {}
+        for template_param in bc_data["template-parameters"]:
+            if template_param["name"] == "area":
+                valid_areas = {
+                    k: v
+                    for k, v in self.areas.items()
+                    if k not in template_param["exclude"]
                 }
-            elif isinstance(object, list):
-                return [__match_area_pattern(elem, param_values) for elem in object]
-            elif isinstance(object, str):
-                return object.replace(BC_AREA_PATTERN, param_values)
-            else:
-                return object
 
-        for area in self.areas:
-            bc_with_area = __match_area_pattern(bc_data, area.id)
+        for area in valid_areas.values():
+            data_with_area = self._match_area_pattern(bc_data, area.id)
             bcp = BindingConstraintsPreprocessing(self.study)
             components.append(
                 InputComponent(
-                    id=bc_with_area["component"]["id"],
-                    model=bc_with_area["model"],
+                    id=data_with_area["component"]["id"],
+                    model=data_with_area["model"],
                     parameters=[
                         InputComponentParameter(
                             id=str(param.get("id")),
@@ -601,14 +597,13 @@ class AntaresStudyConverter:
                                 param.get("id"), param.get("value")
                             ),
                         )
-                        for param in bc_with_area["component"]["parameters"]
+                        for param in data_with_area["component"]["parameters"]
                     ],
                 )
             )
-
             connections.append(
                 InputPortConnections(
-                    component1=bc_with_area["component"]["id"],
+                    component1=data_with_area["component"]["id"],
                     port1="injection_port",
                     component2=area.id,
                     port2="balance_port",
@@ -624,11 +619,6 @@ class AntaresStudyConverter:
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
 
-        components, connections = self._convert_link_to_component_list(
-            antares_historic_lib_id
-        )
-        list_components.extend(components)
-        list_connections.extend(connections)
         conversion_methods = [
             self._convert_renewable_to_component_list,
             self._convert_thermal_to_component_list,
@@ -636,6 +626,7 @@ class AntaresStudyConverter:
             self._convert_load_to_component_list,
             self._convert_wind_to_component_list,
             self._convert_solar_to_component_list,
+            self._convert_link_to_component_list,
             self._convert_cc_to_component_list,
         ]
 

@@ -21,6 +21,8 @@ template:
   template-parameters:
     - name: area
       description: "Area identifier for the battery component"
+      exclude: 
+        - z_batteries
 
   component:
     id: battery_${area}
@@ -93,7 +95,7 @@ template:
           data:
             area: z_batteries
             cluster: z_batteries_batteries_${area}_1
-            timeseries_file_type: series
+            timeseries_file_type: thermal_series
             column: 0
             operation:
               divide_by: reservoir_capacity
@@ -119,7 +121,7 @@ template:
           data:
             area: ${area}
             cluster: ${area}_batteries_inj
-            timeseries_file_type: series
+            timeseries_file_type: thermal_series
             column: 0
             operation:
               divide_by: withdrawal_nominal_capacity

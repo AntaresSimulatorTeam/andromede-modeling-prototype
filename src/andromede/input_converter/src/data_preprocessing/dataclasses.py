@@ -60,4 +60,16 @@ class BindingConstraintData:
 class ThermalData:
     area: str
     cluster: str
-    field: Union[str, float]
+    column: Optional[int] = None
+    field: Optional[Union[str, float]] = None
+    operation: Optional[Operation] = None
+    timeseries_file_type: Optional[str] = None
+
+
+@dataclass
+class LinkData:
+    column: int
+    area_from: str
+    area_to: str
+    timeseries_file_type: str
+    operation: Optional[Operation] = None

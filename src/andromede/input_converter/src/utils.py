@@ -12,6 +12,7 @@
 from pathlib import Path
 
 import yaml
+from pandas import DataFrame
 from pydantic import BaseModel
 
 
@@ -28,6 +29,20 @@ def check_file_exists(input_path: Path) -> bool:
     if input_path.exists() and input_path.is_file() and input_path.stat().st_size > 0:
         return True
     return False
+
+
+def check_dataframe_validity(df: DataFrame) -> bool:
+    """
+    Check and validate the following conditions:
+    1. The dataframe from this path is not empty.
+    2. The dataframe does not contains only zero values.
+
+    :param df: dataframe to validate.
+    """
+    if df.empty or (df == 0).all().all():
+        return False
+
+    return True
 
 
 def transform_to_yaml(model: BaseModel, output_path: str) -> None:
