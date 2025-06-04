@@ -21,6 +21,8 @@ template:
   template-parameters:
     - name: area
       description: "Area identifier for the battery component"
+      exclude: 
+        - z_batteries
 
   component:
     id: battery_${area}

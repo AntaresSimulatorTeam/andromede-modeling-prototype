@@ -13,19 +13,20 @@ import logging
 import yaml
 from pathlib import Path
 from typing import Iterable, Optional, Union
-from antares.craft.tools.time_series_tool import TimeSeriesFileType
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
-from antares.craft.model.binding_constraint import BindingConstraint
-from pandas import DataFrame
+
+from andromede.input_converter.src.data_preprocessing.models_preprocessing import (
+    ModelsConfigurationPreprocessing,
+)
 from andromede.input_converter.src.data_preprocessing.thermal import (
     ThermalDataPreprocessing,
 )
 from andromede.input_converter.src.utils import (
+    check_dataframe_validity,
+    read_yaml_file,
     resolve_path,
     transform_to_yaml,
-    read_yaml_file,
-    check_dataframe_validity,
     check_file_exists,
 )
 from andromede.study.parsing import (
@@ -33,13 +34,8 @@ from andromede.study.parsing import (
     InputComponentParameter,
     InputPortConnections,
     InputSystem,
-    InputAreaConnections,
-)
-from andromede.input_converter.src.data_preprocessing.models_preprocessing import (
-    BindingConstraintsPreprocessing,
 )
 
-LOAD_FILENAME = "load.yaml"
 RESOURCES_FOLDER = Path(__file__).parents[1] / "data" / "model_configuration"
 
 AREA_PATTERN = "${area}"
@@ -71,9 +67,7 @@ class AntaresStudyConverter:
         self.output_path = (
             Path(output_path) if output_path else self.study_path / Path("output.yaml")
         )
-        self.areas: Iterable[Area] = self.study.get_areas().values()
-        # bc: BindingConstraint = self.study.get_binding_constraints()
-        # print("test: ", bc["battery_level_ie"].get_terms())
+        self.areas: Iterable[Area] = self.study.get_areas()
 
     def _match_area_pattern(self, object, param_values: dict[str, str]) -> any:
         if isinstance(object, dict):
@@ -94,7 +88,7 @@ class AntaresStudyConverter:
         components = []
         self.logger.info("Converting areas to component list...")
 
-        for area in self.areas:
+        for area in self.areas.values():
             components.append(
                 InputComponent(
                     id=area.id,
@@ -123,7 +117,7 @@ class AntaresStudyConverter:
         components = []
         connections = []
         self.logger.info("Converting renewables to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             renewables = area.get_renewables()
             for renewable in renewables.values():
                 series_path = (
@@ -180,7 +174,7 @@ class AntaresStudyConverter:
         self.logger.info("Converting thermals to component list...")
         # Add thermal components for each area
 
-        for area in self.areas:
+        for area in self.areas.values():
             thermals = area.get_thermals()
             for thermal in thermals.values():
                 series_path = (
@@ -288,7 +282,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting short-term storages to component list...")
         # Add thermal components for each area
-        for area in self.areas:
+        for area in self.areas.values():
             storages = area.get_st_storages()
             for storage in storages.values():
                 series_path = (
@@ -460,7 +454,7 @@ class AntaresStudyConverter:
         components = []
         connections = []
         self.logger.info("Converting wind to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             series_path = (
                 self.study_path / "input" / "wind" / "series" / f"wind_{area.id}.txt"
             )
@@ -498,7 +492,7 @@ class AntaresStudyConverter:
         components = []
         connections = []
         self.logger.info("Converting solar to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             series_path = (
                 self.study_path / "input" / "solar" / "series" / f"solar_{area.id}.txt"
             )
@@ -530,76 +524,13 @@ class AntaresStudyConverter:
 
         return components, connections
 
-    # def _convert_from_series_path(
-    #     self,
-    #     lib_id: str,
-    #     area: Area,
-    #     type: str,
-    #     ts_file_type: TimeSeriesFileType,
-    #     port1: str,
-    #     port2: str,
-    # ) -> Union[tuple[InputComponent, InputPortConnections], None]:
-    #     series_path = self.study_path / ts_file_type.value.format(area_id=area.id)
-    #     if check_file_exists(series_path) and check_dataframe_validity(
-    #         area.get_load_matrix()
-    #     ):
-    #         input_component = InputComponent(
-    #             id=f"{type}_{area.id}",
-    #             model=f"{lib_id}.{type}",
-    #             parameters=[
-    #                 InputComponentParameter(
-    #                     id=f"{type}",
-    #                     time_dependent=True,
-    #                     scenario_dependent=True,
-    #                     value=str(series_path).removesuffix(".txt"),
-    #                 )
-    #             ],
-    #         )
-    #         input_port = InputPortConnections(
-    #             component1=f"{type}_{area.id}",
-    #             port1=port1,
-    #             component2=area.id,
-    #             port2=port2,
-    #         )
-    #         return input_component, input_port
-    #     return None
-
-    # @staticmethod
-    # def _convert_from_config_template(
-    #     data: dict,
-    #     area: Area,
-    #     bcp: BindingConstraintsPreprocessing,
-    #     port1: str,
-    #     port2: str,
-    # ) -> tuple[InputComponent, InputPortConnections]:
-    #     input_component = InputComponent(
-    #         id=data["component"]["id"],
-    #         model=data["model"],
-    #         parameters=[
-    #             InputComponentParameter(
-    #                 id=str(param.get("id")),
-    #                 time_dependent=str(param.get("time-dependent")),
-    #                 scenario_dependent=str(param.get("scenario-dependent")),
-    #                 value=bcp.convert_param_value(param.get("id"), param.get("value")),
-    #             )
-    #             for param in data["component"]["parameters"]
-    #         ],
-    #     )
-    #     input_port = InputPortConnections(
-    #         component1=data["component"]["id"],
-    #         port1=port1,
-    #         component2=area.id,
-    #         port2=port2,
-    #     )
-    #     return input_component, input_port
-
     def _convert_load_to_component_list(
         self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting load to component list...")
-        for area in self.areas:
+        for area in self.areas.values():
             series_path = (
                 self.study_path / "input" / "load" / "series" / f"load_{area.id}.txt"
             )
@@ -608,7 +539,7 @@ class AntaresStudyConverter:
             ):
                 components.append(
                     InputComponent(
-                        id="load",
+                        id="load_" + area.id,
                         model=f"{lib_id}.load",
                         parameters=[
                             InputComponentParameter(
@@ -622,7 +553,7 @@ class AntaresStudyConverter:
                 )
                 connections.append(
                     InputPortConnections(
-                        component1="load",
+                        component1="load_" + area.id,
                         port1="balance_port",
                         component2=area.id,
                         port2="balance_port",
@@ -639,9 +570,19 @@ class AntaresStudyConverter:
         self.logger.info("Converting model to component list...")
         data = read_yaml_file(model_config_path).get("template")
 
-        for area in self.areas:
+        for template_param in data["template-parameters"]:
+            if template_param.get("name") == "area" and "exclude" in template_param:
+                exclude_areas = set(template_param["exclude"])
+                self.areas = {
+                    k: v
+                    for k, v in self.areas.items()
+                    if k not in exclude_areas
+                }
+                break
+
+        for area in self.areas.values():
             data_with_area = self._match_area_pattern(data, area.id)
-            bcp = BindingConstraintsPreprocessing(self.study)
+            bcp = ModelsConfigurationPreprocessing(self.study)
             components.append(
                 InputComponent(
                     id=data_with_area["component"]["id"],
@@ -661,10 +602,10 @@ class AntaresStudyConverter:
             )
             connections.append(
                 InputPortConnections(
-                    component1=data_with_area["component"]["id"],
-                    port1="injection_port",
-                    component2=area.id,
-                    port2="balance_port",
+                component1=data_with_area["connections"][0]["component1"],
+                    port1=data_with_area["connections"][0]["port1"],
+                    component2=data_with_area["connections"][0]["component2"],
+                    port2=data_with_area["connections"][0]["port2"],
                 )
             )
 

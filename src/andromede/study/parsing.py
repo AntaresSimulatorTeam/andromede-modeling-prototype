@@ -40,10 +40,6 @@ class InputPortConnections(ModifiedBaseModel):
     component2: str
     port2: str
 
-class InputAreaConnections(ModifiedBaseModel):
-    component: str
-    port: str
-    area: str
 
 class InputComponentParameter(ModifiedBaseModel):
     id: str

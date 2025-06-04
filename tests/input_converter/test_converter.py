@@ -590,39 +590,39 @@ class TestConverter:
     ):
         converter = self._init_study_converter(local_study_w_areas)
 
-        load_components, load_connection = converter._convert_model_to_component_list(
+        load_components, load_connection = converter._convert_load_to_component_list(
             lib_id
         )
+        # for file in RESOURCES_FOLDER.iterdir():
+        #     if file.is_file() and file.name.endswith(".yaml"):
+        #         if file.name == "load.yaml":
+        #             load_components, load_connection = converter._convert_model_to_component_list(file)
 
+        component_id = "load_fr"
+
+        #A cet endroit on est sensé faire "load_{area_id}"
         load_timeseries = str(
-            converter.study_path / "input" / "load" / "series" / "load_fr"
+            converter.study_path / "input" / "load" / "series" / component_id
         )
-        expected_load_connection = [
-            InputPortConnections(
-                component1="load_fr",
+        expected_load_connection = InputPortConnections(
+                component1=component_id,
                 port1="balance_port",
                 component2="fr",
                 port2="balance_port",
             )
-        ]
+        component: InputComponent = next((comp for comp in load_components if comp.id == component_id), None)
 
-        expected_load_components = InputComponent(
-            id="load_fr",
-            model="antares-historic.load",
-            scenario_group=None,
-            parameters=[
-                InputComponentParameter(
-                    id="load",
-                    time_dependent=True,
-                    scenario_dependent=True,
-                    scenario_group=None,
-                    value=f"{load_timeseries}",
-                ),
-            ],
-        )
+        assert component.model == "antares-historic.load"
+        assert component.scenario_group is None
+        assert component.parameters[0].id == "load"
+        assert component.parameters[0].time_dependent is True
+        assert component.parameters[0].scenario_dependent is True
+        assert component.parameters[0].value == f"{load_timeseries}"
+        assert component.parameters[0].scenario_group is None
 
-        assert load_components[1] == expected_load_components
-        assert load_connection[1] == expected_load_connection[0]
+        component: InputPortConnections = next((comp for comp in load_connection if comp.component1 == component_id), None)
+        assert component == expected_load_connection
+
 
     @pytest.mark.parametrize(
         "fr_wind",
@@ -831,7 +831,9 @@ class TestConverter:
     [DATAFRAME_PREPRO_BC_CONFIG],
     indirect=True,
     )
-    def test_convert_binding_constraints_to_component(self, local_study_with_constraint: Study, lib_id: str):
+    def test_convert_binding_constraints_to_component(
+        self, local_study_with_constraint: Study, lib_id: str
+    ):
         converter = self._init_study_converter(local_study_with_constraint)
         for file in RESOURCES_FOLDER.iterdir():
             if file.is_file() and file.name.endswith(".yaml"):

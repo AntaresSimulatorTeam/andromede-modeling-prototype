@@ -35,7 +35,7 @@ template:
 
   connections:
     - component1: load_${area}
-      port1: injection_port
+      port1: balance_port
       component2: ${area}
       port2: balance_port
 

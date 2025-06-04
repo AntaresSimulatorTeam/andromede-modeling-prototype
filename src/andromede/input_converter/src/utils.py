@@ -12,6 +12,7 @@
 from pathlib import Path
 
 import yaml
+from pandas import DataFrame
 from pydantic import BaseModel
 from pandas import DataFrame
 
