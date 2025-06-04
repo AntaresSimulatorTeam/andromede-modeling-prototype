@@ -210,9 +210,9 @@ class PyPSAStudyConverter:
         # Adding storages' information related to carriers
         for st in self.pypsa_network.storage_units.index:
             if len(self.pypsa_network.storage_units.loc[st, "carrier"]) == 0:
-                self.pypsa_network.storage_units.loc[st, "carrier"] = (
-                    self.null_carrier_id
-                )
+                self.pypsa_network.storage_units.loc[
+                    st, "carrier"
+                ] = self.null_carrier_id
         self.pypsa_network.storage_units = self.pypsa_network.storage_units.join(
             self.pypsa_network.carriers, on="carrier", how="left", rsuffix="_carrier"
         )
