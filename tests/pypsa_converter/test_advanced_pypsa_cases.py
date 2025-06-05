@@ -1,5 +1,17 @@
+# Copyright (c) 2025, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+
 """
-Script to convert a PyPSA study to Andromede format and run it.
+Script to convert a PyPSA study, loaded from NetCDF file, to Andromede format and run it.
 
 This script loads a PyPSA study using the load_pypsa_study function,
 converts it to Andromede format, and runs the converted study.
@@ -193,7 +205,6 @@ def main(file: str, load_scaling: float, activate_quota: bool) -> None:
     )
     logger.info(f"Replacing {len(pypsa_network.lines)} Lines by links")
     pypsa_network = replace_lines_by_links(pypsa_network)
-    logger.info(f"Extending the CO2 quota to make it not binding.")
     if not (activate_quota):
         pypsa_network = extend_quota(pypsa_network)
 
@@ -259,7 +270,7 @@ def main(file: str, load_scaling: float, activate_quota: bool) -> None:
 
 
 def test_case_pypsaeur_operational() -> None:
-    main("base_s_4_elec.nc", 0.8, False)
+    main("base_s_4_elec.nc", 0.8, True)
 
 
 if __name__ == "__main__":

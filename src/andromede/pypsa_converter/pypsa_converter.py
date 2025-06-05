@@ -11,9 +11,11 @@
 # This file is part of the Antares project.
 import logging
 from dataclasses import dataclass
+from math import inf
 from pathlib import Path
 
 import pandas as pd
+from pandas import DataFrame
 from pypsa import Network
 
 from andromede.pypsa_converter.utils import any_to_float
@@ -47,6 +49,18 @@ class PyPSAComponentData:
             )
 
 
+@dataclass
+class PyPSAGlobalConstraintData:
+    pypsa_name: str
+    # pypsa_investment_period
+    pypsa_carrier_attribute: str
+    pypsa_sense: str
+    pypsa_constant: float
+    andromede_model_id: str  # andromede model for this GlobalConstraint
+    andromede_port_id: str  # andromede port for this GlobalConstraint
+    andromede_components_and_ports: list[tuple[str, str]]
+
+
 class PyPSAStudyConverter:
     def __init__(
         self,
@@ -63,15 +77,84 @@ class PyPSAStudyConverter:
         self.series_dir = series_dir
         self.pypsa_network = pypsa_network
         self.pypsalib_id = "pypsa_models"
+        self.null_carrier_id = "null"
         self.system_name = pypsa_network.name
 
-        self._rename_network_components()
+        self._pypsa_network_assertion()
+        self._pypsa_network_preprocessing()
+        self._pypsa_generator_preprocessing()
+        self._pypsa_stores_preprocessing()
+        self._pypsa_storages_preprocessing()
         self.pypsa_components_data: dict[str, PyPSAComponentData] = {}
         self._register_pypsa_components()
+        self.pypsa_globalconstraints_data: dict[str, PyPSAGlobalConstraintData] = {}
+        self._register_pypsa_globalconstraints()
 
-        assert len(pypsa_network.investment_periods) == 0
+    def _pypsa_network_assertion(self) -> None:
+        """Assertion function to keep trace of the limitations of the converter"""
+        assert len(self.pypsa_network.investment_periods) == 0
+        assert (self.pypsa_network.snapshot_weightings.values == 1.0).all()
+        ### PyPSA components : Generators
+        if not (all((self.pypsa_network.generators["marginal_cost_quadratic"] == 0))):
+            raise ValueError(f"Converter supports only Generators with linear cost")
+        if not (all((self.pypsa_network.generators["active"] == 1))):
+            raise ValueError(f"Converter supports only Generators with active = 1")
+        if not (all((self.pypsa_network.generators["committable"] == False))):
+            raise ValueError(
+                f"Converter supports only Generators with commitable = False"
+            )
+        ### PyPSA components : Loads
+        if not (all((self.pypsa_network.loads["active"] == 1))):
+            raise ValueError(f"Converter supports only Loads with active = 1")
+        ### PyPSA components : Links
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Links with active = 1")
+        ### PyPSA components : Storage Units
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Storage Units with active = 1")
+        if not (all((self.pypsa_network.storage_units["sign"] == 1))):
+            raise ValueError(f"Converter supports only Storage Units with sign = 1")
+        if not (all((self.pypsa_network.storage_units["cyclic_state_of_charge"] == 1))):
+            raise ValueError(
+                f"Converter supports only Storage Units with cyclic_state_of_charge"
+            )
+        if not (
+            all((self.pypsa_network.storage_units["marginal_cost_quadratic"] == 0))
+        ):
+            raise ValueError(f"Converter supports only Storage Units with linear cost")
+        ### PyPSA components : Stores
+        if not (all((self.pypsa_network.links["active"] == 1))):
+            raise ValueError(f"Converter supports only Stores with active = 1")
+        if not (all((self.pypsa_network.stores["sign"] == 1))):
+            raise ValueError(f"Converter supports only Stores with sign = 1")
+        if not (all((self.pypsa_network.stores["e_cyclic"] == 1))):
+            raise ValueError(f"Converter supports only Stores with e_cyclic = True")
+        if not (all((self.pypsa_network.stores["marginal_cost_quadratic"] == 0))):
+            raise ValueError(f"Converter supports only Stores with linear cost")
+        ### PyPSA components : GlobalConstraint
+        for pypsa_model_id in self.pypsa_network.global_constraints.index:
+            assert (
+                self.pypsa_network.global_constraints.loc[pypsa_model_id, "type"]
+                == "primary_energy"
+            )
+            assert (
+                self.pypsa_network.global_constraints.loc[
+                    pypsa_model_id, "carrier_attribute"
+                ]
+                == "co2_emissions"
+            )
 
-    def _rename_network_components(self) -> None:
+    def _pypsa_network_preprocessing(self) -> None:
+        ###Add fictitious carrier
+        self.pypsa_network.add(
+            "Carrier",
+            self.null_carrier_id,
+            co2_emissions=0,
+            max_growth=any_to_float(inf),
+        )
+        self.pypsa_network.carriers[
+            "carrier"
+        ] = self.pypsa_network.carriers.index.values
         ### Rename PyPSA components, to make sure that the names are uniques (used as id in the Andromede model)
         self.pypsa_network.loads.index = (
             self.pypsa_network.loads.index.astype(str) + "_load"
@@ -103,16 +186,39 @@ class PyPSAStudyConverter:
         for key, val in self.pypsa_network.stores_t.items():
             val.columns = val.columns + "_store"
 
+    def _pypsa_generator_preprocessing(self) -> None:
+        # Adding generators' information related to carriers
+        for gen in self.pypsa_network.generators.index:
+            if len(self.pypsa_network.generators.loc[gen, "carrier"]) == 0:
+                self.pypsa_network.generators.loc[gen, "carrier"] = self.null_carrier_id
+        self.pypsa_network.generators = self.pypsa_network.generators.join(
+            self.pypsa_network.carriers, on="carrier", how="left", rsuffix="_carrier"
+        )
+
+    def _pypsa_stores_preprocessing(self) -> None:
+        # Adding stores' information related to carriers
+        for st in self.pypsa_network.stores.index:
+            if len(self.pypsa_network.stores.loc[st, "carrier"]) == 0:
+                self.pypsa_network.storage_units.loc[
+                    st, "carrier"
+                ] = self.null_carrier_id
+        self.pypsa_network.stores = self.pypsa_network.stores.join(
+            self.pypsa_network.carriers, on="carrier", how="left", rsuffix="_carrier"
+        )
+
+    def _pypsa_storages_preprocessing(self) -> None:
+        # Adding storages' information related to carriers
+        for st in self.pypsa_network.storage_units.index:
+            if len(self.pypsa_network.storage_units.loc[st, "carrier"]) == 0:
+                self.pypsa_network.storage_units.loc[
+                    st, "carrier"
+                ] = self.null_carrier_id
+        self.pypsa_network.storage_units = self.pypsa_network.storage_units.join(
+            self.pypsa_network.carriers, on="carrier", how="left", rsuffix="_carrier"
+        )
+
     def _register_pypsa_components(self) -> None:
         ### PyPSA components : Generators
-        if not (all((self.pypsa_network.generators["marginal_cost_quadratic"] == 0))):
-            raise ValueError(f"Converter supports only Generators with linear cost")
-        if not (all((self.pypsa_network.generators["active"] == 1))):
-            raise ValueError(f"Converter supports only Generators with active = 1")
-        if not (all((self.pypsa_network.generators["committable"] == False))):
-            raise ValueError(
-                f"Converter supports only Generators with commitable = False"
-            )
         self._register_pypsa_components_of_given_model(
             "generators",
             self.pypsa_network.generators,
@@ -126,12 +232,12 @@ class PyPSAStudyConverter:
                 "e_sum_min": "e_sum_min",
                 "e_sum_max": "e_sum_max",
                 "sign": "sign",
+                "efficiency": "efficiency",
+                "co2_emissions": "emission_factor",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
         ### PyPSA components : Loads
-        if not (all((self.pypsa_network.loads["active"] == 1))):
-            raise ValueError(f"Converter supports only Loads with active = 1")
         self._register_pypsa_components_of_given_model(
             "loads",
             self.pypsa_network.loads,
@@ -161,8 +267,6 @@ class PyPSAStudyConverter:
             {},
         )
         ### PyPSA components : Links
-        if not (all((self.pypsa_network.links["active"] == 1))):
-            raise ValueError(f"Converter supports only Links with active = 1")
         self._register_pypsa_components_of_given_model(
             "links",
             self.pypsa_network.links,
@@ -181,14 +285,6 @@ class PyPSAStudyConverter:
             },
         )
         ### PyPSA components : Storage Units
-        if not (all((self.pypsa_network.links["active"] == 1))):
-            raise ValueError(f"Converter supports only Storage Units with active = 1")
-        if not (all((self.pypsa_network.storage_units["sign"] == 1))):
-            raise ValueError(f"Converter supports only Storage Units with sign = 1")
-        if not (all((self.pypsa_network.storage_units["cyclic_state_of_charge"] == 1))):
-            raise ValueError(
-                f"Converter supports only Storage Units with cyclic_state_of_charge"
-            )
         self._register_pypsa_components_of_given_model(
             "storage_units",
             self.pypsa_network.storage_units,
@@ -207,16 +303,11 @@ class PyPSAStudyConverter:
                 "marginal_cost_storage": "marginal_cost_storage",
                 "spill_cost": "spill_cost",
                 "inflow": "inflow",
+                "co2_emissions": "emission_factor",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
         ### PyPSA components : Stores
-        if not (all((self.pypsa_network.links["active"] == 1))):
-            raise ValueError(f"Converter supports only Stores with active = 1")
-        if not (all((self.pypsa_network.stores["sign"] == 1))):
-            raise ValueError(f"Converter supports only Stores with sign = 1")
-        if not (all((self.pypsa_network.stores["e_cyclic"] == 1))):
-            raise ValueError(f"Converter supports only Stores with e_cyclic = True")
         self._register_pypsa_components_of_given_model(
             "stores",
             self.pypsa_network.stores,
@@ -233,23 +324,67 @@ class PyPSAStudyConverter:
                 "standing_loss": "standing_loss",
                 "marginal_cost": "marginal_cost",
                 "marginal_cost_storage": "marginal_cost_storage",
+                "co2_emissions": "emission_factor",
             },
             {"bus": ("p_balance_port", "p_balance_port")},
         )
-        # TODO:  global_constraints
-        # self._register_pypsa_components_of_given_model(
-        #    "global_constraints",
-        #    self.pypsa_network.global_constraints,
-        #    {},
-        #    "global_constraint",
-        #    {
-        #        "quota": "quota",
-        #    },
-        #    {},
-        # )
-        # TODO: Look for the list of generators, store and storage units contribuiting to the global constraints
-        # Add the corresponding connections to the list of connections
-        # Implement a dedicated function to register global constraints?
+
+    def _register_pypsa_globalconstraints(self) -> None:
+        andromede_components_and_ports = [
+            (gen, "emission_port")
+            for gen in self.pypsa_network.generators[
+                self.pypsa_network.generators["carrier"] != self.null_carrier_id
+            ].index
+        ]
+        andromede_components_and_ports += [
+            (st, "emission_port")
+            for st in self.pypsa_network.stores[
+                self.pypsa_network.stores["carrier"] != self.null_carrier_id
+            ].index
+        ]
+        andromede_components_and_ports += [
+            (st, "emission_port")
+            for st in self.pypsa_network.storage_units[
+                self.pypsa_network.storage_units["carrier"] != self.null_carrier_id
+            ].index
+        ]
+
+        for pypsa_model_id in self.pypsa_network.global_constraints.index:
+            name, sense, carrier_attribute = (
+                pypsa_model_id,
+                self.pypsa_network.global_constraints.loc[pypsa_model_id, "sense"],
+                self.pypsa_network.global_constraints.loc[
+                    pypsa_model_id, "carrier_attribute"
+                ],
+            )
+            if carrier_attribute == "co2_emissions" and sense == "<=":
+                self.pypsa_globalconstraints_data[
+                    pypsa_model_id
+                ] = PyPSAGlobalConstraintData(
+                    name,
+                    carrier_attribute,
+                    sense,
+                    self.pypsa_network.global_constraints.loc[
+                        pypsa_model_id, "constant"
+                    ],
+                    "global_constraint_co2_max",
+                    "emission_port",
+                    andromede_components_and_ports,
+                )
+            if carrier_attribute == "co2_emissions" and sense == "==":
+                self.pypsa_globalconstraints_data[
+                    pypsa_model_id
+                ] = PyPSAGlobalConstraintData(
+                    name,
+                    carrier_attribute,
+                    sense,
+                    self.pypsa_network.global_constraints.loc[
+                        pypsa_model_id, "constant"
+                    ],
+                    "global_constraint_co2_eq",
+                    "emission_port",
+                    andromede_components_and_ports,
+                )
 
     def _register_pypsa_components_of_given_model(
         self,
@@ -285,12 +420,22 @@ class PyPSAStudyConverter:
             list_components.extend(components)
             list_connections.extend(connections)
 
+        for pypsa_global_constraint_data in self.pypsa_globalconstraints_data.values():
+            (
+                components,
+                connections,
+            ) = self._convert_pypsa_globalconstraint_of_given_model(
+                pypsa_global_constraint_data
+            )
+            list_components.extend(components)
+            list_connections.extend(connections)
+
         return InputSystem(
             nodes=[], components=list_components, connections=list_connections
         )
 
     def _convert_pypsa_components_of_given_model(
-        self, pysa_components_data: PyPSAComponentData
+        self, pypsa_components_data: PyPSAComponentData
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         """
         Generic function to handle the different PyPSA classes
@@ -315,32 +460,65 @@ class PyPSAStudyConverter:
         """
 
         self.logger.info(
-            f"Creating objects of type: {pysa_components_data.andromede_model_id}. "
+            f"Creating objects of type: {pypsa_components_data.andromede_model_id}. "
         )
 
         # We test whether the keys of the conversion dictionary are allowed in the PyPSA model : all authorized parameters are columns in the constant data frame (even though they are specified as time-varying values in the time-varying data frame)
-        pysa_components_data.check_params_consistency()
+        pypsa_components_data.check_params_consistency()
 
         # List of params that may be time-dependent in the pypsa model, among those we want to keep
         time_dependent_params = set(
-            pysa_components_data.pypsa_params_to_andromede_params
-        ).intersection(set(pysa_components_data.time_dependent_data.keys()))
+            pypsa_components_data.pypsa_params_to_andromede_params
+        ).intersection(set(pypsa_components_data.time_dependent_data.keys()))
         # Save time series and memorize the time-dependent parameters
         comp_param_to_timeseries_name = self._write_and_register_timeseries(
-            pysa_components_data.time_dependent_data, time_dependent_params
+            pypsa_components_data.time_dependent_data, time_dependent_params
         )
 
         connections = self._create_andromede_connections(
-            pysa_components_data.constant_data,
-            pysa_components_data.pypsa_params_to_andromede_connections,
+            pypsa_components_data.constant_data,
+            pypsa_components_data.pypsa_params_to_andromede_connections,
         )
 
         components = self._create_andromede_components(
-            pysa_components_data.constant_data,
-            pysa_components_data.andromede_model_id,
-            pysa_components_data.pypsa_params_to_andromede_params,
+            pypsa_components_data.constant_data,
+            pypsa_components_data.andromede_model_id,
+            pypsa_components_data.pypsa_params_to_andromede_params,
             comp_param_to_timeseries_name,
         )
+        return components, connections
+
+    def _convert_pypsa_globalconstraint_of_given_model(
+        self, pypsa_gc_data: PyPSAGlobalConstraintData
+    ) -> tuple[list[InputComponent], list[InputPortConnections]]:
+        self.logger.info(
+            f"Creating PyPSA GlobalConstraint of type: {pypsa_gc_data.andromede_model_id}. "
+        )
+        components = [
+            InputComponent(
+                id=pypsa_gc_data.pypsa_name,
+                model=f"{self.pypsalib_id}.{pypsa_gc_data.andromede_model_id}",
+                parameters=[
+                    InputComponentParameter(
+                        id="quota",
+                        time_dependent=False,
+                        scenario_dependent=False,
+                        value=pypsa_gc_data.pypsa_constant,
+                    )
+                ],
+            )
+        ]
+        connections = []
+        for component_id, port_id in pypsa_gc_data.andromede_components_and_ports:
+            connections.append(
+                InputPortConnections(
+                    component1=pypsa_gc_data.pypsa_name,
+                    port1=pypsa_gc_data.andromede_port_id,
+                    component2=component_id,
+                    port2=port_id,
+                )
+            )
+
         return components, connections
 
     def _write_and_register_timeseries(
@@ -377,7 +555,7 @@ class PyPSAStudyConverter:
                     model=f"{self.pypsalib_id}.{andromede_model_id}",
                     parameters=[
                         InputComponentParameter(
-                            id=param,
+                            id=pypsa_params_to_andromede_params[param],
                             time_dependent=(component, param)
                             in comp_param_to_timeseries_name,
                             scenario_dependent=False,
