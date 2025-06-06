@@ -1,9 +1,21 @@
-site_name: Energy systems modeler
+site_name: GenModes, a framework for generic modeling in energy systems
 repo_url: https://github.com/AntaresSimulatorTeam/andromede-modeling-prototype
 nav:
-  - Home: index.md
-  - Getting started: getting-started.md
-  - User guide: user-guide.md
+  - 'Home': 'index.md'
+  - 'Getting started': 'getting-started.md'
+  - 'User guide: GenModes language and dataformat': 
+    - 'Mathematical expressions and syntax': 'user-guide/syntax.md'
+    - 'Libraries': 'user-guide/libraries.md'
+    - 'Models': 'user-guide/models.md'
+    - 'Reference libraries' : 'user-guide/reference-libraries.md'
+    - 'Systems': 'user-guide/systems.md'
+    - 'Data series': 'user-guide/data.md'
+  - 'User guide: Python interpreter package':
+    - 'Reading input files': 'user-guide/inputs.md'
+    - 'Building systems with the Python API': 'user-guide/building.md'
+    - 'Optimization: building and solving problems': 'user-guide/optimization.md'
+    - 'Retrieving outputs': 'user-guide/outputs.md'
+    - 'Data converters': 'user-guide/converters.md'
   - Developer guide: developer-guide.md
   - Changelog: CHANGELOG.md
 
