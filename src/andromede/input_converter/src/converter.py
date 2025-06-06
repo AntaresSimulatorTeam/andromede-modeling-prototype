@@ -61,7 +61,6 @@ class AntaresStudyConverter:
             self.study = read_study_local(self.study_path)
         else:
             raise TypeError("Invalid input type")
-
         self.output_path = (
             Path(output_path) if output_path else self.study_path / Path("output.yaml")
         )

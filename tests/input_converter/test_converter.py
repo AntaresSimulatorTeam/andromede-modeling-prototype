@@ -12,11 +12,12 @@
 
 import pytest
 from antares.craft.model.study import Study
+from dataclasses import asdict
 
 from pathlib import Path
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.logger import Logger
-from andromede.input_converter.src.utils import transform_to_yaml
+from andromede.input_converter.src.utils import transform_to_yaml, read_yaml_file
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
@@ -26,7 +27,14 @@ from andromede.study.parsing import (
 )
 from tests.input_converter.conftest import create_dataframe_from_constant
 
-RESOURCES_FOLDER = Path(__file__).parents[2] / "src" / "andromede" / "input_converter" / "data" / "model_configuration"
+RESOURCES_FOLDER = (
+    Path(__file__).parents[2]
+    / "src"
+    / "andromede"
+    / "input_converter"
+    / "data"
+    / "model_configuration"
+)
 
 DATAFRAME_PREPRO_THERMAL_CONFIG = (
     create_dataframe_from_constant(lines=840, columns=4),  # modulation
@@ -40,15 +48,22 @@ DATAFRAME_PREPRO_BC_CONFIG = (
 
 
 class TestConverter:
-    def _init_study_converter(self, local_study):
+    def _init_converter_from_study(self, local_study):
         logger = Logger(__name__, local_study.service.config.study_path)
         converter: AntaresStudyConverter = AntaresStudyConverter(
             study_input=local_study, logger=logger
         )
         return converter
 
+    def _init_converter_from_path(self, local_path: Path):
+        logger = Logger(__name__, str(local_path))
+        converter: AntaresStudyConverter = AntaresStudyConverter(
+            study_input=local_path, logger=logger
+        )
+        return converter
+
     def test_convert_study_to_input_study(self, local_study_w_areas: Study):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
         input_study = converter.convert_study_to_input_study()
 
         expected_input_study = InputSystem(
@@ -109,7 +124,7 @@ class TestConverter:
         assert input_study == expected_input_study
 
     def test_convert_area_to_component(self, local_study_w_areas: Study, lib_id: str):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
         area_components = converter._convert_area_to_component_list(lib_id)
 
         expected_area_components = [
@@ -163,7 +178,7 @@ class TestConverter:
         assert area_components == expected_area_components
 
     def test_convert_area_to_yaml(self, local_study_w_areas: Study, lib_id: str):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
         area_components = converter._convert_area_to_component_list(lib_id)
         input_study = InputSystem(nodes=area_components)
 
@@ -231,7 +246,7 @@ class TestConverter:
     def test_convert_renewables_to_component(
         self, local_study_with_renewable: Study, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_with_renewable)
+        converter = self._init_converter_from_study(local_study_with_renewable)
         study_path = converter.study_path
         (
             renewables_components,
@@ -291,7 +306,7 @@ class TestConverter:
     def test_convert_st_storages_to_component(
         self, local_study_with_st_storage, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_with_st_storage)
+        converter = self._init_converter_from_study(local_study_with_st_storage)
         study_path = converter.study_path
         (
             storage_components,
@@ -414,7 +429,7 @@ class TestConverter:
         local_study_w_thermal: Study,
         lib_id: str,
     ):
-        converter = self._init_study_converter(local_study_w_thermal)
+        converter = self._init_converter_from_study(local_study_w_thermal)
         study_path = converter.study_path
         (
             thermals_components,
@@ -552,7 +567,7 @@ class TestConverter:
     def test_convert_solar_to_component(
         self, local_study_w_areas: Study, fr_solar: None, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
 
         solar_components, solar_connection = converter._convert_solar_to_component_list(
             lib_id
@@ -590,7 +605,7 @@ class TestConverter:
     def test_convert_load_to_component(
         self, local_study_w_areas: Study, fr_load: None, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
 
         load_components, load_connection = converter._convert_load_to_component_list(
             lib_id
@@ -635,7 +650,7 @@ class TestConverter:
     def test_convert_wind_to_component_not_empty_file(
         self, local_study_w_areas: Study, fr_wind: int, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
 
         wind_components, wind_connection = converter._convert_wind_to_component_list(
             lib_id
@@ -680,7 +695,7 @@ class TestConverter:
     def test_convert_wind_to_component_empty_file(
         self, local_study_w_areas: Study, fr_wind: object, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
 
         wind_components, _ = converter._convert_wind_to_component_list(lib_id)
 
@@ -696,14 +711,14 @@ class TestConverter:
     def test_convert_wind_to_component_zero_values(
         self, local_study_w_areas: Study, fr_wind: int, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_w_areas)
+        converter = self._init_converter_from_study(local_study_w_areas)
 
         wind_components, _ = converter._convert_wind_to_component_list(lib_id)
 
         assert wind_components == []
 
     def test_convert_links_to_component(self, local_study_w_links: Study, lib_id: str):
-        converter = self._init_study_converter(local_study_w_links)
+        converter = self._init_converter_from_study(local_study_w_links)
         study_path = converter.study_path
         (
             links_components,
@@ -827,18 +842,140 @@ class TestConverter:
         )
         assert links_connections == expected_link_connections
 
-    @pytest.mark.parametrize(
-    "local_study_with_constraint",
-    [DATAFRAME_PREPRO_BC_CONFIG],
-    indirect=True,
-    )
+    @staticmethod
+    def _match_area_pattern(object, param_values: dict[str, str], pattern: str) -> any:
+        if isinstance(object, dict):
+            return {
+                TestConverter._match_area_pattern(
+                    k, param_values, pattern
+                ): TestConverter._match_area_pattern(v, param_values, pattern)
+                for k, v in object.items()
+            }
+        elif isinstance(object, list):
+            return [
+                TestConverter._match_area_pattern(elem, param_values, pattern)
+                for elem in object
+            ]
+        elif isinstance(object, str):
+            return object.replace(pattern, param_values)
+        else:
+            return object
+
     def test_convert_binding_constraints_to_component(
-        self, local_study_with_constraint: Study, lib_id: str
+        self, lib_id: str
     ):
-        converter = self._init_study_converter(local_study_with_constraint)
-        study_path = converter.study_path
+        path = (
+            Path(__file__).parent
+            / "resources"
+            / "mini_test_batterie_2026__03062025_104837"
+        )
+        output_path = path / "reference.yaml"
+        expected_data = read_yaml_file(output_path)["system"]
+
+        expected_components = expected_data["components"]
+        expected_connections = expected_data["connections"]
+
+        converter = self._init_converter_from_path(path)
         (
-            links_components,
-            links_connections,
+            binding_components,
+            binding_connections,
         ) = converter._convert_cc_to_component_list(lib_id)
-        assert True
+
+        connection = InputPortConnections(**dict(binding_connections[0]))
+        expected_connection: InputPortConnections = InputPortConnections(
+            **next(
+                (
+                    connection
+                    for connection in expected_connections
+                    if connection["component1"] == "battery_fr"
+                ),
+                None,
+            )
+        )
+
+        assert connection == expected_connection
+
+        expected_component = next(
+            (
+                component
+                for component in expected_components
+                if component["id"] == "battery_fr"
+            ),
+            None,
+        )
+
+        # Clean datas converted
+        obtained_parameters_to_dict = [
+            component.model_dump()
+            for component in dict(binding_components[0])["parameters"]
+        ]
+        obtained_parameters = TestConverter._match_area_pattern(
+            obtained_parameters_to_dict, "", str(path) + "/"
+        )
+
+        for indicex, parameter in enumerate(obtained_parameters):
+            # Assert fields from InputComponent
+            print("obtaind", expected_component["parameters"])
+            assert parameter["id"] == expected_component["parameters"][indicex]["id"]
+            assert (
+                parameter["value"] == expected_component["parameters"][indicex]["value"]
+            )
+            assert (
+                parameter["time_dependent"]
+                == expected_component["parameters"][indicex]["time-dependent"]
+            )
+            assert (
+                parameter["scenario_dependent"]
+                == expected_component["parameters"][indicex]["scenario-dependent"]
+            )
+
+    def test_convert_study_path_to_input_study(self):
+        path = (
+            Path(__file__).parent
+            / "resources"
+            / "mini_test_batterie_2026__03062025_104837"
+        )
+        output_path = path / "reference.yaml"
+
+        expected_data = read_yaml_file(output_path)["system"]
+        converter = self._init_converter_from_path(path)
+        obtained_data = converter.convert_study_to_input_study()
+
+        # Clean datas converted
+        obtained_components_to_dict = [
+            component.model_dump() for component in dict(obtained_data)["components"]
+        ]
+        obtained_components = TestConverter._match_area_pattern(
+            obtained_components_to_dict, "", str(path) + "/"
+        )
+
+        for indicex, component in enumerate(obtained_components):
+            # Assert fields from InputComponent
+            assert component["id"] == expected_data["components"][indicex]["id"]
+            assert component["model"] == expected_data["components"][indicex]["model"]
+            assert component.get("scenario_group") is None
+
+            for indicey, parameter in enumerate(component["parameters"]):
+                # Assert fields from InputComponentParameters
+                assert (
+                    parameter["id"]
+                    == expected_data["components"][indicex]["parameters"][indicey]["id"]
+                )
+                assert (
+                    parameter["value"]
+                    == expected_data["components"][indicex]["parameters"][indicey][
+                        "value"
+                    ]
+                )
+                assert (
+                    parameter["time_dependent"]
+                    == expected_data["components"][indicex]["parameters"][indicey][
+                        "time-dependent"
+                    ]
+                )
+                assert (
+                    parameter["scenario_dependent"]
+                    == expected_data["components"][indicex]["parameters"][indicey][
+                        "scenario-dependent"
+                    ]
+                )

@@ -23,6 +23,7 @@ template:
       description: "Area identifier for the battery component"
       exclude: 
         - z_batteries
+        - z_batteries_pcomp
 
   component:
     id: battery_${area}

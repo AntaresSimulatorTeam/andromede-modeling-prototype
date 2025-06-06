@@ -5,7 +5,7 @@ import pandas as pd
 from antares.craft.model.area import Area
 
 # from antares.craft.model.area import BindingConstraint
-from antares.craft.model.binding_constraint import BindingConstraint
+from antares.craft.model.binding_constraint import BindingConstraint, ConstraintTerm
 from antares.craft.model.study import Study
 from antares.craft.model.thermal import ThermalCluster
 from antares.craft.tools.matrix_tool import read_timeseries
@@ -87,15 +87,22 @@ class BindingConstraintsPreprocessing:
             area = self.study.get_areas()[obj.area]
             thermal: ThermalCluster = area.get_thermals()[obj.cluster]
             field_name = FIELD_ALIAS_MAP[obj.field]
+
             parameter_value = getattr(thermal.properties, field_name)
             self.preprocessed_values[self.id] = parameter_value
             return parameter_value
-
         elif isinstance(obj, BindingConstraintData):
+            if obj.timeseries_file_type is not None:
+                return self._process_time_series(obj.area, obj)
+
             bindings: BindingConstraint = self.study.get_binding_constraints()[obj.id]
-            parameter_value = bindings.get_terms()[obj.field]
-            parameter_value: float = obj.operation.execute(parameter_value)
+            term: ConstraintTerm = bindings.get_terms()[obj.field]
+            if obj.operation:
+                parameter_value: float = obj.operation.execute(term.weight)
+            else:
+                parameter_value: float = term.weight
             return parameter_value
+
         elif isinstance(obj, LinkData):
             return self._process_time_series(obj.area_from, obj)
 
@@ -115,5 +122,4 @@ class BindingConstraintsPreprocessing:
 
         if "operation" in data:
             data["operation"] = Operation(**data["operation"])
-
         return self.calculate_value(cls(**data))

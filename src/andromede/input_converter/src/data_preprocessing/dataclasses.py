@@ -54,6 +54,7 @@ class BindingConstraintData:
     id: str
     field: str
     operation: Optional[Operation] = None
+    timeseries_file_type: Optional[str] = None
 
 
 @dataclass
