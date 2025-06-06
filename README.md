@@ -8,7 +8,10 @@ Andromede introduces a novel approach to model and simulate energy systems, cent
 
 To develop and test new models of energy system components, writing software code should not be a prerequisite. This is where the Andromede 'modeler' package excels, offering users a "no-code" modeling experience with unparalleled versatility.
 
-Within the 'modeler' framework, the abstract mathematical descriptions of models are described in 'library' files, formatted in YAML. These files contain behavioral equations written in a straightforward modeling language. Meanwhile, the numerical representation of a case study is detailed in separate 'system' files, also in YAML format. These files outline the components of a system, with their numerical parameters: nodes in the graph represent instances of abstract models from the 'library', and vertices denote connections between components (as defined by 'ports').
+Within the 'modeler' framework:
+- Abstract mathematical descriptions of models are described in 'library' files, formatted in YAML. These files contain behavioral equations written in a straightforward modeling language. 
+- Meanwhile, the numerical representation of a case study is detailed in separate 'system' files, also in YAML format. 
+These files outline the components of a system, with their numerical parameters: nodes in the graph represent instances of abstract models from the 'library', and vertices denote connections between components (as defined by 'ports').
 
 This Python package features a generic interpreter capable of generating optimization problems from any library and system files that adhere to the modeling language syntax. It then employs dedicated optimization code to solve these problems. The Python API facilitates reading case studies stored in YAML format, modifying them, or creating new ones from scratch by scripting.
 
