@@ -152,9 +152,10 @@ class PyPSAStudyConverter:
             co2_emissions=0,
             max_growth=any_to_float(inf),
         )
-        self.pypsa_network.carriers["carrier"] = (
-            self.pypsa_network.carriers.index.values
-        )
+        self.pypsa_network.carriers[
+            "carrier"
+        ] = self.pypsa_network.carriers.index.values
+        
         ### Rename PyPSA components, to make sure that the names are uniques (used as id in the Andromede model)
         self.pypsa_network.loads.index = (
             self.pypsa_network.loads.index.astype(str) + "_load"
@@ -336,32 +337,32 @@ class PyPSAStudyConverter:
                 ],
             )
             if carrier_attribute == "co2_emissions" and sense == "<=":
-                self.pypsa_globalconstraints_data[pypsa_model_id] = (
-                    PyPSAGlobalConstraintData(
-                        name,
-                        carrier_attribute,
-                        sense,
-                        self.pypsa_network.global_constraints.loc[
-                            pypsa_model_id, "constant"
-                        ],
-                        "global_constraint_co2_max",
-                        "emission_port",
-                        andromede_components_and_ports,
-                    )
+                self.pypsa_globalconstraints_data[
+                    pypsa_model_id
+                ] = PyPSAGlobalConstraintData(
+                    name,
+                    carrier_attribute,
+                    sense,
+                    self.pypsa_network.global_constraints.loc[
+                        pypsa_model_id, "constant"
+                    ],
+                    "global_constraint_co2_max",
+                    "emission_port",
+                    andromede_components_and_ports,
                 )
             elif carrier_attribute == "co2_emissions" and sense == "==":
-                self.pypsa_globalconstraints_data[pypsa_model_id] = (
-                    PyPSAGlobalConstraintData(
-                        name,
-                        carrier_attribute,
-                        sense,
-                        self.pypsa_network.global_constraints.loc[
-                            pypsa_model_id, "constant"
-                        ],
-                        "global_constraint_co2_eq",
-                        "emission_port",
-                        andromede_components_and_ports,
-                    )
+                self.pypsa_globalconstraints_data[
+                    pypsa_model_id
+                ] = PyPSAGlobalConstraintData(
+                    name,
+                    carrier_attribute,
+                    sense,
+                    self.pypsa_network.global_constraints.loc[
+                        pypsa_model_id, "constant"
+                    ],
+                    "global_constraint_co2_eq",
+                    "emission_port",
+                    andromede_components_and_ports,
                 )
             else:
                 raise ValueError("Type of GlobalConstraint not supported.")
