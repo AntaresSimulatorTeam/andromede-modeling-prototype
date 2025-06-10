@@ -82,9 +82,9 @@ class PyPSAStudyConverter:
 
         self._pypsa_network_assertion()
         self._pypsa_network_preprocessing()
-        self._pypsa_generator_preprocessing()
-        self._pypsa_stores_preprocessing()
-        self._pypsa_storages_preprocessing()
+        self._preprocess_pypsa_components("generators")
+        self._preprocess_pypsa_components("stores")
+        self._preprocess_pypsa_components("storage_units")
         self.pypsa_components_data: dict[str, PyPSAComponentData] = {}
         self._register_pypsa_components()
         self.pypsa_globalconstraints_data: dict[str, PyPSAGlobalConstraintData] = {}
@@ -152,9 +152,9 @@ class PyPSAStudyConverter:
             co2_emissions=0,
             max_growth=any_to_float(inf),
         )
-        self.pypsa_network.carriers[
-            "carrier"
-        ] = self.pypsa_network.carriers.index.values
+        self.pypsa_network.carriers["carrier"] = (
+            self.pypsa_network.carriers.index.values
+        )
         ### Rename PyPSA components, to make sure that the names are uniques (used as id in the Andromede model)
         self.pypsa_network.loads.index = (
             self.pypsa_network.loads.index.astype(str) + "_load"
@@ -168,12 +168,6 @@ class PyPSAStudyConverter:
         for key, val in self.pypsa_network.generators_t.items():
             val.columns = val.columns + "_generator"
 
-        self.pypsa_network.loads.index = (
-            self.pypsa_network.loads.index.astype(str) + "_load"
-        )
-        for key, val in self.pypsa_network.loads_t.items():
-            val.columns = val.columns + "_load"
-
         self.pypsa_network.storage_units.index = (
             self.pypsa_network.storage_units.index.astype(str) + "_storage"
         )
@@ -186,35 +180,20 @@ class PyPSAStudyConverter:
         for key, val in self.pypsa_network.stores_t.items():
             val.columns = val.columns + "_store"
 
-    def _pypsa_generator_preprocessing(self) -> None:
-        # Adding generators' information related to carriers
-        for gen in self.pypsa_network.generators.index:
-            if len(self.pypsa_network.generators.loc[gen, "carrier"]) == 0:
-                self.pypsa_network.generators.loc[gen, "carrier"] = self.null_carrier_id
-        self.pypsa_network.generators = self.pypsa_network.generators.join(
-            self.pypsa_network.carriers, on="carrier", how="left", rsuffix="_carrier"
-        )
-
-    def _pypsa_stores_preprocessing(self) -> None:
-        # Adding stores' information related to carriers
-        for st in self.pypsa_network.stores.index:
-            if len(self.pypsa_network.stores.loc[st, "carrier"]) == 0:
-                self.pypsa_network.storage_units.loc[
-                    st, "carrier"
-                ] = self.null_carrier_id
-        self.pypsa_network.stores = self.pypsa_network.stores.join(
-            self.pypsa_network.carriers, on="carrier", how="left", rsuffix="_carrier"
-        )
-
-    def _pypsa_storages_preprocessing(self) -> None:
-        # Adding storages' information related to carriers
-        for st in self.pypsa_network.storage_units.index:
-            if len(self.pypsa_network.storage_units.loc[st, "carrier"]) == 0:
-                self.pypsa_network.storage_units.loc[
-                    st, "carrier"
-                ] = self.null_carrier_id
-        self.pypsa_network.storage_units = self.pypsa_network.storage_units.join(
-            self.pypsa_network.carriers, on="carrier", how="left", rsuffix="_carrier"
+    def _preprocess_pypsa_components(self, component_type: str) -> None:
+        df = getattr(self.pypsa_network, component_type)
+        for comp in df.index:
+            if len(df.loc[comp, "carrier"]) == 0:
+                df.loc[comp, "carrier"] = self.null_carrier_id
+        setattr(
+            self.pypsa_network,
+            component_type,
+            df.join(
+                self.pypsa_network.carriers,
+                on="carrier",
+                how="left",
+                rsuffix="_carrier",
+            ),
         )
 
     def _register_pypsa_components(self) -> None:
@@ -329,25 +308,24 @@ class PyPSAStudyConverter:
             {"bus": ("p_balance_port", "p_balance_port")},
         )
 
+    def _add_contributors_to_globalconstraints(
+        self, andromede_components_and_ports: list[tuple[str, str]], component_type: str
+    ) -> list[tuple[str, str]]:
+        df = getattr(self.pypsa_network, component_type)
+        andromede_components_and_ports += [
+            (comp, "emission_port")
+            for comp in df[df["carrier"] != self.null_carrier_id].index
+        ]
+        return andromede_components_and_ports
+
     def _register_pypsa_globalconstraints(self) -> None:
-        andromede_components_and_ports = [
-            (gen, "emission_port")
-            for gen in self.pypsa_network.generators[
-                self.pypsa_network.generators["carrier"] != self.null_carrier_id
-            ].index
-        ]
-        andromede_components_and_ports += [
-            (st, "emission_port")
-            for st in self.pypsa_network.stores[
-                self.pypsa_network.stores["carrier"] != self.null_carrier_id
-            ].index
-        ]
-        andromede_components_and_ports += [
-            (st, "emission_port")
-            for st in self.pypsa_network.storage_units[
-                self.pypsa_network.storage_units["carrier"] != self.null_carrier_id
-            ].index
-        ]
+        andromede_components_and_ports: list[tuple[str, str]] = []
+        for component_type in ["generators", "stores", "storage_units"]:
+            andromede_components_and_ports = (
+                self._add_contributors_to_globalconstraints(
+                    andromede_components_and_ports, component_type
+                )
+            )
 
         for pypsa_model_id in self.pypsa_network.global_constraints.index:
             name, sense, carrier_attribute = (
@@ -358,33 +336,35 @@ class PyPSAStudyConverter:
                 ],
             )
             if carrier_attribute == "co2_emissions" and sense == "<=":
-                self.pypsa_globalconstraints_data[
-                    pypsa_model_id
-                ] = PyPSAGlobalConstraintData(
-                    name,
-                    carrier_attribute,
-                    sense,
-                    self.pypsa_network.global_constraints.loc[
-                        pypsa_model_id, "constant"
-                    ],
-                    "global_constraint_co2_max",
-                    "emission_port",
-                    andromede_components_and_ports,
+                self.pypsa_globalconstraints_data[pypsa_model_id] = (
+                    PyPSAGlobalConstraintData(
+                        name,
+                        carrier_attribute,
+                        sense,
+                        self.pypsa_network.global_constraints.loc[
+                            pypsa_model_id, "constant"
+                        ],
+                        "global_constraint_co2_max",
+                        "emission_port",
+                        andromede_components_and_ports,
+                    )
                 )
-            if carrier_attribute == "co2_emissions" and sense == "==":
-                self.pypsa_globalconstraints_data[
-                    pypsa_model_id
-                ] = PyPSAGlobalConstraintData(
-                    name,
-                    carrier_attribute,
-                    sense,
-                    self.pypsa_network.global_constraints.loc[
-                        pypsa_model_id, "constant"
-                    ],
-                    "global_constraint_co2_eq",
-                    "emission_port",
-                    andromede_components_and_ports,
+            elif carrier_attribute == "co2_emissions" and sense == "==":
+                self.pypsa_globalconstraints_data[pypsa_model_id] = (
+                    PyPSAGlobalConstraintData(
+                        name,
+                        carrier_attribute,
+                        sense,
+                        self.pypsa_network.global_constraints.loc[
+                            pypsa_model_id, "constant"
+                        ],
+                        "global_constraint_co2_eq",
+                        "emission_port",
+                        andromede_components_and_ports,
+                    )
                 )
+            else:
+                raise ValueError("Type of GlobalConstraint not supported.")
 
     def _register_pypsa_components_of_given_model(
         self,
@@ -408,7 +388,7 @@ class PyPSAStudyConverter:
         )
 
     def to_andromede_study(self) -> InputSystem:
-        """Function"""
+        """Main function, to export PyPSA as Andromede system"""
 
         self.logger.info("Study conversion started")
         list_components, list_connections = [], []
@@ -440,23 +420,6 @@ class PyPSAStudyConverter:
         """
         Generic function to handle the different PyPSA classes
 
-        Parameters
-        -----------
-        constant_data: pd.DataFrame
-            Dataframe listing the components in the PyPSA class. Ex: pypsa_network.loads
-        time_dependent_data: dict[str, pd.DataFrame]
-            Dictionary of dataframe, one for each parameter or variable that is time-varying for some compoentns. Ex: pypsa_network.loads_t
-        andromede_model_id: str
-            Id of the model in the Andromede library
-        pypsa_params_to_andromede_params: dict
-            For each parameter of the PyPSA class that is to be exported in the Andromede model as a parameter, the name of the corresponding parameter in the Andromede model
-        pypsa_params_to_andromede_connections: dict
-            For each parameter of the PyPSA class that is to be exported in the Andromede model as a connection, a couple (model_port, bus_port)
-
-        Returns
-        ----------
-        tuple[list[InputComponent], list[InputPortConnections]]
-            A tuple containing the list of InputComponent and the list of InputPortConnections that represent the PyPSA components in the modeler format
         """
 
         self.logger.info(

@@ -20,23 +20,14 @@ converts it to Andromede format, and runs the converted study.
 import math
 from pathlib import Path
 
-import numpy as np
 from pypsa import Network
 
 from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.pypsa_converter.pypsa_converter import PyPSAStudyConverter
 from andromede.pypsa_converter.utils import transform_to_yaml
-from andromede.simulation.optimization import OptimizationProblem, build_problem
-from andromede.simulation.time_block import TimeBlock
-from andromede.study.parsing import InputSystem, parse_yaml_components
-from andromede.study.resolve_components import (
-    System,
-    build_data_base,
-    build_network,
-    resolve_system,
-)
+from andromede.study.resolve_components import resolve_system
+from tests.pypsa_converter.utils import build_problem_from_system, convert_pypsa_network
 
 
 def load_pypsa_study(file: str, load_scaling: float) -> Network:
@@ -73,7 +64,7 @@ def load_pypsa_study(file: str, load_scaling: float) -> Network:
 
 def extend_quota(network: Network) -> Network:
     # Temporary function, used while the GlobalConstraint model is not implemented yet.
-    # Set the CO2 bound to very alrge value
+    # Set the CO2 bound to very large value
     network.global_constraints["constant"][0] = 10000000000
 
     return network
@@ -131,54 +122,6 @@ def replace_lines_by_links(network: Network) -> Network:
         )
     network.remove("Line", lines.index)
     return network
-
-
-def convert_pypsa_network(
-    pypsa_network: Network,
-    systems_dir: Path,
-    series_dir: Path,
-) -> InputSystem:
-    """
-    Convert a PyPSA network to an Andromede InputSystem.
-
-    Args:
-        pypsa_network: The PyPSA network to convert
-        systems_dir: Directory to store system files
-        series_dir: Directory to store time series data
-
-    Returns:
-        InputSystem: The converted Andromede InputSystem
-    """
-    logger = Logger(__name__, "")
-    converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
-    input_system_from_pypsa_converter = converter.to_andromede_study()
-    return input_system_from_pypsa_converter
-
-
-def build_problem_from_system(
-    resolved_system: System, input_system: InputSystem, series_dir: Path, timesteps: int
-) -> OptimizationProblem:
-    """
-    Build an optimization problem from a resolved system.
-
-    Args:
-        resolved_system: The resolved Andromede system
-        input_system: The input system
-        series_dir: Directory containing time series data
-        timesteps: Number of timesteps in the simulation
-
-    Returns:
-        OptimizationProblem: The built optimization problem
-    """
-    database = build_data_base(input_system, Path(series_dir))
-    network = build_network(resolved_system)
-    problem = build_problem(
-        network,
-        database,
-        TimeBlock(1, [i for i in range(timesteps)]),
-        1,
-    )
-    return problem
 
 
 def main(file: str, load_scaling: float, activate_quota: bool) -> None:

@@ -16,20 +16,12 @@ from pathlib import Path
 import pypsa
 import pytest
 
-from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.pypsa_converter.pypsa_converter import PyPSAStudyConverter
 from andromede.pypsa_converter.utils import transform_to_yaml
-from andromede.simulation.optimization import OptimizationProblem, build_problem
-from andromede.simulation.time_block import TimeBlock
-from andromede.study.parsing import InputSystem, parse_yaml_components
-from andromede.study.resolve_components import (
-    System,
-    build_data_base,
-    build_network,
-    resolve_system,
-)
+from andromede.study.parsing import parse_yaml_components
+from andromede.study.resolve_components import resolve_system
+from tests.pypsa_converter.utils import build_problem_from_system, convert_pypsa_network
 
 
 def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
@@ -439,30 +431,3 @@ def run_conversion_test(
         assert math.isclose(
             problem.solver.Objective().Value(), target_value, rel_tol=1e-6
         )
-
-
-def convert_pypsa_network(
-    pypsa_network: pypsa.Network,
-    systems_dir: Path,
-    series_dir: Path,
-) -> InputSystem:
-    logger = Logger(__name__, "")
-    converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
-    input_system_from_pypsa_converter = converter.to_andromede_study()
-
-    return input_system_from_pypsa_converter
-
-
-def build_problem_from_system(
-    resolved_system: System, input_system: InputSystem, series_dir: Path, timesteps: int
-) -> OptimizationProblem:
-    database = build_data_base(input_system, series_dir)
-    network = build_network(resolved_system)
-    problem = build_problem(
-        network,
-        database,
-        TimeBlock(1, [i for i in range(timesteps)]),
-        1,
-    )
-
-    return problem

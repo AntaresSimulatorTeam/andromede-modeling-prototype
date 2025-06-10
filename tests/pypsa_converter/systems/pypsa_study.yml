@@ -1872,13 +1872,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: DE0 0_load_load
+  - id: DE0 0_load
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _DE0 0_load_load_p_set
+      value: _DE0 0_load_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1887,13 +1887,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: ES0 0_load_load
+  - id: ES0 0_load
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _ES0 0_load_load_p_set
+      value: _ES0 0_load_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1902,13 +1902,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: ES1 0_load_load
+  - id: ES1 0_load
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _ES1 0_load_load_p_set
+      value: _ES1 0_load_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1917,13 +1917,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: FR0 0_load_load
+  - id: FR0 0_load
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _FR0 0_load_load_p_set
+      value: _FR0 0_load_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -2789,19 +2789,19 @@ system:
     port1: p_balance_port
     port2: p_balance_port
   - component1: DE0 0
-    component2: DE0 0_load_load
+    component2: DE0 0_load
     port1: p_balance_port
     port2: p_balance_port
   - component1: ES0 0
-    component2: ES0 0_load_load
+    component2: ES0 0_load
     port1: p_balance_port
     port2: p_balance_port
   - component1: ES1 0
-    component2: ES1 0_load_load
+    component2: ES1 0_load
     port1: p_balance_port
     port2: p_balance_port
   - component1: FR0 0
-    component2: FR0 0_load_load
+    component2: FR0 0_load
     port1: p_balance_port
     port2: p_balance_port
   - component1: ES0 0

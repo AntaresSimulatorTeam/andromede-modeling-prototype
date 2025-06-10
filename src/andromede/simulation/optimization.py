@@ -680,10 +680,6 @@ class OptimizationProblem:
                         component.id, model_var.name, t, s
                     )
 
-                    # if math.isclose(lower_bound, upper_bound):
-                    #     raise ValueError(
-                    #         f"Upper and lower bounds of variable {solver_var_name} have the same value: {lower_bound}"
-                    #     )
                     if lower_bound > upper_bound:
                         raise ValueError(
                             f"Upper bound ({upper_bound}) must be strictly greater than lower bound ({lower_bound}) for variable {solver_var_name}"
