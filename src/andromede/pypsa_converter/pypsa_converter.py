@@ -156,6 +156,7 @@ class PyPSAStudyConverter:
             "carrier"
         ] = self.pypsa_network.carriers.index.values
         
+        
         ### Rename PyPSA components, to make sure that the names are uniques (used as id in the Andromede model)
         self.pypsa_network.loads.index = (
             self.pypsa_network.loads.index.astype(str) + "_load"
