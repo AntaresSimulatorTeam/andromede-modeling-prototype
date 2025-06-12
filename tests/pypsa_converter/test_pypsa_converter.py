@@ -1,4 +1,4 @@
-# Copyright (c) 2024, RTE (https://www.rte-france.com)
+# Copyright (c) 2025, RTE (https://www.rte-france.com)
 #
 # See AUTHORS.txt
 #
@@ -16,20 +16,12 @@ from pathlib import Path
 import pypsa
 import pytest
 
-from andromede.input_converter.src.logger import Logger
 from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
-from andromede.pypsa_converter.pypsa_converter import PyPSAStudyConverter
 from andromede.pypsa_converter.utils import transform_to_yaml
-from andromede.simulation.optimization import OptimizationProblem, build_problem
-from andromede.simulation.time_block import TimeBlock
-from andromede.study.parsing import InputSystem, parse_yaml_components
-from andromede.study.resolve_components import (
-    System,
-    build_data_base,
-    build_network,
-    resolve_system,
-)
+from andromede.study.parsing import parse_yaml_components
+from andromede.study.resolve_components import resolve_system
+from tests.pypsa_converter.utils import build_problem_from_system, convert_pypsa_network
 
 
 def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
@@ -60,7 +52,130 @@ def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    run_conversion_test(n1, n1.objective, "test1.yml", systems_dir, series_dir)
+    run_conversion_test(n1, n1.objective, "test_load_gen.yml", systems_dir, series_dir)
+
+
+@pytest.mark.parametrize(
+    "ratio, sense",
+    [(0, "<="), (0.2, "<="), (0.5, "<="), (1.0, "<="), (0.5, "=="), (0.2, "==")],
+)
+def test_load_gen_emissions(
+    systems_dir: Path, series_dir: Path, ratio: float, sense: str
+) -> None:
+    # Testing PyPSA Generators with CO2 constraints
+    T, min_emissions, max_emissions = 10, 10, 20
+    n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
+    n1.add("Carrier", "fictive_fuel_one", co2_emissions=min_emissions)
+    n1.add("Carrier", "fictive_fuel_two", co2_emissions=max_emissions)
+    n1.add("Bus", "pypsatown", v_nom=1)
+    load1 = [i * 10 for i in range(T)]
+    n1.add("Load", "pypsaload", bus="pypsatown", p_set=load1, q_set=0)
+    load2 = [100 for i in range(T)]
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=load2, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        carrier="fictive_fuel_one",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        carrier="fictive_fuel_two",
+        p_nom_extendable=False,
+        marginal_cost=40,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator3_emissions_free",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=10,  # MW
+    )
+    quota = (ratio * min_emissions + (1 - ratio) * max_emissions) * (
+        sum(load1) + sum(load2)
+    )
+    n1.add("GlobalConstraint", name="co2_budget", sense="<=", constant=quota)
+    n1.optimize()
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_emissions.yml", systems_dir, series_dir
+    )
+
+
+def test_load_gen_pmin(systems_dir: Path, series_dir: Path) -> None:
+    # Testing pmin_pu and pmax_pu parameters for Generator component
+
+    # Building the PyPSA test problem
+    T = 10
+    n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=100, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        pmin_pu=0.1,
+        pmax_pu=[0.8 + 0.1 * i for i in range(T)],
+        p_nom_extendable=False,
+        marginal_cost=10,  # €/MWh
+        p_nom=50,  # MW
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_pmin.yml", systems_dir, series_dir
+    )
+
+
+def test_load_gen_sum(systems_dir: Path, series_dir: Path) -> None:
+    # Testing e_sum parameters for Generator component
+
+    # Building the PyPSA test problem
+    T = 10
+    n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=100, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        e_sum_max=200,
+        p_nom_extendable=False,
+        marginal_cost=10,  # €/MWh
+        p_nom=50,  # MW
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_sum.yml", systems_dir, series_dir
+    )
 
 
 def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
@@ -111,7 +226,9 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    run_conversion_test(n1, n1.objective, "test2.yml", systems_dir, series_dir)
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_link.yml", systems_dir, series_dir
+    )
 
 
 @pytest.mark.parametrize(
@@ -193,7 +310,9 @@ def test_storage_unit(
     n1.optimize()
 
     # Testing the PyPSA_to_Andromede converter
-    run_conversion_test(n1, n1.objective, "test3.yml", systems_dir, series_dir)
+    run_conversion_test(
+        n1, n1.objective, "test_storage_unit.yml", systems_dir, series_dir
+    )
 
 
 @pytest.mark.parametrize(
@@ -265,51 +384,6 @@ def test_store(
     run_conversion_test(n1, n1.objective, "test_store.yml", systems_dir, series_dir)
 
 
-"""def test_global_constraint(systems_dir: Path, series_dir: Path) -> None:
-    # Building the PyPSA test problem with a global constraint
-    T = 10
-
-    n1 = pypsa.Network(name="GlobalConstraintDemo", snapshots=[i for i in range(T)])
-    n1.add("Bus", "pypsatown", v_nom=1)
-    n1.add(
-        "Load", "pypsaload", bus="pypsatown", p_set=[i * 20 for i in range(T)], q_set=0
-    )
-    n1.add(
-        "Generator",
-        "generator_coal",
-        bus="pypsatown",
-        p_nom=200,
-        marginal_cost=20,
-        carrier="coal",
-    )
-    n1.add(
-        "Generator",
-        "generator_gas",
-        bus="pypsatown",
-        p_nom=100,
-        marginal_cost=50,
-        carrier="gas",
-    )
-
-    # Add a global constraint for CO2 emissions
-    n1.add(
-        "GlobalConstraint",
-        "co2_limit",
-        type="primary_energy",
-        carrier_attribute="co2_emissions",
-        sense="<=",
-        constant=1000,
-    )
-
-    n1.optimize()
-
-    # Testing the PyPSA_to_Andromede converter
-    run_conversion_test(
-        n1, n1.objective, "test_global_constraint.yml", systems_dir, series_dir
-    )
-"""
-
-
 def run_conversion_test(
     pypsa_network: pypsa.Network,
     target_value: float,
@@ -357,30 +431,3 @@ def run_conversion_test(
         assert math.isclose(
             problem.solver.Objective().Value(), target_value, rel_tol=1e-6
         )
-
-
-def convert_pypsa_network(
-    pypsa_network: pypsa.Network,
-    systems_dir: Path,
-    series_dir: Path,
-) -> InputSystem:
-    logger = Logger(__name__, Path(""))
-    converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
-    input_system_from_pypsa_converter = converter.to_andromede_study()
-
-    return input_system_from_pypsa_converter
-
-
-def build_problem_from_system(
-    resolved_system: System, input_system: InputSystem, series_dir: Path, timesteps: int
-) -> OptimizationProblem:
-    database = build_data_base(input_system, Path(series_dir))
-    network = build_network(resolved_system)
-    problem = build_problem(
-        network,
-        database,
-        TimeBlock(1, [i for i in range(timesteps)]),
-        1,
-    )
-
-    return problem
