@@ -871,17 +871,33 @@ class TestConverter:
         )
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
-
+        
         expected_components = expected_data["components"]
         expected_connections = expected_data["connections"]
 
         converter = self._init_converter_from_path(path)
+
+        path_cc = (
+            Path(__file__).parent.parent.parent
+            / "src"
+            / "andromede"
+            / "input_converter"
+            / "data"
+            / "model_configuration"
+            / "battery.yaml"
+        )
+        bc_data = read_yaml_file(path_cc).get("template", {})
+        model_config_datas: dict = converter._extract_components_to_delete_from_model_config(bc_data)
+        valid_areas: dict = converter._extract_valid_areas_from_model_config(bc_data)
+
         (
             binding_components,
             binding_connections,
-        ) = converter._convert_cc_to_component_list(lib_id)
+        ) = converter._convert_cc_to_component_list(lib_id, model_config_datas, valid_areas)
 
-        connection = InputPortConnections(**dict(binding_connections[0]))
+
+        connection = binding_connections[0]
+
         expected_connection: InputPortConnections = InputPortConnections(
             **next(
                 (
@@ -909,13 +925,14 @@ class TestConverter:
             component.model_dump()
             for component in dict(binding_components[0])["parameters"]
         ]
+        
         obtained_parameters = TestConverter._match_area_pattern(
             obtained_parameters_to_dict, "", str(path) + "/"
         )
 
+
         for indicex, parameter in enumerate(obtained_parameters):
             # Assert fields from InputComponent
-            print("obtaind", expected_component["parameters"])
             assert parameter["id"] == expected_component["parameters"][indicex]["id"]
             assert (
                 parameter["value"] == expected_component["parameters"][indicex]["value"]
@@ -935,9 +952,10 @@ class TestConverter:
             / "resources"
             / "mini_test_batterie_2026__03062025_104837"
         )
+        
         output_path = path / "reference.yaml"
-
         expected_data = read_yaml_file(output_path)["system"]
+        
         converter = self._init_converter_from_path(path)
         obtained_data = converter.convert_study_to_input_study()
 

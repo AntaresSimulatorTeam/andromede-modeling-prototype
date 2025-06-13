@@ -15,7 +15,7 @@ from typing import Iterable, Optional, Union
 
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
-
+from antares.craft.model.thermal import ThermalCluster
 from andromede.input_converter.src.data_preprocessing.binding_constraints import (
     BindingConstraintsPreprocessing,
 )
@@ -37,6 +37,12 @@ from andromede.study.parsing import (
 
 BC_FILENAME = "battery.yaml"
 BC_AREA_PATTERN = "${area}"
+BC_CONFIG_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "data"
+    / "model_configuration"
+    / BC_FILENAME
+)
 
 
 class AntaresStudyConverter:
@@ -81,11 +87,71 @@ class AntaresStudyConverter:
         else:
             return object
 
-    def _convert_area_to_component_list(self, lib_id: str) -> list[InputComponent]:
+    def _legacy_component_to_exclude(
+        self, model_config_datas: dict, component_type: str
+    ) -> list:
+        """This function aim at preventing binding constraint components to be handled as normal objects by other
+        Binding constraints in legacy studies is composed of specific areas.
+        We want to use these areas only for binding constraints.
+        """
+        components = model_config_datas.get(component_type, [])
+        valid_areas = set(model_config_datas.get("valid_areas", []))
+
+        has_valid_area = any(area.id in valid_areas for area in self.areas.values())
+
+        if has_valid_area:
+            to_exclude = [
+                item
+                for area in self.areas.values()
+                for item in self._match_area_pattern(components, area.id)
+            ]
+        else:
+            to_exclude = [
+                item
+                for area in self.areas.values()
+                if area.id not in valid_areas
+                for item in self._match_area_pattern(components, area.id)
+            ]
+
+        return to_exclude
+
+    def _extract_components_to_delete_from_model_config(self, bc_data) -> dict:
+        components_id: dict = {
+            "binding_constraints": [],
+            "links": [],
+            "nodes": [],
+            "thermals": [],
+            "winds": [],
+            "solars": [],
+            "loads": [],
+            "renewables": [],
+            "st_storages": [],
+        }
+
+        legacy = bc_data.get("legacy-objects-to-delete")
+
+        components_id["binding_constraints"].extend(legacy.get("binding_constraints", []))
+        components_id["links"].extend(legacy.get("links", []))
+        components_id["nodes"].extend(legacy.get("nodes", []))
+        components_id["thermals"].extend(legacy.get("thermal_clusters", []))
+
+        components_id["winds"].extend(legacy.get("winds", []))
+        components_id["solars"].extend(legacy.get("solars", []))
+        components_id["loads"].extend(legacy.get("loads", []))
+        components_id["renewables"].extend(legacy.get("renewables", []))
+        components_id["st_storages"].extend(legacy.get("st_storages", []))
+
+        return components_id
+
+    def _convert_area_to_component_list(
+        self, lib_id: str, model_config_datas: dict
+    ) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
 
         for area in self.areas.values():
+            if area.id in model_config_datas.get("nodes"):
+                continue
             components.append(
                 InputComponent(
                     id=area.id,
@@ -109,7 +175,7 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -164,16 +230,24 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_thermal_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting thermals to component list...")
-        # Add thermal components for each area
 
+        thermals_to_exclude: list = self._legacy_component_to_exclude(
+            model_config_datas, component_type="thermals"
+        )
+
+        # Add thermal components for each area
         for area in self.areas.values():
-            thermals = area.get_thermals()
+            thermals: list[ThermalCluster] = area.get_thermals()
+
             for thermal in thermals.values():
+                if f"{area.id}.{thermal.id}" in thermals_to_exclude:
+                    continue
+
                 series_path = (
                     self.study_path
                     / "input"
@@ -273,7 +347,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_st_storage_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -383,14 +457,21 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_link_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting links to component list...")
+
+        links_to_exclude: list = self._legacy_component_to_exclude(
+            model_config_datas, component_type="links"
+        )
+
         # Add links components for each area
         links = self.study.get_links()
         for link in links.values():
+            if f"{link.area_from_id}%{link.area_to_id}" in links_to_exclude:
+                continue
             capacity_direct_path = (
                 self.study_path
                 / "input"
@@ -446,7 +527,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_wind_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -483,7 +564,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_solar_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -521,7 +602,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_load_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -558,27 +639,13 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_cc_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting binding constraints to component list...")
-        bc_config_path = (
-            Path(__file__).resolve().parent.parent
-            / "data"
-            / "model_configuration"
-            / BC_FILENAME
-        )
-        bc_data = read_yaml_file(bc_config_path).get("template")
 
-        valid_areas: dict = {}
-        for template_param in bc_data["template-parameters"]:
-            if template_param["name"] == "area":
-                valid_areas = {
-                    k: v
-                    for k, v in self.areas.items()
-                    if k not in template_param["exclude"]
-                }
+        bc_data = read_yaml_file(BC_CONFIG_PATH).get("template")
 
         for area in valid_areas.values():
             data_with_area = self._match_area_pattern(bc_data, area.id)
@@ -611,9 +678,24 @@ class AntaresStudyConverter:
 
         return components, connections
 
+    def _extract_valid_areas_from_model_config(self, bc_data: dict):
+        for template_param in bc_data.get("template-parameters", []):
+            if template_param.get("name") == "area":
+                excluded_areas = set(template_param.get("exclude", []))
+                return {
+                    k: v for k, v in self.areas.items() if k not in excluded_areas
+                }
+        return {}
     def convert_study_to_input_study(self) -> InputSystem:
         antares_historic_lib_id = "antares-historic"
-        area_components = self._convert_area_to_component_list(antares_historic_lib_id)
+        bc_data = read_yaml_file(BC_CONFIG_PATH).get("template", {})
+
+        model_config_datas: dict = self._extract_components_to_delete_from_model_config(bc_data)
+        valid_areas = self._extract_valid_areas_from_model_config(bc_data)
+        area_components = self._convert_area_to_component_list(
+            antares_historic_lib_id, model_config_datas
+        )
+        
 
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
@@ -630,7 +712,9 @@ class AntaresStudyConverter:
         ]
 
         for method in conversion_methods:
-            components, connections = method(antares_historic_lib_id)
+            components, connections = method(
+                antares_historic_lib_id, model_config_datas, valid_areas
+            )
             list_components.extend(components)
             list_connections.extend(connections)
 
