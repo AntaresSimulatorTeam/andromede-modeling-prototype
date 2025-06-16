@@ -10,14 +10,14 @@
 #
 # This file is part of the Antares project.
 
+from pathlib import Path
+
 import pytest
 from antares.craft.model.study import Study
-from dataclasses import asdict
 
-from pathlib import Path
 from andromede.input_converter.src.converter import AntaresStudyConverter
 from andromede.input_converter.src.logger import Logger
-from andromede.input_converter.src.utils import transform_to_yaml, read_yaml_file
+from andromede.input_converter.src.utils import read_yaml_file, transform_to_yaml
 from andromede.study.parsing import (
     InputComponent,
     InputComponentParameter,
@@ -861,17 +861,16 @@ class TestConverter:
         else:
             return object
 
-    def test_convert_binding_constraints_to_component(
-        self, lib_id: str
-    ):
+    def test_convert_binding_constraints_to_component(self, lib_id: str):
         path = (
             Path(__file__).parent
             / "resources"
             / "mini_test_batterie_2026__03062025_104837"
         )
+
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
-        
+
         expected_components = expected_data["components"]
         expected_connections = expected_data["connections"]
 
@@ -887,16 +886,21 @@ class TestConverter:
             / "battery.yaml"
         )
         bc_data = read_yaml_file(path_cc).get("template", {})
-        model_config_datas: dict = converter._extract_components_to_delete_from_model_config(bc_data)
+        model_config_datas: dict = (
+            converter._extract_components_to_delete_from_model_config(bc_data)
+        )
         valid_areas: dict = converter._extract_valid_areas_from_model_config(bc_data)
 
         (
             binding_components,
             binding_connections,
-        ) = converter._convert_cc_to_component_list(lib_id, model_config_datas, valid_areas)
-
+        ) = converter._convert_cc_to_component_list(
+            lib_id, model_config_datas, valid_areas
+        )
 
         connection = binding_connections[0]
+
+        # Compare connections
 
         expected_connection: InputPortConnections = InputPortConnections(
             **next(
@@ -920,31 +924,28 @@ class TestConverter:
             None,
         )
 
-        # Clean datas converted
+        # A little formatting of expected parameters:
+        # Convert tiret fields with snake_case version
+        # Add scenario group to None, if not present
+        for item in expected_component["parameters"]:
+            item["scenario_dependent"] = item.pop("scenario-dependent")
+            item["time_dependent"] = item.pop("time-dependent")
+            if not item.get("scenario_group"):
+                item["scenario_group"] = None
+
+        # A little formatting of obtained parameters:
+        # Convert list of objects to list of dictionaries
+        # Replace absolute path with relative path
         obtained_parameters_to_dict = [
             component.model_dump()
             for component in dict(binding_components[0])["parameters"]
         ]
-        
         obtained_parameters = TestConverter._match_area_pattern(
             obtained_parameters_to_dict, "", str(path) + "/"
         )
 
-
-        for indicex, parameter in enumerate(obtained_parameters):
-            # Assert fields from InputComponent
-            assert parameter["id"] == expected_component["parameters"][indicex]["id"]
-            assert (
-                parameter["value"] == expected_component["parameters"][indicex]["value"]
-            )
-            assert (
-                parameter["time_dependent"]
-                == expected_component["parameters"][indicex]["time-dependent"]
-            )
-            assert (
-                parameter["scenario_dependent"]
-                == expected_component["parameters"][indicex]["scenario-dependent"]
-            )
+        # Compare parameters
+        assert obtained_parameters == expected_component["parameters"]
 
     def test_convert_study_path_to_input_study(self):
         path = (
@@ -952,14 +953,27 @@ class TestConverter:
             / "resources"
             / "mini_test_batterie_2026__03062025_104837"
         )
-        
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
-        
+
         converter = self._init_converter_from_path(path)
         obtained_data = converter.convert_study_to_input_study()
 
-        # Clean datas converted
+        # A little formatting of expected parameters:
+        # Convert tiret fields with snake_case version
+        # Add scenario group to None, if not present
+        for component in expected_data["components"]:
+            if not component.get("scenario_group"):
+                component["scenario_group"] = None
+            for item in component["parameters"]:
+                item["scenario_dependent"] = item.pop("scenario-dependent")
+                item["time_dependent"] = item.pop("time-dependent")
+                if not item.get("scenario_group"):
+                    item["scenario_group"] = None
+
+        # A little formatting of obtained parameters:
+        # Convert list of objects to list of dictionaries
+        # Replace absolute path with relative path
         obtained_components_to_dict = [
             component.model_dump() for component in dict(obtained_data)["components"]
         ]
@@ -967,33 +981,4 @@ class TestConverter:
             obtained_components_to_dict, "", str(path) + "/"
         )
 
-        for indicex, component in enumerate(obtained_components):
-            # Assert fields from InputComponent
-            assert component["id"] == expected_data["components"][indicex]["id"]
-            assert component["model"] == expected_data["components"][indicex]["model"]
-            assert component.get("scenario_group") is None
-
-            for indicey, parameter in enumerate(component["parameters"]):
-                # Assert fields from InputComponentParameters
-                assert (
-                    parameter["id"]
-                    == expected_data["components"][indicex]["parameters"][indicey]["id"]
-                )
-                assert (
-                    parameter["value"]
-                    == expected_data["components"][indicex]["parameters"][indicey][
-                        "value"
-                    ]
-                )
-                assert (
-                    parameter["time_dependent"]
-                    == expected_data["components"][indicex]["parameters"][indicey][
-                        "time-dependent"
-                    ]
-                )
-                assert (
-                    parameter["scenario_dependent"]
-                    == expected_data["components"][indicex]["parameters"][indicey][
-                        "scenario-dependent"
-                    ]
-                )
+        assert expected_data["components"] == obtained_components
