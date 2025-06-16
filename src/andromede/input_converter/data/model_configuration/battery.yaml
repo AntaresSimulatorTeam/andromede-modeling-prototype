@@ -23,6 +23,7 @@ template:
       description: "Area identifier for the battery component"
       exclude: 
         - z_batteries
+        - z_batteries_pcomp
 
   component:
     id: battery_${area}
@@ -152,13 +153,13 @@ template:
 
   legacy-objects-to-delete:
     binding_constraints:
-      - id: batteries_${area}
-      - id: battery_level_${area}
+      - batteries_${area}
+      - battery_level_${area}
     links:
-      - id: ${area}%z_batteries
+      - ${area}%z_batteries
     nodes:
-      - id: z_batteries
+      - z_batteries
     thermal_clusters:
-      - id: ${area}.${area}_batteries_inj
-      - id: z_batteries.z_batteries_batteries_${area}_1
-      - id: z_batteries.z_batteries_batteries_${area}_2
+      - ${area}.${area}_batteries_inj
+      - z_batteries.z_batteries_batteries_${area}_1
+      - z_batteries.z_batteries_batteries_${area}_2
