@@ -12,10 +12,12 @@
 
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from antares.craft.model.study import Study
 
 from andromede.input_converter.src.converter import AntaresStudyConverter
+from andromede.input_converter.src.data_preprocessing.dataclasses import Operation
 from andromede.input_converter.src.logger import Logger
 from andromede.input_converter.src.utils import read_yaml_file, transform_to_yaml
 from andromede.study.parsing import (
@@ -886,8 +888,8 @@ class TestConverter:
             / "battery.yaml"
         )
         bc_data = read_yaml_file(path_cc).get("template", {})
-        model_config_datas: dict = (
-            converter._extract_components_to_delete_from_model_config(bc_data)
+        model_config_datas: dict = converter._extract_legacy_objects_from_model_config(
+            bc_data
         )
         valid_areas: dict = converter._extract_valid_areas_from_model_config(bc_data)
 
@@ -943,8 +945,6 @@ class TestConverter:
         obtained_parameters = TestConverter._match_area_pattern(
             obtained_parameters_to_dict, "", str(path) + "/"
         )
-
-        # Compare parameters
         assert obtained_parameters == expected_component["parameters"]
 
     def test_convert_study_path_to_input_study(self):
@@ -982,3 +982,36 @@ class TestConverter:
         )
 
         assert expected_data["components"] == obtained_components
+
+    def test_multiply_operation(self):
+        operation = Operation(multiply_by=2)
+        assert operation.execute(10) == 20
+
+        operation = Operation(multiply_by="factor")
+        preprocessed_values = {"factor": 5}
+        assert operation.execute(10, preprocessed_values) == 50
+
+    def test_divide_operation(self):
+        operation = Operation(divide_by=2)
+        assert operation.execute(10) == 5
+
+        operation = Operation(divide_by="divisor")
+        preprocessed_values = {"divisor": 2}
+        assert operation.execute(10, preprocessed_values) == 5
+
+    def test_max_operation(self):
+        operation = Operation(type="max")
+        assert operation.execute([1, 2, 3, 4, 5]) == 5.0
+
+        df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+        assert operation.execute(df.max()) == 6.0
+
+    def test_missing_preprocessed_value(self):
+        operation = Operation(multiply_by="missing_key")
+        with pytest.raises(ValueError):
+            operation.execute(10, {})
+
+    def test_missing_operation(self):
+        operation = Operation()
+        with pytest.raises(ValueError):
+            operation.execute(10)

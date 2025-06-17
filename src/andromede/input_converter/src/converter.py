@@ -16,6 +16,7 @@ from typing import Iterable, Optional, Union
 from antares.craft.model.area import Area
 from antares.craft.model.study import Study, read_study_local
 from antares.craft.model.thermal import ThermalCluster
+
 from andromede.input_converter.src.data_preprocessing.binding_constraints import (
     BindingConstraintsPreprocessing,
 )
@@ -36,7 +37,6 @@ from andromede.study.parsing import (
 )
 
 BC_FILENAME = "battery.yaml"
-BC_AREA_PATTERN = "${area}"
 BC_CONFIG_PATH = (
     Path(__file__).resolve().parent.parent
     / "data"
@@ -72,6 +72,8 @@ class AntaresStudyConverter:
         )
         self.areas: Iterable[Area] = self.study.get_areas()
 
+        self.bc_area_pattern: str = "${area}"
+
     def _match_area_pattern(self, object, param_values: dict[str, str]) -> any:
         if isinstance(object, dict):
             return {
@@ -83,65 +85,32 @@ class AntaresStudyConverter:
         elif isinstance(object, list):
             return [self._match_area_pattern(elem, param_values) for elem in object]
         elif isinstance(object, str):
-            return object.replace(BC_AREA_PATTERN, param_values)
+            return object.replace(self.bc_area_pattern, param_values)
         else:
             return object
 
     def _legacy_component_to_exclude(
         self, model_config_datas: dict, component_type: str
     ) -> list:
-        """This function aim at preventing binding constraint components to be handled as normal objects by other
-        Binding constraints in legacy studies is composed of specific areas.
-        We want to use these areas only for binding constraints.
-        """
+        """This function aim at finding components that are only present for binding constraint model purpose
+        and should be removed from other conversions"""
+
         components = model_config_datas.get(component_type, [])
-        valid_areas = set(model_config_datas.get("valid_areas", []))
+        return [
+            item
+            for area in self.areas.values()
+            for item in self._match_area_pattern(components, area.id)
+        ]
 
-        has_valid_area = any(area.id in valid_areas for area in self.areas.values())
-
-        if has_valid_area:
-            to_exclude = [
-                item
-                for area in self.areas.values()
-                for item in self._match_area_pattern(components, area.id)
-            ]
-        else:
-            to_exclude = [
-                item
-                for area in self.areas.values()
-                if area.id not in valid_areas
-                for item in self._match_area_pattern(components, area.id)
-            ]
-
-        return to_exclude
-
-    def _extract_components_to_delete_from_model_config(self, bc_data) -> dict:
-        components_id: dict = {
-            "binding_constraints": [],
-            "links": [],
-            "nodes": [],
-            "thermals": [],
-            "winds": [],
-            "solars": [],
-            "loads": [],
-            "renewables": [],
-            "st_storages": [],
+    def _extract_legacy_objects_from_model_config(self, bc_data) -> dict:
+        """This function aim at extracting components that are only present for binding constraint model."""
+        legacy = bc_data.get("legacy-objects-to-delete", {})
+        return {
+            "binding_constraints": legacy.get("binding_constraints", []),
+            "links": legacy.get("links", []),
+            "nodes": legacy.get("nodes", []),
+            "thermals": legacy.get("thermal_clusters", []),
         }
-
-        legacy = bc_data.get("legacy-objects-to-delete")
-
-        components_id["binding_constraints"].extend(legacy.get("binding_constraints", []))
-        components_id["links"].extend(legacy.get("links", []))
-        components_id["nodes"].extend(legacy.get("nodes", []))
-        components_id["thermals"].extend(legacy.get("thermal_clusters", []))
-
-        components_id["winds"].extend(legacy.get("winds", []))
-        components_id["solars"].extend(legacy.get("solars", []))
-        components_id["loads"].extend(legacy.get("loads", []))
-        components_id["renewables"].extend(legacy.get("renewables", []))
-        components_id["st_storages"].extend(legacy.get("st_storages", []))
-
-        return components_id
 
     def _convert_area_to_component_list(
         self, lib_id: str, model_config_datas: dict
@@ -679,23 +648,27 @@ class AntaresStudyConverter:
         return components, connections
 
     def _extract_valid_areas_from_model_config(self, bc_data: dict):
-        for template_param in bc_data.get("template-parameters", []):
-            if template_param.get("name") == "area":
-                excluded_areas = set(template_param.get("exclude", []))
+        for template_param in bc_data["template-parameters"]:
+            if template_param.get("exclude"):
                 return {
-                    k: v for k, v in self.areas.items() if k not in excluded_areas
+                    k: v
+                    for k, v in self.areas.items()
+                    if k not in template_param["exclude"]
                 }
-        return {}
+
     def convert_study_to_input_study(self) -> InputSystem:
         antares_historic_lib_id = "antares-historic"
         bc_data = read_yaml_file(BC_CONFIG_PATH).get("template", {})
+        # Get area pattern for binding constraint from model config
+        self.bc_area_pattern = f"${{{bc_data['template-parameters'][0]['name']}}}"
 
-        model_config_datas: dict = self._extract_components_to_delete_from_model_config(bc_data)
+        model_config_datas: dict = self._extract_legacy_objects_from_model_config(
+            bc_data
+        )
         valid_areas = self._extract_valid_areas_from_model_config(bc_data)
         area_components = self._convert_area_to_component_list(
             antares_historic_lib_id, model_config_datas
         )
-        
 
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
