@@ -867,7 +867,7 @@ class TestConverter:
         path = (
             Path(__file__).parent
             / "resources"
-            / "mini_test_batterie_2026__03062025_104837"
+            / "mini_test_batterie_BP23"
         )
 
         output_path = path / "reference.yaml"
@@ -951,7 +951,7 @@ class TestConverter:
         path = (
             Path(__file__).parent
             / "resources"
-            / "mini_test_batterie_2026__03062025_104837"
+            / "mini_test_batterie_BP23"
         )
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]

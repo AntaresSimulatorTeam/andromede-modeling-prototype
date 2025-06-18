@@ -5,7 +5,7 @@ from typing import Optional, Union
 import pandas as pd
 
 
-@dataclass
+@dataclass(frozen=True)
 class Operation:
     type: Optional[str] = None
     multiply_by: Optional[Union[str, float]] = None
@@ -42,14 +42,14 @@ class Operation:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class TimeseriesData:
     path: Path
     column: int
     operation: Optional[Operation] = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class BindingConstraintData:
     id: str
     field: str
@@ -57,7 +57,7 @@ class BindingConstraintData:
     timeseries_file_type: Optional[str] = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class ThermalData:
     area: str
     cluster: str
@@ -67,7 +67,7 @@ class ThermalData:
     timeseries_file_type: Optional[str] = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class LinkData:
     column: int
     area_from: str

@@ -102,7 +102,6 @@ class BindingConstraintsPreprocessing:
             else:
                 parameter_value: float = term.weight
             return parameter_value
-
         elif isinstance(obj, LinkData):
             return self._process_time_series(obj.area_from, obj)
 
