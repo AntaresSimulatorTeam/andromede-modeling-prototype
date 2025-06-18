@@ -864,11 +864,7 @@ class TestConverter:
             return object
 
     def test_convert_binding_constraints_to_component(self, lib_id: str):
-        path = (
-            Path(__file__).parent
-            / "resources"
-            / "mini_test_batterie_BP23"
-        )
+        path = Path(__file__).parent / "resources" / "mini_test_batterie_BP23"
 
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
@@ -948,11 +944,7 @@ class TestConverter:
         assert obtained_parameters == expected_component["parameters"]
 
     def test_convert_study_path_to_input_study(self):
-        path = (
-            Path(__file__).parent
-            / "resources"
-            / "mini_test_batterie_BP23"
-        )
+        path = Path(__file__).parent / "resources" / "mini_test_batterie_BP23"
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
 
@@ -991,6 +983,10 @@ class TestConverter:
         preprocessed_values = {"factor": 5}
         assert operation.execute(10, preprocessed_values) == 50
 
+        operation = Operation(multiply_by=2)
+        df = pd.Series([1, 2, 3, 4, 5, 6])
+        assert operation.execute(df).all() == pd.Series([2, 4, 6, 8, 10, 12]).all()
+
     def test_divide_operation(self):
         operation = Operation(divide_by=2)
         assert operation.execute(10) == 5
@@ -999,12 +995,16 @@ class TestConverter:
         preprocessed_values = {"divisor": 2}
         assert operation.execute(10, preprocessed_values) == 5
 
+        operation = Operation(divide_by=2)
+        df = pd.Series([1, 2, 3, 4, 5, 6])
+        assert operation.execute(df).all() == pd.Series([0.5, 1, 1.5, 2, 2.5, 3]).all()
+
     def test_max_operation(self):
         operation = Operation(type="max")
         assert operation.execute([1, 2, 3, 4, 5]) == 5.0
 
-        df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
-        assert operation.execute(df.max()) == 6.0
+        df = pd.Series([1, 2, 3, 4, 5, 6])
+        assert operation.execute(df) == 6.0
 
     def test_missing_preprocessed_value(self):
         operation = Operation(multiply_by="missing_key")

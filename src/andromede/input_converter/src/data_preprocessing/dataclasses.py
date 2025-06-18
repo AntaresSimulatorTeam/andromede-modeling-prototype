@@ -13,9 +13,9 @@ class Operation:
 
     def execute(
         self,
-        initial_value: Union[pd.DataFrame, float],
+        initial_value: Union[pd.Series, float],
         preprocessed_values: Optional[Union[dict[str, float], float]] = None,
-    ) -> Union[float, pd.DataFrame]:
+    ) -> Union[float, pd.Series]:
         def resolve(value):
             if isinstance(value, str):
                 if (
@@ -35,6 +35,7 @@ class Operation:
             return initial_value * resolve(self.multiply_by)
 
         if self.divide_by is not None:
+            print("hello", self.divide_by,"\n",  resolve(self.divide_by))
             return initial_value / resolve(self.divide_by)
 
         raise ValueError(
