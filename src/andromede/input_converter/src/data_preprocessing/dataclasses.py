@@ -35,7 +35,6 @@ class Operation:
             return initial_value * resolve(self.multiply_by)
 
         if self.divide_by is not None:
-            print("hello", self.divide_by,"\n",  resolve(self.divide_by))
             return initial_value / resolve(self.divide_by)
 
         raise ValueError(
