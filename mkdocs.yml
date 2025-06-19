@@ -21,8 +21,8 @@ nav:
 
 theme:
   name: material
-  # logo: assets/logo.png #TODO: We need a logo !!
-  # favicon: assets/Icone.png
+  logo: images/logo.png 
+  favicon: images/logo.png
   prev_next_buttons_location: none
   features:
     - navigation.instant

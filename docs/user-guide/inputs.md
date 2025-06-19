@@ -1,18 +1,24 @@
-# Reading input files
+# Reading input files with pyGems
 
 
-## Loading the library, the system and the timeseries:
+## Loading the libraries & the system 
 
 
 
 ~~~ python
-with open(systems_file_path) as compo_file:
+with open("system_example.yml") as compo_file:
     input_component = parse_yaml_components(compo_file)
 
-with open(lib_file_path) as lib_file:
+with open("simple_library.yml") as lib_file:
     input_libraries = [parse_yaml_library(lib_file)]
 
 result_lib = resolve_library(input_libraries)
 components_input = resolve_system(input_component, result_lib)
+database = build_data_base(input_component, Path(series_dir))
+~~~
+
+## Loading timeseries data
+
+~~~ python
 database = build_data_base(input_component, Path(series_dir))
 ~~~
