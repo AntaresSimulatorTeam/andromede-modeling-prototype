@@ -1,9 +1,9 @@
-site_name: GenModes, a framework for generic modeling in energy systems
+site_name: Gems - Generic Energy systems Modeling Scheme
 repo_url: https://github.com/AntaresSimulatorTeam/andromede-modeling-prototype
 nav:
   - 'Home': 'index.md'
   - 'Getting started': 'getting-started.md'
-  - 'User guide: GenModes language and dataformat': 
+  - 'User guide: Gems language and dataformat': 
     - 'Mathematical expressions and syntax': 'user-guide/syntax.md'
     - 'Libraries': 'user-guide/libraries.md'
     - 'Models': 'user-guide/models.md'

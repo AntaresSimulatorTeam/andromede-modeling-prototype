@@ -1,7 +1,7 @@
 # Mathematical expressions and syntax
 
 
-An essential aspect of GenModes is that it allows mathematical expressions (describing models) to be defined in configuration files, independently of any software or programming language. Mathematical expressions are represented here as human-readable equations. This allows a large flexibility in defining objects of optimization.
+An essential aspect of **Gems** is that it allows mathematical expressions (describing models) to be defined in configuration files, independently of any software or programming language. Mathematical expressions are represented here as human-readable equations. This allows a large flexibility in defining objects of optimization.
 
 ## Arithmetic operators
 
