@@ -5,12 +5,12 @@ nav:
   - 'Getting started': 'getting-started.md'
   - 'User guide: Gems language and dataformat': 
     - 'Mathematical expressions and syntax': 'user-guide/syntax.md'
-    - 'Libraries': 'user-guide/libraries.md'
-    - 'Models': 'user-guide/models.md'
+    - 'Input files' :
+      - 'Libraries of models': 'user-guide/libraries.md'
+      - 'Systems': 'user-guide/systems.md'
+      - 'Data series': 'user-guide/data.md'
     - 'Reference libraries' : 'user-guide/reference-libraries.md'
-    - 'Systems': 'user-guide/systems.md'
-    - 'Data series': 'user-guide/data.md'
-  - 'User guide: Python interpreter package':
+  - 'User guide: pyGems interpreter package':
     - 'Reading input files': 'user-guide/inputs.md'
     - 'Building systems with the Python API': 'user-guide/building.md'
     - 'Optimization: building and solving problems': 'user-guide/optimization.md'

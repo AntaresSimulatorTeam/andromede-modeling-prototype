@@ -3,7 +3,7 @@
 
 ## Motivation
 
-As energy systems become more complex and dynamic, we need to develop energy planning tools further, in terms of:
+As energy systems become more complex and dynamic, we need to improve energy planning tools further, in terms of:
 
 - **Versatility**: easily integrate new models or components without rewriting core code.  
   *Writing and testing new models of energy system components should not require software programming skills!*
@@ -16,7 +16,7 @@ As energy systems become more complex and dynamic, we need to develop energy pla
 
 ## The Gems framework
 
-The Gems framework consists of a high-level modelling language, close to mathematical syntax, and a data structure for describing energy systems.
+The Gems framework consists of a **high-level modelling language**, close to mathematical syntax, and a **data structure** for describing energy systems.
 
 More specifically, three main types of input file can be defined with the Gems framework:
 

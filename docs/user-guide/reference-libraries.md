@@ -1,6 +1,6 @@
 # Reference libraries
 
-A model library is a collection of [models](models.md) that are published together in one source.  
+A model library is a collection of [models](libraries.md#models) that are published together in one source.  
 
 
 ## Simple test library
