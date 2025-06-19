@@ -1,8 +1,10 @@
 # pyGems
 
+pyGems is an open-source tool, developed in Python, for the modeling and the simulation of complex energy systems under uncertainty. This is a generic interpreter for the **Gems** modeling framework.
+
 <img src="docs/images/gemsV2.png" alt="Description" width="200" height="200"/>
 
-pyGems is an open-source tool, developed in Python, for the modeling and the simulation of complex energy systems under uncertainty.
+
 
 ## The rationale behind Gems
 
@@ -11,7 +13,6 @@ pyGems is an open-source tool, developed in Python, for the modeling and the sim
 To develop and test new models of energy system components, writing software code should not be a prerequisite. This is where the **Gems** framework excels, offering users a "no-code" modeling experience with unparalleled versatility.
 
 ## The Gems framework
-
 
 The Gems framework consists of a **high-level modelling language**, close to mathematical syntax, and a **data structure** for describing energy systems.
 
@@ -22,6 +23,8 @@ More specifically, three main types of input files can be defined with the **Gem
 - **Timeseries files**: the  data for time/scenario-dependent parameters  (.txt or .csv).
 
 ## The pyGems package
+
+
 
 This Python package features a generic interpreter of **Gems** capable of generating optimization problems from any library and system files that adhere to the modeling language syntax. It then employs dedicated optimization code to solve these problems. The Python API facilitates reading case studies stored in YAML format, modifying them, or creating new ones from scratch by scripting.
 
