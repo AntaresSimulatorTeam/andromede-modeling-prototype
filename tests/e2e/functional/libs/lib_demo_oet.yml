@@ -1,0 +1,188 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+library:
+  id: lib_demo_oet
+  description: Antares historic model library
+
+  port-types:
+    - id: flow
+      description: A port which transfers power flow
+      fields:
+        - id: flow
+
+  models:
+    - id: area
+      parameters:
+        - id: spillage_cost
+        - id: ens_cost
+      variables:
+        - id: spillage
+          lower-bound: 0
+        - id: unsupplied_energy
+          lower-bound: 0
+      ports:
+        - id: balance_port
+          type: flow
+      binding-constraints:
+        - id: balance
+          expression: sum_connections(balance_port.flow) = spillage - unsupplied_energy
+      objective: expec(sum(spillage_cost * spillage + ens_cost * unsupplied_energy))
+
+    - id: load
+      parameters:
+        - id: load
+          time-dependent: true
+          scenario-dependent: true
+      ports:
+        - id: balance_port
+          type: flow
+      port-field-definitions:
+        - port: balance_port
+          field: flow
+          definition: -load
+
+    - id: renewable
+      parameters:
+        - id: generation
+          time-dependent: true
+          scenario-dependent: true
+      ports:
+        - id: balance_port
+          type: flow
+      port-field-definitions:
+        - port: balance_port
+          field: flow
+          definition: generation
+
+    - id: thermal
+      parameters:
+        - id: p_min_unit
+        - id: p_max_unit
+        - id: generation_cost
+        - id: startup_cost
+        - id: fixed_cost
+        - id: d_min_up
+        - id: d_min_down
+        - id: ramp
+      variables:
+        - id: generation
+          lower-bound: 0
+          upper-bound: p_max_unit
+        - id: unit_on
+          lower-bound: 0
+          upper-bound: 1
+          variable-type: integer
+        - id: unit_starting
+          lower-bound: 0
+          upper-bound: 1
+          variable-type: integer
+        - id: unit_stopping
+          lower-bound: 0
+          upper-bound: 1
+          variable-type: integer
+      ports:
+        - id: balance_port
+          type: flow
+      port-field-definitions:
+        - port: balance_port
+          field: flow
+          definition: generation
+      constraints:
+        - id: max_generation
+          expression: generation <= unit_on * p_max_unit
+        - id: min_generation
+          expression: generation >= unit_on * p_min_unit
+        - id: unit_dynamics
+          expression: unit_on = unit_on[t-1] + unit_starting - unit_stopping
+        - id: min_up_duration
+          expression: sum(t-d_min_up + 1 .. t, unit_starting) <= unit_on
+        - id: min_down_duration
+          expression: sum(t-d_min_down + 1 .. t, unit_stopping) <= 1 - unit_on
+        - id: ramp_up
+          expression: generation - generation[t-1] <= ramp + (p_min_unit * unit_starting)
+        - id: ramp_down
+          expression: generation[t-1] - generation[t] <= ramp + (p_min_unit * unit_stopping)
+      objective: expec(sum(generation_cost * generation + startup_cost * unit_starting + fixed_cost * unit_on))
+    
+    - id: hydro
+      parameters:
+        - id: p_min
+        - id: p_max
+        - id: energy
+      variables:
+        - id: generation
+          lower-bound: p_min
+          upper-bound: p_max
+      ports:
+        - id: balance_port
+          type: flow
+      port-field-definitions:
+        - port: balance_port
+          field: flow
+          definition: generation
+      constraints:
+        - id: hydro_energy
+          expression: sum(generation) <= energy
+
+    - id: short-term-storage
+      parameters:
+        - id: reservoir_capacity
+          time-dependent: false
+          scenario-dependent: false
+        - id: injection_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+        - id: withdrawal_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+        - id: efficiency_injection
+          time-dependent: false
+          scenario-dependent: false
+        - id: efficiency_withdrawal
+          time-dependent: false
+          scenario-dependent: false
+        - id: inflows
+          time-dependent: true
+          scenario-dependent: true
+        - id: initial_level
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - id: p_injection
+          lower-bound: 0
+          upper-bound: injection_nominal_capacity
+        - id: p_withdrawal
+          lower-bound: 0
+          upper-bound: withdrawal_nominal_capacity
+        - id: level
+          lower-bound: 0
+          upper-bound: reservoir_capacity
+        - id: is_charging
+          lower-bound: 0
+          upper-bound: 1
+          variable-type: integer
+      ports:
+        - id: balance_port
+          type: flow
+      port-field-definitions:
+        - port: balance_port
+          field: flow
+          definition: p_withdrawal - p_injection
+      constraints:
+        - id: initial_level
+          expression: level[0] = initial_level
+        - id: Level equation
+          expression: level[t+1] = level + efficiency_injection * p_injection - efficiency_withdrawal * p_withdrawal + inflows
+        - id: is_charging_cst
+          expression: p_injection <= is_charging * injection_nominal_capacity
+        - id: is_withdrawing_cst
+          expression: p_withdrawal <= (1 - is_charging) * injection_nominal_capacity

@@ -1,0 +1,734 @@
+# Copyright (c) 2024, RTE (https://www.rte-france.com)
+#
+# See AUTHORS.txt
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+#
+# This file is part of the Antares project.
+system:
+  model-libraries: lib_demo_oet
+  components:
+    - id: DE
+      model: lib_demo_oet.area
+      parameters:
+        - id: spillage_cost
+          value: 10
+        - id: ens_cost
+          value: 3000
+    - id: Demand
+      model: lib_demo_oet.load
+      parameters:
+        - id: load
+          time-dependent: true
+          scenario-dependent: true
+          value: load_demo_oet
+    - id: Solar
+      model: lib_demo_oet.renewable
+      parameters:
+        - id: generation
+          time-dependent: true
+          scenario-dependent: true
+          value: solar_demo_oet
+    - id: Wind
+      model: lib_demo_oet.renewable
+      parameters:
+        - id: generation
+          time-dependent: true
+          scenario-dependent: true
+          value: wind_demo_oet
+    - id: Hydro
+      model: lib_demo_oet.hydro
+      parameters:
+        - id: p_min
+          time-dependent: false
+          scenario-dependent: false
+          value: 200
+        - id: p_max
+          time-dependent: false
+          scenario-dependent: false
+          value: 600
+        - id: energy
+          time-dependent: false
+          scenario-dependent: false
+          value: 60000
+    - id: Nuclear1
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 900
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 900
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 15
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+    - id: Nuclear2
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 400
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 900
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 15
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+    - id: Nuclear3
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 900
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 900
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 15
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+    - id: Nuclear4
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 900
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 900
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 15
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 168
+    - id: Coal1
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 200
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 45
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 24
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 24
+    - id: Gas1
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 300
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 300
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 18
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 12
+    - id: Gas2
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 300
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 300
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 18
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 12
+    - id: Gas3
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 300
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 300
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 18
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 12
+    - id: Fioul1
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 10
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 80
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Fioul2
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 10
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 80
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Fioul3
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 10
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 80
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Fioul4
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 10
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 80
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Peak1
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Peak2
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Peak3
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Peak4
+      model: lib_demo_oet.thermal
+      parameters:
+        - id: p_min_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: p_max_unit
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: ramp
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: generation_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+        - id: fixed_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: startup_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+        - id: d_min_up
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+        - id: d_min_down
+          time-dependent: false
+          scenario-dependent: false
+          value: 1
+    - id: Battery1
+      model: lib_demo_oet.short-term-storage
+      parameters:
+        - id: injection_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 400
+        - id: withdrawal_nominal_capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 400
+        - id: reservoir_capacity
+          time-dependent: false
+          scenario-dependent: false
+          value: 1000
+        - id: initial_level
+          time-dependent: false
+          scenario-dependent: false
+          value: 250
+        - id: efficiency_injection
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.95
+        - id: efficiency_withdrawal
+          time-dependent: false
+          scenario-dependent: false
+          value: 1.0526
+        - id: inflows
+          time-dependent: false
+          scenario-dependent: false
+          value: 0
+  connections:
+    - component1: DE
+      port1: balance_port
+      component2: Demand
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Solar
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Wind
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Hydro
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Battery1
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Nuclear1
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Nuclear2
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Nuclear3
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Nuclear4
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Coal1
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Gas1
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Gas2
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Gas3
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Fioul1
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Fioul2
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Fioul3
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Fioul4
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Peak1
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Peak2
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Peak3
+      port2: balance_port
+    - component1: DE
+      port1: balance_port
+      component2: Peak4
+      port2: balance_port
+    

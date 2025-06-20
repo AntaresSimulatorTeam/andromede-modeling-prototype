@@ -39,12 +39,14 @@ Several cases are tested:
 from pathlib import Path
 from typing import Callable, Tuple
 
+import pandas as pd
 import pytest
 
 from andromede.model.parsing import InputLibrary, parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation import TimeBlock, build_problem
 from andromede.simulation.optimization import BlockBorderManagement
+from andromede.simulation.output_values import OutputValues
 from andromede.study.data import DataBase
 from andromede.study.network import Network
 from andromede.study.parsing import InputSystem, parse_yaml_components
@@ -154,3 +156,101 @@ def test_short_term_storage_base_with_yaml(
             count_variables += 1
             assert 0 <= variable.solution_value() <= 1000
     assert count_variables == 3 * horizon
+
+
+def test_demo_oet(libs_dir: Path, systems_dir: Path, series_dir: Path) -> None:
+    def setup_test(study_file_name: str):
+        study_file = systems_dir / study_file_name
+        lib_file = libs_dir / "lib_demo_oet.yml"
+        with lib_file.open() as lib:
+            input_library = parse_yaml_library(lib)
+
+        with study_file.open() as c:
+            input_study = parse_yaml_components(c)
+        lib_dict = resolve_library([input_library])
+        network_components = resolve_system(input_study, lib_dict)
+        consistency_check(
+            network_components.components, lib_dict["lib_demo_oet"].models
+        )
+
+        database = build_data_base(input_study, series_dir)
+        network = build_network(network_components)
+        return network, database
+
+    network, database = setup_test("demo_oet.yml")
+    scenarios = 1
+    horizon = 132
+    time_steps = list(range(108, horizon))
+    time_blocks = [TimeBlock(0, time_steps)]
+
+    problem = build_problem(
+        network,
+        database,
+        time_blocks[0],
+        scenarios,
+        border_management=BlockBorderManagement.CYCLE,
+    )
+
+    status = problem.solver.Solve()
+
+    assert status == problem.solver.OPTIMAL
+
+    print(f"Problem objective: {problem.solver.Objective().Value()}")
+
+    output = OutputValues(problem)
+
+    df = pd.DataFrame()
+    for component in network.components:
+        for variable in component.model.variables:
+            if variable in [
+                "generation",
+                "p_injection",
+                "p_withdrawal",
+                "spillage",
+                "unsupplied_energy",
+            ]:
+                var_values = output.component(component.id).var(variable)._value
+                if variable in ["spillage", "p_injection"]:
+                    var_values = {key: value * -1 for key, value in var_values.items()}
+                df[f"{component.id}_{variable}"] = var_values
+
+    df.reset_index(inplace=True, drop=True)
+    df["solar_generation"] = (
+        pd.read_csv(series_dir / "solar_demo_oet.txt", header=None)
+        .iloc[time_steps]
+        .reset_index(drop=True)
+    )
+    df["wind_generation"] = (
+        pd.read_csv(series_dir / "wind_demo_oet.txt", header=None)
+        .iloc[time_steps]
+        .reset_index(drop=True)
+    )
+    df["load"] = (
+        pd.read_csv(series_dir / "load_demo_oet.txt", header=None)
+        .iloc[time_steps]
+        .reset_index(drop=True)
+    )
+
+    for prod_type in ["Nuclear", "Gas", "Fioul", "Coal", "Peak"]:
+        cols = [col for col in df.columns if prod_type in col]
+        df[prod_type] = df[cols].sum(axis=1)
+        df.drop(columns=cols, inplace=True)
+    df = df[
+        [
+            "load",
+            "Nuclear",
+            "Coal",
+            "Gas",
+            "Fioul",
+            "Peak",
+            "wind_generation",
+            "solar_generation",
+            "Hydro_generation",
+            "DE_unsupplied_energy",
+            "DE_spillage",
+            "Battery1_p_withdrawal",
+            "Battery1_p_injection",
+        ]
+    ]
+
+    df.to_csv(systems_dir / "output.csv", sep=";")
