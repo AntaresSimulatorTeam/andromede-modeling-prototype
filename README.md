@@ -2,7 +2,7 @@
 
 pyGems is an open-source tool, developed in Python, for the modeling and the simulation of complex energy systems under uncertainty. This is a generic interpreter for the **Gems** modeling framework.
 
-<img src="docs/images/gemsV2.png" alt="Description" width="200" height="200"/>
+<img src="docs/images/gemsV2.png" alt="Description" width="200"/>
 
 
 
