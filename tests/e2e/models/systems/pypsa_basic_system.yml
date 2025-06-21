@@ -69,7 +69,11 @@ system:
     - id: pypsagenerator
       model: pypsa_models.generator
       parameters:
-        - id: p_nom
+        - id: p_nom_min
+          time-dependent: false
+          scenario-dependent: false
+          value: 200.0
+        - id: p_nom_max
           time-dependent: false
           scenario-dependent: false
           value: 200.0
@@ -77,6 +81,10 @@ system:
           time-dependent: false
           scenario-dependent: false
           value: 50.0
+        - id: capital_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 0.0
         - id: p_min_pu
           time-dependent: false
           scenario-dependent: false

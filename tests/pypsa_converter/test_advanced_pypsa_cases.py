@@ -11,10 +11,10 @@
 # This file is part of the Antares project.
 
 """
-Script to convert a PyPSA study, loaded from NetCDF file, to Andromede format and run it.
+Script to convert a PyPSA study, loaded from NetCDF file, to Gems format and run it.
 
 This script loads a PyPSA study using the load_pypsa_study function,
-converts it to Andromede format, and runs the converted study.
+converts it to Gems format, and runs the converted study.
 """
 
 import math
@@ -126,7 +126,7 @@ def replace_lines_by_links(network: Network) -> Network:
 
 def main(file: str, load_scaling: float, activate_quota: bool) -> None:
     """
-    Main function to convert a PyPSA study to Andromede format and run it.
+    Main function to convert a PyPSA study to Gems format and run it.
     """
     # Set up logger
     logger = Logger(__name__, "")
@@ -155,15 +155,15 @@ def main(file: str, load_scaling: float, activate_quota: bool) -> None:
     T = len(pypsa_network.snapshots)
     logger.info(f"Number of timesteps: {T}")
     print(pypsa_network)
-    # Convert to Andromede System
-    logger.info("Converting PyPSA network to Andromede format...")
+    # Convert to Gems System
+    logger.info("Converting PyPSA network to Gems format...")
     input_system_from_pypsa_converter = convert_pypsa_network(
         pypsa_network, systems_dir, series_dir
     )
 
     # Save the InputSystem to YAML
     system_filename = "pypsa_study.yml"
-    logger.info(f"Saving Andromede system to {systems_dir / system_filename}...")
+    logger.info(f"Saving Gems system to {systems_dir / system_filename}...")
     transform_to_yaml(
         model=input_system_from_pypsa_converter,
         output_path=systems_dir / system_filename,
@@ -208,12 +208,16 @@ def main(file: str, load_scaling: float, activate_quota: bool) -> None:
     pypsa_network.optimize()
     logger.info(f"PyPSA objective value: {pypsa_network.objective}")
     assert math.isclose(
-        pypsa_network.objective, problem.solver.Objective().Value(), rel_tol=1e-6
+        pypsa_network.objective + pypsa_network.objective_constant,
+        problem.solver.Objective().Value(),
+        rel_tol=1e-6,
     )
 
 
 def test_case_pypsaeur_operational() -> None:
-    main("base_s_4_elec.nc", 0.8, True)
+    # main("base_s_4_elec.nc", 0.8, True)
+    main("base_s_6_elec_lvopt_.nc", 0.4, True)
+    main("base_s_6_elec_lvopt_.nc", 0.3, True)
 
 
 if __name__ == "__main__":
