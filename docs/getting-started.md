@@ -2,15 +2,18 @@
 
 The Gems framework consists of a **high-level modelling language**, close to mathematical syntax, and a **data structure** for describing energy systems.
 
-More specifically, three main types of input file can be defined with the Gems framework:
+More specifically, three main types of input files can be defined with the Gems framework:
 
 1. **Model libraries**: describe abstract component models.  
 2. **System files**: describe the graph of components that make up a system of interest; refer to model libraries (instantiation of abstract models) and to timeseries files.  
 3. **Timeseries files**: the data of timeseries.
 
-To get started with the syntax of these files, you can find below basic examples. More details are available in the dedicated sections of the documentation.
+To get started with the syntax of these files, the reader can find basic examples below. More details are available in the dedicated sections of the documentation.
 
 ## Simple example of a library file
+
+The first category of input files mentioned above comprises libraries of models. A simple `library.yml` file might look like this:
+
 ~~~ yaml
 library:
   id: basic
@@ -73,6 +76,10 @@ library:
 ~~~
 
 ## Simple example of system file
+
+The second category of input files mentioned above corresponds to system files. A system file describes a practical instance that the user wants to simulate. Such a `system.yml` file might look like this:
+
+
 ~~~yaml
 system:
   model-libraries: basic
@@ -128,8 +135,8 @@ system:
       port2: injection_port
 ~~~
 
-## Example of timeseries file
-Here is an example for the ~load_data.txt~ mentioned in the system file above, in the case with 4 timesteps and 2 scenarios.
+## Example of a timeseries file
+Here is an example for the data file ~load_data~ mentioned in the system file above, in the case with 4 timesteps and 2 scenarios.
 
 ~~~
 50 55
@@ -137,6 +144,7 @@ Here is an example for the ~load_data.txt~ mentioned in the system file above, i
 120 110
 150 150
 ~~~
+A data file may have a `.txt` or `.csv` extension.
 
 # Getting started with pyGems
 
@@ -152,15 +160,15 @@ Here is an example of how to load component and library files, resolve the syste
 
 Here is the pyGems syntax to read a test case described by
 
--  A library of models: "simple_library.yml"
--  A system file: "system_example.yml"
--  A set of timeseries located in the directory: series_dir.
+-  A library of models: `library.yml`
+-  A system file: `system.yml`
+-  A set of timeseries located in the directory: `series_dir`.
 
 ~~~ python
-with open("system_example.yml") as compo_file:
+with open("library.yml") as compo_file:
     input_system = parse_yaml_components(compo_file)
 
-with open("simple_library.yml") as lib_file:
+with open("system.yml") as lib_file:
     input_libraries = [parse_yaml_library(lib_file)]
 
 result_lib = resolve_library(input_libraries)
