@@ -145,7 +145,7 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -200,7 +200,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_thermal_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -316,7 +316,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_st_storage_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -426,7 +426,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_link_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -496,7 +496,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_wind_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -533,7 +533,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_solar_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -571,7 +571,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_load_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -608,7 +608,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_cc_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -674,6 +674,12 @@ class AntaresStudyConverter:
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
 
+        components, connections = self._convert_cc_to_component_list(
+            antares_historic_lib_id, valid_areas
+        )
+        list_components.extend(components)
+        list_connections.extend(connections)
+
         conversion_methods = [
             self._convert_renewable_to_component_list,
             self._convert_thermal_to_component_list,
@@ -682,13 +688,10 @@ class AntaresStudyConverter:
             self._convert_wind_to_component_list,
             self._convert_solar_to_component_list,
             self._convert_link_to_component_list,
-            self._convert_cc_to_component_list,
         ]
 
         for method in conversion_methods:
-            components, connections = method(
-                antares_historic_lib_id, model_config_datas, valid_areas
-            )
+            components, connections = method(antares_historic_lib_id)
             list_components.extend(components)
             list_connections.extend(connections)
 
