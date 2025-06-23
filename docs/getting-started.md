@@ -1,13 +1,142 @@
 # Getting started with Gems
 
-## Example of library file
-TBD
+The Gems framework consists of a **high-level modelling language**, close to mathematical syntax, and a **data structure** for describing energy systems.
 
-## Example of system file
-TBD
+More specifically, three main types of input file can be defined with the Gems framework:
+
+- **Model libraries**: describe abstract component models.  
+- **System files**: describe the graph of components that make up a system of interest; refer to model libraries (instantiation of abstract models) and to timeseries files.  
+- **Timeseries files**: the data of timeseries.
+
+To get started with the syntax of these files, you can find below basic examples. More details are available in the dedicated sections of the documentation.
+
+## Simple example of a library file
+~~~ yaml
+library:
+  id: basic
+  description: Basic library
+
+  port-types:
+    - id: flow
+      description: A port which transfers power flow
+      fields:
+        - id: flow
+
+  models:
+
+    - id: generator
+      description: A basic generator model
+      parameters:
+        - id: marginal_cost
+          time-dependent: false
+          scenario-dependent: false
+        - id: p_max
+          time-dependent: false
+          scenario-dependent: false
+      variables:
+        - id: generation
+          lower-bound: 0
+          upper-bound: p_max
+      ports:
+        - id: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: generation
+      objective: expec(sum(marginal_cost * generation))
+
+    - id: node
+      description: A basic balancing node model
+      ports:
+        - id: injection_port
+          type: flow
+      binding-constraints:
+        - id: balance
+          expression:  sum_connections(injection_port.flow) = 0
+
+
+    - id: load
+      description: A basic fixed demand model
+      parameters:
+        - id: load
+          time-dependent: true
+          scenario-dependent: true
+      ports:
+        - id: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: -load
+
+~~~
+
+## Simple example of system file
+~~~yaml
+system:
+  model-libraries: basic
+  nodes:
+    - id: N
+      model: basic.node
+
+  components:
+    - id: G1
+      model: basic.generator
+      parameters:
+        - id: marginal_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 30
+        - id: p_max
+          time-dependent: false
+          scenario-dependent: false
+          value: 100
+    - id: G2
+      model: basic.generator
+      parameters:
+        - id: marginal_cost
+          time-dependent: false
+          scenario-dependent: false
+          value: 10
+        - id: p_max
+          time-dependent: false
+          scenario-dependent: false
+          value: 50
+    - id: D
+      model: basic.load
+      parameters:
+        - id: load
+          time-dependent: true
+          scenario-dependent: true
+          value: load_data
+
+  connections:
+    - component1: N
+      port1: injection_port
+      component2: D
+      port2: injection_port
+
+    - component1: N
+      port1: injection_port
+      component2: G1
+      port2: injection_port
+
+    - component1: N
+      port1: injection_port
+      component2: G2
+      port2: injection_port
+~~~
 
 ## Example of timeseries file
-TBD
+Here is an example for the ~load_data.txt~ mentioned in the system file above, in the case with 4 timesteps and 2 scenarios.
+
+~~~
+50 55
+60  80
+120 110
+150 150
+~~~
 
 # Getting started with pyGems
 

@@ -156,10 +156,10 @@ A model is an abstract object, that will be instantiated once or several times i
         expression: active_power >= is_on * min_active_power_setpoint
     objective: active_power * proportional_cost + fixed_cost * is_on
     ports:
-      - id: injection
+      - id: injection_port
         type: dc_port
     port-field-definitions:
-      - port: injection
+      - port: injection_port
         field: flow
         definition: active_power
 ~~~
@@ -170,9 +170,27 @@ A model is an abstract object, that will be instantiated once or several times i
   - id: node
     description: A balance node with injections (productions and loads)
     ports:
-      - id: injections
+      - id: injection_port
         type: dc_port
     binding-constraints:
       - id: balance
         expression: sum_connections(injections.flow) = 0
+~~~
+
+### Example 3 : a demand
+
+~~~ yaml
+- id: load
+      description: A basic fixed demand model
+      parameters:
+        - id: load
+          time-dependent: true
+          scenario-dependent: true
+      ports:
+        - id: injection_port
+          type: flow
+      port-field-definitions:
+        - port: injection_port
+          field: flow
+          definition: -load
 ~~~
