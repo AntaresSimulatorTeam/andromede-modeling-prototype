@@ -10,7 +10,7 @@
 #
 # This file is part of the Antares project.
 library:
-  id: lib_demo_oet
+  id: lib_demo
   description: Antares historic model library
 
   port-types:
@@ -166,10 +166,10 @@ library:
         - id: level
           lower-bound: 0
           upper-bound: reservoir_capacity
-        - id: is_charging
-          lower-bound: 0
-          upper-bound: 1
-          variable-type: integer
+        # - id: is_charging
+        #   lower-bound: 0
+        #   upper-bound: 1
+        #   variable-type: integer
       ports:
         - id: balance_port
           type: flow
@@ -182,7 +182,7 @@ library:
           expression: level[0] = initial_level
         - id: Level equation
           expression: level[t+1] = level + efficiency_injection * p_injection - efficiency_withdrawal * p_withdrawal + inflows
-        - id: is_charging_cst
-          expression: p_injection <= is_charging * injection_nominal_capacity
-        - id: is_withdrawing_cst
-          expression: p_withdrawal <= (1 - is_charging) * injection_nominal_capacity
+        # - id: is_charging_cst
+        #   expression: p_injection <= is_charging * injection_nominal_capacity
+        # - id: is_withdrawing_cst
+        #   expression: p_withdrawal <= (1 - is_charging) * injection_nominal_capacity

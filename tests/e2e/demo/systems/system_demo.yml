@@ -10,38 +10,38 @@
 #
 # This file is part of the Antares project.
 system:
-  model-libraries: lib_demo_oet
+  model-libraries: lib_demo
   components:
     - id: DE
-      model: lib_demo_oet.area
+      model: lib_demo.area
       parameters:
         - id: spillage_cost
           value: 10
         - id: ens_cost
           value: 3000
     - id: Demand
-      model: lib_demo_oet.load
+      model: lib_demo.load
       parameters:
         - id: load
           time-dependent: true
           scenario-dependent: true
-          value: load_demo_oet
+          value: load_demo
     - id: Solar
-      model: lib_demo_oet.renewable
+      model: lib_demo.renewable
       parameters:
         - id: generation
           time-dependent: true
           scenario-dependent: true
-          value: solar_demo_oet
+          value: solar_demo
     - id: Wind
-      model: lib_demo_oet.renewable
+      model: lib_demo.renewable
       parameters:
         - id: generation
           time-dependent: true
           scenario-dependent: true
-          value: wind_demo_oet
+          value: wind_demo
     - id: Hydro
-      model: lib_demo_oet.hydro
+      model: lib_demo.hydro
       parameters:
         - id: p_min
           time-dependent: false
@@ -56,7 +56,7 @@ system:
           scenario-dependent: false
           value: 60000
     - id: Nuclear1
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -91,7 +91,7 @@ system:
           scenario-dependent: false
           value: 168
     - id: Nuclear2
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -126,7 +126,7 @@ system:
           scenario-dependent: false
           value: 168
     - id: Nuclear3
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -161,7 +161,7 @@ system:
           scenario-dependent: false
           value: 168
     - id: Nuclear4
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -196,7 +196,7 @@ system:
           scenario-dependent: false
           value: 168
     - id: Coal1
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -231,7 +231,7 @@ system:
           scenario-dependent: false
           value: 24
     - id: Gas1
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -266,7 +266,7 @@ system:
           scenario-dependent: false
           value: 12
     - id: Gas2
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -301,7 +301,7 @@ system:
           scenario-dependent: false
           value: 12
     - id: Gas3
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -336,7 +336,7 @@ system:
           scenario-dependent: false
           value: 12
     - id: Fioul1
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -371,7 +371,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Fioul2
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -406,7 +406,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Fioul3
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -441,7 +441,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Fioul4
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -476,7 +476,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Peak1
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -511,7 +511,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Peak2
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -546,7 +546,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Peak3
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -581,7 +581,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Peak4
-      model: lib_demo_oet.thermal
+      model: lib_demo.thermal
       parameters:
         - id: p_min_unit
           time-dependent: false
@@ -616,7 +616,7 @@ system:
           scenario-dependent: false
           value: 1
     - id: Battery1
-      model: lib_demo_oet.short-term-storage
+      model: lib_demo.short-term-storage
       parameters:
         - id: injection_nominal_capacity
           time-dependent: false
