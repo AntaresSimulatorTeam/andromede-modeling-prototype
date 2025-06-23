@@ -145,7 +145,7 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -200,7 +200,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_thermal_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -316,7 +316,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_st_storage_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -426,7 +426,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_link_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -496,7 +496,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_wind_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -533,7 +533,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_solar_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -571,7 +571,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_load_to_component_list(
-        self, lib_id: str
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -608,42 +608,47 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_cc_to_component_list(
-        self, lib_id: str, valid_areas: dict
+        self, lib_id: str, model_config_datas: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting binding constraints to component list...")
 
         bc_data = read_yaml_file(BC_CONFIG_PATH).get("template")
+        try:
+            for area in valid_areas.values():
+                data_with_area: dict = self._match_area_pattern(bc_data, area.id)
+                bcp = BindingConstraintsPreprocessing(self.study)
 
-        for area in valid_areas.values():
-            data_with_area: dict = self._match_area_pattern(bc_data, area.id)
-            bcp = BindingConstraintsPreprocessing(self.study)
-            components.append(
-                InputComponent(
-                    id=data_with_area["component"]["id"],
-                    model=data_with_area["model"],
-                    parameters=[
-                        InputComponentParameter(
-                            id=str(param.get("id")),
-                            time_dependent=bool(param.get("time-dependent")),
-                            scenario_dependent=bool(param.get("scenario-dependent")),
-                            value=bcp.convert_param_value(
-                                param.get("id"), param.get("value")
-                            ),
-                        )
-                        for param in data_with_area["component"]["parameters"]
-                    ],
+                components.append(
+                    InputComponent(
+                        id=data_with_area["component"]["id"],
+                        model=data_with_area["model"],
+                        parameters=[
+                            InputComponentParameter(
+                                id=str(param.get("id")),
+                                time_dependent=bool(param.get("time-dependent")),
+                                scenario_dependent=bool(
+                                    param.get("scenario-dependent")
+                                ),
+                                value=bcp.convert_param_value(
+                                    param.get("id"), param.get("value")
+                                ),
+                            )
+                            for param in data_with_area["component"]["parameters"]
+                        ],
+                    )
                 )
-            )
-            connections.append(
-                InputPortConnections(
-                    component1=data_with_area["component"]["id"],
-                    port1="injection_port",
-                    component2=area.id,
-                    port2="balance_port",
+                connections.append(
+                    InputPortConnections(
+                        component1=data_with_area["component"]["id"],
+                        port1="injection_port",
+                        component2=area.id,
+                        port2="balance_port",
+                    )
                 )
-            )
+        except (KeyError, FileNotFoundError) as e:
+            return components, connections
 
         return components, connections
 
@@ -674,12 +679,6 @@ class AntaresStudyConverter:
         list_components: list[InputComponent] = []
         list_connections: list[InputPortConnections] = []
 
-        components, connections = self._convert_cc_to_component_list(
-            antares_historic_lib_id, valid_areas
-        )
-        list_components.extend(components)
-        list_connections.extend(connections)
-
         conversion_methods = [
             self._convert_renewable_to_component_list,
             self._convert_thermal_to_component_list,
@@ -688,10 +687,13 @@ class AntaresStudyConverter:
             self._convert_wind_to_component_list,
             self._convert_solar_to_component_list,
             self._convert_link_to_component_list,
+            self._convert_cc_to_component_list,
         ]
 
         for method in conversion_methods:
-            components, connections = method(antares_historic_lib_id)
+            components, connections = method(
+                antares_historic_lib_id, model_config_datas, valid_areas
+            )
             list_components.extend(components)
             list_connections.extend(connections)
 

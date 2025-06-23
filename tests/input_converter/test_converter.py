@@ -127,7 +127,7 @@ class TestConverter:
 
     def test_convert_area_to_component(self, local_study_w_areas: Study, lib_id: str):
         converter = self._init_converter_from_study(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(lib_id)
+        area_components = converter._convert_area_to_component_list(lib_id, {})
 
         expected_area_components = [
             InputComponent(
@@ -181,7 +181,7 @@ class TestConverter:
 
     def test_convert_area_to_yaml(self, local_study_w_areas: Study, lib_id: str):
         converter = self._init_converter_from_study(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(lib_id)
+        area_components = converter._convert_area_to_component_list(lib_id, {})
         input_study = InputSystem(nodes=area_components)
 
         # Dump model into yaml file
@@ -253,7 +253,7 @@ class TestConverter:
         (
             renewables_components,
             renewable_connections,
-        ) = converter._convert_renewable_to_component_list(lib_id)
+        ) = converter._convert_renewable_to_component_list(lib_id, {}, {})
 
         timeseries_path = str(
             study_path
@@ -313,7 +313,7 @@ class TestConverter:
         (
             storage_components,
             storage_connections,
-        ) = converter._convert_st_storage_to_component_list(lib_id)
+        ) = converter._convert_st_storage_to_component_list(lib_id, {}, {})
 
         default_path = study_path / "input" / "st-storage" / "series" / "fr" / "battery"
         inflows_path = default_path / "inflows"
@@ -437,7 +437,7 @@ class TestConverter:
         (
             thermals_components,
             thermals_connections,
-        ) = converter._convert_thermal_to_component_list(lib_id)
+        ) = converter._convert_thermal_to_component_list(lib_id, {}, {})
 
         study_path = converter.study_path
         series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
@@ -572,7 +572,7 @@ class TestConverter:
         converter = self._init_converter_from_study(local_study_w_areas)
 
         solar_components, solar_connection = converter._convert_solar_to_component_list(
-            lib_id
+            lib_id, {}, {}
         )
 
         solar_timeseries = str(
@@ -610,7 +610,7 @@ class TestConverter:
         converter = self._init_converter_from_study(local_study_w_areas)
 
         load_components, load_connection = converter._convert_load_to_component_list(
-            lib_id
+            lib_id, {}, {}
         )
 
         load_timeseries = str(
@@ -655,7 +655,7 @@ class TestConverter:
         converter = self._init_converter_from_study(local_study_w_areas)
 
         wind_components, wind_connection = converter._convert_wind_to_component_list(
-            lib_id
+            lib_id, {}, {}
         )
 
         wind_timeseries = str(
@@ -699,7 +699,7 @@ class TestConverter:
     ):
         converter = self._init_converter_from_study(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(lib_id)
+        wind_components, _ = converter._convert_wind_to_component_list(lib_id, {}, {})
 
         assert wind_components == []
 
@@ -715,7 +715,7 @@ class TestConverter:
     ):
         converter = self._init_converter_from_study(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(lib_id)
+        wind_components, _ = converter._convert_wind_to_component_list(lib_id, {}, {})
 
         assert wind_components == []
 
@@ -725,7 +725,7 @@ class TestConverter:
         (
             links_components,
             links_connections,
-        ) = converter._convert_link_to_component_list(lib_id)
+        ) = converter._convert_link_to_component_list(lib_id, {}, {})
 
         fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
         at_prefix_path = study_path / "input" / "links" / "at" / "capacities"

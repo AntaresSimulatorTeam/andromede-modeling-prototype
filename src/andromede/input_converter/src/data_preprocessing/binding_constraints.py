@@ -120,4 +120,5 @@ class BindingConstraintsPreprocessing:
 
         if "operation" in data:
             data["operation"] = Operation(**data["operation"])
+
         return self.calculate_value(cls(**data))
