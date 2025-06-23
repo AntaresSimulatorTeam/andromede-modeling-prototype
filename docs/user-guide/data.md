@@ -29,10 +29,7 @@ that the rows cover the time horizon of the simulation.
 ### Scenario-dependent series
 
 To define a parameter value that changes depending on the scenario, define a row vector, where every data set is
-represented by a column.  
-Currently, Antares modeler does not support scenario building. Thus, please ensure that every scenario you want to
-simulate has an associated column in the scenario-dependent series file.  
-Example file for a simulation with 4 scenarios:
+represented by a column. Example file for a simulation with 4 scenarios:
 
 ~~~
 54 67.5 23.652 253
