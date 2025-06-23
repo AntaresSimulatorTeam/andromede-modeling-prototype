@@ -1,7 +1,7 @@
 # Mathematical expressions and syntax
 
 
-An essential aspect of **Gems** is that it allows mathematical expressions (describing models) to be defined in configuration files, independently of any software or programming language. Mathematical expressions are represented here as human-readable equations. This allows a large flexibility in defining objects of optimization.
+An essential aspect of **Gems** is that it allows mathematical expressions (describing models) to be defined in configuration files, independently of any software or programming language. Mathematical expressions are represented here as human-readable equations. This allows a large flexibility in defining objects of optimisation.
 
 ## Arithmetic operators
 
@@ -82,7 +82,7 @@ For time-dependent parameters, variables, and port fields, you can use these tim
   forward shift operator of N timestamps.
 - **[t-N]** suffix: where N is any expression resolving to an integer (using only scalars and parameters), this is a
   backward shift operator of N timestamps.
-- **sum(X)** aggregator: where X is the time-dependent operand, this operator sums the operand on the whole optimization
+- **sum(X)** aggregator: where X is the time-dependent operand, this operator sums the operand on the whole optimisation
   horizon.
 - **sum(S .. E, X)** aggregator: where X is the time-dependent operand, this operator sums the operand between S and E (
   included), where:

@@ -17,7 +17,7 @@ You can directly clone the [GitHub repo](https://github.com/AntaresSimulatorTeam
 
 ## Interpretation and simulation with pyGems
 
-Here is an example of how to load component and library files, resolve the system, and solve the optimization problem using the ***pyGems*** package.
+Here is an example of how to load component and library files, resolve the system, and solve the optimisation problem using the ***pyGems*** package.
 
 ### Loading the library, the system and the timeseries:
 
@@ -39,7 +39,7 @@ components_input = resolve_system(input_system, result_lib)
 database = build_data_base(input_system, Path(series_dir))
 ~~~
 
-### Building the optimization problem
+### Building the optimisation problem
 
 
 
@@ -55,7 +55,7 @@ problem = build_problem(
 )
 ~~~
 
-### Solving the optimization problem
+### Solving the optimisation problem
 ~~~ python
 status = problem.solver.Solve()
 print(problem.solver.Objective().Value())

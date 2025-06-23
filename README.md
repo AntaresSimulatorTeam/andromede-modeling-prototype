@@ -26,7 +26,7 @@ More specifically, three main types of input files can be defined with the **Gem
 
 
 
-This Python package features a generic interpreter of **Gems** capable of generating optimization problems from any library and system files that adhere to the modelling language syntax. It then employs off-the-shelf optimization solvers to solve these problems. The Python API facilitates reading case studies stored in YAML format, modifying them, or creating new ones from scratch by scripting.
+This Python package features a generic interpreter of **Gems** capable of generating optimisation problems from any library and system files that adhere to the modelling language syntax. It then employs off-the-shelf optimisation solvers to solve these problems. The Python API facilitates reading case studies stored in YAML format, modifying them, or creating new ones from scratch by scripting.
 
 
 
