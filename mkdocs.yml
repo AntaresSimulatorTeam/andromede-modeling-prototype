@@ -1,16 +1,28 @@
-site_name: Energy systems modeler
-repo_url: https://github.com/AntaresSimulatorTeam/andromede-modeling-prototype
+site_name: Gems - Generic Energy systems Modeling Scheme
+repo_url: https://github.com/AntaresSimulatorTeam/pyGems
 nav:
-  - Home: index.md
-  - Getting started: getting-started.md
-  - User guide: user-guide.md
+  - 'Home': 'index.md'
+  - 'Getting started': 'getting-started.md'
+  - 'User guide: Gems language and dataformat': 
+    - 'Mathematical expressions and syntax': 'user-guide/syntax.md'
+    - 'Input files' :
+      - 'Libraries of models': 'user-guide/libraries.md'
+      - 'Systems': 'user-guide/systems.md'
+      - 'Data series': 'user-guide/data.md'
+    - 'Reference libraries' : 'user-guide/reference-libraries.md'
+  - 'User guide: pyGems interpreter package':
+    - 'Reading input files': 'user-guide/inputs.md'
+    - 'Building systems with the Python API': 'user-guide/building.md'
+    - 'Optimization: building and solving problems': 'user-guide/optimisation.md'
+    - 'Retrieving outputs': 'user-guide/outputs.md'
+    - 'Data converters': 'user-guide/converters.md'
   - Developer guide: developer-guide.md
   - Changelog: CHANGELOG.md
 
 theme:
   name: material
-  # logo: assets/logo.png #TODO: We need a logo !!
-  # favicon: assets/Icone.png
+  logo: images/logo.png 
+  favicon: images/logo.png
   prev_next_buttons_location: none
   features:
     - navigation.instant
