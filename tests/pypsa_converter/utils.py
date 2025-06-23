@@ -28,7 +28,7 @@ def convert_pypsa_network(
     """
     logger = Logger(__name__, "")
     converter = PyPSAStudyConverter(pypsa_network, logger, systems_dir, series_dir)
-    input_system_from_pypsa_converter = converter.to_andromede_study()
+    input_system_from_pypsa_converter = converter.to_gems_study()
     return input_system_from_pypsa_converter
 
 

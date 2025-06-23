@@ -25,7 +25,7 @@ from tests.pypsa_converter.utils import build_problem_from_system, convert_pypsa
 
 
 def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
-    # Building the PyPSA test problem
+    # Function to test the behaviour of Generator with "p_nom_extendable = False"
     T = 10
     n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
     n1.add("Bus", "pypsatown", v_nom=1)
@@ -53,6 +53,58 @@ def test_load_gen(systems_dir: Path, series_dir: Path) -> None:
 
     # Testing the PyPSA_to_Andromede converter
     run_conversion_test(n1, n1.objective, "test_load_gen.yml", systems_dir, series_dir)
+
+
+@pytest.mark.parametrize(
+    "capital_cost, p_nom_min,p_nom_max",
+    [
+        (100.0, 0, 5),
+        (1.0, 0, 5),
+        (1.0, 0, 100),
+        (0.1, 0, 100),
+        (100.0, 10, 50),
+        (100.0, 50, 50),
+    ],
+)
+def test_load_gen_ext(
+    systems_dir: Path,
+    series_dir: Path,
+    capital_cost: float,
+    p_nom_min: float,
+    p_nom_max: float,
+) -> None:
+    # Function to test the behaviour of Generator with "p_nom_extendable = True"
+    T = 10
+    n1 = pypsa.Network(name="Demo", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+    n1.add(
+        "Load", "pypsaload", bus="pypsatown", p_set=[i * 10 for i in range(T)], q_set=0
+    )
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=100, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        p_nom_extendable=True,
+        marginal_cost=10,  # €/MWh
+        capital_cost=capital_cost,  # €/MWh
+        p_nom_min=p_nom_min,  # MW
+        p_nom_max=p_nom_max,  # MW
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_ext.yml", systems_dir, series_dir
+    )
 
 
 @pytest.mark.parametrize(
@@ -232,12 +284,86 @@ def test_load_gen_link(systems_dir: Path, series_dir: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    "capital_cost, p_nom_min,p_nom_max",
+    [
+        (100.0, 0, 50),
+        (1.0, 0, 50),
+        (1.0, 0, 100),
+        (0.1, 0, 100),
+        (100.0, 10, 50),
+        (100.0, 50, 50),
+    ],
+)
+def test_load_gen_link_ext(
+    systems_dir: Path,
+    series_dir: Path,
+    capital_cost: float,
+    p_nom_min: float,
+    p_nom_max: float,
+) -> None:
+    T = 10
+    n1 = pypsa.Network(name="Demo2", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+    n1.add(
+        "Load", "pypsaload", bus="pypsatown", p_set=[i * 10 for i in range(T)], q_set=0
+    )
+    n1.add("Load", "pypsaload2", bus="pypsatown", p_set=100, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator2",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=40,  # €/MWh
+        p_nom=50,  # MW
+    )
+    n1.add("Bus", "paris", v_nom=1)
+    n1.add("Load", "parisload", bus="paris", p_set=200, qset=0)
+    n1.add(
+        "Generator",
+        "pypsagenerator3",
+        bus="paris",
+        p_nom_extendable=False,
+        marginal_cost=200,  # €/MWh
+        p_nom=200,  # MW
+    )
+    n1.add(
+        "Link",
+        "link-paris-pypsatown",
+        bus0="pypsatown",
+        bus1="paris",
+        efficiency=0.9,
+        marginal_cost=0.5,
+        p_nom_min=p_nom_min,
+        p_nom_max=p_nom_max,
+        p_nom_extendable=True,
+        capital_cost=capital_cost,
+        p_min_pu=-1,
+        p_max_pu=1,
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_load_gen_link_ext.yml", systems_dir, series_dir
+    )
+
+
+@pytest.mark.parametrize(
     "state_of_charge_initial, standing_loss,efficiency_store,inflow_factor",
     [
+        (100.0, 0.01, 0.99, 1e-6),
         (100.0, 0.01, 0.99, 1),
         (0.0, 0.01, 0.98, 1),
         (0.0, 0.05, 0.9, 1),
-        (0.0, 0.05, 0.9, 1000),
+        (0.0, 0.05, 0.9, 4),
     ],
 )
 def test_storage_unit(
@@ -293,7 +419,7 @@ def test_storage_unit(
         "pypsastorage",
         bus="pypsatown",
         p_nom=100,  # MW
-        max_hours=10,  # Hours of storage at full output
+        max_hours=4,  # Hours of storage at full output
         efficiency_store=efficiency_store,
         efficiency_dispatch=0.85,
         standing_loss=standing_loss,
@@ -304,6 +430,96 @@ def test_storage_unit(
         p_min_pu=-1,
         p_max_pu=1,
         inflow=[i * inflow_factor for i in range(T)],
+        cyclic_state_of_charge=True,
+        cyclic_state_of_charge_per_period=True,
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(
+        n1, n1.objective, "test_storage_unit.yml", systems_dir, series_dir
+    )
+
+
+@pytest.mark.parametrize(
+    "state_of_charge_initial, standing_loss,efficiency_store,inflow_factor",
+    [
+        (100.0, 0.01, 0.99, 1e-6),
+        (100.0, 0.01, 0.99, 1),
+        (0.0, 0.01, 0.98, 1),
+        (0.0, 0.05, 0.9, 1),
+        (0.0, 0.05, 0.9, 4),
+    ],
+)
+def test_storage_unit_ext(
+    systems_dir: Path,
+    series_dir: Path,
+    state_of_charge_initial: float,
+    standing_loss: float,
+    efficiency_store: float,
+    inflow_factor: float,
+) -> None:
+    # Function to test the StorageUnit Components with "p_nom_extendable = True"
+
+    # Building the PyPSA test problem with a storage unit
+    T = 20
+    n1 = pypsa.Network(name="Demo3", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+    n1.add(
+        "Load",
+        "pypsaload",
+        bus="pypsatown",
+        p_set=[
+            100,
+            160,
+            100,
+            70,
+            90,
+            30,
+            0,
+            150,
+            200,
+            10,
+            0,
+            0,
+            200,
+            240,
+            0,
+            0,
+            20,
+            50,
+            60,
+            50,
+        ],
+        q_set=0,
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=50,  # €/MWh
+        p_nom=150.0,  # MW
+    )
+    n1.add(
+        "StorageUnit",
+        "pypsastorage",
+        bus="pypsatown",
+        p_nom_min=100,  # MW
+        p_nom_max=150,  # MW
+        p_nom_extendable=True,
+        capital_cost=1,
+        max_hours=4,  # Hours of storage at full output
+        efficiency_store=efficiency_store,
+        efficiency_dispatch=0.85,
+        standing_loss=standing_loss,
+        state_of_charge_initial=state_of_charge_initial,
+        marginal_cost=10.0,  # €/MWh
+        marginal_cost_storage=1.5,  # €/MWh
+        spill_cost=100.0,  # €/MWh
+        p_min_pu=-1,
+        p_max_pu=1,
+        inflow=inflow_factor,
         cyclic_state_of_charge=True,
         cyclic_state_of_charge_per_period=True,
     )
@@ -382,6 +598,68 @@ def test_store(
 
     # Testing the PyPSA_to_Andromede converter
     run_conversion_test(n1, n1.objective, "test_store.yml", systems_dir, series_dir)
+
+
+def test_store_ext(systems_dir: Path, series_dir: Path) -> None:
+    # Building the PyPSA test problem with a store
+    T = 20
+
+    n1 = pypsa.Network(name="StoreDemo", snapshots=[i for i in range(T)])
+    n1.add("Bus", "pypsatown", v_nom=1)
+    n1.add(
+        "Load",
+        "pypsaload",
+        bus="pypsatown",
+        p_set=[
+            100,
+            160,
+            100,
+            70,
+            90,
+            30,
+            0,
+            150,
+            200,
+            10,
+            0,
+            0,
+            200,
+            240,
+            0,
+            0,
+            20,
+            50,
+            60,
+            50,
+        ],
+        q_set=0,
+    )
+    n1.add(
+        "Generator",
+        "pypsagenerator",
+        bus="pypsatown",
+        p_nom_extendable=False,
+        marginal_cost=[i for i in range(T)],  # €/MWh
+        p_nom=150.0,  # MW
+    )
+    n1.add(
+        "Store",
+        "pypsastore",
+        bus="pypsatown",
+        e_nom_min=10.0,  # MWh
+        e_nom_max=1000.0,  # MWh
+        e_nom_extendable=True,
+        e_initial=100.0,
+        capital_cost=10,
+        standing_loss=0.1,  # 1% loss per hour
+        marginal_cost=1.0,  # €/MWh
+        marginal_cost_storage=1.5,  # €/MWh
+        e_cyclic=True,
+    )
+    n1.optimize()
+
+    # Testing the PyPSA_to_Andromede converter
+    run_conversion_test(n1, n1.objective, "test_store_ext.yml", systems_dir, series_dir)
 
 
 def run_conversion_test(
