@@ -6,14 +6,14 @@ TBD
 ## Example of system file
 TBD
 
-## Example of timeserie file
+## Example of timeseries file
 TBD
 
 # Getting started with pyGems
 
 ## Installation
 
-You can directly clone the [GitHub repo](https://github.com/AntaresSimulatorTeam/andromede-modeling-prototype) of the project.
+You can directly clone the [GitHub repo](https://github.com/AntaresSimulatorTeam/pyGems) of the project.
 
 ## Interpretation and simulation with pyGems
 

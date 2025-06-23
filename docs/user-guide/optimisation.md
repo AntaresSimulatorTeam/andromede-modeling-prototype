@@ -1,7 +1,7 @@
-# Optimization: building and solving problems with pyGems
+# Optimisation: building and solving problems with pyGems
 
 
-### Building the optimization problem
+### Building the optimisation problem
 
 
 
@@ -17,7 +17,7 @@ problem = build_problem(
 )
 ~~~
 
-### Solving the optimization problem
+### Solving the optimisation problem
 ~~~ python
 status = problem.solver.Solve()
 print(problem.solver.Objective().Value())

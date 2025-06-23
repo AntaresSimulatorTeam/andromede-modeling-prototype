@@ -88,7 +88,7 @@ A model is an abstract object, that will be instantiated once or several times i
       whole simulation horizon.
     - **scenario-dependent**: `true` or `false`, indicates whether the parameter changes depending on the simulated
       scenario, or is the same for all scenarios.
-- **variables** _(optional)_: a collection of optimization variables that are defined for this model
+- **variables** _(optional)_: a collection of optimisation variables that are defined for this model
     - **id**: an ID for the variable. Must be unique inside the scope of the model, and
       respect [these rules](syntax.md#rules-for-ids).
     - **variable-type**: `continuous`, `integer`, or `binary`
@@ -96,13 +96,13 @@ A model is an abstract object, that will be instantiated once or several times i
       and/or parameters only. If missing, defaults to -inf for continuous and integer types, or 0 for binary.
     - **upper-bound** _(optional)_: an [expression](syntax.md) representing the upper bound of the variable. Must use scalars
       and/or parameters only. If missing, defaults to +inf for continuous and integer types, or 1 for binary.
-- **constraints** _(optional)_: a collection of "internal" optimization constraints set by the model
+- **constraints** _(optional)_: a collection of "internal" optimisation constraints set by the model
     - **id**: an ID for the constraint. Must be unique inside the scope of the model, and
       respect [these rules](syntax.md#rules-for-ids).
     - **expression**: an [expression](syntax.md) representing the constraint. Can use scalars, parameters, internal
       variables, time and scenario operators.
       Must contain exactly one comparison operator (**=**, **<=**, or **>=**).
-- **binding-constraints** _(optional)_: a collection of "external" optimization constraints set by the model, that use
+- **binding-constraints** _(optional)_: a collection of "external" optimisation constraints set by the model, that use
   ports. While these have no
   real difference with "internal constraints", it is best practice to separate internal and external constraints in
   order to make the model more readable.
@@ -111,7 +111,7 @@ A model is an abstract object, that will be instantiated once or several times i
     - **expression**: an [expression](syntax.md) representing the constraint. Can use scalars, parameters, internal
       variables, ports, and time, scenario, and port operators.
 - **objective** _(optional)_: an [expression](syntax.md) representing the (additive) participation of the model to
-  the optimization objective.
+  the optimisation objective.
   Note that **minimization** is implied. The expression can use scalars, parameters and variables of the model.
 - **ports** _(optional)_: a collection of ports exposed by the model, either as input or output
     - **id**: an ID for the port. Must be unique in the scope of the model, and respect [these rules](syntax.md#rules-for-ids).

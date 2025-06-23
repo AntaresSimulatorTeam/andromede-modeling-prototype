@@ -24,14 +24,14 @@ The Gems framework consists of a **high-level modelling language**, close to mat
 More specifically, three main types of input file can be defined with the Gems framework:
 
 - **Model libraries**: describe abstract component models.  
-- **System files**: describe the graph of components that make up a system of interest; refers to model libraries (instantiation of abstract model) and to timeseries files.  
+- **System files**: describe the graph of components that make up a system of interest; refer to model libraries (instantiation of abstract models) and to timeseries files.  
 - **Timeseries files**: the data of timeseries.
 
 ## The Gems interpreters
 
 Two open-source software packages are capable of reading and simulating the case studies described in the Gems framework:
 
-- [pyGems](https://github.com/AntaresSimulatorTeam/andromede-modeling-prototype)
+- [pyGems](https://github.com/AntaresSimulatorTeam/pyGems)
 - [Antares Simulator](https://antares-simulator.org/) *(functionality under development)*
 
 ## Getting started
