@@ -11,9 +11,11 @@
 # This file is part of the Antares project.
 import logging
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from types import MappingProxyType
+from typing import Any, Optional, Union
 
-from antares.craft.model.area import Area
+from antares.craft.model.renewable import RenewableCluster
+from antares.craft.model.st_storage import STStorage
 from antares.craft.model.study import Study, read_study_local
 from antares.craft.model.thermal import ThermalCluster
 
@@ -70,11 +72,10 @@ class AntaresStudyConverter:
         self.output_path = (
             Path(output_path) if output_path else self.study_path / Path("output.yaml")
         )
-        self.areas: Iterable[Area] = self.study.get_areas()
-
+        self.areas: MappingProxyType = self.study.get_areas()
         self.bc_area_pattern: str = "${area}"
 
-    def _match_area_pattern(self, object, param_values: dict[str, str]) -> any:
+    def _match_area_pattern(self, object, param_values: str) -> Any:
         if isinstance(object, dict):
             return {
                 self._match_area_pattern(k, param_values): self._match_area_pattern(
@@ -99,7 +100,7 @@ class AntaresStudyConverter:
         return [
             item
             for area in self.areas.values()
-            for item in self._match_area_pattern(components, area.id)
+            for item in self._match_area_pattern(components, area.id)  # type: ignore
         ]
 
     def _extract_legacy_objects_from_model_config(self, bc_data) -> dict:
@@ -119,7 +120,7 @@ class AntaresStudyConverter:
         self.logger.info("Converting areas to component list...")
 
         for area in self.areas.values():
-            if area.id in model_config_datas.get("nodes"):
+            if area.id in model_config_datas.get("nodes", []):
                 continue
             components.append(
                 InputComponent(
@@ -150,7 +151,7 @@ class AntaresStudyConverter:
         connections = []
         self.logger.info("Converting renewables to component list...")
         for area in self.areas.values():
-            renewables = area.get_renewables()
+            renewables: dict[str, RenewableCluster] = area.get_renewables()
             for renewable in renewables.values():
                 series_path = (
                     self.study_path
@@ -211,8 +212,7 @@ class AntaresStudyConverter:
 
         # Add thermal components for each area
         for area in self.areas.values():
-            thermals: list[ThermalCluster] = area.get_thermals()
-
+            thermals: dict[str, ThermalCluster] = area.get_thermals()
             for thermal in thermals.values():
                 if f"{area.id}.{thermal.id}" in thermals_to_exclude:
                     continue
@@ -323,7 +323,7 @@ class AntaresStudyConverter:
         self.logger.info("Converting short-term storages to component list...")
         # Add thermal components for each area
         for area in self.areas.values():
-            storages = area.get_st_storages()
+            storages: dict[str, STStorage] = area.get_st_storages()
             for storage in storages.values():
                 series_path = (
                     self.study_path
@@ -617,7 +617,7 @@ class AntaresStudyConverter:
         bc_data = read_yaml_file(BC_CONFIG_PATH).get("template")
 
         for area in valid_areas.values():
-            data_with_area = self._match_area_pattern(bc_data, area.id)
+            data_with_area: dict = self._match_area_pattern(bc_data, area.id)
             bcp = BindingConstraintsPreprocessing(self.study)
             components.append(
                 InputComponent(
@@ -626,8 +626,8 @@ class AntaresStudyConverter:
                     parameters=[
                         InputComponentParameter(
                             id=str(param.get("id")),
-                            time_dependent=str(param.get("time-dependent")),
-                            scenario_dependent=str(param.get("scenario-dependent")),
+                            time_dependent=bool(param.get("time-dependent")),
+                            scenario_dependent=bool(param.get("scenario-dependent")),
                             value=bcp.convert_param_value(
                                 param.get("id"), param.get("value")
                             ),
@@ -647,7 +647,7 @@ class AntaresStudyConverter:
 
         return components, connections
 
-    def _extract_valid_areas_from_model_config(self, bc_data: dict):
+    def _extract_valid_areas_from_model_config(self, bc_data: dict) -> dict:
         for template_param in bc_data["template-parameters"]:
             if template_param.get("exclude"):
                 return {
@@ -655,6 +655,7 @@ class AntaresStudyConverter:
                     for k, v in self.areas.items()
                     if k not in template_param["exclude"]
                 }
+        return {}
 
     def convert_study_to_input_study(self) -> InputSystem:
         antares_historic_lib_id = "antares-historic"

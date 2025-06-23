@@ -16,7 +16,7 @@ class Operation:
         initial_value: Union[pd.Series, float],
         preprocessed_values: Optional[Union[dict[str, float], float]] = None,
     ) -> Union[float, pd.Series]:
-        def resolve(value):
+        def resolve(value: Union[str, float]) -> Union[float, pd.Series]:
             if isinstance(value, str):
                 if (
                     not isinstance(preprocessed_values, dict)
@@ -29,7 +29,7 @@ class Operation:
             return value
 
         if self.type == "max":
-            return float(max(initial_value))
+            return float(max(initial_value))  # type: ignore
 
         if self.multiply_by is not None:
             return initial_value * resolve(self.multiply_by)
@@ -62,7 +62,7 @@ class ThermalData:
     area: str
     cluster: str
     column: Optional[int] = None
-    field: Optional[Union[str, float]] = None
+    field: Optional[str] = None
     operation: Optional[Operation] = None
     timeseries_file_type: Optional[str] = None
 

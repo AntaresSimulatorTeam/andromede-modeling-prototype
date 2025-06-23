@@ -433,10 +433,25 @@ class TestConverter:
     ):
         converter = self._init_converter_from_study(local_study_w_thermal)
         study_path = converter.study_path
+        path_cc = (
+            Path(__file__).parent.parent.parent
+            / "src"
+            / "andromede"
+            / "input_converter"
+            / "data"
+            / "model_configuration"
+            / "battery.yaml"
+        )
+        bc_data = read_yaml_file(path_cc).get("template", {})
+        model_config_datas: dict = converter._extract_legacy_objects_from_model_config(
+            bc_data
+        )
+        valid_areas: dict = converter._extract_valid_areas_from_model_config(bc_data)
+
         (
             thermals_components,
             thermals_connections,
-        ) = converter._convert_thermal_to_component_list(lib_id)
+        ) = converter._convert_thermal_to_component_list(lib_id, model_config_datas, valid_areas)
 
         study_path = converter.study_path
         series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
@@ -562,7 +577,7 @@ class TestConverter:
                 ],
             )
         ]
-
+        assert False
         assert thermals_components == expected_thermals_components
         assert thermals_connections == expected_thermals_connections
 

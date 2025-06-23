@@ -10,6 +10,7 @@
 #
 # This file is part of the Antares project.
 from pathlib import Path
+from typing import Any
 
 import yaml
 from pandas import DataFrame
@@ -54,7 +55,7 @@ def transform_to_yaml(model: BaseModel, output_path: str) -> None:
         )
 
 
-def read_yaml_file(file_path: Path) -> dict[str, any]:
+def read_yaml_file(file_path: Path) -> dict[str, Any]:
     if not file_path.exists():
         raise FileNotFoundError(f"The file {file_path} does not exists")
     with file_path.open("r", encoding="utf-8") as file:
