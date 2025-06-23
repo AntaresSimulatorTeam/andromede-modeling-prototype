@@ -4,9 +4,9 @@ The Gems framework consists of a **high-level modelling language**, close to mat
 
 More specifically, three main types of input file can be defined with the Gems framework:
 
-- **Model libraries**: describe abstract component models.  
-- **System files**: describe the graph of components that make up a system of interest; refer to model libraries (instantiation of abstract models) and to timeseries files.  
-- **Timeseries files**: the data of timeseries.
+1. **Model libraries**: describe abstract component models.  
+2. **System files**: describe the graph of components that make up a system of interest; refer to model libraries (instantiation of abstract models) and to timeseries files.  
+3. **Timeseries files**: the data of timeseries.
 
 To get started with the syntax of these files, you can find below basic examples. More details are available in the dedicated sections of the documentation.
 
@@ -169,8 +169,6 @@ database = build_data_base(input_system, Path(series_dir))
 ~~~
 
 ### Building the optimisation problem
-
-
 
 ~~~ python
 
