@@ -75,7 +75,7 @@ class AntaresStudyConverter:
         self.areas: MappingProxyType = self.study.get_areas()
         self.bc_area_pattern: str = "${area}"
 
-    def _match_area_pattern(self, object, param_values: str) -> Any:
+    def _match_area_pattern(self, object: Any, param_values: str) -> Any:
         if isinstance(object, dict):
             return {
                 self._match_area_pattern(k, param_values): self._match_area_pattern(
@@ -103,7 +103,7 @@ class AntaresStudyConverter:
             for item in self._match_area_pattern(components, area.id)  # type: ignore
         ]
 
-    def _extract_legacy_objects_from_model_config(self, bc_data) -> dict:
+    def _extract_legacy_objects_from_model_config(self, bc_data: dict) -> dict:
         """This function aim at extracting components that are only present for binding constraint model."""
         legacy = bc_data.get("legacy-objects-to-delete", {})
         return {
