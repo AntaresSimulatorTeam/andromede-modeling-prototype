@@ -9,6 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
+import os
 import logging
 from pathlib import Path
 from types import MappingProxyType
@@ -665,6 +666,7 @@ class AntaresStudyConverter:
     def convert_study_to_input_study(self) -> InputSystem:
         antares_historic_lib_id = "antares-historic"
         bc_data = read_yaml_file(BC_CONFIG_PATH).get("template", {})
+        print("path convert study", BC_CONFIG_PATH, os.listdir(BC_CONFIG_PATH))
         # Get area pattern for binding constraint from model config
         self.bc_area_pattern = f"${{{bc_data['template-parameters'][0]['name']}}}"
 

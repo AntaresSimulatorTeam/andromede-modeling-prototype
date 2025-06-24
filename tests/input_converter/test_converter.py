@@ -948,7 +948,7 @@ class TestConverter:
         print("path:", path, os.listdir(path))
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
-        print("\nexpected_data:", expected_data)
+        print("\n Expected_data:", expected_data)
         converter = self._init_converter_from_path(path)
         obtained_data = converter.convert_study_to_input_study()
 
@@ -963,7 +963,7 @@ class TestConverter:
                 item["time_dependent"] = item.pop("time-dependent")
                 if not item.get("scenario_group"):
                     item["scenario_group"] = None
-        print("\nexpected_data after formatting:", expected_data)
+        print("\n obtained_data after formatting:", obtained_data)
         # A little formatting of obtained parameters:
         # Convert list of objects to list of dictionaries
         # Replace absolute path with relative path
@@ -977,10 +977,10 @@ class TestConverter:
             obtained_components_to_dict, "", str(path) + "/"
         )
         print(
-            " obtained components:", sorted(obtained_components, key=lambda x: x["id"])
+            "Obtained components:", sorted(obtained_components, key=lambda x: x["id"])
         )
         print(
-            "expected components _match_area_pattern:",
+            "Expected components _match_area_pattern:",
             sorted(expected_data["components"], key=lambda x: x["id"]),
         )
         assert sorted(expected_data["components"], key=lambda x: x["id"]) == sorted(
