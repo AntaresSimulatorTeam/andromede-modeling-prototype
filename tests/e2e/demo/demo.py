@@ -69,7 +69,7 @@ problem = build_problem(
     scenarios,
     border_management=BlockBorderManagement.CYCLE,
 )
-
+problem.solver.EnableOutput()
 status = problem.solver.Solve()
 print(f"Problem objective: {problem.solver.Objective().Value()}")
 

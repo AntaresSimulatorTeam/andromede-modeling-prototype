@@ -7,6 +7,7 @@ prof
 venv
 .env
 .venv
+.venv**
 .coverage
 coverage.xml
 bin
