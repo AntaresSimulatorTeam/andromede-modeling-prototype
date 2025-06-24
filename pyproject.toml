@@ -17,9 +17,3 @@ andromede-simulator = "andromede.main.main:main_cli"
 # All the following settings are optional:
 where = ["src"]
 
-[tool.black]
-line-length = 88
-include = '\.pyi?$'
-
-[tool.isort]
-profile = "black"
