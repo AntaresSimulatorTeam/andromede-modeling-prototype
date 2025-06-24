@@ -873,7 +873,6 @@ class TestConverter:
         expected_connections = expected_data["connections"]
 
         converter = self._init_converter_from_path(path)
-        print("\n path of the studyto be converted from , :", path, os.listdir(path))
         path_cc = (
             Path(__file__).parent.parent.parent
             / "src"
@@ -883,34 +882,20 @@ class TestConverter:
             / "model_configuration"
             / "battery.yaml"
         )
-        print(
-            "paths of the battery yaml: ",
-            path_cc,
-            os.listdir(
-                Path(__file__).parent.parent.parent
-                / "src"
-                / "andromede"
-                / "input_converter"
-                / "data"
-                / "model_configuration",
-            ),
-        )
+
         bc_data = read_yaml_file(path_cc).get("template", {})
-        print("bc data: '", bc_data)
         model_config_datas: dict = converter._extract_legacy_objects_from_model_config(
             bc_data
         )
         valid_areas: dict = converter._extract_valid_areas_from_model_config(bc_data)
-        print("bc valid_areas: '", valid_areas)
-        print("bc model_config_datas: '", model_config_datas)
+
         (
             binding_components,
             binding_connections,
         ) = converter._convert_cc_to_component_list(
             lib_id, model_config_datas, valid_areas
         )
-        print("bc binding_connections: '", binding_connections)
-        print("bc binding_components: '", binding_components)
+
         connection = binding_connections[0]
 
         # Compare connections
@@ -976,7 +961,6 @@ class TestConverter:
                 item["time_dependent"] = item.pop("time-dependent")
                 if not item.get("scenario_group"):
                     item["scenario_group"] = None
-        print("\n obtained_data before formatting:", obtained_data)
         # A little formatting of obtained parameters:
         # Convert list of objects to list of dictionaries
         # Replace absolute path with relative path
@@ -985,13 +969,6 @@ class TestConverter:
         ]
         obtained_components = TestConverter._match_area_pattern(
             obtained_components_to_dict, "", str(path) + "/"
-        )
-        print(
-            "Obtained components:", sorted(obtained_components, key=lambda x: x["id"])
-        )
-        print(
-            "Expected components _match_area_pattern:",
-            sorted(expected_data["components"], key=lambda x: x["id"]),
         )
         assert sorted(expected_data["components"], key=lambda x: x["id"]) == sorted(
             obtained_components, key=lambda x: x["id"]
