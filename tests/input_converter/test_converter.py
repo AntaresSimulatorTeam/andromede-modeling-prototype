@@ -9,7 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -945,6 +945,7 @@ class TestConverter:
 
     def test_convert_study_path_to_input_study(self):
         path = Path(__file__).parent / "resources" / "mini_test_batterie_BP23"
+        print("path:", path, os.listdir(path))
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
 
@@ -985,6 +986,7 @@ class TestConverter:
         assert sorted(expected_data["components"], key=lambda x: x["id"]) == sorted(
             obtained_components, key=lambda x: x["id"]
         )
+        assert False
 
     def test_multiply_operation(self):
         operation = Operation(multiply_by=2)
