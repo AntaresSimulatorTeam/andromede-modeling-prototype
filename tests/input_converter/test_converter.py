@@ -975,10 +975,13 @@ class TestConverter:
         obtained_components = TestConverter._match_area_pattern(
             obtained_components_to_dict, "", str(path) + "/"
         )
-        print(" obtained components:", sorted(
-            obtained_components, key=lambda x: x["id"]
-        ))
-        print("expected components _match_area_pattern:", sorted(expected_data["components"], key=lambda x: x["id"]))
+        print(
+            " obtained components:", sorted(obtained_components, key=lambda x: x["id"])
+        )
+        print(
+            "expected components _match_area_pattern:",
+            sorted(expected_data["components"], key=lambda x: x["id"]),
+        )
         assert sorted(expected_data["components"], key=lambda x: x["id"]) == sorted(
             obtained_components, key=lambda x: x["id"]
         )
