@@ -886,13 +886,15 @@ class TestConverter:
         print(
             "paths of the battery yaml: ",
             path_cc,
-            os.listdir(Path(__file__).parent.parent.parent
-            / "src"
-            / "andromede"
-            / "input_converter"
-            / "data"
-            / "model_configuration",
-        ))
+            os.listdir(
+                Path(__file__).parent.parent.parent
+                / "src"
+                / "andromede"
+                / "input_converter"
+                / "data"
+                / "model_configuration",
+            ),
+        )
         bc_data = read_yaml_file(path_cc).get("template", {})
         print("bc data: '", bc_data)
         model_config_datas: dict = converter._extract_legacy_objects_from_model_config(
