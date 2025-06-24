@@ -73,6 +73,7 @@ class AntaresStudyConverter:
             Path(output_path) if output_path else self.study_path / Path("output.yaml")
         )
         self.areas: MappingProxyType = self.study.get_areas()
+        print("Affiche areas:", self.areas, self.study_path)
         self.bc_area_pattern: str = "${area}"
 
     def _match_area_pattern(self, object: Any, param_values: str) -> Any:

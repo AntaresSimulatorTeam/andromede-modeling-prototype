@@ -911,6 +911,7 @@ class TestConverter:
         )
         print("bc binding_connections: '", binding_connections)
         print("bc binding_components: '", binding_components)
+        assert False
         connection = binding_connections[0]
 
         # Compare connections
