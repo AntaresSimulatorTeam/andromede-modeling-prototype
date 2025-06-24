@@ -973,7 +973,9 @@ class TestConverter:
             obtained_components_to_dict, "", str(path) + "/"
         )
 
-        assert sorted(expected_data["components"], key=lambda x: x['id']) == sorted(obtained_components, key=lambda x: x['id'])
+        assert sorted(expected_data["components"], key=lambda x: x["id"]) == sorted(
+            obtained_components, key=lambda x: x["id"]
+        )
 
     def test_multiply_operation(self):
         operation = Operation(multiply_by=2)
