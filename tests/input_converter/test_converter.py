@@ -911,7 +911,6 @@ class TestConverter:
         )
         print("bc binding_connections: '", binding_connections)
         print("bc binding_components: '", binding_components)
-        assert False
         connection = binding_connections[0]
 
         # Compare connections
@@ -997,7 +996,6 @@ class TestConverter:
         assert sorted(expected_data["components"], key=lambda x: x["id"]) == sorted(
             obtained_components, key=lambda x: x["id"]
         )
-        assert False
 
     def test_multiply_operation(self):
         operation = Operation(multiply_by=2)
