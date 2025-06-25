@@ -31,7 +31,7 @@ More specifically, three main types of input file can be defined with the Gems f
 
 Two open-source software packages are capable of reading and simulating the case studies described in the Gems framework:
 
-- [pyGems](https://github.com/AntaresSimulatorTeam/pyGems)
+- [GemsPy](https://github.com/AntaresSimulatorTeam/GemsPy)
 - [Antares Simulator](https://antares-simulator.org/) *(functionality under development)*
 
 ## Getting started
