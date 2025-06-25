@@ -1,6 +1,6 @@
-# pyGems
+# GemsPy
 
-pyGems is an open-source tool, developed in Python, for the modelling and the simulation of complex energy systems under uncertainty. This is a generic interpreter for the **Gems** modelling framework.
+GemsPy is an open-source tool, developed in Python, for the modelling and the simulation of complex energy systems under uncertainty. This is a generic interpreter for the **Gems** modelling framework.
 
 <img src="docs/images/gemsV2.png" alt="Description" width="400"/>
 
@@ -22,7 +22,7 @@ More specifically, three main types of input files can be defined with the **Gem
 - **System files**: YAML files that describe the graph of components of a system, with their (constant and time/scenario-dependent) numerical parameters: nodes in the graph represent instances of abstract models from the 'library', and vertices denote connections between components (as defined by 'ports').
 - **Timeseries files**: the data for time-/scenario-dependent parameters (.txt or .csv).
 
-## The pyGems package
+## The GemsPy package
 
 
 
@@ -55,4 +55,4 @@ Examples of 'system' files, that describe test cases, may be found in [tests/e2e
 Examples of codes that load 'library' and 'system' files, interprets and simulates them may be found in [tests/e2e/models/andromede-v1/test_andromede_v1_models.py](./tests/e2e/models/andromede-v1/test_andromede_v1_models.py).
 
 ## Link with Antares Simulator software
-The pyGems package forms part of the Antares project, but its implementation is completely independent of that of the AntaresSimulator software. Although it was initially designed to prototype the next features of the Antares software (for more information, see https://antares-simulator.readthedocs.io/en/latest/user-guide/modeler/01-overview-modeler/), its structuring and development practices have resulted in high-quality, self-supporting code. It is currently maintained to offer the flexibility of the designed modelling language and interpreter to Python users and to continue exploring its potential.
+The GemsPy package forms part of the Antares project, but its implementation is completely independent of that of the AntaresSimulator software. Although it was initially designed to prototype the next features of the Antares software (for more information, see https://antares-simulator.readthedocs.io/en/latest/user-guide/modeler/01-overview-modeler/), its structuring and development practices have resulted in high-quality, self-supporting code. It is currently maintained to offer the flexibility of the designed modelling language and interpreter to Python users and to continue exploring its potential.
