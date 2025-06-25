@@ -40,9 +40,9 @@ class BindingConstraintsPreprocessing:
 
     def __init__(self, study: Study):
         self.study = study
-        self.study_path: Path = study.service.config.study_path
+        self.study_path: Path = study.service.config.study_path  # type: ignore
 
-    def _process_time_series(self, area_id: str, obj) -> Union[float, str]:
+    def _process_time_series(self, area_id: str, obj) -> Union[float, str]:  # type: ignore
         area: Area = self.study.get_areas()[area_id]
         ts_file_type = getattr(TimeSeriesFileType, obj.timeseries_file_type.upper())
 
@@ -69,7 +69,12 @@ class BindingConstraintsPreprocessing:
                 filtered_time_series, self.preprocessed_values
             )
             if isinstance(parameter_value, float):
-                self.preprocessed_values[self.id] = parameter_value
+                self.preprocessed_values[self.id] = parameter_value  # type: ignore
+                return parameter_value
+            if isinstance(parameter_value, pd.Series):
+                parameter_value.to_csv(output_file, sep="\t", index=False, header=False)
+            if isinstance(parameter_value, float):
+                self.preprocessed_values[self.id] = parameter_value  # type: ignore
                 return parameter_value
             if isinstance(parameter_value, pd.Series):
                 parameter_value.to_csv(output_file, sep="\t", index=False, header=False)
@@ -86,24 +91,22 @@ class BindingConstraintsPreprocessing:
                 return self._process_time_series(obj.area, obj)
             area = self.study.get_areas()[obj.area]
             thermal: ThermalCluster = area.get_thermals()[obj.cluster]
-            field_name = FIELD_ALIAS_MAP[obj.field]
+            field_name: str = FIELD_ALIAS_MAP[obj.field]  # type: ignore
 
             parameter_value = getattr(thermal.properties, field_name)
-            self.preprocessed_values[self.id] = parameter_value
+            self.preprocessed_values[self.id] = parameter_value  # type: ignore
             return parameter_value
         elif isinstance(obj, BindingConstraintData):
-            if obj.timeseries_file_type is not None:
-                return self._process_time_series(obj.area, obj)
-
             bindings: BindingConstraint = self.study.get_binding_constraints()[obj.id]
             term: ConstraintTerm = bindings.get_terms()[obj.field]
             if obj.operation:
-                parameter_value: float = obj.operation.execute(term.weight)
+                parameter_value: float = obj.operation.execute(term.weight)  # type: ignore
             else:
-                parameter_value: float = term.weight
+                parameter_value: float = term.weight  # type: ignore
             return parameter_value
         elif isinstance(obj, LinkData):
             return self._process_time_series(obj.area_from, obj)
+        return ""
 
     def convert_param_value(self, id: str, parameter: dict) -> Union[str, float]:
         self.id = id
@@ -111,14 +114,15 @@ class BindingConstraintsPreprocessing:
 
         cls = type_to_data_class.get(value_type)
 
-        data = parameter.get("data")
-
         if value_type == "constant":
-            return float(data)
+            return float(parameter.get("data", ""))
+
+        data: dict = parameter.get("data", {})
 
         if not cls:
             raise ValueError(f"Unknown value type: {value_type}")
 
         if "operation" in data:
             data["operation"] = Operation(**data["operation"])
+
         return self.calculate_value(cls(**data))

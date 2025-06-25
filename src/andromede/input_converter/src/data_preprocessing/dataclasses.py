@@ -13,10 +13,10 @@ class Operation:
 
     def execute(
         self,
-        initial_value: Union[pd.DataFrame, float],
+        initial_value: Union[pd.Series, float],
         preprocessed_values: Optional[Union[dict[str, float], float]] = None,
-    ) -> Union[float, pd.DataFrame]:
-        def resolve(value):
+    ) -> Union[float, pd.Series]:
+        def resolve(value: Union[str, float]) -> Union[float, pd.Series]:
             if isinstance(value, str):
                 if (
                     not isinstance(preprocessed_values, dict)
@@ -29,7 +29,7 @@ class Operation:
             return value
 
         if self.type == "max":
-            return float(max(initial_value))
+            return float(max(initial_value))  # type: ignore
 
         if self.multiply_by is not None:
             return initial_value * resolve(self.multiply_by)
@@ -41,13 +41,11 @@ class Operation:
             "Operation must have at least one of 'multiply_by', 'divide_by', or 'type'"
         )
 
-
 @dataclass(frozen=True)
 class TimeseriesData:
     path: Path
     column: int
     operation: Optional[Operation] = None
-
 
 @dataclass(frozen=True)
 class BindingConstraintData:
@@ -62,12 +60,47 @@ class ThermalData:
     area: str
     cluster: str
     column: Optional[int] = None
-    field: Optional[Union[str, float]] = None
+    field: Optional[str] = None
     operation: Optional[Operation] = None
     timeseries_file_type: Optional[str] = None
 
-
 @dataclass(frozen=True)
+class LoadData:
+    area: str
+    column: int
+    timeseries_file_type: str
+    operation: Optional[Operation] = None
+    timeseries_file_type: Optional[str] = None
+
+@dataclass
+class WindData:
+    area: str
+    column: int
+    timeseries_file_type: str
+    operation: Optional[Operation] = None
+
+@dataclass
+class SolarData:
+    area: str
+    column: int
+    timeseries_file_type: str
+    operation: Optional[Operation] = None
+
+@dataclass
+class ReservesData:
+    area: str
+    column: int
+    timeseries_file_type: str
+    operation: Optional[Operation] = None
+
+@dataclass
+class MiscGenData:
+    area: str
+    column: int
+    timeseries_file_type: str
+    operation: Optional[Operation] = None
+
+@dataclass
 class LinkData:
     column: int
     area_from: str

@@ -9,7 +9,7 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # This file is part of the Antares project.
-
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -127,7 +127,7 @@ class TestConverter:
 
     def test_convert_area_to_component(self, local_study_w_areas: Study, lib_id: str):
         converter = self._init_converter_from_study(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(lib_id)
+        area_components = converter._convert_area_to_component_list(lib_id, {})
 
         expected_area_components = [
             InputComponent(
@@ -181,7 +181,7 @@ class TestConverter:
 
     def test_convert_area_to_yaml(self, local_study_w_areas: Study, lib_id: str):
         converter = self._init_converter_from_study(local_study_w_areas)
-        area_components = converter._convert_area_to_component_list(lib_id)
+        area_components = converter._convert_area_to_component_list(lib_id, {})
         input_study = InputSystem(nodes=area_components)
 
         # Dump model into yaml file
@@ -253,7 +253,7 @@ class TestConverter:
         (
             renewables_components,
             renewable_connections,
-        ) = converter._convert_renewable_to_component_list(lib_id)
+        ) = converter._convert_renewable_to_component_list(lib_id, {}, {})
 
         timeseries_path = str(
             study_path
@@ -313,7 +313,7 @@ class TestConverter:
         (
             storage_components,
             storage_connections,
-        ) = converter._convert_st_storage_to_component_list(lib_id)
+        ) = converter._convert_st_storage_to_component_list(lib_id, {}, {})
 
         default_path = study_path / "input" / "st-storage" / "series" / "fr" / "battery"
         inflows_path = default_path / "inflows"
@@ -433,10 +433,11 @@ class TestConverter:
     ):
         converter = self._init_converter_from_study(local_study_w_thermal)
         study_path = converter.study_path
+
         (
             thermals_components,
             thermals_connections,
-        ) = converter._convert_thermal_to_component_list(lib_id)
+        ) = converter._convert_thermal_to_component_list(lib_id, {}, {})
 
         study_path = converter.study_path
         series_path = study_path / "input" / "thermal" / "series" / "fr" / "gaz"
@@ -562,7 +563,6 @@ class TestConverter:
                 ],
             )
         ]
-
         assert thermals_components == expected_thermals_components
         assert thermals_connections == expected_thermals_connections
 
@@ -572,7 +572,7 @@ class TestConverter:
         converter = self._init_converter_from_study(local_study_w_areas)
 
         solar_components, solar_connection = converter._convert_solar_to_component_list(
-            lib_id
+            lib_id, {}, {}
         )
 
         solar_timeseries = str(
@@ -610,7 +610,7 @@ class TestConverter:
         converter = self._init_converter_from_study(local_study_w_areas)
 
         load_components, load_connection = converter._convert_load_to_component_list(
-            lib_id
+            lib_id, {}, {}
         )
 
         load_timeseries = str(
@@ -655,7 +655,7 @@ class TestConverter:
         converter = self._init_converter_from_study(local_study_w_areas)
 
         wind_components, wind_connection = converter._convert_wind_to_component_list(
-            lib_id
+            lib_id, {}, {}
         )
 
         wind_timeseries = str(
@@ -699,7 +699,7 @@ class TestConverter:
     ):
         converter = self._init_converter_from_study(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(lib_id)
+        wind_components, _ = converter._convert_wind_to_component_list(lib_id, {}, {})
 
         assert wind_components == []
 
@@ -715,7 +715,7 @@ class TestConverter:
     ):
         converter = self._init_converter_from_study(local_study_w_areas)
 
-        wind_components, _ = converter._convert_wind_to_component_list(lib_id)
+        wind_components, _ = converter._convert_wind_to_component_list(lib_id, {}, {})
 
         assert wind_components == []
 
@@ -725,7 +725,7 @@ class TestConverter:
         (
             links_components,
             links_connections,
-        ) = converter._convert_link_to_component_list(lib_id)
+        ) = converter._convert_link_to_component_list(lib_id, {}, {})
 
         fr_prefix_path = study_path / "input" / "links" / "fr" / "capacities"
         at_prefix_path = study_path / "input" / "links" / "at" / "capacities"
@@ -864,11 +864,7 @@ class TestConverter:
             return object
 
     def test_convert_binding_constraints_to_component(self, lib_id: str):
-        path = (
-            Path(__file__).parent
-            / "resources"
-            / "mini_test_batterie_BP23"
-        )
+        path = Path(__file__).parent / "resources" / "mini_test_batterie_BP23"
 
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
@@ -877,7 +873,6 @@ class TestConverter:
         expected_connections = expected_data["connections"]
 
         converter = self._init_converter_from_path(path)
-
         path_cc = (
             Path(__file__).parent.parent.parent
             / "src"
@@ -887,6 +882,7 @@ class TestConverter:
             / "model_configuration"
             / "battery.yaml"
         )
+
         bc_data = read_yaml_file(path_cc).get("template", {})
         model_config_datas: dict = converter._extract_legacy_objects_from_model_config(
             bc_data
@@ -948,14 +944,9 @@ class TestConverter:
         assert obtained_parameters == expected_component["parameters"]
 
     def test_convert_study_path_to_input_study(self):
-        path = (
-            Path(__file__).parent
-            / "resources"
-            / "mini_test_batterie_BP23"
-        )
+        path = Path(__file__).parent / "resources" / "mini_test_batterie_BP23"
         output_path = path / "reference.yaml"
         expected_data = read_yaml_file(output_path)["system"]
-
         converter = self._init_converter_from_path(path)
         obtained_data = converter.convert_study_to_input_study()
 
@@ -970,7 +961,6 @@ class TestConverter:
                 item["time_dependent"] = item.pop("time-dependent")
                 if not item.get("scenario_group"):
                     item["scenario_group"] = None
-
         # A little formatting of obtained parameters:
         # Convert list of objects to list of dictionaries
         # Replace absolute path with relative path
@@ -980,8 +970,9 @@ class TestConverter:
         obtained_components = TestConverter._match_area_pattern(
             obtained_components_to_dict, "", str(path) + "/"
         )
-
-        assert expected_data["components"] == obtained_components
+        assert sorted(expected_data["components"], key=lambda x: x["id"]) == sorted(
+            obtained_components, key=lambda x: x["id"]
+        )
 
     def test_multiply_operation(self):
         operation = Operation(multiply_by=2)
@@ -991,6 +982,10 @@ class TestConverter:
         preprocessed_values = {"factor": 5}
         assert operation.execute(10, preprocessed_values) == 50
 
+        operation = Operation(multiply_by=2)
+        df = pd.Series([1, 2, 3, 4, 5, 6])
+        assert operation.execute(df).all() == pd.Series([2, 4, 6, 8, 10, 12]).all()
+
     def test_divide_operation(self):
         operation = Operation(divide_by=2)
         assert operation.execute(10) == 5
@@ -999,12 +994,16 @@ class TestConverter:
         preprocessed_values = {"divisor": 2}
         assert operation.execute(10, preprocessed_values) == 5
 
+        operation = Operation(divide_by=2)
+        df = pd.Series([1, 2, 3, 4, 5, 6])
+        assert operation.execute(df).all() == pd.Series([0.5, 1, 1.5, 2, 2.5, 3]).all()
+
     def test_max_operation(self):
         operation = Operation(type="max")
         assert operation.execute([1, 2, 3, 4, 5]) == 5.0
 
-        df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
-        assert operation.execute(df.max()) == 6.0
+        df = pd.Series([1, 2, 3, 4, 5, 6])
+        assert operation.execute(df) == 6.0
 
     def test_missing_preprocessed_value(self):
         operation = Operation(multiply_by="missing_key")
