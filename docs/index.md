@@ -1,7 +1,7 @@
 # Gems, a framework for generic modelling in energy systems
 
-<img src="/images/gemsV2cropped.png" alt="Description"  height="100"/>
 
+![Gems Logo](/images/gemsV2cropped.png)
 
 
 ## Motivation
