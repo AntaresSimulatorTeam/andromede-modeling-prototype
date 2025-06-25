@@ -4,7 +4,7 @@ GemsPy is an open-source tool, developed in Python, for the modelling and the si
 
 <img src="docs/images/gemsV2.png" alt="Description" width="400"/>
 
-**Online documentation**: [pygems.readthedocs.io](https://gemspy.readthedocs.io/en/latest/).
+**Online documentation**: [gemspy.readthedocs.io](https://gemspy.readthedocs.io/en/latest/).
 
 ## The Gems framework
 
@@ -20,15 +20,15 @@ The Gems framework consists of a **high-level modelling language**, close to mat
 
 More specifically, [three main types of input files](https://gemspy.readthedocs.io/en/latest/user-guide/libraries/) can be defined with the **Gems** framework:
 
-- [**Model libraries**](https://pygems.readthedocs.io/en/latest/user-guide/libraries/): YAML files that describe abstract component models.  
-- [**System files**](https://pygems.readthedocs.io/en/latest/user-guide/systems/): YAML files that describe the graph of components of a system, with their (constant and time/scenario-dependent) numerical parameters: nodes in the graph represent instances of abstract models from the 'library', and vertices denote connections between components (as defined by 'ports').
-- [**Timeseries files**](https://pygems.readthedocs.io/en/latest/user-guide/data/): the data for time-/scenario-dependent parameters (.txt or .csv).
+- [**Model libraries**](https://gemspy.readthedocs.io/en/latest/user-guide/libraries/): YAML files that describe abstract component models.  
+- [**System files**](https://gemspy.readthedocs.io/en/latest/user-guide/systems/): YAML files that describe the graph of components of a system, with their (constant and time/scenario-dependent) numerical parameters: nodes in the graph represent instances of abstract models from the 'library', and vertices denote connections between components (as defined by 'ports').
+- [**Timeseries files**](https://gemspy.readthedocs.io/en/latest/user-guide/data/): the data for time-/scenario-dependent parameters (.txt or .csv).
 
 ## The GemsPy package
 
 This Python package features a generic interpreter of **Gems** capable of generating optimisation problems from any library and system files that adhere to the modelling language syntax. It then employs off-the-shelf optimisation solvers to solve these problems. The Python API facilitates reading case studies stored in YAML format, modifying them, or creating new ones from scratch by scripting.
 
-The [Getting started](https://pygems.readthedocs.io/en/latest/user-guide/getting-started/) page of the online documentation introduce you to the **Gems** input file format and the basics of the GemsPy API.
+The [Getting started](https://gemspy.readthedocs.io/en/latest/user-guide/getting-started/) page of the online documentation introduce you to the **Gems** input file format and the basics of the GemsPy API.
 
 
 ### Input files and code examples
