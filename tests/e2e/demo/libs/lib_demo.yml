@@ -181,8 +181,11 @@ library:
         - id: initial_level
           expression: level[0] = initial_level
         - id: Level equation
-          expression: level[t+1] = level + efficiency_injection * p_injection - efficiency_withdrawal * p_withdrawal + inflows
+          expression: level[t+1] = level + 
+            efficiency_injection * p_injection 
+            - efficiency_withdrawal * p_withdrawal + inflows
         - id: is_charging_cst
-          expression: p_injection <= is_charging * injection_nominal_capacity
+          expression: p_injection 
+            <= is_charging * injection_nominal_capacity
         - id: is_withdrawing_cst
           expression: p_withdrawal <= (1 - is_charging) * injection_nominal_capacity
