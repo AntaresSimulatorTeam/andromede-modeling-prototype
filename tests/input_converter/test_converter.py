@@ -884,8 +884,8 @@ class TestConverter:
         )
 
         bc_data = read_yaml_file(path_cc).get("template", {})
-        model_config_datas: dict = converter._extract_legacy_objects_from_model_config(
-            bc_data
+        legacy_objects_for_bc: dict = (
+            converter._extract_legacy_objects_from_model_config(bc_data)
         )
         valid_areas: dict = converter._extract_valid_areas_from_model_config(bc_data)
 
@@ -893,7 +893,7 @@ class TestConverter:
             binding_components,
             binding_connections,
         ) = converter._convert_cc_to_component_list(
-            lib_id, model_config_datas, valid_areas
+            lib_id, legacy_objects_for_bc, valid_areas
         )
 
         connection = binding_connections[0]

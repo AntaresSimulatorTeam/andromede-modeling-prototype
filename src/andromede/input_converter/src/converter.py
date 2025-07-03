@@ -91,12 +91,12 @@ class AntaresStudyConverter:
             return object
 
     def _legacy_component_to_exclude(
-        self, model_config_datas: dict, component_type: str
+        self, legacy_objects_for_bc: dict, component_type: str
     ) -> list:
         """This function aim at finding components that are only present for binding constraint model purpose
         and should be removed from other conversions"""
 
-        components = model_config_datas.get(component_type, [])
+        components = legacy_objects_for_bc.get(component_type, [])
         return [
             item
             for area in self.areas.values()
@@ -114,13 +114,13 @@ class AntaresStudyConverter:
         }
 
     def _convert_area_to_component_list(
-        self, lib_id: str, model_config_datas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict
     ) -> list[InputComponent]:
         components = []
         self.logger.info("Converting areas to component list...")
 
         for area in self.areas.values():
-            if area.id in model_config_datas.get("nodes", []):
+            if area.id in legacy_objects_for_bc.get("nodes", []):
                 continue
             components.append(
                 InputComponent(
@@ -145,7 +145,7 @@ class AntaresStudyConverter:
         return components
 
     def _convert_renewable_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -200,14 +200,14 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_thermal_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting thermals to component list...")
 
         thermals_to_exclude: list = self._legacy_component_to_exclude(
-            model_config_datas, component_type="thermals"
+            legacy_objects_for_bc, component_type="thermals"
         )
 
         # Add thermal components for each area
@@ -316,7 +316,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_st_storage_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -426,14 +426,14 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_link_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
         self.logger.info("Converting links to component list...")
 
         links_to_exclude: list = self._legacy_component_to_exclude(
-            model_config_datas, component_type="links"
+            legacy_objects_for_bc, component_type="links"
         )
 
         # Add links components for each area
@@ -496,7 +496,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_wind_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -533,7 +533,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_solar_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -571,7 +571,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_load_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -608,7 +608,7 @@ class AntaresStudyConverter:
         return components, connections
 
     def _convert_cc_to_component_list(
-        self, lib_id: str, model_config_datas: dict, valid_areas: dict
+        self, lib_id: str, legacy_objects_for_bc: dict, valid_areas: dict
     ) -> tuple[list[InputComponent], list[InputPortConnections]]:
         components = []
         connections = []
@@ -668,12 +668,12 @@ class AntaresStudyConverter:
         # Get area pattern for binding constraint from model config
         self.bc_area_pattern = f"${{{bc_data['template-parameters'][0]['name']}}}"
 
-        model_config_datas: dict = self._extract_legacy_objects_from_model_config(
+        legacy_objects_for_bc: dict = self._extract_legacy_objects_from_model_config(
             bc_data
         )
         valid_areas = self._extract_valid_areas_from_model_config(bc_data)
         area_components = self._convert_area_to_component_list(
-            antares_historic_lib_id, model_config_datas
+            antares_historic_lib_id, legacy_objects_for_bc
         )
 
         list_components: list[InputComponent] = []
@@ -692,7 +692,7 @@ class AntaresStudyConverter:
 
         for method in conversion_methods:
             components, connections = method(
-                antares_historic_lib_id, model_config_datas, valid_areas
+                antares_historic_lib_id, legacy_objects_for_bc, valid_areas
             )
             list_components.extend(components)
             list_connections.extend(connections)
