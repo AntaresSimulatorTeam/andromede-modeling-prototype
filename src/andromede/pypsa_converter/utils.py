@@ -16,7 +16,7 @@ import numpy as np
 import yaml
 from pydantic import BaseModel
 
-PYPSA_CONVERTER_MAX_FLOAT = 1e20
+PYPSA_CONVERTER_MAX_FLOAT = 100000000000
 
 
 def any_to_float(el: Any) -> float:

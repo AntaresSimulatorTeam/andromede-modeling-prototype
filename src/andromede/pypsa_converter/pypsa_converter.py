@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from math import inf
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from pypsa import Network
@@ -146,6 +147,9 @@ class PyPSAStudyConverter:
                 == "co2_emissions"
             )
 
+    def _clean_names(self, str_vector):
+        return np.array([s.replace(" ","_") for s in str_vector])
+    
     def _pypsa_network_preprocessing(self) -> None:
         ###Add fictitious carrier
         self.pypsa_network.add(
@@ -158,29 +162,48 @@ class PyPSAStudyConverter:
             "carrier"
         ] = self.pypsa_network.carriers.index.values
         ### Rename PyPSA components, to make sure that the names are uniques (used as id in the Gems model)
-        self.pypsa_network.loads.index = (
-            self.pypsa_network.loads.index.astype(str) + "_load"
-        )
-        for key, val in self.pypsa_network.loads_t.items():
-            val.columns = val.columns + "_load"
+        #TODO : factorize code below! + manage buses
+        """if len(self.pypsa_network.buses)>0:
+            self.pypsa_network.buses.index = (
+                self.pypsa_network.buses.index.str.replace(" ","_") + "_bus"
+            )
+            for key, val in self.pypsa_network.buses_t.items():
+                val.columns = val.columns.str.replace(" ","_") + "_bus"""
+        
+        if len(self.pypsa_network.loads)>0:
+            self.pypsa_network.loads.index = (
+                "Load_"+ self.pypsa_network.loads.index.str.replace(" ","_") 
+            )
+            for key, val in self.pypsa_network.loads_t.items():
+                val.columns = "Load_"+ val.columns.str.replace(" ","_") 
 
-        self.pypsa_network.generators.index = (
-            self.pypsa_network.generators.index.astype(str) + "_generator"
-        )
-        for key, val in self.pypsa_network.generators_t.items():
-            val.columns = val.columns + "_generator"
+        if len(self.pypsa_network.generators)>0:
+            self.pypsa_network.generators.index = (
+                "Generator_" + self.pypsa_network.generators.index.str.replace(" ","_")
+            )
+            for key, val in self.pypsa_network.generators_t.items():
+                val.columns = "Generator_" + val.columns.str.replace(" ","_") 
 
-        self.pypsa_network.storage_units.index = (
-            self.pypsa_network.storage_units.index.astype(str) + "_storage"
-        )
-        for key, val in self.pypsa_network.storage_units_t.items():
-            val.columns = val.columns + "_storage"
+        if len(self.pypsa_network.storage_units)>0:
+            self.pypsa_network.storage_units.index = (
+                "Storage_"+self.pypsa_network.storage_units.index.str.replace(" ","_") 
+            )
+            for key, val in self.pypsa_network.storage_units_t.items():
+                val.columns = "Storage_"+val.columns.str.replace(" ","_") 
 
-        self.pypsa_network.stores.index = (
-            self.pypsa_network.stores.index.astype(str) + "_store"
-        )
-        for key, val in self.pypsa_network.stores_t.items():
-            val.columns = val.columns + "_store"
+        if len(self.pypsa_network.stores)>0:
+            self.pypsa_network.stores.index = (
+                "Store_"+self.pypsa_network.stores.index.str.replace(" ","_") 
+            )
+            for key, val in self.pypsa_network.stores_t.items():
+                val.columns = "Store_"+val.columns.str.replace(" ","_") 
+
+        if len(self.pypsa_network.links)>0:
+            self.pypsa_network.links.index = (
+                "Link_"+self.pypsa_network.links.index.str.replace(" ","_") 
+            )
+            for key, val in self.pypsa_network.links_t.items():
+                val.columns = "Link_"+ val.columns.str.replace(" ","_") 
 
     def _preprocess_pypsa_components(self, component_type: str, capa_str: str) -> None:
         ### Handling PyPSA objects without carriers
@@ -507,7 +530,7 @@ class PyPSAStudyConverter:
                 timeseries_name = self.system_name + "_" + component + "_" + param
                 comp_param_to_timeseries_name[(component, param)] = timeseries_name
                 param_df[[component]].to_csv(
-                    self.series_dir / Path(timeseries_name + ".txt"),
+                    self.series_dir / Path(timeseries_name + ".tsv"),
                     index=False,
                     header=False,
                 )

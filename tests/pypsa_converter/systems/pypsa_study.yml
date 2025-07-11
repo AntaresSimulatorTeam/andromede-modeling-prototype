@@ -1,6 +1,6 @@
 system:
   components:
-  - id: BE0 0 CCGT_generator
+  - id: Generator_BE0_0_CCGT
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -30,11 +30,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -47,7 +47,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.198
-  - id: BE0 0 biomass_generator
+  - id: Generator_BE0_0_biomass
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -77,11 +77,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -94,7 +94,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 nuclear_generator
+  - id: Generator_BE0_0_nuclear
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -124,11 +124,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -141,7 +141,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 oil_generator
+  - id: Generator_BE0_0_oil
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -171,11 +171,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -188,7 +188,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.2571
-  - id: BE0 1 oil_generator
+  - id: Generator_BE0_1_oil
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -218,11 +218,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -235,7 +235,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.2571
-  - id: BE0 2 nuclear_generator
+  - id: Generator_BE0_2_nuclear
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -265,11 +265,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -282,7 +282,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 3 CCGT_generator
+  - id: Generator_BE0_3_CCGT
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -312,11 +312,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -329,7 +329,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.198
-  - id: BE0 4 CCGT_generator
+  - id: Generator_BE0_4_CCGT
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -359,11 +359,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -376,7 +376,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.198
-  - id: BE0 4 biomass_generator
+  - id: Generator_BE0_4_biomass
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -406,11 +406,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -423,7 +423,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 5 CCGT_generator
+  - id: Generator_BE0_5_CCGT
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -453,11 +453,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -470,7 +470,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.198
-  - id: BE0 5 oil_generator
+  - id: Generator_BE0_5_oil
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -500,11 +500,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -517,7 +517,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.2571
-  - id: BE0 0 onwind_generator
+  - id: Generator_BE0_0_onwind
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -535,7 +535,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 0 onwind_generator_p_max_pu
+      value: _Generator_BE0_0_onwind_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -547,11 +547,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -564,7 +564,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 1 onwind_generator
+  - id: Generator_BE0_1_onwind
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -582,7 +582,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 1 onwind_generator_p_max_pu
+      value: _Generator_BE0_1_onwind_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -594,11 +594,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -611,7 +611,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 2 onwind_generator
+  - id: Generator_BE0_2_onwind
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -629,7 +629,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 2 onwind_generator_p_max_pu
+      value: _Generator_BE0_2_onwind_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -641,11 +641,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -658,7 +658,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 3 onwind_generator
+  - id: Generator_BE0_3_onwind
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -676,7 +676,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 3 onwind_generator_p_max_pu
+      value: _Generator_BE0_3_onwind_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -688,11 +688,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -705,7 +705,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 4 onwind_generator
+  - id: Generator_BE0_4_onwind
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -723,7 +723,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 4 onwind_generator_p_max_pu
+      value: _Generator_BE0_4_onwind_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -735,11 +735,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -752,7 +752,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 5 onwind_generator
+  - id: Generator_BE0_5_onwind
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -770,7 +770,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 5 onwind_generator_p_max_pu
+      value: _Generator_BE0_5_onwind_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -782,11 +782,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -799,7 +799,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 offwind-float_generator
+  - id: Generator_BE0_0_offwind-float
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -817,7 +817,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 0 offwind-float_generator_p_max_pu
+      value: _Generator_BE0_0_offwind-float_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -829,11 +829,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -846,7 +846,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 offwind-ac_generator
+  - id: Generator_BE0_0_offwind-ac
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -864,7 +864,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 0 offwind-ac_generator_p_max_pu
+      value: _Generator_BE0_0_offwind-ac_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -876,11 +876,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -893,7 +893,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 offwind-dc_generator
+  - id: Generator_BE0_0_offwind-dc
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -911,7 +911,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 0 offwind-dc_generator_p_max_pu
+      value: _Generator_BE0_0_offwind-dc_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -923,11 +923,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -940,7 +940,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 solar_generator
+  - id: Generator_BE0_0_solar
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -958,7 +958,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 0 solar_generator_p_max_pu
+      value: _Generator_BE0_0_solar_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -970,11 +970,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -987,7 +987,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 1 solar_generator
+  - id: Generator_BE0_1_solar
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1005,7 +1005,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 1 solar_generator_p_max_pu
+      value: _Generator_BE0_1_solar_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1017,11 +1017,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1034,7 +1034,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 2 solar_generator
+  - id: Generator_BE0_2_solar
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1052,7 +1052,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 2 solar_generator_p_max_pu
+      value: _Generator_BE0_2_solar_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1064,11 +1064,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1081,7 +1081,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 3 solar_generator
+  - id: Generator_BE0_3_solar
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1099,7 +1099,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 3 solar_generator_p_max_pu
+      value: _Generator_BE0_3_solar_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1111,11 +1111,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1128,7 +1128,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 4 solar_generator
+  - id: Generator_BE0_4_solar
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1146,7 +1146,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 4 solar_generator_p_max_pu
+      value: _Generator_BE0_4_solar_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1158,11 +1158,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1175,7 +1175,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 5 solar_generator
+  - id: Generator_BE0_5_solar
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1193,7 +1193,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 5 solar_generator_p_max_pu
+      value: _Generator_BE0_5_solar_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1205,11 +1205,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1222,7 +1222,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 solar-hsat_generator
+  - id: Generator_BE0_0_solar-hsat
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1240,7 +1240,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 0 solar-hsat_generator_p_max_pu
+      value: _Generator_BE0_0_solar-hsat_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1252,11 +1252,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1269,7 +1269,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 1 solar-hsat_generator
+  - id: Generator_BE0_1_solar-hsat
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1287,7 +1287,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 1 solar-hsat_generator_p_max_pu
+      value: _Generator_BE0_1_solar-hsat_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1299,11 +1299,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1316,7 +1316,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 2 solar-hsat_generator
+  - id: Generator_BE0_2_solar-hsat
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1334,7 +1334,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 2 solar-hsat_generator_p_max_pu
+      value: _Generator_BE0_2_solar-hsat_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1346,11 +1346,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1363,7 +1363,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 3 solar-hsat_generator
+  - id: Generator_BE0_3_solar-hsat
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1381,7 +1381,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 3 solar-hsat_generator_p_max_pu
+      value: _Generator_BE0_3_solar-hsat_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1393,11 +1393,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1410,7 +1410,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 4 solar-hsat_generator
+  - id: Generator_BE0_4_solar-hsat
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1428,7 +1428,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 4 solar-hsat_generator_p_max_pu
+      value: _Generator_BE0_4_solar-hsat_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1440,11 +1440,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1457,7 +1457,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 5 solar-hsat_generator
+  - id: Generator_BE0_5_solar-hsat
     model: pypsa_models.generator
     parameters:
     - id: p_nom_min
@@ -1475,7 +1475,7 @@ system:
     - id: p_max_pu
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 5 solar-hsat_generator_p_max_pu
+      value: _Generator_BE0_5_solar-hsat_p_max_pu
     - id: marginal_cost
       scenario-dependent: false
       time-dependent: false
@@ -1487,11 +1487,11 @@ system:
     - id: e_sum_min
       scenario-dependent: false
       time-dependent: false
-      value: -1.0e+20
+      value: -100000000000.0
     - id: e_sum_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: sign
       scenario-dependent: false
       time-dependent: false
@@ -1504,13 +1504,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0_load
+  - id: Load_BE0_0
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 0_load_p_set
+      value: _Load_BE0_0_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1519,13 +1519,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: BE0 1_load
+  - id: Load_BE0_1
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 1_load_p_set
+      value: _Load_BE0_1_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1534,13 +1534,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: BE0 2_load
+  - id: Load_BE0_2
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 2_load_p_set
+      value: _Load_BE0_2_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1549,13 +1549,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: BE0 3_load
+  - id: Load_BE0_3
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 3_load_p_set
+      value: _Load_BE0_3_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1564,13 +1564,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: BE0 4_load
+  - id: Load_BE0_4
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 4_load_p_set
+      value: _Load_BE0_4_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1579,13 +1579,13 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: -1.0
-  - id: BE0 5_load
+  - id: Load_BE0_5
     model: pypsa_models.load
     parameters:
     - id: p_set
       scenario-dependent: false
       time-dependent: true
-      value: _BE0 5_load_p_set
+      value: _Load_BE0_5_p_set
     - id: q_set
       scenario-dependent: false
       time-dependent: false
@@ -1620,7 +1620,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 1
     model: pypsa_models.bus
     parameters:
@@ -1647,7 +1647,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 2
     model: pypsa_models.bus
     parameters:
@@ -1674,7 +1674,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 3
     model: pypsa_models.bus
     parameters:
@@ -1701,7 +1701,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 4
     model: pypsa_models.bus
     parameters:
@@ -1728,7 +1728,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 5
     model: pypsa_models.bus
     parameters:
@@ -1755,7 +1755,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 0 H2
     model: pypsa_models.bus
     parameters:
@@ -1782,7 +1782,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 1 H2
     model: pypsa_models.bus
     parameters:
@@ -1809,7 +1809,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 2 H2
     model: pypsa_models.bus
     parameters:
@@ -1836,7 +1836,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 3 H2
     model: pypsa_models.bus
     parameters:
@@ -1863,7 +1863,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 4 H2
     model: pypsa_models.bus
     parameters:
@@ -1890,7 +1890,7 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
   - id: BE0 5 H2
     model: pypsa_models.bus
     parameters:
@@ -1917,8 +1917,8 @@ system:
     - id: v_mag_pu_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
-  - id: BE0 0 H2 Electrolysis
+      value: 100000000000.0
+  - id: Link_BE0_0_H2_Electrolysis
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -1932,7 +1932,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -1949,7 +1949,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 3619.2066597725725
-  - id: BE0 1 H2 Electrolysis
+  - id: Link_BE0_1_H2_Electrolysis
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -1963,7 +1963,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -1980,7 +1980,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 3619.2066597725725
-  - id: BE0 2 H2 Electrolysis
+  - id: Link_BE0_2_H2_Electrolysis
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -1994,7 +1994,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2011,7 +2011,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 3619.2066597725725
-  - id: BE0 3 H2 Electrolysis
+  - id: Link_BE0_3_H2_Electrolysis
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2025,7 +2025,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2042,7 +2042,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 3619.2066597725725
-  - id: BE0 4 H2 Electrolysis
+  - id: Link_BE0_4_H2_Electrolysis
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2056,7 +2056,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2073,7 +2073,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 3619.2066597725725
-  - id: BE0 5 H2 Electrolysis
+  - id: Link_BE0_5_H2_Electrolysis
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2087,7 +2087,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2104,7 +2104,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 3619.2066597725725
-  - id: BE0 0 H2 Fuel Cell
+  - id: Link_BE0_0_H2_Fuel_Cell
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2118,7 +2118,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2135,7 +2135,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 2147.3299659793192
-  - id: BE0 1 H2 Fuel Cell
+  - id: Link_BE0_1_H2_Fuel_Cell
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2149,7 +2149,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2166,7 +2166,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 2147.3299659793192
-  - id: BE0 2 H2 Fuel Cell
+  - id: Link_BE0_2_H2_Fuel_Cell
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2180,7 +2180,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2197,7 +2197,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 2147.3299659793192
-  - id: BE0 3 H2 Fuel Cell
+  - id: Link_BE0_3_H2_Fuel_Cell
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2211,7 +2211,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2228,7 +2228,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 2147.3299659793192
-  - id: BE0 4 H2 Fuel Cell
+  - id: Link_BE0_4_H2_Fuel_Cell
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2242,7 +2242,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2259,7 +2259,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 2147.3299659793192
-  - id: BE0 5 H2 Fuel Cell
+  - id: Link_BE0_5_H2_Fuel_Cell
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2273,7 +2273,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2290,7 +2290,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 2147.3299659793192
-  - id: 0-link-BE0 0-BE0 3
+  - id: Link_0-link-BE0_0-BE0_3
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2321,7 +2321,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: 1-link-BE0 0-BE0 5
+  - id: Link_1-link-BE0_0-BE0_5
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2352,7 +2352,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: 2-link-BE0 1-BE0 2
+  - id: Link_2-link-BE0_1-BE0_2
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2383,7 +2383,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: 3-link-BE0 1-BE0 4
+  - id: Link_3-link-BE0_1-BE0_4
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2414,7 +2414,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: 4-link-BE0 2-BE0 4
+  - id: Link_4-link-BE0_2-BE0_4
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2445,7 +2445,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: 5-link-BE0 2-BE0 5
+  - id: Link_5-link-BE0_2-BE0_5
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2476,7 +2476,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: 6-link-BE0 3-BE0 4
+  - id: Link_6-link-BE0_3-BE0_4
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2507,7 +2507,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: 7-link-BE0 3-BE0 4
+  - id: Link_7-link-BE0_3-BE0_4
     model: pypsa_models.link
     parameters:
     - id: efficiency
@@ -2538,7 +2538,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 battery_storage
+  - id: Storage_BE0_0_battery
     model: pypsa_models.storage_unit
     parameters:
     - id: p_nom_min
@@ -2548,7 +2548,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2601,7 +2601,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 1 battery_storage
+  - id: Storage_BE0_1_battery
     model: pypsa_models.storage_unit
     parameters:
     - id: p_nom_min
@@ -2611,7 +2611,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2664,7 +2664,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 2 battery_storage
+  - id: Storage_BE0_2_battery
     model: pypsa_models.storage_unit
     parameters:
     - id: p_nom_min
@@ -2674,7 +2674,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2727,7 +2727,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 3 battery_storage
+  - id: Storage_BE0_3_battery
     model: pypsa_models.storage_unit
     parameters:
     - id: p_nom_min
@@ -2737,7 +2737,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2790,7 +2790,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 4 battery_storage
+  - id: Storage_BE0_4_battery
     model: pypsa_models.storage_unit
     parameters:
     - id: p_nom_min
@@ -2800,7 +2800,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2853,7 +2853,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 5 battery_storage
+  - id: Storage_BE0_5_battery
     model: pypsa_models.storage_unit
     parameters:
     - id: p_nom_min
@@ -2863,7 +2863,7 @@ system:
     - id: p_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: p_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2916,7 +2916,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 0 H2_store
+  - id: Store_BE0_0_H2
     model: pypsa_models.store
     parameters:
     - id: sign
@@ -2930,7 +2930,7 @@ system:
     - id: e_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: e_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -2959,7 +2959,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 1 H2_store
+  - id: Store_BE0_1_H2
     model: pypsa_models.store
     parameters:
     - id: sign
@@ -2973,7 +2973,7 @@ system:
     - id: e_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: e_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -3002,7 +3002,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 2 H2_store
+  - id: Store_BE0_2_H2
     model: pypsa_models.store
     parameters:
     - id: sign
@@ -3016,7 +3016,7 @@ system:
     - id: e_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: e_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -3045,7 +3045,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 3 H2_store
+  - id: Store_BE0_3_H2
     model: pypsa_models.store
     parameters:
     - id: sign
@@ -3059,7 +3059,7 @@ system:
     - id: e_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: e_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -3088,7 +3088,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 4 H2_store
+  - id: Store_BE0_4_H2
     model: pypsa_models.store
     parameters:
     - id: sign
@@ -3102,7 +3102,7 @@ system:
     - id: e_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: e_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -3131,7 +3131,7 @@ system:
       scenario-dependent: false
       time-dependent: false
       value: 0.0
-  - id: BE0 5 H2_store
+  - id: Store_BE0_5_H2
     model: pypsa_models.store
     parameters:
     - id: sign
@@ -3145,7 +3145,7 @@ system:
     - id: e_nom_max
       scenario-dependent: false
       time-dependent: false
-      value: 1.0e+20
+      value: 100000000000.0
     - id: e_min_pu
       scenario-dependent: false
       time-dependent: false
@@ -3183,539 +3183,539 @@ system:
       value: 1917808.2191780822
   connections:
   - component1: BE0 0
-    component2: BE0 0 CCGT_generator
+    component2: Generator_BE0_0_CCGT
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 biomass_generator
+    component2: Generator_BE0_0_biomass
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 nuclear_generator
+    component2: Generator_BE0_0_nuclear
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 oil_generator
+    component2: Generator_BE0_0_oil
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 1
-    component2: BE0 1 oil_generator
+    component2: Generator_BE0_1_oil
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 2
-    component2: BE0 2 nuclear_generator
+    component2: Generator_BE0_2_nuclear
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 3
-    component2: BE0 3 CCGT_generator
+    component2: Generator_BE0_3_CCGT
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4
-    component2: BE0 4 CCGT_generator
+    component2: Generator_BE0_4_CCGT
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4
-    component2: BE0 4 biomass_generator
+    component2: Generator_BE0_4_biomass
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5
-    component2: BE0 5 CCGT_generator
+    component2: Generator_BE0_5_CCGT
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5
-    component2: BE0 5 oil_generator
+    component2: Generator_BE0_5_oil
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 onwind_generator
+    component2: Generator_BE0_0_onwind
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 1
-    component2: BE0 1 onwind_generator
+    component2: Generator_BE0_1_onwind
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 2
-    component2: BE0 2 onwind_generator
+    component2: Generator_BE0_2_onwind
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 3
-    component2: BE0 3 onwind_generator
+    component2: Generator_BE0_3_onwind
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4
-    component2: BE0 4 onwind_generator
+    component2: Generator_BE0_4_onwind
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5
-    component2: BE0 5 onwind_generator
+    component2: Generator_BE0_5_onwind
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 offwind-float_generator
+    component2: Generator_BE0_0_offwind-float
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 offwind-ac_generator
+    component2: Generator_BE0_0_offwind-ac
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 offwind-dc_generator
+    component2: Generator_BE0_0_offwind-dc
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 solar_generator
+    component2: Generator_BE0_0_solar
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 1
-    component2: BE0 1 solar_generator
+    component2: Generator_BE0_1_solar
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 2
-    component2: BE0 2 solar_generator
+    component2: Generator_BE0_2_solar
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 3
-    component2: BE0 3 solar_generator
+    component2: Generator_BE0_3_solar
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4
-    component2: BE0 4 solar_generator
+    component2: Generator_BE0_4_solar
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5
-    component2: BE0 5 solar_generator
+    component2: Generator_BE0_5_solar
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 solar-hsat_generator
+    component2: Generator_BE0_0_solar-hsat
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 1
-    component2: BE0 1 solar-hsat_generator
+    component2: Generator_BE0_1_solar-hsat
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 2
-    component2: BE0 2 solar-hsat_generator
+    component2: Generator_BE0_2_solar-hsat
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 3
-    component2: BE0 3 solar-hsat_generator
+    component2: Generator_BE0_3_solar-hsat
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4
-    component2: BE0 4 solar-hsat_generator
+    component2: Generator_BE0_4_solar-hsat
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5
-    component2: BE0 5 solar-hsat_generator
+    component2: Generator_BE0_5_solar-hsat
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0_load
+    component2: Load_BE0_0
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 1
-    component2: BE0 1_load
+    component2: Load_BE0_1
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 2
-    component2: BE0 2_load
+    component2: Load_BE0_2
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 3
-    component2: BE0 3_load
+    component2: Load_BE0_3
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4
-    component2: BE0 4_load
+    component2: Load_BE0_4
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5
-    component2: BE0 5_load
+    component2: Load_BE0_5
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0
-    component2: BE0 0 H2 Electrolysis
+    component2: Link_BE0_0_H2_Electrolysis
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 1
-    component2: BE0 1 H2 Electrolysis
+    component2: Link_BE0_1_H2_Electrolysis
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 2
-    component2: BE0 2 H2 Electrolysis
+    component2: Link_BE0_2_H2_Electrolysis
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 3
-    component2: BE0 3 H2 Electrolysis
+    component2: Link_BE0_3_H2_Electrolysis
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 4
-    component2: BE0 4 H2 Electrolysis
+    component2: Link_BE0_4_H2_Electrolysis
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 5
-    component2: BE0 5 H2 Electrolysis
+    component2: Link_BE0_5_H2_Electrolysis
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 0 H2
-    component2: BE0 0 H2 Fuel Cell
+    component2: Link_BE0_0_H2_Fuel_Cell
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 1 H2
-    component2: BE0 1 H2 Fuel Cell
+    component2: Link_BE0_1_H2_Fuel_Cell
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 2 H2
-    component2: BE0 2 H2 Fuel Cell
+    component2: Link_BE0_2_H2_Fuel_Cell
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 3 H2
-    component2: BE0 3 H2 Fuel Cell
+    component2: Link_BE0_3_H2_Fuel_Cell
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 4 H2
-    component2: BE0 4 H2 Fuel Cell
+    component2: Link_BE0_4_H2_Fuel_Cell
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 5 H2
-    component2: BE0 5 H2 Fuel Cell
+    component2: Link_BE0_5_H2_Fuel_Cell
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 0
-    component2: 0-link-BE0 0-BE0 3
+    component2: Link_0-link-BE0_0-BE0_3
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 0
-    component2: 1-link-BE0 0-BE0 5
+    component2: Link_1-link-BE0_0-BE0_5
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 1
-    component2: 2-link-BE0 1-BE0 2
+    component2: Link_2-link-BE0_1-BE0_2
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 1
-    component2: 3-link-BE0 1-BE0 4
+    component2: Link_3-link-BE0_1-BE0_4
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 2
-    component2: 4-link-BE0 2-BE0 4
+    component2: Link_4-link-BE0_2-BE0_4
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 2
-    component2: 5-link-BE0 2-BE0 5
+    component2: Link_5-link-BE0_2-BE0_5
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 3
-    component2: 6-link-BE0 3-BE0 4
+    component2: Link_6-link-BE0_3-BE0_4
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 3
-    component2: 7-link-BE0 3-BE0 4
+    component2: Link_7-link-BE0_3-BE0_4
     port1: p_balance_port
     port2: p0_port
   - component1: BE0 0 H2
-    component2: BE0 0 H2 Electrolysis
+    component2: Link_BE0_0_H2_Electrolysis
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 1 H2
-    component2: BE0 1 H2 Electrolysis
+    component2: Link_BE0_1_H2_Electrolysis
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 2 H2
-    component2: BE0 2 H2 Electrolysis
+    component2: Link_BE0_2_H2_Electrolysis
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 3 H2
-    component2: BE0 3 H2 Electrolysis
+    component2: Link_BE0_3_H2_Electrolysis
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 4 H2
-    component2: BE0 4 H2 Electrolysis
+    component2: Link_BE0_4_H2_Electrolysis
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 5 H2
-    component2: BE0 5 H2 Electrolysis
+    component2: Link_BE0_5_H2_Electrolysis
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 0
-    component2: BE0 0 H2 Fuel Cell
+    component2: Link_BE0_0_H2_Fuel_Cell
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 1
-    component2: BE0 1 H2 Fuel Cell
+    component2: Link_BE0_1_H2_Fuel_Cell
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 2
-    component2: BE0 2 H2 Fuel Cell
+    component2: Link_BE0_2_H2_Fuel_Cell
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 3
-    component2: BE0 3 H2 Fuel Cell
+    component2: Link_BE0_3_H2_Fuel_Cell
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 4
-    component2: BE0 4 H2 Fuel Cell
+    component2: Link_BE0_4_H2_Fuel_Cell
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 5
-    component2: BE0 5 H2 Fuel Cell
+    component2: Link_BE0_5_H2_Fuel_Cell
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 3
-    component2: 0-link-BE0 0-BE0 3
+    component2: Link_0-link-BE0_0-BE0_3
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 5
-    component2: 1-link-BE0 0-BE0 5
+    component2: Link_1-link-BE0_0-BE0_5
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 2
-    component2: 2-link-BE0 1-BE0 2
+    component2: Link_2-link-BE0_1-BE0_2
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 4
-    component2: 3-link-BE0 1-BE0 4
+    component2: Link_3-link-BE0_1-BE0_4
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 4
-    component2: 4-link-BE0 2-BE0 4
+    component2: Link_4-link-BE0_2-BE0_4
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 5
-    component2: 5-link-BE0 2-BE0 5
+    component2: Link_5-link-BE0_2-BE0_5
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 4
-    component2: 6-link-BE0 3-BE0 4
+    component2: Link_6-link-BE0_3-BE0_4
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 4
-    component2: 7-link-BE0 3-BE0 4
+    component2: Link_7-link-BE0_3-BE0_4
     port1: p_balance_port
     port2: p1_port
   - component1: BE0 0
-    component2: BE0 0 battery_storage
+    component2: Storage_BE0_0_battery
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 1
-    component2: BE0 1 battery_storage
+    component2: Storage_BE0_1_battery
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 2
-    component2: BE0 2 battery_storage
+    component2: Storage_BE0_2_battery
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 3
-    component2: BE0 3 battery_storage
+    component2: Storage_BE0_3_battery
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4
-    component2: BE0 4 battery_storage
+    component2: Storage_BE0_4_battery
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5
-    component2: BE0 5 battery_storage
+    component2: Storage_BE0_5_battery
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 0 H2
-    component2: BE0 0 H2_store
+    component2: Store_BE0_0_H2
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 1 H2
-    component2: BE0 1 H2_store
+    component2: Store_BE0_1_H2
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 2 H2
-    component2: BE0 2 H2_store
+    component2: Store_BE0_2_H2
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 3 H2
-    component2: BE0 3 H2_store
+    component2: Store_BE0_3_H2
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 4 H2
-    component2: BE0 4 H2_store
+    component2: Store_BE0_4_H2
     port1: p_balance_port
     port2: p_balance_port
   - component1: BE0 5 H2
-    component2: BE0 5 H2_store
+    component2: Store_BE0_5_H2
     port1: p_balance_port
     port2: p_balance_port
   - component1: CO2Limit
-    component2: BE0 0 CCGT_generator
+    component2: Generator_BE0_0_CCGT
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 biomass_generator
+    component2: Generator_BE0_0_biomass
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 nuclear_generator
+    component2: Generator_BE0_0_nuclear
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 oil_generator
+    component2: Generator_BE0_0_oil
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 1 oil_generator
+    component2: Generator_BE0_1_oil
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 2 nuclear_generator
+    component2: Generator_BE0_2_nuclear
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 3 CCGT_generator
+    component2: Generator_BE0_3_CCGT
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 4 CCGT_generator
+    component2: Generator_BE0_4_CCGT
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 4 biomass_generator
+    component2: Generator_BE0_4_biomass
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 5 CCGT_generator
+    component2: Generator_BE0_5_CCGT
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 5 oil_generator
+    component2: Generator_BE0_5_oil
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 onwind_generator
+    component2: Generator_BE0_0_onwind
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 1 onwind_generator
+    component2: Generator_BE0_1_onwind
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 2 onwind_generator
+    component2: Generator_BE0_2_onwind
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 3 onwind_generator
+    component2: Generator_BE0_3_onwind
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 4 onwind_generator
+    component2: Generator_BE0_4_onwind
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 5 onwind_generator
+    component2: Generator_BE0_5_onwind
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 offwind-float_generator
+    component2: Generator_BE0_0_offwind-float
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 offwind-ac_generator
+    component2: Generator_BE0_0_offwind-ac
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 offwind-dc_generator
+    component2: Generator_BE0_0_offwind-dc
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 solar_generator
+    component2: Generator_BE0_0_solar
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 1 solar_generator
+    component2: Generator_BE0_1_solar
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 2 solar_generator
+    component2: Generator_BE0_2_solar
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 3 solar_generator
+    component2: Generator_BE0_3_solar
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 4 solar_generator
+    component2: Generator_BE0_4_solar
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 5 solar_generator
+    component2: Generator_BE0_5_solar
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 solar-hsat_generator
+    component2: Generator_BE0_0_solar-hsat
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 1 solar-hsat_generator
+    component2: Generator_BE0_1_solar-hsat
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 2 solar-hsat_generator
+    component2: Generator_BE0_2_solar-hsat
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 3 solar-hsat_generator
+    component2: Generator_BE0_3_solar-hsat
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 4 solar-hsat_generator
+    component2: Generator_BE0_4_solar-hsat
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 5 solar-hsat_generator
+    component2: Generator_BE0_5_solar-hsat
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 H2_store
+    component2: Store_BE0_0_H2
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 1 H2_store
+    component2: Store_BE0_1_H2
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 2 H2_store
+    component2: Store_BE0_2_H2
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 3 H2_store
+    component2: Store_BE0_3_H2
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 4 H2_store
+    component2: Store_BE0_4_H2
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 5 H2_store
+    component2: Store_BE0_5_H2
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 0 battery_storage
+    component2: Storage_BE0_0_battery
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 1 battery_storage
+    component2: Storage_BE0_1_battery
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 2 battery_storage
+    component2: Storage_BE0_2_battery
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 3 battery_storage
+    component2: Storage_BE0_3_battery
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 4 battery_storage
+    component2: Storage_BE0_4_battery
     port1: emission_port
     port2: emission_port
   - component1: CO2Limit
-    component2: BE0 5 battery_storage
+    component2: Storage_BE0_5_battery
     port1: emission_port
     port2: emission_port
   nodes: []

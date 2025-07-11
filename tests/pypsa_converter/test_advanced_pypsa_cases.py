@@ -18,6 +18,7 @@ converts it to Gems format, and runs the converted study.
 """
 
 import math
+import os
 from pathlib import Path
 
 from pypsa import Network
@@ -124,7 +125,7 @@ def replace_lines_by_links(network: Network) -> Network:
     return network
 
 
-def main(file: str, load_scaling: float, activate_quota: bool) -> None:
+def pypsa_gemspy_benchmark(file: str, load_scaling: float, activate_quota: bool) -> None:
     """
     Main function to convert a PyPSA study to Gems format and run it.
     """
@@ -214,11 +215,67 @@ def main(file: str, load_scaling: float, activate_quota: bool) -> None:
     )
 
 
-def test_case_pypsaeur_operational() -> None:
+def test_case_gemspy() -> None:
     # main("base_s_4_elec.nc", 0.8, True)
-    main("base_s_6_elec_lvopt_.nc", 0.4, True)
-    main("base_s_6_elec_lvopt_.nc", 0.3, True)
+    pypsa_gemspy_benchmark("base_s_6_elec_lvopt_.nc", 0.4, True)
+    pypsa_gemspy_benchmark("base_s_6_elec_lvopt_.nc", 0.3, True)
 
+
+def pypsa_antares_benchmark(nc_file: str) -> None:
+    """
+    Main function to convert a PyPSA study to Gems format and run it.
+    """
+    # Set up logger
+    logger = Logger(__name__, "")
+
+    # Define directories for systems and series
+    study_dir = "C:/Users/oustryant/Documents/4_Modeleur/PyPSA_Antares/study"
+    
+    systems_dir = study_dir + "/input/"
+    series_dir = systems_dir + "data-series/"
+
+    # Create directories if they don't exist
+    #systems_dir.mkdir(exist_ok=True)
+    #series_dir.mkdir(exist_ok=True)
+
+    # Load the PyPSA study
+    logger.info("Loading PyPSA study...")
+    pypsa_network = load_pypsa_study(nc_file, 1.0)
+    logger.info(
+        f"Loaded PyPSA network with {len(pypsa_network.buses)} buses and {len(pypsa_network.generators)} generators"
+    )
+    logger.info(f"Replacing {len(pypsa_network.lines)} Lines by links")
+    pypsa_network = replace_lines_by_links(pypsa_network)
+   
+    # Get the number of timesteps
+    T = len(pypsa_network.snapshots)
+    logger.info(f"Number of timesteps: {T}")
+    print(pypsa_network)
+    # Convert to Gems System
+    logger.info("Converting PyPSA network to Gems format...")
+    input_system_from_pypsa_converter = convert_pypsa_network(
+        pypsa_network, systems_dir, series_dir
+    )
+
+    # Save the InputSystem to YAML
+    system_filename = "system.yml"
+    logger.info(f"Saving Gems system to {systems_dir + system_filename}...")
+    transform_to_yaml(
+        model=input_system_from_pypsa_converter,
+        output_path=systems_dir + system_filename,
+    )
+
+    modeler_exec_path = "C:/Users/oustryant/Documents/4_Modeleur/AntaresCD/rte-antares-9.3.0-rc2-installer-64bits/bin/antares-modeler"
+    command =modeler_exec_path+ " " + study_dir
+    os.system(command)
+    # Capture the output of the command using subprocess
+    result = os.popen(command).read()
+
+    # Print the result
+    print("Output from command:", result)
+
+def test_antares()-> None:
+    pypsa_antares_benchmark("simple.nc")
 
 if __name__ == "__main__":
-    test_case_pypsaeur_operational()
+    test_case_gemspy()
