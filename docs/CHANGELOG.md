@@ -21,6 +21,13 @@ All notable changes to GemsPy are documented here.
   and the LP file written by `export_lp` do not.
 
 ### Changed
+- **Breaking** - a time-sum bound (an absolute bound, or the offset `k` of a
+  relative bound `t + k`) must now be declared time-independent and contain no
+  variable. This is checked when the model is created, whatever the data.
+  Since a parameter that omits `time-dependent` is time-dependent, parameters
+  used in bounds must declare `time-dependent: false`, e.g. `d_min_up` in
+  `sum(t - d_min_up + 1 .. t, x)`. Such models were previously accepted in
+  `cyclic` mode.
 - **Breaking** - a model parameter that omits `time-dependent` or
   `scenario-dependent` is now time- or scenario-dependent, as in Antares
   Simulator (it was constant). A component may still give it a constant value.
@@ -51,8 +58,7 @@ All notable changes to GemsPy are documented here.
 - **Time sums with bounds relative to `t`** - a start after the end now gives an
   empty sum, a bound can contain a time operator (e.g. `t - (d[0])`), and a
   scenario-dependent bound makes the sum scenario-dependent. In `drop` mode,
-  the operand is checked at every summed time step, and bounds are accepted as
-  in `cyclic` mode.
+  the operand is checked at every summed time step.
 
 ---
 
