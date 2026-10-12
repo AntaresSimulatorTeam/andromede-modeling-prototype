@@ -157,7 +157,7 @@ All notable changes to GemsPy are documented here.
 
 ## [0.1.1] - 2026-05-29
 
-### Inline scenario-scope selection (replaces `nb-scenarios`)
+### Scenario-scope playlist (replaces `nb-scenarios`)
 
 The `scenario-scope` section of `optim-config.yml` now supports a full
 playlist mechanism.  The old `nb-scenarios` integer key is removed and raises
