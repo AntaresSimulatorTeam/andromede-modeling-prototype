@@ -15,6 +15,13 @@ All notable changes to GemsPy are documented here.
   `scenarios` lists the scenarios of the run. Scenario filters keep the rows
   shared by all scenarios, which `iter_scenarios()` yields once, first.
   `SimulationTable` is exported from `gems_runner.simulation`.
+- **Simulation tables stored on disk** - `SimulationTable.save(path, format)`
+  writes the table as a folder: one file per scenario (`scenario-<N>`), a
+  `scenario-common` file for the rows shared by all scenarios, and a
+  `manifest.json` written last, in Parquet (default) or CSV with one fixed
+  schema. `SimulationTable.open(path)` reads it back lazily, opening only the
+  files a call needs, and refuses a folder without a manifest. On such a table
+  `data` raises and `to_pandas()` without filter needs `load_all=True`.
 - **Taxonomy conformance checked when a study is loaded** - `load_study` reads
   the optional `input/taxonomy.yml` and calls
   `validate_libraries_against_taxonomy` on every library declaring a `taxonomy`
@@ -62,6 +69,12 @@ All notable changes to GemsPy are documented here.
   near-identical old names invited confusion. Reading and validating are now
   separate modules, as in `optim_config/`. No behavior change; names and
   import paths only.
+
+### Deprecated
+- **`SimulationTable.to_csv()`, `to_parquet()`, `to_dataset()` and
+  `to_netcdf()`** - they emit a `DeprecationWarning` and will be removed in a
+  following release. Use `save()`, or build an xarray object from
+  `to_pandas()`. They raise on a table stored on disk.
 
 ### Fixed
 - **Outputs without a time or scenario dimension** - `OutputView.value()`
