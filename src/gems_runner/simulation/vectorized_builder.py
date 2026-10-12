@@ -285,16 +285,6 @@ class VectorizedBuilderBase(ExpressionVisitor[VectorizedExpr], Generic[T_expr]):
             if to_shift_scalar is not None
             else self._bound_value(to_offset)
         )
-        if not isinstance(from_da, xr.DataArray):
-            raise ValueError(
-                f"time_sum from_time must be a parameter expression (DataArray), "
-                f"got {type(from_da).__name__!r}."
-            )
-        if not isinstance(to_da, xr.DataArray):
-            raise ValueError(
-                f"time_sum to_time must be a parameter expression (DataArray), "
-                f"got {type(to_da).__name__!r}."
-            )
         from_int = from_da.astype(int)
         to_int = to_da.astype(int)
         min_from = int(from_int.values.min())
