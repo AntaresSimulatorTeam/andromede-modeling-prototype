@@ -11,6 +11,8 @@ All notable changes to GemsPy are documented here.
   field. `parse_yaml_library` is unchanged and performs no validation.
 
 ### Changed
+- **Scenario playlist removed** - scenario selection is now configured inline
+  through `scenario-scope`; the `playlist-file` option is no longer supported.
 - **Breaking** - loading a study whose library declares a `taxonomy` raises
   `ValueError` if no taxonomy is supplied, or if its id differs from the declared
   one.
@@ -157,9 +159,9 @@ All notable changes to GemsPy are documented here.
 
 ### Inline scenario-scope selection (replaces `nb-scenarios`)
 
-The `scenario-scope` section of `optim-config.yml` supports selecting scenarios
-inline. The old `nb-scenarios` integer key is removed and raises a validation
-error if still present.
+The `scenario-scope` section of `optim-config.yml` now supports a full
+playlist mechanism.  The old `nb-scenarios` integer key is removed and raises
+a validation error if still present.
 
 Scenario indices are **0-based** throughout, consistent with the
 `modeler-scenariobuilder.dat` convention.
@@ -178,13 +180,26 @@ scenario-scope:
     - 14
 ~~~
 
+**Playlist-file form** — point to a flat JSON array of 0-based integers,
+useful for machine-generated playlists:
+
+~~~ yaml
+scenario-scope:
+  playlist-file: mc_playlist.json
+~~~
+
 Other changes:
 
-- `exclude` can be used with `include` to subtract a few scenarios at run time.
+- `exclude` is now compatible with both `include` and `playlist-file`.
+  Use it to subtract a few scenarios at run time without modifying the
+  playlist file.
 - `validate_optim_config()` now accepts an optional `scenario_builder`
-  argument and cross-checks all configured scenario indices against every scenario group,
+  argument and cross-checks all playlist indices against every scenario group,
   raising a `ValueError` for out-of-bounds indices.
-- Boolean values (`true`/`false`) are explicitly rejected in inline lists.
+- The playlist is resolved and cached exactly once at `load_optim_config()`
+  time; I/O and format errors surface immediately as `ValueError`.
+- Boolean values (`true`/`false`) are explicitly rejected in both inline
+  lists and JSON playlist files.
 
 ---
 
@@ -212,7 +227,7 @@ A new `optim-config.yml` file controls all aspects of a simulation run:
 - **`resolution.mode`** — four strategies: `frontal`, `sequential-subproblems`, `parallel-subproblems`, `benders-decomposition`
 - **`resolution.block_length` / `block_overlap`** — time-window size and overlap for sequential/parallel modes
 - **`time_scope`** — `first_time_step` / `last_time_step`
-- **`scenario_scope.nb_scenarios`** — number of Monte-Carlo scenarios to run (replaced by inline scenario-scope selection in a later release)
+- **`scenario_scope.nb_scenarios`** — number of Monte-Carlo scenarios to run (replaced by the playlist mechanism in a later release)
 - **`solver_options`** — solver name (default: HiGHS), log verbosity, and free-form solver parameters
 - **`models[].model_decomposition`** — per-model assignment of variables, constraints, and objective contributions to `master`, `subproblems`, or `master-and-subproblems` (used for Benders decomposition)
 - **`models[].out_of_bounds_processing`** — per-constraint handling of time indices that fall outside the horizon (`cyclic` or `drop`)
