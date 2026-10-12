@@ -10,12 +10,43 @@ All notable changes to GemsPy are documented here.
   must be literals or parameters, except in `extra-outputs` where a variable may
   be raised to a power. The Python API gains `**` on `ExpressionNode`.
 
+- **`SimulationTable.objective_values()`** - returns the objective value of
+  every solved problem, with columns `block`, `scenario_index` and `value`.
+- **`block=` on the simulation table views** - `component(...).output(name,
+  block=...)` and `OutputView.value(..., block=...)` select one block.
 - **Taxonomy conformance checked when a study is loaded** - `load_study` reads
   the optional `input/taxonomy.yml` and calls
   `validate_libraries_against_taxonomy` on every library declaring a `taxonomy`
   field. `parse_yaml_library` is unchanged and performs no validation.
+- **Constant terms in objective contributions** - an objective contribution can
+  now mix variables and constants (e.g. `sum(cost * generation + 1)`); this
+  previously raised `ValueError: Constant values in objective function not
+  supported`. `OptimizationProblem.objective_value` and the `objective-value`
+  row of the simulation table include the constant; `linopy_model.objective.value`
+  and the LP file written by `export_lp` do not.
 
 ### Changed
+- **Breaking** - `SimulationTable.data` has one fixed schema, whatever the
+  content: nullable `Int64` indices (empty for a missing dimension), `string`
+  labels and `float64` values (`SIMULATION_TABLE_SCHEMA` /
+  `SIMULATION_TABLE_DTYPES`). `scenario_index` was an `object` column mixing
+  ints and `None`. Comparisons on empty cells give `<NA>`, which filters treat
+  as no match.
+- **Breaking** - when the values requested from an `OutputView` include a
+  (time, scenario) solved in several blocks (overlapping sequential blocks, or
+  the per-block rows of an output without a time dimension), `value()` and
+  `data` raise unless `block=` is given. They silently returned the first row.
+- **Each run gets its own output folder** - the run id is now the start time to
+  the second plus a short random suffix (e.g. `20261009T143502-3f9a1c`, it was
+  `20261009T1435`), and `run_study` creates `output/<run_id>/` before solving,
+  failing over to a new id rather than reusing an existing folder. Runs started
+  in the same minute shared a folder, and the second run's files replaced or
+  mixed with the first run's.
+- **Breaking** - a model parameter that omits `time-dependent` or
+  `scenario-dependent` is now time- or scenario-dependent, as in Antares
+  Simulator (it was constant). A component may still give it a constant value.
+  Declare `time-dependent: false` / `scenario-dependent: false` for parameters
+  that must stay constant.
 - **Breaking** - loading a study whose library declares a `taxonomy` raises
   `ValueError` if no taxonomy is supplied, or if its id differs from the declared
   one.
@@ -30,6 +61,26 @@ All notable changes to GemsPy are documented here.
   near-identical old names invited confusion. Reading and validating are now
   separate modules, as in `optim_config/`. No behavior change; names and
   import paths only.
+
+### Fixed
+- **Outputs without a time or scenario dimension** - `OutputView.value()`
+  accepts any index for the missing dimension and returns the single stored
+  value; it raised `KeyError` for any index but 0. `OutputView.data` keeps one
+  row (or column) for that dimension, labelled `<NA>` (it was `0`).
+- **Scenario index of single-scenario solves** - a problem solved for a single
+  scenario (every sequential/parallel block, a frontal run with one scenario)
+  now fills `scenario_index` on every row, including the objective value and
+  outputs without a scenario dimension. They were left empty, so in sequential
+  and parallel modes the rows of different scenarios could not be told apart.
+- **`solver-options.logs` now controls solver output** - it was passed to the
+  solver as an unknown `solver_logs` option (HiGHS printed
+  `getOptionIndex: Option "solver_logs" is unknown` on every solve) and had no
+  effect. It is now translated into the solver's own output option
+  (`output_flag` for HiGHS, `OutputFlag` for Gurobi, `outputlog` for Xpress);
+  with `logs: false` HiGHS only prints its startup banner.
+- **`first-time-step` greater than `last-time-step`** is now rejected when the
+  optim-config is loaded. The run used to fail later, with an error that did
+  not mention the time scope.
 
 ---
 
