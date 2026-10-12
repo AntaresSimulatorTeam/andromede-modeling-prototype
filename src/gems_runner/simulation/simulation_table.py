@@ -43,7 +43,12 @@ _VIEW_COLUMNS = [_BLOCK, _TIME, _SCENARIO, _VALUE]
 
 
 def _filter_values(values: Optional[Sequence[Any]]) -> Optional[frozenset]:
-    return None if values is None else frozenset(values)
+    if values is None:
+        return None
+    # A single name, not the set of its characters.
+    if isinstance(values, str):
+        return frozenset({values})
+    return frozenset(values)
 
 
 class OutputView:

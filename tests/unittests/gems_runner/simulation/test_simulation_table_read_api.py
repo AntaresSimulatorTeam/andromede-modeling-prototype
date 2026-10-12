@@ -180,6 +180,30 @@ def test_to_pandas_filters(kwargs: Any, expected: Set[Tuple[Any, ...]]) -> None:
     assert _keys(_table().to_pandas(**kwargs)) == expected
 
 
+@pytest.mark.parametrize(
+    "kwargs, as_list",
+    [
+        pytest.param({"components": "gen"}, {"components": ["gen"]}, id="components"),
+        pytest.param({"outputs": "p_max"}, {"outputs": ["p_max"]}, id="outputs"),
+    ],
+)
+def test_a_single_name_filters_like_a_list(kwargs: Any, as_list: Any) -> None:
+    table = _table()
+    rows = table.to_pandas(**kwargs)
+
+    assert not rows.empty
+    assert _keys(rows) == _keys(table.to_pandas(**as_list))
+
+
+def test_iter_scenarios_accepts_a_single_name() -> None:
+    table = _table()
+    as_name = [(s, _keys(df)) for s, df in table.iter_scenarios(components="load")]
+    as_list = [(s, _keys(df)) for s, df in table.iter_scenarios(components=["load"])]
+
+    assert as_name == as_list
+    assert as_name[0][1] == {("load", "d", 0, 0)}
+
+
 def test_to_pandas_load_all_has_no_effect_in_memory() -> None:
     table = _table()
     pd.testing.assert_frame_equal(table.to_pandas(load_all=True), table.data)
