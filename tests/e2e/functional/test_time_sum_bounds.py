@@ -270,69 +270,46 @@ def test_absolute_index_refers_to_the_block(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "time_sum, bound",
+    "time_sum, error",
     [
-        pytest.param("sum(0 .. d, x)", "d", id="absolute"),
-        pytest.param("sum(t - d .. t, x)", "(t + -(d))", id="relative"),
+        pytest.param(
+            "sum(0 .. k, x)",
+            "the time sum bound 'k' depends on time, but must be time-independent. "
+            "Declare 'k' with `time-dependent: false`.",
+            id="absolute",
+        ),
+        pytest.param(
+            "sum(t - k .. t, x)",
+            "the time sum bound '(t + -(k))' depends on time, but must be "
+            "time-independent. Declare 'k' with `time-dependent: false`.",
+            id="relative",
+        ),
+        pytest.param(
+            "sum(0 .. y, x)",
+            "the time sum bound 'y' cannot contain a variable.",
+            id="variable",
+        ),
     ],
 )
-def test_bound_varying_in_time_raises(
-    tmp_path: Path, time_sum: str, bound: str
+def test_bound_must_be_declared_time_independent(
+    tmp_path: Path, time_sum: str, error: str
 ) -> None:
+    """The declared structure decides, whatever the data: k is declared
+    time-dependent, so it is rejected although its series is constant."""
     study_dir = _make_study(
         tmp_path,
-        variables=["x", "a"],
+        variables=["x", "y", "a"],
         constraints=["x = d", f"a = {time_sum}"],
         objective="sum(x)",
-        data={"d": [1, 2, 3, 4]},
+        data={"d": [1, 2, 3, 4], "k": [1, 1, 1, 1]},
         constants={},
         nb_time_steps=4,
     )
 
     with pytest.raises(
-        ValueError,
-        match=re.escape(
-            f"Model 'lib.m': a time sum bound must be fixed in time, but '{bound}' "
-            "varies in time for component(s) m1."
-        ),
+        ValueError, match=re.escape(f"Model 'lib.m', constraint 'c1': {error}")
     ):
         _solve(study_dir)
-
-
-@pytest.mark.parametrize(
-    "mode, expected_r",
-    [
-        pytest.param("cyclic", [5, 3, 5, 7], id="cyclic"),
-        pytest.param("drop", [0, 3, 5, 7], id="drop"),  # dropped at t = 0
-    ],
-)
-def test_bound_declared_time_dependent_but_given_a_constant(
-    tmp_path: Path, mode: str, expected_r: List[float]
-) -> None:
-    """The data decides, in every mode: a parameter declared time-dependent
-    can be a bound if the component gives it a constant value."""
-    study_dir = _make_study(
-        tmp_path,
-        variables=["x", "a", "r"],
-        constraints=["x = d", "a = sum(0 .. last, x)", "r = sum(t - last .. t, x)"],
-        objective="sum(x) + sum(r)",
-        data={"d": [1, 2, 3, 4]},
-        constants={"last": 1},
-        nb_time_steps=4,
-        resolution=_out_of_bounds(mode, ["c1", "c2"]),
-    )
-    library = study_dir / "input" / "model-libraries" / "lib.yml"
-    library.write_text(
-        library.read_text().replace(
-            "        - id: last\n          time-dependent: false",
-            "        - id: last\n          time-dependent: true",
-        )
-    )
-
-    results = _solve(study_dir)
-
-    assert results["a"] == [3, 3, 3, 3]
-    assert results["r"] == expected_r
 
 
 # Expected objective of each study.

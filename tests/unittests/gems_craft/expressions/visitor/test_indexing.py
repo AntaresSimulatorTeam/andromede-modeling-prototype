@@ -186,11 +186,3 @@ def test_time_sum_with_scenario_dependent_bound_depends_on_scenario(
     expr = param("d").time_sum_between(start, end)
 
     assert compute_indexation(expr, NamedParameterProvider()) == expected
-
-
-def test_time_sum_with_relative_bound_varying_in_time_depends_on_time() -> None:
-    expr = param("p").time_sum_between(relative_time(-param("d")), relative_time(0))
-
-    assert compute_indexation(expr, NamedParameterProvider()) == IndexingStructure(
-        True, True
-    )
