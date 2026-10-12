@@ -204,6 +204,19 @@ def test_iter_scenarios_accepts_a_single_name() -> None:
     assert as_name[0][1] == {("load", "d", 0, 0)}
 
 
+def test_component_filter_keeps_the_rows_and_their_order() -> None:
+    # Components are found through an index; the result must match a mask.
+    table = _table()
+    data = table.data
+
+    rows = table.to_pandas(components=["load", "gen"], outputs=["p", "d"])
+
+    expected = data[
+        data["component"].isin(["load", "gen"]) & data["output"].isin(["p", "d"])
+    ]
+    pd.testing.assert_frame_equal(rows, expected)
+
+
 def test_to_pandas_load_all_has_no_effect_in_memory() -> None:
     table = _table()
     pd.testing.assert_frame_equal(table.to_pandas(load_all=True), table.data)
