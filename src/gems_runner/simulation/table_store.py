@@ -32,6 +32,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.dataset as ds
 
 from gems_runner.simulation.table_schema import (
@@ -84,6 +85,16 @@ class _RowFilter:
             and self.outputs is None
             and (self.scenarios is None)
         )
+
+    def expression(self) -> Optional[pc.Expression]:
+        """The component and output filters as a pyarrow expression, None if
+        unrestricted. The scenario filter is applied by choosing the files."""
+        expression: Optional[pc.Expression] = None
+        for column, values in ((_COMPONENT, self.components), (_OUTPUT, self.outputs)):
+            if values is not None:
+                term = pc.field(column).isin(sorted(values))  # type: ignore[no-untyped-call]
+                expression = term if expression is None else expression & term
+        return expression
 
     def mask(self, df: pd.DataFrame) -> "pd.Series[bool]":
         """The rows of *df* that pass the filter."""

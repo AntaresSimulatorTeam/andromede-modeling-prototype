@@ -14,7 +14,7 @@
 and its storages."""
 
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 
 import pandas as pd
 import pyarrow as pa
@@ -39,6 +39,10 @@ _SCENARIO = SimulationColumns.SCENARIO_INDEX.value
 _VALUE = SimulationColumns.VALUE.value
 
 OBJECTIVE_VALUE_OUTPUT = "objective-value"
+
+PARQUET_COMPRESSION: Literal["zstd"] = "zstd"
+PARQUET_COMPRESSION_LEVEL = 3
+PARQUET_ROW_GROUP_SIZE = 64_000
 
 # One schema for the simulation table, whatever the content: nullable integer
 # indices (empty for a missing dimension), string labels and float values.
@@ -82,6 +86,16 @@ SIMULATION_TABLE_DTYPES: Dict[str, Any] = {
 def _apply_schema(df: pd.DataFrame) -> pd.DataFrame:
     """Give *df* the columns and dtypes of the simulation table schema."""
     return df[list(SIMULATION_TABLE_DTYPES)].astype(SIMULATION_TABLE_DTYPES)
+
+
+def _empty_frame() -> pd.DataFrame:
+    """A table without rows, with the columns and dtypes of the schema."""
+    return pd.DataFrame(
+        {
+            name: pd.Series(dtype=dtype)
+            for name, dtype in SIMULATION_TABLE_DTYPES.items()
+        }
+    )
 
 
 def _equals(column: "pd.Series[Any]", value: Any) -> "pd.Series[bool]":

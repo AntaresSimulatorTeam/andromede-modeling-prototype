@@ -1,4 +1,5 @@
 import functools
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import (
@@ -6,7 +7,6 @@ from typing import (
     Dict,
     Iterator,
     List,
-    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -19,6 +19,9 @@ import pandas as pd
 import pyarrow.dataset as ds
 import xarray as xr
 
+from gems_craft.study.parsing import OutputFormat
+from gems_runner.simulation.table_folder import _FolderStore, _Manifest, _TableWriter
+
 # The schema names are also re-exported from here, where they used to live.
 from gems_runner.simulation.table_schema import (
     _BLOCK,
@@ -26,6 +29,9 @@ from gems_runner.simulation.table_schema import (
     _TIME,
     _VALUE,
     OBJECTIVE_VALUE_OUTPUT,
+    PARQUET_COMPRESSION,
+    PARQUET_COMPRESSION_LEVEL,
+    PARQUET_ROW_GROUP_SIZE,
     SIMULATION_TABLE_DTYPES,
     SIMULATION_TABLE_SCHEMA,
     SimulationColumns,
@@ -34,10 +40,6 @@ from gems_runner.simulation.table_schema import (
     _same_key,
 )
 from gems_runner.simulation.table_store import _MemoryStore, _RowFilter, _TableStore
-
-PARQUET_COMPRESSION: Literal["zstd"] = "zstd"
-PARQUET_COMPRESSION_LEVEL = 3
-PARQUET_ROW_GROUP_SIZE = 64_000
 
 _VIEW_COLUMNS = [_BLOCK, _TIME, _SCENARIO, _VALUE]
 
@@ -243,9 +245,11 @@ class SimulationTable:
         # Scenario distribution at time step 3
         st.component("gen_1").output("p").value(time_index=3)
 
-    The rows are read through a storage (in memory for now). The long-format
-    DataFrame is accessible via the ``data`` property, and parts of it via
-    ``to_pandas()``, ``iter_scenarios()`` and ``scan()``.
+    The rows are read through a storage: in memory (``SimulationTable(df)``),
+    or a folder on disk (``SimulationTable.open(path)``), with the same API. The
+    long-format DataFrame is accessible via the ``data`` property (in memory
+    only), and parts of it via ``to_pandas()``, ``iter_scenarios()`` and
+    ``scan()``.
     """
 
     def __init__(
@@ -261,9 +265,52 @@ class SimulationTable:
         self._store: _TableStore = _MemoryStore(df, table_id, scenarios)
         self.table_id = table_id
 
+    @classmethod
+    def _from_store(cls, store: _TableStore) -> "SimulationTable":
+        table = cls.__new__(cls)
+        table._store = store
+        table.table_id = store.table_id
+        return table
+
+    @classmethod
+    def open(cls, path: Path) -> "SimulationTable":
+        """Open a simulation table folder written by ``save()`` or by a run.
+
+        Raises ``FileNotFoundError`` for a folder without a manifest, e.g. an
+        interrupted run. Nothing else is read until rows are asked for.
+        """
+        path = Path(path)
+        return cls._from_store(_FolderStore(path, _Manifest.read(path)))
+
+    def save(self, path: Path, format: OutputFormat = OutputFormat.PARQUET) -> Path:
+        """Write the table as a simulation table folder at *path*, from either
+        storage, and return *path*. *path* is created if missing and must be
+        empty otherwise. ``SimulationTable.open(path)`` reads it back.
+        """
+        path = Path(path)
+        writer = _TableWriter(path, self.table_id, format)
+        for scenario, rows in self._store.iter_scenarios(_RowFilter()):
+            if scenario is None:
+                writer.write_common(rows)
+            elif not rows.empty:
+                writer.write_scenario(rows)
+        writer.finalize()
+        return path
+
     @property
     def data(self) -> pd.DataFrame:
-        """Return the underlying long-format DataFrame."""
+        """Return the underlying long-format DataFrame.
+
+        Raises ``ValueError`` on a table stored on disk: use
+        ``to_pandas(load_all=True)``, the filters of ``to_pandas()``, or
+        ``iter_scenarios()``.
+        """
+        if self.path is not None:
+            raise ValueError(
+                f"This simulation table is stored on disk ({self.path}): .data "
+                "would load it entirely. Use to_pandas(load_all=True), "
+                "to_pandas() with filters, or iter_scenarios()."
+            )
         return self._store.read(_RowFilter())
 
     @property
@@ -305,13 +352,21 @@ class SimulationTable:
 
         A scenario filter keeps the rows shared by all scenarios (empty
         ``scenario_index``), which hold the value of every scenario.
-        ``load_all`` has no effect on a table in memory.
+
+        On a table stored on disk, loading all rows must be asked for with
+        ``load_all=True``; it has no effect on a table in memory.
         """
         row_filter = _RowFilter(
             _filter_values(components),
             _filter_values(outputs),
             _filter_values(scenarios),
         )
+        if row_filter.is_unrestricted and self.path is not None and not load_all:
+            raise ValueError(
+                f"This simulation table is stored on disk ({self.path}): "
+                "to_pandas() without filter would load it entirely. Pass "
+                "load_all=True, or filter by components, outputs or scenarios."
+            )
         rows = self._store.read(row_filter)
         return rows.copy() if row_filter.is_unrestricted else rows
 
@@ -335,7 +390,22 @@ class SimulationTable:
         it with polars or duckdb."""
         return self._store.scan()
 
+    def _deprecated(self, name: str, replacement: str) -> None:
+        if self.path is not None:
+            raise TypeError(
+                f"{name}() is not available on a simulation table stored on disk: "
+                "use save() to write it elsewhere, or to_pandas() to read it."
+            )
+        warnings.warn(
+            f"SimulationTable.{name}() is deprecated and will be removed in a "
+            f"following release; use {replacement}.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+
     def to_csv(self, output_dir: Path) -> Path:
+        """Deprecated: use ``save(path, OutputFormat.CSV)``."""
+        self._deprecated("to_csv", "save(path, OutputFormat.CSV)")
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"simulation_table_{self.table_id}.csv"
@@ -343,6 +413,8 @@ class SimulationTable:
         return path
 
     def to_parquet(self, output_dir: Path) -> Path:
+        """Deprecated: use ``save(path)``."""
+        self._deprecated("to_parquet", "save(path)")
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"simulation_table_{self.table_id}.parquet"
@@ -357,13 +429,20 @@ class SimulationTable:
         return path
 
     def to_netcdf(self, output_dir: Path) -> Path:
+        """Deprecated: build the xarray object from ``to_pandas()``."""
+        self._deprecated("to_netcdf", "to_pandas() to build an xarray object")
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"simulation_table_{self.table_id}.nc"
-        self.to_dataset().to_netcdf(path)
+        self._to_dataset().to_netcdf(path)
         return path
 
     def to_dataset(self) -> xr.Dataset:
+        """Deprecated: build the xarray object from ``to_pandas()``."""
+        self._deprecated("to_dataset", "to_pandas() to build an xarray object")
+        return self._to_dataset()
+
+    def _to_dataset(self) -> xr.Dataset:
         """Return simulation results as an xr.Dataset.
 
         Each output variable becomes a DataArray with dimensions
