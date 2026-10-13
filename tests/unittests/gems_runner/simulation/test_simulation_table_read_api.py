@@ -9,11 +9,21 @@ from typing import Any, Iterator, List, Optional, Set, Tuple
 
 import pandas as pd
 import pytest
+import xarray as xr
+from simulation_table_fakes import (
+    FakeLinopyModel,
+    FakeLinopyVar,
+    FakeModel,
+    FakeProblem,
+    FakeStudy,
+)
 
 from gems_runner.simulation.simulation_table import (
     SIMULATION_TABLE_SCHEMA,
     SimulationTable,
+    SimulationTableBuilder,
     _apply_schema,
+    merge_simulation_tables,
 )
 from gems_runner.simulation.table_store import _MemoryStore, _RowFilter
 
@@ -33,7 +43,9 @@ _ROWS: List[Row] = [
 ]
 
 
-def _table(rows: List[Row] = _ROWS) -> SimulationTable:
+def _table(
+    rows: List[Row] = _ROWS, scenarios: Optional[List[int]] = None
+) -> SimulationTable:
     """SimulationTable from (block, component, output, time, scenario, value)."""
     df = pd.DataFrame(
         [
@@ -50,7 +62,7 @@ def _table(rows: List[Row] = _ROWS) -> SimulationTable:
             for b, c, o, t, s, v in rows
         ]
     )
-    return SimulationTable(_apply_schema(df), table_id="run")
+    return SimulationTable(_apply_schema(df), table_id="run", scenarios=scenarios)
 
 
 def _keys(df: pd.DataFrame) -> Set[Tuple[Any, ...]]:
@@ -122,6 +134,68 @@ def test_simulation_table_is_exported_from_the_package() -> None:
     assert Exported is SimulationTable
 
 
+# Only rows shared by all scenarios: they do not say which scenarios exist.
+_SHARED_ROWS: List[Row] = [
+    (0, "gen", "p_max", None, None, 200.0),
+    (0, None, "objective-value", None, None, 900.0),
+]
+
+
+def test_the_run_scenarios_are_kept_when_no_row_names_them() -> None:
+    table = _table(_SHARED_ROWS, scenarios=[0, 1, 2])
+
+    assert table.scenarios == [0, 1, 2]
+    assert [s for s, _ in table.iter_scenarios()] == [None, 0, 1, 2]
+
+
+def test_without_run_scenarios_they_come_from_the_rows() -> None:
+    assert _table(_SHARED_ROWS).scenarios == []
+
+
+def test_a_row_outside_the_run_scenarios_raises() -> None:
+    with pytest.raises(ValueError, match=r"scenario_index \[1\], which are not"):
+        _table(scenarios=[0, 2])
+
+
+def test_a_scenario_without_rows_raises_when_others_have_rows() -> None:
+    with pytest.raises(ValueError, match=r"Scenarios \[2\] of the run have no rows"):
+        _table(scenarios=[0, 1, 2])
+
+
+def test_the_builder_gives_the_table_the_run_scenarios() -> None:
+    # Two scenarios, but the only output has no scenario dimension.
+    problem = FakeProblem(
+        linopy_model=FakeLinopyModel(
+            solution={
+                "m__p_max": xr.DataArray(
+                    [[5.0, 5.0]],
+                    dims=["component", "time"],
+                    coords={"component": ["c"]},
+                )
+            }
+        ),
+        _linopy_vars={
+            (0, "p_max"): FakeLinopyVar("m__p_max", {"component": xr.DataArray(["c"])})
+        },
+        models={0: FakeModel()},
+        study=FakeStudy(models={0: FakeModel()}, model_components={}),
+        scenarios=2,
+    )
+
+    table = SimulationTableBuilder().build(
+        problem, scenario_ids_remap=[3, 7]  # type: ignore[arg-type]
+    )
+
+    assert table.scenarios == [3, 7]
+
+
+def test_merging_keeps_the_union_of_the_scenarios() -> None:
+    first = _table([(0, "a", "p", 0, 0, 1.0)], scenarios=[0])
+    second = _table([(0, "a", "p", 0, 1, 2.0)], scenarios=[1])
+
+    assert merge_simulation_tables([first, second]).scenarios == [0, 1]
+
+
 # ---------------------------------------------------------------------------
 # to_pandas
 # ---------------------------------------------------------------------------
@@ -178,6 +252,43 @@ def test_to_pandas_without_filter_returns_a_copy_of_every_row() -> None:
 )
 def test_to_pandas_filters(kwargs: Any, expected: Set[Tuple[Any, ...]]) -> None:
     assert _keys(_table().to_pandas(**kwargs)) == expected
+
+
+@pytest.mark.parametrize(
+    "kwargs, as_list",
+    [
+        pytest.param({"components": "gen"}, {"components": ["gen"]}, id="components"),
+        pytest.param({"outputs": "p_max"}, {"outputs": ["p_max"]}, id="outputs"),
+    ],
+)
+def test_a_single_name_filters_like_a_list(kwargs: Any, as_list: Any) -> None:
+    table = _table()
+    rows = table.to_pandas(**kwargs)
+
+    assert not rows.empty
+    assert _keys(rows) == _keys(table.to_pandas(**as_list))
+
+
+def test_iter_scenarios_accepts_a_single_name() -> None:
+    table = _table()
+    as_name = [(s, _keys(df)) for s, df in table.iter_scenarios(components="load")]
+    as_list = [(s, _keys(df)) for s, df in table.iter_scenarios(components=["load"])]
+
+    assert as_name == as_list
+    assert as_name[0][1] == {("load", "d", 0, 0)}
+
+
+def test_component_filter_keeps_the_rows_and_their_order() -> None:
+    # Components are found through an index; the result must match a mask.
+    table = _table()
+    data = table.data
+
+    rows = table.to_pandas(components=["load", "gen"], outputs=["p", "d"])
+
+    expected = data[
+        data["component"].isin(["load", "gen"]) & data["output"].isin(["p", "d"])
+    ]
+    pd.testing.assert_frame_equal(rows, expected)
 
 
 def test_to_pandas_load_all_has_no_effect_in_memory() -> None:

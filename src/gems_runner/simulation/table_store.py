@@ -13,10 +13,23 @@
 """Storage behind a ``SimulationTable``: the table and its views read their
 rows through a ``_TableStore``, whatever the storage."""
 
+import functools
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, FrozenSet, Iterator, List, Optional, Protocol, Tuple, cast
+from typing import (
+    Any,
+    Dict,
+    FrozenSet,
+    Iterator,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    cast,
+)
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -131,32 +144,88 @@ class _TableStore(Protocol):
 
 
 class _MemoryStore:
-    """A simulation table held in memory as a single DataFrame."""
+    """A simulation table held in memory as a single DataFrame, which must not
+    be modified afterwards.
 
-    def __init__(self, df: pd.DataFrame, table_id: str = "") -> None:
+    *scenarios* are the scenarios of the run, when known: they are checked
+    against the rows, and kept even if no row names them (e.g. a frontal run
+    whose outputs are all scenario-independent). Without them, the scenarios
+    are those of the rows.
+    """
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        table_id: str = "",
+        scenarios: Optional[Sequence[int]] = None,
+    ) -> None:
         self.df = df
         self.table_id = table_id
+        in_rows = (
+            {int(s) for s in df[_SCENARIO].dropna().unique()}
+            if _SCENARIO in df.columns
+            else set()
+        )
+        if scenarios is None:
+            self._scenarios = sorted(in_rows)
+            return
+        self._scenarios = sorted({int(s) for s in scenarios})
+        unknown = in_rows - set(self._scenarios)
+        if unknown:
+            raise ValueError(
+                f"Rows have scenario_index {sorted(unknown)}, which are not "
+                f"scenarios of the run {self._scenarios}."
+            )
+        missing = set(self._scenarios) - in_rows
+        if in_rows and missing:
+            raise ValueError(
+                f"Scenarios {sorted(missing)} of the run have no rows, while "
+                "other scenarios do: rows were lost or mislabelled."
+            )
 
     @property
     def scenarios(self) -> List[int]:
-        if _SCENARIO not in self.df.columns:
-            return []
-        return sorted(int(s) for s in self.df[_SCENARIO].dropna().unique())
+        return list(self._scenarios)
 
     @property
     def path(self) -> Optional[Path]:
         return None
 
+    @functools.cached_property
+    def _component_positions(self) -> Dict[str, Any]:
+        """Row positions of each component, found once, so that reading one
+        component does not scan the whole table."""
+        codes, components = pd.factorize(self.df[_COMPONENT])  # -1 for empty cells
+        order = np.argsort(codes, kind="stable")
+        bounds = np.searchsorted(codes[order], np.arange(len(components) + 1))
+        return {
+            str(component): order[bounds[i] : bounds[i + 1]]
+            for i, component in enumerate(components)
+        }
+
     def read(self, row_filter: _RowFilter) -> pd.DataFrame:
         if row_filter.is_unrestricted:
             return self.df
-        return self.df[row_filter.mask(self.df)]
+        rows = self.df
+        if row_filter.components is not None and _COMPONENT in rows.columns:
+            positions = [
+                self._component_positions[c]
+                for c in row_filter.components
+                if c in self._component_positions
+            ]
+            rows = rows.iloc[
+                np.sort(np.concatenate(positions)) if positions else np.arange(0)
+            ]
+            row_filter = replace(row_filter, components=None)
+        return rows if row_filter.is_unrestricted else rows[row_filter.mask(rows)]
 
     def iter_scenarios(
         self, row_filter: _RowFilter
     ) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
         rows = self.read(row_filter)
-        if _SCENARIO not in rows.columns:
+        if _SCENARIO not in rows.columns:  # a table without columns
+            for scenario in self.scenarios:
+                yield scenario, rows
             return
         common = rows[rows[_SCENARIO].isna()]
         if not common.empty:

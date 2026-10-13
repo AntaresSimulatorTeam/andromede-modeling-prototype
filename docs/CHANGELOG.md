@@ -14,6 +14,8 @@ All notable changes to GemsPy are documented here.
   one scenario at a time, `scan()` returns a `pyarrow.dataset.Dataset`, and
   `scenarios` lists the scenarios of the run. Scenario filters keep the rows
   shared by all scenarios, which `iter_scenarios()` yields once, first.
+  `SimulationTable(df, table_id, scenarios=...)` takes the scenarios of the
+  run, checked against the rows; the builder and the session pass them.
   `SimulationTable` is exported from `gems_runner.simulation`.
 - **Simulation tables stored on disk** - `SimulationTable.save(path, format)`
   writes the table as a folder: one file per scenario (`scenario-<N>`), a
