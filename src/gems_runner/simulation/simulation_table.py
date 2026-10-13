@@ -248,8 +248,17 @@ class SimulationTable:
     ``to_pandas()``, ``iter_scenarios()`` and ``scan()``.
     """
 
-    def __init__(self, df: pd.DataFrame, table_id: str = "") -> None:
-        self._store: _TableStore = _MemoryStore(df, table_id)
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        table_id: str = "",
+        scenarios: Optional[Sequence[int]] = None,
+    ) -> None:
+        """*scenarios* are the scenarios of the run, when known: they are kept
+        even if no row names them, and a ``ValueError`` is raised if a row has
+        another scenario, or if a scenario has no rows while others do. Without
+        them, the scenarios are those of the rows."""
+        self._store: _TableStore = _MemoryStore(df, table_id, scenarios)
         self.table_id = table_id
 
     @property
@@ -452,7 +461,15 @@ class SimulationTableBuilder:
             label = scenario_ids_remap[0] if scenario_ids_remap is not None else 0
             df = _tag_single_scenario(df, label)
 
-        return SimulationTable(_apply_schema(df), table_id=table_id)
+        # The scenario labels of the rows: the remapped ids, or the positions.
+        run_scenarios = (
+            scenario_ids_remap
+            if scenario_ids_remap is not None
+            else range(len(scenario_ids)) if scenario_ids is not None else None
+        )
+        return SimulationTable(
+            _apply_schema(df), table_id=table_id, scenarios=run_scenarios
+        )
 
     # -------------------------------------------------------------------------
     # Solver outputs
@@ -762,7 +779,10 @@ class SimulationTableBuilder:
 def merge_simulation_tables(
     tables: List[SimulationTable], table_id: str = ""
 ) -> SimulationTable:
-    """Concatenate multiple SimulationTables into one."""
+    """Concatenate multiple SimulationTables into one, over the union of
+    their scenarios."""
     return SimulationTable(
-        pd.concat([t.data for t in tables], ignore_index=True), table_id=table_id
+        pd.concat([t.data for t in tables], ignore_index=True),
+        table_id=table_id,
+        scenarios=sorted({s for t in tables for s in t.scenarios}),
     )
