@@ -14,7 +14,7 @@ All notable changes to GemsPy are documented here.
   `validate_libraries_against_taxonomy` on every library declaring a `taxonomy`
   field. `parse_yaml_library` is unchanged and performs no validation.
 - **Absolute bounds in time sums** - in `sum(S .. E, X)`, a bound can now be an
-  absolute time index of the block (an expression without `t`, e.g.
+  absolute time index of the block (an expression that does not depend on `t`, e.g.
   `sum(0 .. 2, x)`) as well as a bound relative to `t`, and both can be mixed
   (e.g. `sum(0 .. t, x)`).
 - **Constant terms in objective contributions** - an objective contribution can
