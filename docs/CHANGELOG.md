@@ -15,7 +15,7 @@ All notable changes to GemsPy are documented here.
   field. `parse_yaml_library` is unchanged and performs no validation.
 - **Absolute bounds in time sums** - in `sum(S .. E, X)`, a bound can now be an
   absolute time index of the block (an expression that does not depend on `t`, e.g.
-  `sum(0 .. 2, x)`) as well as a bound relative to `t`, and both can be mixed
+  `sum(0 .. 2, x)`) as well as a bound relative to `t` (with a shift that does not depend on `t`), and both can be mixed
   (e.g. `sum(0 .. t, x)`).
 - **Constant terms in objective contributions** - an objective contribution can
   now mix variables and constants (e.g. `sum(cost * generation + 1)`); this
