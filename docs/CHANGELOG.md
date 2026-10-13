@@ -37,6 +37,21 @@ All notable changes to GemsPy are documented here.
   and the LP file written by `export_lp` do not.
 
 ### Changed
+- **Breaking** - `run_study` and `gemspy` write the simulation table as a folder,
+  `output/<run_id>/simulation_table/` (one file per scenario, a
+  `scenario-common` file and a `manifest.json`), instead of a single
+  `simulation_table_<run_id>.csv` / `.parquet` file. Each scenario is written as
+  soon as it is solved, so the whole table is never held in memory; reopen it
+  with `SimulationTable.open()`.
+- **Breaking** - the default output format of `run_study` and of the CLI
+  `--output-format` option is now Parquet (it was CSV). CSV is still available
+  with `--output-format csv`.
+- **Breaking** - `SimulationSession(..., output_dir=...).run()` now stores the
+  results on disk and returns the stored table, on which `data` raises: use
+  `to_pandas(load_all=True)`, the filters of `to_pandas()`, or
+  `iter_scenarios()`. A new `output_format` argument chooses the format
+  (Parquet by default). Without `output_dir`, results stay in memory as before.
+  `merge_simulation_tables` is removed.
 - **Breaking** - `SimulationTable.data` has one fixed schema, whatever the
   content: nullable `Int64` indices (empty for a missing dimension), `string`
   labels and `float64` values (`SIMULATION_TABLE_SCHEMA` /
@@ -80,6 +95,11 @@ All notable changes to GemsPy are documented here.
   `to_pandas()`. They raise on a table stored on disk.
 
 ### Fixed
+- **Sequential mode with a single time step** - raises "Sequential mode solved
+  no time block for scenario …" instead of `ValueError: No objects to
+  concatenate`. The run still solves no block (a single time step is not
+  handled yet), but it no longer fails with an unrelated message, and never
+  returns an empty table.
 - **Outputs without a time or scenario dimension** - `OutputView.value()`
   accepts any index for the missing dimension and returns the single stored
   value; it raised `KeyError` for any index but 0. `OutputView.data` keeps one
