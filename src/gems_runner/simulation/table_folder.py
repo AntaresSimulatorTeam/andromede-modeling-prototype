@@ -134,17 +134,28 @@ class _TableWriter:
         self._has_common = False
         self._finalized = False
 
-    def write_scenario(self, df: pd.DataFrame) -> Path:
-        """Write the rows of one scenario: every row must have the same,
-        non-empty ``scenario_index``, not written yet."""
+    def write_scenario(self, df: pd.DataFrame, scenario: Optional[int] = None) -> Path:
+        """Write the rows of one scenario, not written yet.
+
+        Every row must have the same, non-empty ``scenario_index``. Pass
+        *scenario* for a scenario of the run without rows of its own: an empty
+        file is written, so that the scenario is still listed in the manifest.
+        """
         self._check_open()
-        scenarios = df[_SCENARIO]
-        if df.empty or scenarios.isna().any() or scenarios.nunique() != 1:
+        in_rows = df[_SCENARIO] if _SCENARIO in df.columns else pd.Series(dtype=int)
+        labels = {int(s) for s in in_rows.dropna().unique()}
+        if in_rows.isna().any() or len(labels) > 1 or (not labels and scenario is None):
             raise ValueError(
                 "write_scenario() takes the rows of exactly one scenario, all "
-                "with a non-empty scenario_index."
+                "with a non-empty scenario_index (or no rows and the scenario)."
             )
-        scenario = int(scenarios.iloc[0])
+        if scenario is None:
+            scenario = labels.pop()
+        elif labels and labels != {scenario}:
+            raise ValueError(
+                f"write_scenario(): the rows are of scenario {labels.pop()}, "
+                f"not {scenario}."
+            )
         if scenario in self._scenarios:
             raise ValueError(f"Scenario {scenario} is already written.")
         path = self._write_file(df, _file_stem(scenario))
@@ -187,7 +198,7 @@ class _TableWriter:
 
     def _write_file(self, df: pd.DataFrame, stem: str) -> Path:
         path = self._folder / f"{stem}.{self._format.value}"
-        df = _apply_schema(df)
+        df = _empty_frame() if df.empty else _apply_schema(df)
         if self._format == OutputFormat.CSV:
             df.to_csv(path, index=False)
             return path

@@ -18,7 +18,8 @@ All notable changes to GemsPy are documented here.
   run, checked against the rows; the builder and the session pass them.
   `SimulationTable` is exported from `gems_runner.simulation`.
 - **Simulation tables stored on disk** - `SimulationTable.save(path, format)`
-  writes the table as a folder: one file per scenario (`scenario-<N>`), a
+  writes the table as a folder: one file per scenario of the run
+  (`scenario-<N>`, empty for a scenario without rows of its own), a
   `scenario-common` file for the rows shared by all scenarios, and a
   `manifest.json` written last, in Parquet (default) or CSV with one fixed
   schema. `SimulationTable.open(path)` reads it back lazily, opening only the
