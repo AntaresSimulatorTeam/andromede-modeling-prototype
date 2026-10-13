@@ -292,8 +292,8 @@ class SimulationTable:
         for scenario, rows in self._store.iter_scenarios(_RowFilter()):
             if scenario is None:
                 writer.write_common(rows)
-            elif not rows.empty:
-                writer.write_scenario(rows)
+            else:  # also a scenario without rows, so that it stays listed
+                writer.write_scenario(rows, scenario)
         writer.finalize()
         return path
 

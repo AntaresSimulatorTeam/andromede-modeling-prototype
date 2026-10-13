@@ -12,7 +12,12 @@ from typing import Any, Tuple
 
 import pandas as pd
 import pytest
-from test_simulation_table_read_api import _CountingStore, _keys, _table
+from test_simulation_table_read_api import (
+    _SHARED_ROWS,
+    _CountingStore,
+    _keys,
+    _table,
+)
 
 from gems_craft.study.parsing import OutputFormat
 from gems_runner.simulation.simulation_table import (
@@ -97,6 +102,24 @@ def test_a_table_without_rows_round_trips(tmp_path: Path) -> None:
     assert reopened.to_pandas(load_all=True).dtypes.to_dict() == SIMULATION_TABLE_DTYPES
 
 
+@pytest.mark.parametrize("fmt", _FORMATS)
+def test_a_scenario_without_rows_stays_listed(
+    tmp_path: Path, fmt: OutputFormat
+) -> None:
+    # Only rows shared by all scenarios: the run's scenarios come from the table.
+    table = _table(_SHARED_ROWS, scenarios=[0, 1, 2])
+
+    folder = table.save(tmp_path / "table", fmt)
+    reopened = SimulationTable.open(folder)
+
+    assert json.loads((folder / MANIFEST_FILE).read_text())["scenarios"] == [0, 1, 2]
+    assert reopened.scenarios == [0, 1, 2]
+    assert [s for s, _ in reopened.iter_scenarios()] == [None, 0, 1, 2]
+    assert _keys(reopened.to_pandas(scenarios=[1])) == _keys(
+        table.to_pandas(scenarios=[1])
+    )
+
+
 def test_a_stored_table_can_be_saved_again(tmp_path: Path) -> None:
     stored = _stored(tmp_path)
     copy = SimulationTable.open(stored.save(tmp_path / "copy", OutputFormat.CSV))
@@ -177,6 +200,22 @@ def test_write_scenario_takes_the_rows_of_exactly_one_scenario(
     writer, df = _writer(tmp_path)
     with pytest.raises(ValueError, match="exactly one scenario"):
         writer.write_scenario(rows(df))
+
+
+def test_write_scenario_writes_an_empty_file_for_a_scenario_without_rows(
+    tmp_path: Path,
+) -> None:
+    writer, df = _writer(tmp_path)
+    writer.write_scenario(df.iloc[0:0], scenario=3)
+
+    assert writer.finalize().scenarios == [3]
+    assert pd.read_parquet(tmp_path / "table" / "scenario-3.parquet").empty
+
+
+def test_write_scenario_refuses_rows_of_another_scenario(tmp_path: Path) -> None:
+    writer, df = _writer(tmp_path)
+    with pytest.raises(ValueError, match="rows are of scenario 0, not 1"):
+        writer.write_scenario(df[df["scenario_index"] == 0], scenario=1)
 
 
 def test_write_scenario_refuses_a_scenario_written_twice(tmp_path: Path) -> None:
