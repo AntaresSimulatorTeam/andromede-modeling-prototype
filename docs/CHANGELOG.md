@@ -100,6 +100,10 @@ All notable changes to GemsPy are documented here.
   concatenate`. The run still solves no block (a single time step is not
   handled yet), but it no longer fails with an unrelated message, and never
   returns an empty table.
+- **Empty scenario scope** - a `scenario-scope` that selects no scenario (e.g.
+  every included scenario excluded) is rejected when the optim config is
+  validated, before anything is solved or written, instead of failing during
+  the run with `No objects to concatenate` or `cannot reshape array of size 0`.
 - **Outputs without a time or scenario dimension** - `OutputView.value()`
   accepts any index for the missing dimension and returns the single stored
   value; it raised `KeyError` for any index but 0. `OutputView.data` keeps one
