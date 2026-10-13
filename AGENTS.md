@@ -42,7 +42,7 @@ from gems_craft.study.folder import load_study
 from gems_runner.study.runner import run_study
 
 study = load_study(Path("path/to/study_dir"))   # reads input/, model-libraries/, data-series/
-run_study(Path("path/to/study_dir"))            # loads study, solves, writes CSV to output/
+run_study(Path("path/to/study_dir"))            # loads study, solves, writes output/<run_id>/simulation_table/ (Parquet)
 
 # Python API — programmatic study
 from gems_craft.study import Study
