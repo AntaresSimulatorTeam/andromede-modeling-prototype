@@ -13,6 +13,10 @@ All notable changes to GemsPy are documented here.
   the optional `input/taxonomy.yml` and calls
   `validate_libraries_against_taxonomy` on every library declaring a `taxonomy`
   field. `parse_yaml_library` is unchanged and performs no validation.
+- **Absolute bounds in time sums** - in `sum(S .. E, X)`, a bound can now be an
+  absolute time index of the block (an expression that does not depend on `t`, e.g.
+  `sum(0 .. 2, x)`) as well as a bound relative to `t` (with a shift that does not depend on `t`), and both can be mixed
+  (e.g. `sum(0 .. t, x)`).
 - **Constant terms in objective contributions** - an objective contribution can
   now mix variables and constants (e.g. `sum(cost * generation + 1)`); this
   previously raised `ValueError: Constant values in objective function not
@@ -21,6 +25,13 @@ All notable changes to GemsPy are documented here.
   and the LP file written by `export_lp` do not.
 
 ### Changed
+- **Breaking** - a time-sum bound (an absolute bound, or the offset `k` of a
+  relative bound `t + k`) must now be declared time-independent and contain no
+  variable. This is checked when the model is created, whatever the data.
+  Since a parameter that omits `time-dependent` is time-dependent, parameters
+  used in bounds must declare `time-dependent: false`, e.g. `d_min_up` in
+  `sum(t - d_min_up + 1 .. t, x)`. Such models were previously accepted in
+  `cyclic` mode.
 - **Breaking** - `SimulationTable.data` has one fixed schema, whatever the
   content: nullable `Int64` indices (empty for a missing dimension), `string`
   labels and `float64` values (`SIMULATION_TABLE_SCHEMA` /
@@ -73,6 +84,10 @@ All notable changes to GemsPy are documented here.
   effect. It is now translated into the solver's own output option
   (`output_flag` for HiGHS, `OutputFlag` for Gurobi, `outputlog` for Xpress);
   with `logs: false` HiGHS only prints its startup banner.
+- **Time sums with bounds relative to `t`** - a start after the end now gives an
+  empty sum, a bound can contain a time operator (e.g. `t - (d[0])`), and a
+  scenario-dependent bound makes the sum scenario-dependent. In `drop` mode,
+  the operand is checked at every summed time step.
 - **`first-time-step` greater than `last-time-step`** is now rejected when the
   optim-config is loaded. The run used to fail later, with an error that did
   not mention the time scope.
