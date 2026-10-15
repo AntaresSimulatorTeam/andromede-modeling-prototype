@@ -25,6 +25,8 @@ All notable changes to GemsPy are documented here.
   and the LP file written by `export_lp` do not.
 
 ### Changed
+- **Scenario playlist removed** - scenario selection is now configured inline
+  through `scenario-scope`; the `playlist-file` option is no longer supported.
 - **Breaking** - a time-sum bound (an absolute bound, or the offset `k` of a
   relative bound `t + k`) must now be declared time-independent and contain no
   variable. This is checked when the model is created, whatever the data.
