@@ -184,13 +184,7 @@ class _MemoryStore:
     def _component_positions(self) -> Dict[str, Any]:
         """Row positions of each component, found once, so that reading one
         component does not scan the whole table."""
-        codes, components = pd.factorize(self.df[_COMPONENT])  # -1 for empty cells
-        order = np.argsort(codes, kind="stable")
-        bounds = np.searchsorted(codes[order], np.arange(len(components) + 1))
-        return {
-            str(component): order[bounds[i] : bounds[i + 1]]
-            for i, component in enumerate(components)
-        }
+        return cast(Dict[str, Any], self.df.groupby(_COMPONENT).indices)
 
     def read(self, row_filter: _RowFilter) -> pd.DataFrame:
         if row_filter.is_unrestricted:

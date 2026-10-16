@@ -93,8 +93,8 @@ class OutputView:
         scenario.
 
         Reading one scenario only saves work when the table is stored on disk
-        (one file per scenario): in memory, each read scans the whole table, so
-        the view reads all its rows once instead."""
+        (one file per scenario): in memory, each read starts from all the rows
+        of the view's component, so the view reads all its rows once instead."""
         if (
             scenario_index is None
             or self._store.path is None
