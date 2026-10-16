@@ -1,16 +1,54 @@
+import functools
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
+import pyarrow.dataset as ds
 import xarray as xr
+
+# The schema names are also re-exported from here, where they used to live.
+from gems_runner.simulation.table_schema import (
+    _BLOCK,
+    _SCENARIO,
+    _TIME,
+    _VALUE,
+    OBJECTIVE_VALUE_OUTPUT,
+    SIMULATION_TABLE_DTYPES,
+    SIMULATION_TABLE_SCHEMA,
+    SimulationColumns,
+    _apply_schema,
+    _equals,
+    _same_key,
+)
+from gems_runner.simulation.table_store import _MemoryStore, _RowFilter, _TableStore
 
 PARQUET_COMPRESSION: Literal["zstd"] = "zstd"
 PARQUET_COMPRESSION_LEVEL = 3
 PARQUET_ROW_GROUP_SIZE = 64_000
+
+_VIEW_COLUMNS = [_BLOCK, _TIME, _SCENARIO, _VALUE]
+
+
+def _filter_values(values: Optional[Sequence[Any]]) -> Optional[frozenset]:
+    if values is None:
+        return None
+    # A single name, not the set of its characters.
+    if isinstance(values, str):
+        return frozenset({values})
+    return frozenset(values)
 
 
 class OutputView:
@@ -18,6 +56,10 @@ class OutputView:
 
     Obtain via ``SimulationTable.component(...).output(...)``.
 
+    - Rows are read from the table's storage on first access, then kept. On a
+      table stored on disk, ``value(scenario_index=s)`` before any other access
+      reads only the rows of scenario ``s`` and the rows shared by all
+      scenarios.
     - An output without a time (or scenario) dimension has a single row (or
       column), labelled ``<NA>``, and ``value()`` accepts any index for that
       dimension.
@@ -28,14 +70,43 @@ class OutputView:
     """
 
     def __init__(
-        self, rows: pd.DataFrame, name: str, block: Optional[int] = None
+        self,
+        store: _TableStore,
+        row_filter: _RowFilter,
+        name: str,
+        block: Optional[int] = None,
     ) -> None:
-        # rows: long format, one row per (block, time, scenario).
-        self._rows = rows
+        self._store = store
+        self._filter = row_filter
         self._name = name
         self._block = block
-        self._time_missing = bool(rows[_TIME].isna().all())
-        self._scenario_missing = bool(rows[_SCENARIO].isna().all())
+        self._scenario_rows: Dict[int, pd.DataFrame] = {}
+
+    @functools.cached_property
+    def _rows(self) -> pd.DataFrame:
+        """All rows of the view, long format, one row per (block, time, scenario)."""
+        return self._store.read(self._filter)[_VIEW_COLUMNS]
+
+    def _rows_for(self, scenario_index: Optional[int]) -> pd.DataFrame:
+        """The rows needed for *scenario_index*: all rows if already read,
+        otherwise the rows of that scenario and the shared ones, kept per
+        scenario.
+
+        Reading one scenario only saves work when the table is stored on disk
+        (one file per scenario): in memory, each read starts from all the rows
+        of the view's component, so the view reads all its rows once instead."""
+        if (
+            scenario_index is None
+            or self._store.path is None
+            or "_rows" in self.__dict__
+        ):
+            return self._rows
+        if scenario_index not in self._scenario_rows:
+            narrowed = self._filter.narrow(scenarios=frozenset({scenario_index}))
+            self._scenario_rows[scenario_index] = self._store.read(narrowed)[
+                _VIEW_COLUMNS
+            ]
+        return self._scenario_rows[scenario_index]
 
     @property
     def data(self) -> pd.DataFrame:
@@ -44,7 +115,7 @@ class OutputView:
         Raises ``ValueError`` if a (time, scenario) has values from several
         blocks: select one with ``output(name, block=...)``.
         """
-        return self._frame(self._select(None, None, self._block))
+        return self._frame(self._select(self._rows, None, None, self._block))
 
     def value(
         self,
@@ -65,7 +136,10 @@ class OutputView:
         (time, scenario) has values from several blocks.
         """
         rows = self._select(
-            time_index, scenario_index, self._block if block is None else block
+            self._rows_for(scenario_index),
+            time_index,
+            scenario_index,
+            self._block if block is None else block,
         )
         if time_index is None and scenario_index is None:
             return self._frame(rows)
@@ -83,18 +157,20 @@ class OutputView:
 
     def _select(
         self,
+        rows: pd.DataFrame,
         time_index: Optional[int],
         scenario_index: Optional[int],
         block: Optional[int],
     ) -> pd.DataFrame:
         """Rows matching the request; raises if a (time, scenario) of the
         result has values from several blocks."""
-        rows = self._rows
+        time_missing = bool(rows[_TIME].isna().all())
+        scenario_missing = bool(rows[_SCENARIO].isna().all())
         if block is not None:
             rows = rows[_equals(rows[_BLOCK], block)]
-        if time_index is not None and not self._time_missing:
+        if time_index is not None and not time_missing:
             rows = rows[_equals(rows[_TIME], time_index)]
-        if scenario_index is not None and not self._scenario_missing:
+        if scenario_index is not None and not scenario_missing:
             rows = rows[_equals(rows[_SCENARIO], scenario_index)]
 
         shared = rows[rows.duplicated(subset=[_TIME, _SCENARIO], keep=False)]
@@ -123,11 +199,15 @@ class OutputView:
 class ComponentView:
     """Filtered view of simulation results for one component.
 
-    Obtain via ``SimulationTable.component(...)``.
+    Obtain via ``SimulationTable.component(...)``. It reads nothing itself: its
+    outputs read their rows when accessed.
     """
 
-    def __init__(self, df: pd.DataFrame, component_id: str) -> None:
-        self._df = df
+    def __init__(
+        self, store: _TableStore, row_filter: _RowFilter, component_id: str
+    ) -> None:
+        self._store = store
+        self._filter = row_filter
         self._component_id = component_id
 
     def output(self, output_id: str, block: Optional[int] = None) -> OutputView:
@@ -136,16 +216,16 @@ class ComponentView:
         ``block`` restricts the view to one block, for outputs that have values
         from several blocks for the same (time, scenario).
         """
-        rows = self._df[_equals(self._df[_OUTPUT], output_id)]
         return OutputView(
-            rows[[_BLOCK, _TIME, _SCENARIO, _VALUE]],
+            self._store,
+            self._filter.narrow(outputs=frozenset({output_id})),
             name=f"{self._component_id}.{output_id}",
             block=block,
         )
 
 
 class SimulationTable:
-    """Wrapper around the raw simulation results DataFrame.
+    """The results of a simulation run, over all its scenarios.
 
     Provides a fluent accessor API::
 
@@ -163,22 +243,44 @@ class SimulationTable:
         # Scenario distribution at time step 3
         st.component("gen_1").output("p").value(time_index=3)
 
-    The underlying long-format DataFrame is accessible via the ``data`` property.
+    The rows are read through a storage (in memory for now). The long-format
+    DataFrame is accessible via the ``data`` property, and parts of it via
+    ``to_pandas()``, ``iter_scenarios()`` and ``scan()``.
     """
 
-    def __init__(self, df: pd.DataFrame, table_id: str = "") -> None:
-        self._df = df
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        table_id: str = "",
+        scenarios: Optional[Sequence[int]] = None,
+    ) -> None:
+        """*scenarios* are the scenarios of the run, when known: they are kept
+        even if no row names them, and a ``ValueError`` is raised if a row has
+        another scenario, or if a scenario has no rows while others do. Without
+        them, the scenarios are those of the rows."""
+        self._store: _TableStore = _MemoryStore(df, table_id, scenarios)
         self.table_id = table_id
 
     @property
     def data(self) -> pd.DataFrame:
         """Return the underlying long-format DataFrame."""
-        return self._df
+        return self._store.read(_RowFilter())
+
+    @property
+    def scenarios(self) -> List[int]:
+        """The scenarios of the run, sorted."""
+        return self._store.scenarios
+
+    @property
+    def path(self) -> Optional[Path]:
+        """Where the table is stored, None in memory."""
+        return self._store.path
 
     def component(self, component_id: str) -> ComponentView:
         """Return a ComponentView filtered to the given component ID."""
-        mask = _equals(self._df[SimulationColumns.COMPONENT.value], component_id)
-        return ComponentView(self._df[mask], component_id)
+        return ComponentView(
+            self._store, _RowFilter(components=frozenset({component_id})), component_id
+        )
 
     def objective_values(self) -> pd.DataFrame:
         """Return the objective value of every solved problem, with columns
@@ -188,21 +290,63 @@ class SimulationTable:
         mode gives one row, whose ``scenario_index`` is empty when the run has
         several scenarios.
         """
-        rows = self._df[_equals(self._df[_OUTPUT], OBJECTIVE_VALUE_OUTPUT)]
+        rows = self._store.read(_RowFilter(outputs=frozenset({OBJECTIVE_VALUE_OUTPUT})))
         return rows[[_BLOCK, _SCENARIO, _VALUE]].reset_index(drop=True)
+
+    def to_pandas(
+        self,
+        components: Optional[Sequence[str]] = None,
+        outputs: Optional[Sequence[str]] = None,
+        scenarios: Optional[Sequence[int]] = None,
+        load_all: bool = False,
+    ) -> pd.DataFrame:
+        """Return the rows of the given components, outputs and scenarios as a
+        new DataFrame, all rows by default.
+
+        A scenario filter keeps the rows shared by all scenarios (empty
+        ``scenario_index``), which hold the value of every scenario.
+        ``load_all`` has no effect on a table in memory.
+        """
+        row_filter = _RowFilter(
+            _filter_values(components),
+            _filter_values(outputs),
+            _filter_values(scenarios),
+        )
+        rows = self._store.read(row_filter)
+        return rows.copy() if row_filter.is_unrestricted else rows
+
+    def iter_scenarios(
+        self,
+        components: Optional[Sequence[str]] = None,
+        outputs: Optional[Sequence[str]] = None,
+    ) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
+        """Yield the rows of the given components and outputs one scenario at
+        a time, as ``(scenario_index, DataFrame)``.
+
+        The rows shared by all scenarios come first, once, as ``(None, rows)``,
+        and only if there are any; then every scenario of the run, in order.
+        """
+        yield from self._store.iter_scenarios(
+            _RowFilter(_filter_values(components), _filter_values(outputs))
+        )
+
+    def scan(self) -> ds.Dataset:
+        """Return the whole table as a ``pyarrow.dataset.Dataset``, e.g. to read
+        it with polars or duckdb."""
+        return self._store.scan()
 
     def to_csv(self, output_dir: Path) -> Path:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"simulation_table_{self.table_id}.csv"
-        self._df.to_csv(path, index=False)
+        self.data.to_csv(path, index=False)
         return path
 
     def to_parquet(self, output_dir: Path) -> Path:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"simulation_table_{self.table_id}.parquet"
-        self._df.to_parquet(
+        self.data.to_parquet(
             path,
             engine="pyarrow",
             index=False,
@@ -227,7 +371,7 @@ class SimulationTable:
         Scalar rows without component/time/scenario (e.g. objective-value)
         are stored as zero-dimensional variables.
         """
-        df = self._df
+        df = self.data
         col_comp = SimulationColumns.COMPONENT.value
         col_out = SimulationColumns.OUTPUT.value
         col_time = SimulationColumns.ABSOLUTE_TIME_INDEX.value
@@ -253,79 +397,6 @@ class SimulationTable:
 from gems_craft.expression.visitor import visit
 from gems_runner.simulation.extra_output import VectorizedExtraOutputBuilder
 from gems_runner.simulation.optimization import OptimizationProblem, build_port_arrays
-
-
-class SimulationColumns(str, Enum):
-    BLOCK = "block"
-    COMPONENT = "component"
-    OUTPUT = "output"
-    ABSOLUTE_TIME_INDEX = "absolute_time_index"
-    BLOCK_TIME_INDEX = "block_time_index"
-    SCENARIO_INDEX = "scenario_index"
-    VALUE = "value"
-    BASIS_STATUS = "basis_status"
-
-
-_BLOCK = SimulationColumns.BLOCK.value
-_OUTPUT = SimulationColumns.OUTPUT.value
-_TIME = SimulationColumns.ABSOLUTE_TIME_INDEX.value
-_SCENARIO = SimulationColumns.SCENARIO_INDEX.value
-_VALUE = SimulationColumns.VALUE.value
-
-OBJECTIVE_VALUE_OUTPUT = "objective-value"
-
-# One schema for the simulation table, whatever the content: nullable integer
-# indices (empty for a missing dimension), string labels and float values.
-_INDEX_COLUMNS = {
-    SimulationColumns.BLOCK,
-    SimulationColumns.ABSOLUTE_TIME_INDEX,
-    SimulationColumns.BLOCK_TIME_INDEX,
-    SimulationColumns.SCENARIO_INDEX,
-}
-_LABEL_COLUMNS = {
-    SimulationColumns.COMPONENT,
-    SimulationColumns.OUTPUT,
-    SimulationColumns.BASIS_STATUS,
-}
-SIMULATION_TABLE_SCHEMA = pa.schema(
-    [
-        (
-            column.value,
-            (
-                pa.int64()
-                if column in _INDEX_COLUMNS
-                else pa.string() if column in _LABEL_COLUMNS else pa.float64()
-            ),
-        )
-        for column in SimulationColumns
-    ]
-)
-# Labels use the python-backed string dtype: with the pyarrow-backed one,
-# combining a label comparison and an index comparison with ``&`` raises on
-# empty cells (e.g. the component of the objective-value row).
-SIMULATION_TABLE_DTYPES: Dict[str, Any] = {
-    column.value: (
-        "Int64"
-        if column in _INDEX_COLUMNS
-        else pd.StringDtype("python") if column in _LABEL_COLUMNS else "float64"
-    )
-    for column in SimulationColumns
-}
-
-
-def _apply_schema(df: pd.DataFrame) -> pd.DataFrame:
-    """Give *df* the columns and dtypes of the simulation table schema."""
-    return df[list(SIMULATION_TABLE_DTYPES)].astype(SIMULATION_TABLE_DTYPES)
-
-
-def _equals(column: "pd.Series[Any]", value: Any) -> "pd.Series[bool]":
-    """``column == value`` as a plain boolean mask: empty cells never match."""
-    return column.eq(value).fillna(False).astype(bool)
-
-
-def _same_key(column: "pd.Series[Any]", value: Any) -> "pd.Series[bool]":
-    """Like ``_equals``, but an empty *value* matches the empty cells."""
-    return column.isna() if pd.isna(value) else _equals(column, value)
 
 
 def _tag_single_scenario(df: pd.DataFrame, scenario_id: int) -> pd.DataFrame:
@@ -390,7 +461,15 @@ class SimulationTableBuilder:
             label = scenario_ids_remap[0] if scenario_ids_remap is not None else 0
             df = _tag_single_scenario(df, label)
 
-        return SimulationTable(_apply_schema(df), table_id=table_id)
+        # The scenario labels of the rows: the remapped ids, or the positions.
+        run_scenarios = (
+            scenario_ids_remap
+            if scenario_ids_remap is not None
+            else range(len(scenario_ids)) if scenario_ids is not None else None
+        )
+        return SimulationTable(
+            _apply_schema(df), table_id=table_id, scenarios=run_scenarios
+        )
 
     # -------------------------------------------------------------------------
     # Solver outputs
@@ -700,7 +779,10 @@ class SimulationTableBuilder:
 def merge_simulation_tables(
     tables: List[SimulationTable], table_id: str = ""
 ) -> SimulationTable:
-    """Concatenate multiple SimulationTables into one."""
+    """Concatenate multiple SimulationTables into one, over the union of
+    their scenarios."""
     return SimulationTable(
-        pd.concat([t.data for t in tables], ignore_index=True), table_id=table_id
+        pd.concat([t.data for t in tables], ignore_index=True),
+        table_id=table_id,
+        scenarios=sorted({s for t in tables for s in t.scenarios}),
     )

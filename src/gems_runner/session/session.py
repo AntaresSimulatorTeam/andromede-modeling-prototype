@@ -190,7 +190,7 @@ class SimulationSession:
             raise RuntimeError(
                 "Benders decomposition requires a master problem and an output directory for coupling files."
             )
-        return SimulationTable(pd.DataFrame())
+        return SimulationTable(pd.DataFrame(), scenarios=self.scenario_ids)
 
     # ------------------------------------------------------------------
     # Map / reduce helpers

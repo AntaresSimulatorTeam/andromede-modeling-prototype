@@ -9,6 +9,14 @@ All notable changes to GemsPy are documented here.
   every solved problem, with columns `block`, `scenario_index` and `value`.
 - **`block=` on the simulation table views** - `component(...).output(name,
   block=...)` and `OutputView.value(..., block=...)` select one block.
+- **Simulation table read API** - `SimulationTable.to_pandas(components,
+  outputs, scenarios)` returns part of the table, `iter_scenarios()` yields it
+  one scenario at a time, `scan()` returns a `pyarrow.dataset.Dataset`, and
+  `scenarios` lists the scenarios of the run. Scenario filters keep the rows
+  shared by all scenarios, which `iter_scenarios()` yields once, first.
+  `SimulationTable(df, table_id, scenarios=...)` takes the scenarios of the
+  run, checked against the rows; the builder and the session pass them.
+  `SimulationTable` is exported from `gems_runner.simulation`.
 - **Taxonomy conformance checked when a study is loaded** - `load_study` reads
   the optional `input/taxonomy.yml` and calls
   `validate_libraries_against_taxonomy` on every library declaring a `taxonomy`
