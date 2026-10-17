@@ -376,7 +376,11 @@ class SimulationTable:
                 "load_all=True, or filter by components, outputs or scenarios."
             )
         rows = self._store.read(row_filter)
-        return rows.copy() if row_filter.is_unrestricted else rows
+        # In memory, every row is the store's own frame: copy it. On disk, the
+        # rows are a new frame already.
+        if row_filter.is_unrestricted and self.path is None:
+            return rows.copy()
+        return rows
 
     def iter_scenarios(
         self,

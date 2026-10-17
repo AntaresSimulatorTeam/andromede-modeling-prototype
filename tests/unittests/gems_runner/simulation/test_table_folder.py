@@ -25,7 +25,11 @@ from gems_runner.simulation.simulation_table import (
     SIMULATION_TABLE_DTYPES,
     SimulationTable,
 )
-from gems_runner.simulation.table_folder import MANIFEST_FILE, _TableWriter
+from gems_runner.simulation.table_folder import (
+    MANIFEST_FILE,
+    _FolderStore,
+    _TableWriter,
+)
 from gems_runner.simulation.table_schema import _empty_frame
 
 _FORMATS = [OutputFormat.PARQUET, OutputFormat.CSV]
@@ -378,6 +382,20 @@ def test_to_pandas_without_filter_needs_load_all(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="load_all=True"):
         stored.to_pandas()
     assert len(stored.to_pandas(load_all=True)) == len(_table().data)
+
+
+def test_load_all_on_disk_returns_the_rows_read_without_a_copy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    read, frames = _FolderStore.read, []
+
+    def keep(self: _FolderStore, row_filter: Any) -> pd.DataFrame:
+        frames.append(read(self, row_filter))
+        return frames[-1]
+
+    monkeypatch.setattr(_FolderStore, "read", keep)
+
+    assert _stored(tmp_path).to_pandas(load_all=True) is frames[-1]
 
 
 @pytest.mark.parametrize("fmt", _FORMATS)
