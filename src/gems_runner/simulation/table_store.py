@@ -224,12 +224,12 @@ class _MemoryStore:
         common = rows[rows[_SCENARIO].isna()]
         if not common.empty:
             yield None, common
-        by_scenario = {
-            int(cast(int, scenario)): part for scenario, part in rows.groupby(_SCENARIO)
-        }
+        # Row positions of each scenario, found once; the rows of a scenario are
+        # taken only when it is reached, so that one scenario at a time is held.
+        positions = rows.groupby(_SCENARIO).indices
         for scenario in self.scenarios:
             if row_filter.scenarios is None or scenario in row_filter.scenarios:
-                yield scenario, by_scenario.get(scenario, rows.iloc[0:0])
+                yield scenario, rows.iloc[positions.get(scenario, [])]
 
     def scan(self) -> ds.Dataset:
         return ds.dataset(  # type: ignore[no-untyped-call]
