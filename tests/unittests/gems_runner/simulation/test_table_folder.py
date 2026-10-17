@@ -312,6 +312,31 @@ def test_rows_read_in_full_are_reused_on_disk(tmp_path: Path) -> None:
     assert [f.scenarios for f in store.reads] == [None]
 
 
+def test_a_table_opened_from_a_relative_path_reads_from_anywhere(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    stored = SimulationTable.open(_table().save(Path("table")))
+    payload = pickle.dumps(stored)
+
+    (tmp_path / "elsewhere").mkdir()
+    monkeypatch.chdir(tmp_path / "elsewhere")
+
+    assert stored.path == (tmp_path / "table").resolve()
+    assert stored.component("gen").output("p").value(1, 1) == 13.0
+    assert pickle.loads(payload).component("gen").output("p").value(1, 1) == 13.0
+
+
+@pytest.mark.parametrize("fmt", _FORMATS)
+def test_a_folder_named_like_a_uri_is_read_as_a_local_path(
+    tmp_path: Path, fmt: OutputFormat, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    stored = SimulationTable.open(_table().save(Path("s3:x"), fmt))
+
+    assert _keys(stored.to_pandas(load_all=True)) == _keys(_table().data)
+
+
 def test_a_stored_table_is_cheap_to_pickle(tmp_path: Path) -> None:
     stored = _stored(tmp_path)
     payload = pickle.dumps(stored)

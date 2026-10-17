@@ -120,7 +120,8 @@ class _TableWriter:
     """
 
     def __init__(self, folder: Path, run_id: str, output_format: OutputFormat) -> None:
-        folder = Path(folder)
+        # Absolute: pyarrow reads a relative path such as "s3:x/..." as a URI.
+        folder = Path(folder).resolve()
         if folder.exists() and any(folder.iterdir()):
             raise FileExistsError(
                 f"{folder} is not empty: a simulation table is written into a new "

@@ -279,7 +279,10 @@ class SimulationTable:
         Raises ``FileNotFoundError`` for a folder without a manifest, e.g. an
         interrupted run. Nothing else is read until rows are asked for.
         """
-        path = Path(path)
+        # Absolute, so that the table still reads after a chdir or when it is
+        # unpickled in another working directory, and so that pyarrow never
+        # reads the path as a URI (a relative folder named "s3:x").
+        path = Path(path).resolve()
         return cls._from_store(_FolderStore(path, _Manifest.read(path)))
 
     def save(self, path: Path, format: OutputFormat = OutputFormat.PARQUET) -> Path:
