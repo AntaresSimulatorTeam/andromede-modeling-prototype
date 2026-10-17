@@ -26,10 +26,12 @@ be read together by any tool.
 """
 
 import json
+import operator
 import os
 from dataclasses import asdict, dataclass
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pandas as pd
 import pyarrow as pa
@@ -96,20 +98,41 @@ class _Manifest:
                 f"{folder} is not a simulation table folder: it has no "
                 f"{MANIFEST_FILE} (the run that wrote it may have been interrupted)."
             )
-        content = json.loads(path.read_text())
-        if content.get("schema_version") != MANIFEST_SCHEMA_VERSION:
+        try:
+            content = json.loads(path.read_text())
+        except json.JSONDecodeError as error:
+            raise ValueError(f"{path}: not valid JSON ({error}).") from error
+        if not isinstance(content, dict):
+            raise ValueError(f"{path}: the manifest is not a JSON object.")
+        version = content.get("schema_version")
+        if type(version) is not int or version != MANIFEST_SCHEMA_VERSION:
             raise ValueError(
-                f"{path}: unsupported schema_version "
-                f"{content.get('schema_version')!r}, expected "
+                f"{path}: unsupported schema_version {version!r}, expected "
                 f"{MANIFEST_SCHEMA_VERSION}."
             )
-        manifest = cls(**content)
-        if manifest.columns != _COLUMNS:
+        # Keys unknown here are ignored: a field added later under the same
+        # schema_version does not stop this version from reading the folder.
+        names = [field.name for field in dataclass_fields(cls)]
+        missing = [name for name in names if name not in content]
+        if missing:
+            raise ValueError(f"{path}: missing {', '.join(missing)}.")
+        known = {name: content[name] for name in names}
+        checks: Dict[str, Callable[[Any], bool]] = {
+            "run_id": lambda v: isinstance(v, str),
+            "format": lambda v: v in {f.value for f in OutputFormat},
+            "scenarios": lambda v: isinstance(v, list)
+            and all(type(s) is int for s in v)
+            and v == sorted(set(v)),
+            "has_common": lambda v: isinstance(v, bool),
+        }
+        invalid = [name for name, valid in checks.items() if not valid(known[name])]
+        if invalid:
+            raise ValueError(f"{path}: invalid {', '.join(invalid)}.")
+        if known["columns"] != _COLUMNS:
             raise ValueError(
                 f"{path}: the columns do not match the simulation table schema."
             )
-        OutputFormat(manifest.format)  # raises on an unknown format
-        return manifest
+        return cls(**known)
 
 
 class _TableWriter:
@@ -120,19 +143,23 @@ class _TableWriter:
     """
 
     def __init__(self, folder: Path, run_id: str, output_format: OutputFormat) -> None:
-        folder = Path(folder)
+        # Absolute: pyarrow reads a relative path such as "s3:x/..." as a URI.
+        folder = Path(folder).resolve()
+        output_format = OutputFormat(output_format)  # checked before any write
         if folder.exists() and any(folder.iterdir()):
             raise FileExistsError(
                 f"{folder} is not empty: a simulation table is written into a new "
                 "or empty folder."
             )
+        self._created_folder = not folder.exists()
         folder.mkdir(parents=True, exist_ok=True)
         self._folder = folder
         self._run_id = run_id
-        self._format = OutputFormat(output_format)
+        self._format = output_format
         self._scenarios: List[int] = []
         self._has_common = False
         self._finalized = False
+        self._written: List[Path] = []
 
     def write_scenario(self, df: pd.DataFrame, scenario: Optional[int] = None) -> Path:
         """Write the rows of one scenario, not written yet.
@@ -142,6 +169,10 @@ class _TableWriter:
         file is written, so that the scenario is still listed in the manifest.
         """
         self._check_open()
+        if scenario is not None:
+            # A plain int, so that the manifest can be written: a numpy integer
+            # is not JSON serializable. A float or a string is refused.
+            scenario = operator.index(scenario)
         in_rows = df[_SCENARIO] if _SCENARIO in df.columns else pd.Series(dtype=int)
         labels = {int(s) for s in in_rows.dropna().unique()}
         if in_rows.isna().any() or len(labels) > 1 or (not labels and scenario is None):
@@ -192,12 +223,24 @@ class _TableWriter:
         self._finalized = True
         return manifest
 
+    def abort(self) -> None:
+        """Remove what was written, so that the folder is as before: the files,
+        a partial manifest, and the folder itself if it was created here. No
+        write is accepted after it."""
+        for path in [*self._written, self._folder / f"{MANIFEST_FILE}.tmp"]:
+            path.unlink(missing_ok=True)
+        if self._created_folder and self._folder.is_dir():
+            if not any(self._folder.iterdir()):
+                self._folder.rmdir()
+        self._finalized = True
+
     def _check_open(self) -> None:
         if self._finalized:
             raise ValueError("The simulation table folder is already finalized.")
 
     def _write_file(self, df: pd.DataFrame, stem: str) -> Path:
         path = self._folder / f"{stem}.{self._format.value}"
+        self._written.append(path)  # before writing: a partial file is removed too
         df = _empty_frame() if df.empty else _apply_schema(df)
         if self._format == OutputFormat.CSV:
             df.to_csv(path, index=False)
@@ -218,12 +261,13 @@ class _TableWriter:
         return path
 
 
+_PANDAS_TYPES = {pa.int64(): pd.Int64Dtype(), pa.string(): pd.StringDtype("python")}
+
+
 def _to_frame(table: pa.Table) -> pd.DataFrame:
-    """Arrow table to a DataFrame with the schema's dtypes."""
-    df = table.to_pandas(
-        types_mapper=lambda t: pd.Int64Dtype() if t == pa.int64() else None
-    )
-    return _apply_schema(df)
+    """Arrow table, read with the schema, to a DataFrame with the schema's
+    columns and dtypes. Each column is converted once, straight to its dtype."""
+    return table.to_pandas(types_mapper=_PANDAS_TYPES.get)
 
 
 class _FolderStore:
@@ -262,10 +306,13 @@ class _FolderStore:
     def _dataset(self, files: List[Path]) -> ds.Dataset:
         file_format: Any = "parquet"
         if self._manifest.output_format == OutputFormat.CSV:
+            # Only an empty cell is missing, as to_csv writes it: pyarrow's
+            # default would also read labels such as "NA" or "null" as missing.
             file_format = ds.CsvFileFormat(
                 convert_options=pacsv.ConvertOptions(
                     column_types=SIMULATION_TABLE_SCHEMA,
                     strings_can_be_null=True,
+                    null_values=[""],
                 )
             )
         return ds.dataset(  # type: ignore[no-untyped-call]

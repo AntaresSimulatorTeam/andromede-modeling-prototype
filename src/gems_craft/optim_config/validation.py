@@ -342,8 +342,7 @@ def validate_optim_config(
 
     if not config.scenario_scope.scenario_ids:
         errors.append(
-            "The scenario scope selects no scenario: check 'include', "
-            "'playlist-file' and 'exclude'"
+            "The scenario scope selects no scenario: check 'include' and 'exclude'"
         )
     if scenario_builder is not None:
         errors.extend(

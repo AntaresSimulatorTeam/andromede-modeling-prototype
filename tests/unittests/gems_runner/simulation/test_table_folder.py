@@ -10,6 +10,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
+import numpy as np
 import pandas as pd
 import pytest
 from test_simulation_table_read_api import (
@@ -20,11 +21,16 @@ from test_simulation_table_read_api import (
 )
 
 from gems_craft.study.parsing import OutputFormat
+from gems_runner.simulation import table_folder
 from gems_runner.simulation.simulation_table import (
     SIMULATION_TABLE_DTYPES,
     SimulationTable,
 )
-from gems_runner.simulation.table_folder import MANIFEST_FILE, _TableWriter
+from gems_runner.simulation.table_folder import (
+    MANIFEST_FILE,
+    _FolderStore,
+    _TableWriter,
+)
 from gems_runner.simulation.table_schema import _empty_frame
 
 _FORMATS = [OutputFormat.PARQUET, OutputFormat.CSV]
@@ -93,6 +99,21 @@ def test_csv_empty_cells_read_back_as_missing_values(tmp_path: Path) -> None:
     assert rows.dtypes.to_dict() == SIMULATION_TABLE_DTYPES
 
 
+@pytest.mark.parametrize("fmt", _FORMATS)
+def test_labels_that_look_missing_round_trip(tmp_path: Path, fmt: OutputFormat) -> None:
+    labels = ["NA", "N/A", "null", "NULL", "nan", "NaN", "#N/A"]
+    table = _table([(0, label, label, 0, 0, 1.0) for label in labels])
+    df = table.data.assign(basis_status=pd.array(labels, dtype="string[python]"))
+    table = SimulationTable(df, table_id="run")
+
+    reopened = SimulationTable.open(table.save(tmp_path / "table", fmt))
+
+    pd.testing.assert_frame_equal(
+        _sorted(reopened.to_pandas(load_all=True)), _sorted(table.data)
+    )
+    assert reopened.component("NA").output("NA").value(0, 0) == 1.0
+
+
 def test_a_table_without_rows_round_trips(tmp_path: Path) -> None:
     folder = SimulationTable(_empty_frame()).save(tmp_path / "table")
     reopened = SimulationTable.open(folder)
@@ -150,6 +171,41 @@ def test_save_refuses_a_folder_that_is_not_empty(tmp_path: Path) -> None:
         _table().save(tmp_path / "table")
 
 
+def test_save_with_an_unknown_format_creates_no_folder(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="xlsx"):
+        _table().save(tmp_path / "table", "xlsx")  # type: ignore[arg-type]
+    assert not (tmp_path / "table").exists()
+
+
+@pytest.mark.parametrize("error", [OSError("disk full"), KeyboardInterrupt()])
+@pytest.mark.parametrize("existed", [False, True], ids=["new-folder", "empty-folder"])
+def test_a_failed_save_leaves_the_folder_as_it_was(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: BaseException, existed: bool
+) -> None:
+    folder = tmp_path / "table"
+    if existed:
+        folder.mkdir()
+    write, written = _TableWriter._write_file, []
+
+    def fail_on_the_second_file(
+        self: _TableWriter, df: pd.DataFrame, stem: str
+    ) -> Path:
+        if written:
+            raise error
+        written.append(stem)
+        return write(self, df, stem)
+
+    monkeypatch.setattr(_TableWriter, "_write_file", fail_on_the_second_file)
+    with pytest.raises(type(error)):
+        _table().save(folder)
+
+    assert written  # a file was written before the failure
+    assert folder.exists() == existed
+    assert not existed or not any(folder.iterdir())
+    monkeypatch.undo()
+    assert (_table().save(folder) / MANIFEST_FILE).is_file()  # a retry works
+
+
 def test_open_refuses_a_folder_without_manifest(tmp_path: Path) -> None:
     folder = _table().save(tmp_path / "table")
     (folder / MANIFEST_FILE).unlink()  # as left by an interrupted run
@@ -163,6 +219,67 @@ def test_open_refuses_an_unknown_schema_version(tmp_path: Path) -> None:
     (folder / MANIFEST_FILE).write_text(json.dumps({**manifest, "schema_version": 99}))
     with pytest.raises(ValueError, match="unsupported schema_version 99"):
         SimulationTable.open(folder)
+
+
+def _with_manifest(tmp_path: Path, edit: Any) -> Path:
+    """A saved table folder whose manifest is replaced by edit(content)."""
+    folder = _table().save(tmp_path / "table")
+    content = json.loads((folder / MANIFEST_FILE).read_text())
+    (folder / MANIFEST_FILE).write_text(json.dumps(edit(content)))
+    return folder
+
+
+@pytest.mark.parametrize(
+    "edit, message",
+    [
+        pytest.param(lambda m: [m], "not a JSON object", id="not-an-object"),
+        pytest.param(
+            lambda m: {**m, "schema_version": True},
+            "unsupported schema_version True",
+            id="version-true",
+        ),
+        pytest.param(
+            lambda m: {k: v for k, v in m.items() if k != "has_common"},
+            "missing has_common",
+            id="missing-key",
+        ),
+        pytest.param(lambda m: {**m, "run_id": None}, "invalid run_id", id="run-id"),
+        pytest.param(lambda m: {**m, "format": "xlsx"}, "invalid format", id="format"),
+        pytest.param(
+            lambda m: {**m, "scenarios": [0, 0, 1]},
+            "invalid scenarios",
+            id="duplicate-scenarios",
+        ),
+        pytest.param(
+            lambda m: {**m, "scenarios": ["0", "1"]},
+            "invalid scenarios",
+            id="string-scenarios",
+        ),
+        pytest.param(
+            lambda m: {**m, "has_common": "no"}, "invalid has_common", id="has-common"
+        ),
+    ],
+)
+def test_open_refuses_an_invalid_manifest_with_its_path(
+    tmp_path: Path, edit: Any, message: str
+) -> None:
+    folder = _with_manifest(tmp_path, edit)
+    with pytest.raises(ValueError, match=message) as raised:
+        SimulationTable.open(folder)
+    assert str(folder / MANIFEST_FILE) in str(raised.value)
+
+
+def test_open_refuses_a_manifest_that_is_not_json(tmp_path: Path) -> None:
+    folder = _table().save(tmp_path / "table")
+    (folder / MANIFEST_FILE).write_text("{not json")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        SimulationTable.open(folder)
+
+
+def test_open_ignores_a_key_added_to_the_manifest_later(tmp_path: Path) -> None:
+    folder = _with_manifest(tmp_path, lambda m: {**m, "created_by": "a later version"})
+
+    assert SimulationTable.open(folder).scenarios == _table().scenarios
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +329,26 @@ def test_write_scenario_writes_an_empty_file_for_a_scenario_without_rows(
     assert pd.read_parquet(tmp_path / "table" / "scenario-3.parquet").empty
 
 
+def test_write_scenario_accepts_a_numpy_scenario_id(tmp_path: Path) -> None:
+    writer, df = _writer(tmp_path)
+    writer.write_scenario(df[df["scenario_index"] == 0], scenario=np.int64(0))
+    writer.write_scenario(df.iloc[0:0], scenario=np.int64(3))
+
+    manifest = writer.finalize()
+
+    assert manifest.scenarios == [0, 3]
+    assert all(type(s) is int for s in manifest.scenarios)
+    assert SimulationTable.open(tmp_path / "table").scenarios == [0, 3]
+
+
+def test_write_scenario_refuses_a_scenario_id_that_is_not_an_integer(
+    tmp_path: Path,
+) -> None:
+    writer, df = _writer(tmp_path)
+    with pytest.raises(TypeError):
+        writer.write_scenario(df.iloc[0:0], scenario=3.5)  # type: ignore[arg-type]
+
+
 def test_write_scenario_refuses_rows_of_another_scenario(tmp_path: Path) -> None:
     writer, df = _writer(tmp_path)
     with pytest.raises(ValueError, match="rows are of scenario 0, not 1"):
@@ -246,6 +383,45 @@ def test_to_pandas_without_filter_needs_load_all(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="load_all=True"):
         stored.to_pandas()
     assert len(stored.to_pandas(load_all=True)) == len(_table().data)
+
+
+@pytest.mark.parametrize("fmt", _FORMATS)
+@pytest.mark.parametrize(
+    "read",
+    [
+        pytest.param(lambda t: t.to_pandas(load_all=True), id="load_all"),
+        pytest.param(lambda t: t.to_pandas(components=["gen"]), id="filter"),
+        pytest.param(lambda t: t.to_pandas(scenarios=[7]), id="no-scenario-file"),
+        pytest.param(lambda t: next(iter(t.iter_scenarios()))[1], id="iter_scenarios"),
+    ],
+)
+def test_reads_give_the_schema_without_converting_twice(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fmt: OutputFormat, read: Any
+) -> None:
+    stored = _stored(tmp_path, fmt)
+
+    def converted_again(df: pd.DataFrame) -> pd.DataFrame:
+        raise AssertionError("_apply_schema called on a read")
+
+    monkeypatch.setattr(table_folder, "_apply_schema", converted_again)
+    df = read(stored)
+
+    assert list(df.columns) == list(SIMULATION_TABLE_DTYPES)
+    assert df.dtypes.to_dict() == SIMULATION_TABLE_DTYPES
+
+
+def test_load_all_on_disk_returns_the_rows_read_without_a_copy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    read, frames = _FolderStore.read, []
+
+    def keep(self: _FolderStore, row_filter: Any) -> pd.DataFrame:
+        frames.append(read(self, row_filter))
+        return frames[-1]
+
+    monkeypatch.setattr(_FolderStore, "read", keep)
+
+    assert _stored(tmp_path).to_pandas(load_all=True) is frames[-1]
 
 
 @pytest.mark.parametrize("fmt", _FORMATS)
@@ -318,6 +494,31 @@ def test_rows_read_in_full_are_reused_on_disk(tmp_path: Path) -> None:
     view.value(time_index=0, scenario_index=1)
 
     assert [f.scenarios for f in store.reads] == [None]
+
+
+def test_a_table_opened_from_a_relative_path_reads_from_anywhere(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    stored = SimulationTable.open(_table().save(Path("table")))
+    payload = pickle.dumps(stored)
+
+    (tmp_path / "elsewhere").mkdir()
+    monkeypatch.chdir(tmp_path / "elsewhere")
+
+    assert stored.path == (tmp_path / "table").resolve()
+    assert stored.component("gen").output("p").value(1, 1) == 13.0
+    assert pickle.loads(payload).component("gen").output("p").value(1, 1) == 13.0
+
+
+@pytest.mark.parametrize("fmt", _FORMATS)
+def test_a_folder_named_like_a_uri_is_read_as_a_local_path(
+    tmp_path: Path, fmt: OutputFormat, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    stored = SimulationTable.open(_table().save(Path("s3:x"), fmt))
+
+    assert _keys(stored.to_pandas(load_all=True)) == _keys(_table().data)
 
 
 def test_a_stored_table_is_cheap_to_pickle(tmp_path: Path) -> None:

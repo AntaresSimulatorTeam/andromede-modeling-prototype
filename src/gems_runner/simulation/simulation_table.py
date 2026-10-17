@@ -97,8 +97,8 @@ class OutputView:
         scenario.
 
         Reading one scenario only saves work when the table is stored on disk
-        (one file per scenario): in memory, each read scans the whole table, so
-        the view reads all its rows once instead."""
+        (one file per scenario): in memory, each read starts from all the rows
+        of the view's component, so the view reads all its rows once instead."""
         if (
             scenario_index is None
             or self._store.path is None
@@ -281,22 +281,30 @@ class SimulationTable:
         Raises ``FileNotFoundError`` for a folder without a manifest, e.g. an
         interrupted run. Nothing else is read until rows are asked for.
         """
-        path = Path(path)
+        # Absolute, so that the table still reads after a chdir or when it is
+        # unpickled in another working directory, and so that pyarrow never
+        # reads the path as a URI (a relative folder named "s3:x").
+        path = Path(path).resolve()
         return cls._from_store(_FolderStore(path, _Manifest.read(path)))
 
     def save(self, path: Path, format: OutputFormat = OutputFormat.PARQUET) -> Path:
         """Write the table as a simulation table folder at *path*, from either
         storage, and return *path*. *path* is created if missing and must be
-        empty otherwise. ``SimulationTable.open(path)`` reads it back.
+        empty otherwise. ``SimulationTable.open(path)`` reads it back. If the
+        write fails, the files written so far are removed, so it can be retried.
         """
         path = Path(path)
         writer = _TableWriter(path, self.table_id, format)
-        for scenario, rows in self._store.iter_scenarios(_RowFilter()):
-            if scenario is None:
-                writer.write_common(rows)
-            else:  # also a scenario without rows, so that it stays listed
-                writer.write_scenario(rows, scenario)
-        writer.finalize()
+        try:
+            for scenario, rows in self._store.iter_scenarios(_RowFilter()):
+                if scenario is None:
+                    writer.write_common(rows)
+                else:  # also a scenario without rows, so that it stays listed
+                    writer.write_scenario(rows, scenario)
+            writer.finalize()
+        except BaseException:  # Ctrl-C too
+            writer.abort()
+            raise
         return path
 
     @property
@@ -370,7 +378,11 @@ class SimulationTable:
                 "load_all=True, or filter by components, outputs or scenarios."
             )
         rows = self._store.read(row_filter)
-        return rows.copy() if row_filter.is_unrestricted else rows
+        # In memory, every row is the store's own frame: copy it. On disk, the
+        # rows are a new frame already.
+        if row_filter.is_unrestricted and self.path is None:
+            return rows.copy()
+        return rows
 
     def iter_scenarios(
         self,
