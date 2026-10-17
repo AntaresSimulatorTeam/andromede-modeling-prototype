@@ -26,6 +26,7 @@ be read together by any tool.
 """
 
 import json
+import operator
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -143,6 +144,10 @@ class _TableWriter:
         file is written, so that the scenario is still listed in the manifest.
         """
         self._check_open()
+        if scenario is not None:
+            # A plain int, so that the manifest can be written: a numpy integer
+            # is not JSON serializable. A float or a string is refused.
+            scenario = operator.index(scenario)
         in_rows = df[_SCENARIO] if _SCENARIO in df.columns else pd.Series(dtype=int)
         labels = {int(s) for s in in_rows.dropna().unique()}
         if in_rows.isna().any() or len(labels) > 1 or (not labels and scenario is None):

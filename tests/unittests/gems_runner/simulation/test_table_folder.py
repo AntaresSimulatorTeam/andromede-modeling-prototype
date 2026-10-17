@@ -10,6 +10,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Tuple
 
+import numpy as np
 import pandas as pd
 import pytest
 from test_simulation_table_read_api import (
@@ -225,6 +226,26 @@ def test_write_scenario_writes_an_empty_file_for_a_scenario_without_rows(
 
     assert writer.finalize().scenarios == [3]
     assert pd.read_parquet(tmp_path / "table" / "scenario-3.parquet").empty
+
+
+def test_write_scenario_accepts_a_numpy_scenario_id(tmp_path: Path) -> None:
+    writer, df = _writer(tmp_path)
+    writer.write_scenario(df[df["scenario_index"] == 0], scenario=np.int64(0))
+    writer.write_scenario(df.iloc[0:0], scenario=np.int64(3))
+
+    manifest = writer.finalize()
+
+    assert manifest.scenarios == [0, 3]
+    assert all(type(s) is int for s in manifest.scenarios)
+    assert SimulationTable.open(tmp_path / "table").scenarios == [0, 3]
+
+
+def test_write_scenario_refuses_a_scenario_id_that_is_not_an_integer(
+    tmp_path: Path,
+) -> None:
+    writer, df = _writer(tmp_path)
+    with pytest.raises(TypeError):
+        writer.write_scenario(df.iloc[0:0], scenario=3.5)  # type: ignore[arg-type]
 
 
 def test_write_scenario_refuses_rows_of_another_scenario(tmp_path: Path) -> None:
