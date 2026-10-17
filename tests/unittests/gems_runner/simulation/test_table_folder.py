@@ -216,6 +216,67 @@ def test_open_refuses_an_unknown_schema_version(tmp_path: Path) -> None:
         SimulationTable.open(folder)
 
 
+def _with_manifest(tmp_path: Path, edit: Any) -> Path:
+    """A saved table folder whose manifest is replaced by edit(content)."""
+    folder = _table().save(tmp_path / "table")
+    content = json.loads((folder / MANIFEST_FILE).read_text())
+    (folder / MANIFEST_FILE).write_text(json.dumps(edit(content)))
+    return folder
+
+
+@pytest.mark.parametrize(
+    "edit, message",
+    [
+        pytest.param(lambda m: [m], "not a JSON object", id="not-an-object"),
+        pytest.param(
+            lambda m: {**m, "schema_version": True},
+            "unsupported schema_version True",
+            id="version-true",
+        ),
+        pytest.param(
+            lambda m: {k: v for k, v in m.items() if k != "has_common"},
+            "missing has_common",
+            id="missing-key",
+        ),
+        pytest.param(lambda m: {**m, "run_id": None}, "invalid run_id", id="run-id"),
+        pytest.param(lambda m: {**m, "format": "xlsx"}, "invalid format", id="format"),
+        pytest.param(
+            lambda m: {**m, "scenarios": [0, 0, 1]},
+            "invalid scenarios",
+            id="duplicate-scenarios",
+        ),
+        pytest.param(
+            lambda m: {**m, "scenarios": ["0", "1"]},
+            "invalid scenarios",
+            id="string-scenarios",
+        ),
+        pytest.param(
+            lambda m: {**m, "has_common": "no"}, "invalid has_common", id="has-common"
+        ),
+    ],
+)
+def test_open_refuses_an_invalid_manifest_with_its_path(
+    tmp_path: Path, edit: Any, message: str
+) -> None:
+    folder = _with_manifest(tmp_path, edit)
+    with pytest.raises(ValueError, match=message) as raised:
+        SimulationTable.open(folder)
+    assert str(folder / MANIFEST_FILE) in str(raised.value)
+
+
+def test_open_refuses_a_manifest_that_is_not_json(tmp_path: Path) -> None:
+    folder = _table().save(tmp_path / "table")
+    (folder / MANIFEST_FILE).write_text("{not json")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        SimulationTable.open(folder)
+
+
+def test_open_ignores_a_key_added_to_the_manifest_later(tmp_path: Path) -> None:
+    folder = _with_manifest(tmp_path, lambda m: {**m, "created_by": "a later version"})
+
+    assert SimulationTable.open(folder).scenarios == _table().scenarios
+
+
 # ---------------------------------------------------------------------------
 # Writer
 # ---------------------------------------------------------------------------

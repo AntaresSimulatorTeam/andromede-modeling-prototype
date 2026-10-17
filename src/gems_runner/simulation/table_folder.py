@@ -29,8 +29,9 @@ import json
 import operator
 import os
 from dataclasses import asdict, dataclass
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pandas as pd
 import pyarrow as pa
@@ -97,20 +98,41 @@ class _Manifest:
                 f"{folder} is not a simulation table folder: it has no "
                 f"{MANIFEST_FILE} (the run that wrote it may have been interrupted)."
             )
-        content = json.loads(path.read_text())
-        if content.get("schema_version") != MANIFEST_SCHEMA_VERSION:
+        try:
+            content = json.loads(path.read_text())
+        except json.JSONDecodeError as error:
+            raise ValueError(f"{path}: not valid JSON ({error}).") from error
+        if not isinstance(content, dict):
+            raise ValueError(f"{path}: the manifest is not a JSON object.")
+        version = content.get("schema_version")
+        if type(version) is not int or version != MANIFEST_SCHEMA_VERSION:
             raise ValueError(
-                f"{path}: unsupported schema_version "
-                f"{content.get('schema_version')!r}, expected "
+                f"{path}: unsupported schema_version {version!r}, expected "
                 f"{MANIFEST_SCHEMA_VERSION}."
             )
-        manifest = cls(**content)
-        if manifest.columns != _COLUMNS:
+        # Keys unknown here are ignored: a field added later under the same
+        # schema_version does not stop this version from reading the folder.
+        names = [field.name for field in dataclass_fields(cls)]
+        missing = [name for name in names if name not in content]
+        if missing:
+            raise ValueError(f"{path}: missing {', '.join(missing)}.")
+        known = {name: content[name] for name in names}
+        checks: Dict[str, Callable[[Any], bool]] = {
+            "run_id": lambda v: isinstance(v, str),
+            "format": lambda v: v in {f.value for f in OutputFormat},
+            "scenarios": lambda v: isinstance(v, list)
+            and all(type(s) is int for s in v)
+            and v == sorted(set(v)),
+            "has_common": lambda v: isinstance(v, bool),
+        }
+        invalid = [name for name, valid in checks.items() if not valid(known[name])]
+        if invalid:
+            raise ValueError(f"{path}: invalid {', '.join(invalid)}.")
+        if known["columns"] != _COLUMNS:
             raise ValueError(
                 f"{path}: the columns do not match the simulation table schema."
             )
-        OutputFormat(manifest.format)  # raises on an unknown format
-        return manifest
+        return cls(**known)
 
 
 class _TableWriter:
