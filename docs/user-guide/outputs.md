@@ -75,17 +75,28 @@ value_s0_t1 = sub[(sub["scenario_index"] == 0) & (sub["block_time_index"] == 1)]
 
 ---
 
-## Exporting results
+## Saving and reopening results
 
 ~~~ python
-results.to_csv(Path("output/"))       # writes one CSV per component
-results.to_parquet(Path("output/"))   # writes a zstd-compressed Parquet file
-results.to_netcdf(Path("output/"))    # writes a NetCDF file
-ds = results.to_dataset()             # returns an xarray Dataset
+from gems_craft.study.parsing import OutputFormat
+from gems_runner.simulation import SimulationTable
+
+results.save(Path("my_run"))                    # a table folder, in Parquet
+results.save(Path("my_run_csv"), OutputFormat.CSV)
+results = SimulationTable.open(Path("my_run"))  # reads it back, lazily
 ~~~
 
-Parquet files are written with zstd compression (level 3) and row groups of
-64,000 rows.
+`save()` writes a folder with one file per scenario, a `scenario-common` file
+for the rows shared by all scenarios, and a `manifest.json` written last. The
+folder is created if missing and must be empty otherwise. Parquet files are
+written with zstd compression (level 3) and row groups of 64,000 rows.
+
+On a reopened table, `data` raises: use `to_pandas(load_all=True)`,
+`to_pandas()` with filters, or `iter_scenarios()`.
+
+`to_csv()`, `to_parquet()`, `to_dataset()` and `to_netcdf()` are deprecated and
+will be removed in a following release: use `save()`, or build an xarray object
+from `to_pandas()`.
 
 ### Choosing the output format from the CLI
 
