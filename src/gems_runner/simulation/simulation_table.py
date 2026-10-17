@@ -288,16 +288,21 @@ class SimulationTable:
     def save(self, path: Path, format: OutputFormat = OutputFormat.PARQUET) -> Path:
         """Write the table as a simulation table folder at *path*, from either
         storage, and return *path*. *path* is created if missing and must be
-        empty otherwise. ``SimulationTable.open(path)`` reads it back.
+        empty otherwise. ``SimulationTable.open(path)`` reads it back. If the
+        write fails, the files written so far are removed, so it can be retried.
         """
         path = Path(path)
         writer = _TableWriter(path, self.table_id, format)
-        for scenario, rows in self._store.iter_scenarios(_RowFilter()):
-            if scenario is None:
-                writer.write_common(rows)
-            else:  # also a scenario without rows, so that it stays listed
-                writer.write_scenario(rows, scenario)
-        writer.finalize()
+        try:
+            for scenario, rows in self._store.iter_scenarios(_RowFilter()):
+                if scenario is None:
+                    writer.write_common(rows)
+                else:  # also a scenario without rows, so that it stays listed
+                    writer.write_scenario(rows, scenario)
+            writer.finalize()
+        except BaseException:  # Ctrl-C too
+            writer.abort()
+            raise
         return path
 
     @property

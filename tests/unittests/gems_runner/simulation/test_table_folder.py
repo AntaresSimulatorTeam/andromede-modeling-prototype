@@ -166,6 +166,41 @@ def test_save_refuses_a_folder_that_is_not_empty(tmp_path: Path) -> None:
         _table().save(tmp_path / "table")
 
 
+def test_save_with_an_unknown_format_creates_no_folder(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="xlsx"):
+        _table().save(tmp_path / "table", "xlsx")  # type: ignore[arg-type]
+    assert not (tmp_path / "table").exists()
+
+
+@pytest.mark.parametrize("error", [OSError("disk full"), KeyboardInterrupt()])
+@pytest.mark.parametrize("existed", [False, True], ids=["new-folder", "empty-folder"])
+def test_a_failed_save_leaves_the_folder_as_it_was(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: BaseException, existed: bool
+) -> None:
+    folder = tmp_path / "table"
+    if existed:
+        folder.mkdir()
+    write, written = _TableWriter._write_file, []
+
+    def fail_on_the_second_file(
+        self: _TableWriter, df: pd.DataFrame, stem: str
+    ) -> Path:
+        if written:
+            raise error
+        written.append(stem)
+        return write(self, df, stem)
+
+    monkeypatch.setattr(_TableWriter, "_write_file", fail_on_the_second_file)
+    with pytest.raises(type(error)):
+        _table().save(folder)
+
+    assert written  # a file was written before the failure
+    assert folder.exists() == existed
+    assert not existed or not any(folder.iterdir())
+    monkeypatch.undo()
+    assert (_table().save(folder) / MANIFEST_FILE).is_file()  # a retry works
+
+
 def test_open_refuses_a_folder_without_manifest(tmp_path: Path) -> None:
     folder = _table().save(tmp_path / "table")
     (folder / MANIFEST_FILE).unlink()  # as left by an interrupted run
