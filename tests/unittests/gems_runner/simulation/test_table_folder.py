@@ -93,6 +93,21 @@ def test_csv_empty_cells_read_back_as_missing_values(tmp_path: Path) -> None:
     assert rows.dtypes.to_dict() == SIMULATION_TABLE_DTYPES
 
 
+@pytest.mark.parametrize("fmt", _FORMATS)
+def test_labels_that_look_missing_round_trip(tmp_path: Path, fmt: OutputFormat) -> None:
+    labels = ["NA", "N/A", "null", "NULL", "nan", "NaN", "#N/A"]
+    table = _table([(0, label, label, 0, 0, 1.0) for label in labels])
+    df = table.data.assign(basis_status=pd.array(labels, dtype="string[python]"))
+    table = SimulationTable(df, table_id="run")
+
+    reopened = SimulationTable.open(table.save(tmp_path / "table", fmt))
+
+    pd.testing.assert_frame_equal(
+        _sorted(reopened.to_pandas(load_all=True)), _sorted(table.data)
+    )
+    assert reopened.component("NA").output("NA").value(0, 0) == 1.0
+
+
 def test_a_table_without_rows_round_trips(tmp_path: Path) -> None:
     folder = SimulationTable(_empty_frame()).save(tmp_path / "table")
     reopened = SimulationTable.open(folder)

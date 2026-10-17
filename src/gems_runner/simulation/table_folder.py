@@ -262,10 +262,13 @@ class _FolderStore:
     def _dataset(self, files: List[Path]) -> ds.Dataset:
         file_format: Any = "parquet"
         if self._manifest.output_format == OutputFormat.CSV:
+            # Only an empty cell is missing, as to_csv writes it: pyarrow's
+            # default would also read labels such as "NA" or "null" as missing.
             file_format = ds.CsvFileFormat(
                 convert_options=pacsv.ConvertOptions(
                     column_types=SIMULATION_TABLE_SCHEMA,
                     strings_can_be_null=True,
+                    null_values=[""],
                 )
             )
         return ds.dataset(  # type: ignore[no-untyped-call]
