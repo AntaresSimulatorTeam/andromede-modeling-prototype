@@ -21,6 +21,7 @@ from test_simulation_table_read_api import (
 )
 
 from gems_craft.study.parsing import OutputFormat
+from gems_runner.simulation import table_folder
 from gems_runner.simulation.simulation_table import (
     SIMULATION_TABLE_DTYPES,
     SimulationTable,
@@ -382,6 +383,31 @@ def test_to_pandas_without_filter_needs_load_all(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="load_all=True"):
         stored.to_pandas()
     assert len(stored.to_pandas(load_all=True)) == len(_table().data)
+
+
+@pytest.mark.parametrize("fmt", _FORMATS)
+@pytest.mark.parametrize(
+    "read",
+    [
+        pytest.param(lambda t: t.to_pandas(load_all=True), id="load_all"),
+        pytest.param(lambda t: t.to_pandas(components=["gen"]), id="filter"),
+        pytest.param(lambda t: t.to_pandas(scenarios=[7]), id="no-scenario-file"),
+        pytest.param(lambda t: next(iter(t.iter_scenarios()))[1], id="iter_scenarios"),
+    ],
+)
+def test_reads_give_the_schema_without_converting_twice(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fmt: OutputFormat, read: Any
+) -> None:
+    stored = _stored(tmp_path, fmt)
+
+    def converted_again(df: pd.DataFrame) -> pd.DataFrame:
+        raise AssertionError("_apply_schema called on a read")
+
+    monkeypatch.setattr(table_folder, "_apply_schema", converted_again)
+    df = read(stored)
+
+    assert list(df.columns) == list(SIMULATION_TABLE_DTYPES)
+    assert df.dtypes.to_dict() == SIMULATION_TABLE_DTYPES
 
 
 def test_load_all_on_disk_returns_the_rows_read_without_a_copy(

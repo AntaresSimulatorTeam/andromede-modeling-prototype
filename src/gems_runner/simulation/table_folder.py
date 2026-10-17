@@ -261,12 +261,13 @@ class _TableWriter:
         return path
 
 
+_PANDAS_TYPES = {pa.int64(): pd.Int64Dtype(), pa.string(): pd.StringDtype("python")}
+
+
 def _to_frame(table: pa.Table) -> pd.DataFrame:
-    """Arrow table to a DataFrame with the schema's dtypes."""
-    df = table.to_pandas(
-        types_mapper=lambda t: pd.Int64Dtype() if t == pa.int64() else None
-    )
-    return _apply_schema(df)
+    """Arrow table, read with the schema, to a DataFrame with the schema's
+    columns and dtypes. Each column is converted once, straight to its dtype."""
+    return table.to_pandas(types_mapper=_PANDAS_TYPES.get)
 
 
 class _FolderStore:
