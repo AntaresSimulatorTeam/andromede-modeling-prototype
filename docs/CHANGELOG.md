@@ -108,10 +108,11 @@ All notable changes to GemsPy are documented here.
   `to_pandas()`. They raise on a table stored on disk.
 
 ### Fixed
-- **Sequential mode with a single time step** - raises "Sequential mode solved
-  no time block for scenario …" instead of `ValueError: No objects to
-  concatenate`. The run still solves no block (a single time step is not
-  handled yet), but it no longer fails with an unrelated message, and never
+- **Sequential mode with a single time step** - raises "Sequential mode solves
+  no time block when the time scope has a single time step (…): use frontal or
+  parallel-subproblems mode." before anything is solved or written, instead of
+  `ValueError: No objects to concatenate`. The time step is still not solved
+  (#310), but the run no longer fails with an unrelated message, and never
   returns an empty table.
 - **Empty scenario scope** - a `scenario-scope` that selects no scenario (e.g.
   every included scenario excluded) is rejected when the optim config is

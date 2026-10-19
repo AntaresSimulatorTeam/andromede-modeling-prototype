@@ -14,6 +14,7 @@
 scenario at a time as they are solved, and returns the stored table."""
 
 import json
+import os
 import shutil
 from pathlib import Path
 from typing import Any, List, Tuple
@@ -187,10 +188,14 @@ def test_run_study_writes_a_table_folder(tmp_path: Path, fmt: Any, ext: str) -> 
 
 @pytest.mark.parametrize("with_output_dir", [False, True])
 def test_sequential_mode_with_a_single_time_step_raises(
-    tmp_path: Path, with_output_dir: bool
+    tmp_path: Path, with_output_dir: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Sequential mode solves no block on a single time step: raise rather
-    # than return an empty table.
+    # Sequential mode solves no block on a single time step: raise before
+    # anything is solved or written, rather than return an empty table.
+    solved: List[Any] = []
+    monkeypatch.setattr(
+        SimulationSession, "_solve_block", lambda self, *a: solved.append(a)
+    )
     config = OptimConfig(
         time_scope=TimeScopeConfig(first_time_step=0, last_time_step=0),
         scenario_scope=ScenarioScopeConfig(include=[0]),
@@ -199,5 +204,28 @@ def test_sequential_mode_with_a_single_time_step_raises(
         ),
     )
     kwargs = {"output_dir": tmp_path} if with_output_dir else {}
-    with pytest.raises(ValueError, match="solved no time block for scenario 0"):
+    with pytest.raises(ValueError, match=r"single time step \(0\.\.0\)"):
         _session(config, **kwargs).run()
+    assert solved == []
+    assert not (tmp_path / SIMULATION_TABLE_FOLDER).exists()
+
+
+def test_a_relative_output_dir_is_opened_where_it_was_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    monkeypatch.chdir(tmp_path / "a")
+    solve = SimulationSession._solve_block
+
+    def solve_then_chdir(self: Any, *args: Any) -> Any:
+        problem = solve(self, *args)
+        os.chdir(tmp_path / "b")  # the working directory changes mid-run
+        return problem
+
+    monkeypatch.setattr(SimulationSession, "_solve_block", solve_then_chdir)
+
+    stored = _session(_CONFIGS["parallel"], output_dir=Path("run")).run()
+
+    assert stored.path == (tmp_path / "a" / "run" / SIMULATION_TABLE_FOLDER).resolve()
+    assert not stored.objective_values().empty

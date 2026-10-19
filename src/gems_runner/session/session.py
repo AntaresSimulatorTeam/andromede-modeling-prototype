@@ -89,6 +89,16 @@ class SimulationSession:
             ResolutionMode.PARALLEL_SUBPROBLEMS,
         ):
             raise ValueError(f"Unknown resolution mode: {mode}")
+        first = self.optim_config.time_scope.first_time_step
+        last = self.optim_config.time_scope.last_time_step
+        if mode == ResolutionMode.SEQUENTIAL_SUBPROBLEMS and first == last:
+            # Checked before anything is solved or written: the sequential
+            # loop solves no block on a single time step (#310).
+            raise ValueError(
+                "Sequential mode solves no time block when the time scope has a "
+                f"single time step ({first}..{last}): use frontal or "
+                "parallel-subproblems mode."
+            )
 
         frames = self._iter_scenario_frames(mode)
         if self.output_dir is None:
@@ -98,7 +108,9 @@ class SimulationSession:
                 scenarios=self.scenario_ids,
             )
 
-        folder = Path(self.output_dir) / SIMULATION_TABLE_FOLDER
+        # Resolved once, so that the table is opened where it was written even
+        # if the working directory changes during the run.
+        folder = Path(self.output_dir).resolve() / SIMULATION_TABLE_FOLDER
         writer = _TableWriter(folder, self.run_id, self.output_format)
         for scenario, rows in frames:  # each scenario is written once solved
             if scenario is None:
@@ -185,16 +197,6 @@ class SimulationSession:
                 )
                 block_id += 1
 
-            if not blocks:
-                # Was a bare "No objects to concatenate" before results were
-                # streamed; an empty table would hide that nothing was solved.
-                raise ValueError(
-                    "Sequential mode solved no time block for scenario "
-                    f"{scenario_id}: the time scope "
-                    f"{self.optim_config.time_scope.first_time_step}.."
-                    f"{self.optim_config.time_scope.last_time_step} has a single "
-                    "time step."
-                )
             yield scenario_id, _concat_frames(blocks)
 
     def _iter_parallel(self) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
