@@ -11,9 +11,10 @@
 # This file is part of the Antares project.
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 from uuid import uuid4
 
+import pandas as pd
 import xarray as xr
 
 from gems_craft.optim_config.parsing import (
@@ -22,6 +23,7 @@ from gems_craft.optim_config.parsing import (
 )
 from gems_craft.optim_config.validation import validate_optim_config
 from gems_craft.study.folder import load_study
+from gems_craft.study.parsing import OutputFormat
 from gems_craft.study.study import Study
 from gems_runner.simulation.heuristic_runner import (
     apply_thermal_heuristics,
@@ -31,23 +33,36 @@ from gems_runner.simulation.optimization import OptimizationProblem, build_probl
 from gems_runner.simulation.simulation_table import (
     SimulationTable,
     SimulationTableBuilder,
-    merge_simulation_tables,
+    _concat_frames,
 )
+from gems_runner.simulation.table_folder import _TableWriter
+from gems_runner.simulation.table_schema import _empty_frame
 from gems_runner.simulation.time_block import TimeBlock
+
+SIMULATION_TABLE_FOLDER = "simulation_table"
 
 
 class SimulationSession:
+    """Solves a study and returns its results as a ``SimulationTable``.
+
+    Without *output_dir*, the results stay in memory. With it, each scenario is
+    written to ``output_dir / "simulation_table"`` as soon as it is solved, and
+    ``run()`` returns the stored table (see docs/user-guide/outputs.md).
+    """
+
     def __init__(
         self,
         study: Study,
         optim_config: OptimConfig,
         run_id: Optional[str] = None,
         output_dir: Optional[Path] = None,
+        output_format: OutputFormat = OutputFormat.PARQUET,
     ) -> None:
         self.study = study
         self.optim_config = optim_config
         self.run_id = run_id or str(uuid4())
         self.output_dir = output_dir
+        self.output_format = OutputFormat(output_format)
         self._apply_heuristics = should_apply_heuristics(study)
 
     @property
@@ -55,26 +70,81 @@ class SimulationSession:
         return self.optim_config.scenario_scope.scenario_ids
 
     def run(self) -> SimulationTable:
-        """Entry point. Dispatches to the appropriate resolution strategy."""
+        """Entry point. Validates the optim config, solves the study and returns
+        its results: the stored table with an ``output_dir``, a table in memory
+        otherwise, and an empty table in Benders mode."""
         validate_optim_config(
             self.optim_config, self.study.system, self.study.scenario_builder
         )
         mode = self.optim_config.resolution.mode
+        if mode == ResolutionMode.BENDERS_DECOMPOSITION:
+            self._run_benders()
+            # Benders produces no simulation table: no table folder either.
+            return SimulationTable(
+                _empty_frame(), table_id=self.run_id, scenarios=self.scenario_ids
+            )
+        if mode not in (
+            ResolutionMode.FRONTAL,
+            ResolutionMode.SEQUENTIAL_SUBPROBLEMS,
+            ResolutionMode.PARALLEL_SUBPROBLEMS,
+        ):
+            raise ValueError(f"Unknown resolution mode: {mode}")
+        first = self.optim_config.time_scope.first_time_step
+        last = self.optim_config.time_scope.last_time_step
+        if mode == ResolutionMode.SEQUENTIAL_SUBPROBLEMS and first == last:
+            # Checked before anything is solved or written: the sequential
+            # loop solves no block on a single time step. Remove once the
+            # block list is built upfront.
+            raise ValueError(
+                "Sequential mode solves no time block when the time scope has a "
+                f"single time step ({first}..{last}): use frontal or "
+                "parallel-subproblems mode."
+            )
+
+        frames = self._iter_scenario_frames(mode)
+        if self.output_dir is None:
+            return SimulationTable(
+                _concat_frames(rows for _, rows in frames),
+                table_id=self.run_id,
+                scenarios=self.scenario_ids,
+            )
+
+        # Resolved once, so that the table is opened where it was written even
+        # if the working directory changes during the run.
+        folder = Path(self.output_dir).resolve() / SIMULATION_TABLE_FOLDER
+        writer = _TableWriter(folder, self.run_id, self.output_format)
+        for scenario, rows in frames:  # each scenario is written once solved
+            if scenario is None:
+                writer.write_common(rows)
+            else:
+                writer.write_scenario(rows, scenario)
+        writer.finalize()  # the manifest last: the folder is complete
+        return SimulationTable.open(folder)
+
+    # ------------------------------------------------------------------
+    # Resolution strategies: the rows of the run, one scenario at a time
+    # ------------------------------------------------------------------
+
+    def _iter_scenario_frames(
+        self, mode: ResolutionMode
+    ) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
+        """Solve and yield the rows of the run as ``(scenario, rows)``.
+        Private: results are returned by ``run()`` only.
+
+        Sequential and parallel modes yield one frame per scenario, and solve
+        a scenario only once the previous one has been consumed. Frontal mode
+        solves once; with an ``output_dir``, it yields the rows shared by all
+        scenarios as ``(None, rows)``, then one frame per scenario; without
+        one, it yields every row in a single ``(None, rows)`` frame, in the
+        order of ``build()``."""
         if mode == ResolutionMode.FRONTAL:
-            return self._run_frontal()
+            yield from self._iter_frontal()
         elif mode == ResolutionMode.SEQUENTIAL_SUBPROBLEMS:
-            return self._run_sequential()
-        elif mode == ResolutionMode.PARALLEL_SUBPROBLEMS:
-            return self._run_parallel()
-        elif mode == ResolutionMode.BENDERS_DECOMPOSITION:
-            return self._run_benders()
-        raise ValueError(f"Unknown resolution mode: {mode}")
+            yield from self._iter_sequential()
+        else:
+            yield from self._iter_parallel()
 
-    # ------------------------------------------------------------------
-    # Resolution strategies
-    # ------------------------------------------------------------------
-
-    def _run_frontal(self) -> SimulationTable:
+    def _iter_frontal(self) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
         block = TimeBlock(
             0,
             list(
@@ -84,17 +154,26 @@ class SimulationSession:
                 )
             ),
         )
-        _, table = self._run_block(block, scenario_ids=self.scenario_ids)
-        return table
+        if self.output_dir is None:
+            # In memory: one frame, with the rows and order of build().
+            _, rows = self._run_block(block, scenario_ids=self.scenario_ids)
+            yield None, rows
+            return
+        # On disk: each scenario's rows are built from the solution arrays and
+        # written one at a time; the full table is never built.
+        problem = self._solve_block(block, scenario_ids=self.scenario_ids)
+        yield from SimulationTableBuilder()._iter_scenario_frames(
+            problem, self.scenario_ids
+        )
 
-    def _run_sequential(self) -> SimulationTable:
+    def _iter_sequential(self) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
         cfg = self.optim_config.resolution
         block_length: int = cfg.block_length  # type: ignore[assignment]
         block_overlap: int = cfg.block_overlap
         carry_over_length: int = cfg.effective_carry_over_length
 
-        tables: List[SimulationTable] = []
         for scenario_id in self.scenario_ids:
+            blocks: List[pd.DataFrame] = []
             t_start = self.optim_config.time_scope.first_time_step
             block_id = 0
             carry_over: Dict[Tuple[str, str], xr.DataArray] = {}
@@ -106,12 +185,12 @@ class SimulationSession:
                 )
                 timesteps = list(range(t_start, end))
                 block = TimeBlock(block_id, timesteps)
-                problem, table = self._run_block(
+                problem, rows = self._run_block(
                     block,
                     scenario_ids=[scenario_id],
                     initial_values=carry_over or None,
                 )
-                tables.append(table)
+                blocks.append(rows)
                 # Block N and block N+1 share `block_overlap` absolute
                 # timesteps: block N's local indices `block_length - overlap
                 # ...` are block N+1's local indices `0 ...`.
@@ -124,13 +203,12 @@ class SimulationSession:
                 )
                 block_id += 1
 
-        return self._reduce(tables)
+            yield scenario_id, _concat_frames(blocks)
 
-    def _run_parallel(self) -> SimulationTable:
+    def _iter_parallel(self) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
         cfg = self.optim_config.resolution
         block_length: int = cfg.block_length  # type: ignore[assignment]
 
-        tables: List[SimulationTable] = []
         for scenario_id in self.scenario_ids:
             starts = range(
                 self.optim_config.time_scope.first_time_step,
@@ -152,15 +230,13 @@ class SimulationSession:
                 )
                 for i, t in enumerate(starts)
             ]
-            for block in blocks:
-                _, table = self._run_block(block, scenario_ids=[scenario_id])
-                tables.append(table)
+            frames = [
+                self._run_block(block, scenario_ids=[scenario_id])[1]
+                for block in blocks
+            ]
+            yield scenario_id, _concat_frames(frames)
 
-        return self._reduce(tables)
-
-    def _run_benders(self) -> SimulationTable:
-        import pandas as pd
-
+    def _run_benders(self) -> None:
         from gems_runner.simulation import (
             BendersRunner,
             build_couplings,
@@ -190,10 +266,9 @@ class SimulationSession:
             raise RuntimeError(
                 "Benders decomposition requires a master problem and an output directory for coupling files."
             )
-        return SimulationTable(pd.DataFrame(), scenarios=self.scenario_ids)
 
     # ------------------------------------------------------------------
-    # Map / reduce helpers
+    # Solving one block
     # ------------------------------------------------------------------
 
     def _run_block(
@@ -201,14 +276,27 @@ class SimulationSession:
         block: TimeBlock,
         scenario_ids: List[int],
         initial_values: Optional[Dict[Tuple[str, str], xr.DataArray]] = None,
-    ) -> Tuple[OptimizationProblem, SimulationTable]:
-        """MAP: build and solve one block, then convert to a SimulationTable.
+    ) -> Tuple[OptimizationProblem, pd.DataFrame]:
+        """Build and solve one block, then convert it to rows.
 
         Returns both the solved problem (for carry-over extraction or inspection)
-        and the SimulationTable with correct absolute-time and scenario indices.
+        and its rows with correct absolute-time and scenario indices.
         scenario_ids_remap equals scenario_ids because the list of MC scenario IDs
         IS the mapping from internal 0-based position to actual MC identifier.
         """
+        problem = self._solve_block(block, scenario_ids, initial_values)
+        rows = SimulationTableBuilder()._build_frame(
+            problem, scenario_ids_remap=scenario_ids
+        )
+        return problem, rows
+
+    def _solve_block(
+        self,
+        block: TimeBlock,
+        scenario_ids: List[int],
+        initial_values: Optional[Dict[Tuple[str, str], xr.DataArray]] = None,
+    ) -> OptimizationProblem:
+        """Build and solve one block."""
         problem = build_problem(
             self.study,
             block,
@@ -230,10 +318,7 @@ class SimulationSession:
             apply_thermal_heuristics(problem, self.optim_config, scenario_ids)
             problem.solve(solver_name=solver_name, **solver_kwargs)
             self._check_solved(problem)
-        table = SimulationTableBuilder().build(
-            problem, scenario_ids_remap=scenario_ids, table_id=self.run_id
-        )
-        return problem, table
+        return problem
 
     @staticmethod
     def _check_solved(problem: OptimizationProblem) -> None:
@@ -242,10 +327,6 @@ class SimulationSession:
                 f"Problem {problem.name!r} was not solved to optimality "
                 f"(termination_condition={problem.termination_condition!r})."
             )
-
-    def _reduce(self, tables: List[SimulationTable]) -> SimulationTable:
-        """REDUCE: merge SimulationTables from one scenario's blocks into one."""
-        return merge_simulation_tables(tables, table_id=self.run_id)
 
     @staticmethod
     def _extract_carry_over(

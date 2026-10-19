@@ -41,6 +41,28 @@ All notable changes to GemsPy are documented here.
   and the LP file written by `export_lp` do not.
 
 ### Changed
+- **Breaking** - `run_study` and `gemspy` write the simulation table as a folder,
+  `output/<run_id>/simulation_table/` (one file per scenario, a
+  `scenario-common` file and a `manifest.json`), instead of a single
+  `simulation_table_<run_id>.csv` / `.parquet` file. Each scenario is written as
+  soon as it is solved, so the whole table is never held in memory; reopen it
+  with `SimulationTable.open()`.
+- **Breaking** - the default output format of `run_study` and of the CLI
+  `--output-format` option is now Parquet (it was CSV). CSV is still available
+  with `--output-format csv`.
+- **Breaking** - `SimulationSession(..., output_dir=...).run()` now stores the
+  results on disk and returns the stored table, on which `data` raises: use
+  `to_pandas(load_all=True)`, the filters of `to_pandas()`, or
+  `iter_scenarios()`. A new `output_format` argument chooses the format
+  (Parquet by default). `output_dir/simulation_table/` must be missing or
+  empty, so an `output_dir` holds a single run. Without `output_dir`, results
+  stay in memory as before. `merge_simulation_tables` is removed.
+- **Clearer error for a single-time-step sequential run** - in
+  `sequential-subproblems` mode, a time scope whose `first-time-step` equals
+  its `last-time-step` still solves no block, but `run()` now fails
+  before solving anything with "Sequential mode solves no time block when the
+  time scope has a single time step (…): use frontal or parallel-subproblems
+  mode." instead of `ValueError: No objects to concatenate`.
 - **Scenario playlist removed** - scenario selection is now configured inline
   through `scenario-scope`; the `playlist-file` option is no longer supported.
 - **Breaking** - a time-sum bound (an absolute bound, or the offset `k` of a
@@ -93,6 +115,11 @@ All notable changes to GemsPy are documented here.
   `to_pandas()`. They raise on a table stored on disk.
 
 ### Fixed
+- **Empty scenario scope** - a `scenario-scope` that selects no scenario (e.g.
+  every included scenario excluded) is rejected by `validate_optim_config` at
+  the start of `SimulationSession.run()`, before anything is solved, instead of
+  failing during the run with `No objects to concatenate` or `cannot reshape
+  array of size 0`.
 - **Outputs without a time or scenario dimension** - `OutputView.value()`
   accepts any index for the missing dimension and returns the single stored
   value; it raised `KeyError` for any index but 0. `OutputView.data` keeps one
