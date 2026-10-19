@@ -89,16 +89,12 @@ _KEY_COLS = [
 ]
 
 
-def _load_csv(study_dir: Path) -> pd.DataFrame:
-    return read_run_table(study_dir)
-
-
 def _run_with_config(study_dir: Path, config_yaml: str) -> pd.DataFrame:
     """Write optim-config.yml, run the study, return the raw simulation table."""
     config_path = study_dir / "input" / "optim-config.yml"
     config_path.write_text(config_yaml)
     run_study(study_dir)
-    return _load_csv(study_dir)
+    return read_run_table(study_dir)
 
 
 def _per_timestep_df(raw: pd.DataFrame) -> pd.DataFrame:

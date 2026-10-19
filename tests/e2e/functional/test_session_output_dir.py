@@ -39,7 +39,7 @@ from gems_runner.simulation.simulation_table import (
 )
 from gems_runner.simulation.table_folder import MANIFEST_FILE, _TableWriter
 from gems_runner.study.runner import run_study
-from tests.e2e.functional.test_simulation_table_roundtrip import _assert_same
+from tests.e2e.functional.simulation_table_output import assert_same_tables
 
 _STUDY_13_1 = Path(__file__).parent / "studies" / "13_1"
 
@@ -54,6 +54,7 @@ def _config(mode: ResolutionMode, scenarios: List[int], **resolution: int) -> An
 
 _CONFIGS = {
     "frontal": _config(ResolutionMode.FRONTAL, [0, 1]),
+    "frontal-1": _config(ResolutionMode.FRONTAL, [1]),
     "sequential-overlap": _config(
         ResolutionMode.SEQUENTIAL_SUBPROBLEMS, [0, 1], block_length=2, block_overlap=1
     ),
@@ -75,9 +76,92 @@ def test_stored_table_matches_the_table_in_memory(
     stored = _session(_CONFIGS[mode], output_dir=tmp_path, output_format=fmt).run()
 
     assert stored.path == tmp_path / SIMULATION_TABLE_FOLDER
-    assert memory.path is None
-    assert stored.scenarios == memory.scenarios == [0, 1]
-    _assert_same(memory, stored)
+    assert stored.scenarios == _CONFIGS[mode].scenario_scope.scenario_ids
+    assert_same_tables(memory, stored)
+
+
+def test_a_folder_holding_a_table_is_refused_before_anything_is_solved(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _session(_CONFIGS["parallel"], output_dir=tmp_path).run()
+    solved: List[Any] = []
+    monkeypatch.setattr(
+        SimulationSession, "_solve_block", lambda self, *a: solved.append(a)
+    )
+
+    with pytest.raises(FileExistsError, match="is not empty"):
+        _session(_CONFIGS["parallel"], output_dir=tmp_path).run()
+    assert solved == []
+
+
+_SHARED_ONLY_LIBRARY = """\
+library:
+  id: lib
+  models:
+    - id: inv
+      parameters:
+        - id: c
+          scenario-dependent: false
+          time-dependent: false
+      variables:
+        - id: x
+          scenario-dependent: false
+          time-dependent: false
+          lower-bound: 1
+          upper-bound: 10
+        - id: y
+          scenario-dependent: false
+          lower-bound: 2
+          upper-bound: 10
+      extra-outputs:
+        - id: cx
+          expression: c * x
+      objective-contributions:
+        - id: obj
+          expression: c * x + sum(c * y)
+"""
+
+_SHARED_ONLY_SYSTEM = """\
+system:
+  id: shared
+  components:
+    - id: g
+      model: lib.inv
+      parameters:
+        - id: c
+          scenario-dependent: false
+          time-dependent: false
+          value: 3
+"""
+
+
+@pytest.mark.parametrize("fmt", [OutputFormat.PARQUET, OutputFormat.CSV])
+def test_frontal_outputs_shared_by_every_scenario_go_to_the_common_file(
+    tmp_path: Path, fmt: OutputFormat
+) -> None:
+    study = tmp_path / "study"
+    (study / "input" / "model-libraries").mkdir(parents=True)
+    (study / "input" / "model-libraries" / "lib.yml").write_text(_SHARED_ONLY_LIBRARY)
+    (study / "input" / "system.yml").write_text(_SHARED_ONLY_SYSTEM)
+    config = _config(ResolutionMode.FRONTAL, [0, 1])
+
+    memory = SimulationSession(load_study(study), config, run_id="run").run()
+    stored = SimulationSession(
+        load_study(study),
+        config,
+        run_id="run",
+        output_dir=tmp_path / "out",
+        output_format=fmt,
+    ).run()
+
+    assert_same_tables(memory, stored)
+    assert [(s, len(rows)) for s, rows in stored.iter_scenarios()][1:] == [
+        (0, 0),
+        (1, 0),
+    ]
+    manifest = json.loads((stored.path / MANIFEST_FILE).read_text())
+    assert manifest["scenarios"] == [0, 1]
+    assert manifest["has_common"] is True
 
 
 @pytest.mark.parametrize("mode", ["sequential-overlap", "parallel"])
