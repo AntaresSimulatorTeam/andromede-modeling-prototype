@@ -20,8 +20,9 @@ def _reserve_output_dir(output_root: Path) -> Tuple[str, Path]:
     and path.
 
     The folder is created without ``exist_ok``, so two runs can never share it.
-    It is reserved before solving because Benders mode writes ``structure.txt``
-    into it before the simulation table.
+    It is reserved before solving because the session writes into it while
+    solving: each scenario of the simulation table, or Benders'
+    ``structure.txt``.
     """
     output_root.mkdir(parents=True, exist_ok=True)
     while True:
@@ -47,7 +48,7 @@ def run_study(
     Results are written to the table folder
     ``study_dir/output/{run_id}/simulation_table/`` (one file per scenario and
     a ``manifest.json``), one scenario at a time as it is solved; reopen them
-    with ``SimulationTable.open``.
+    with ``SimulationTable.open``. Benders mode writes no simulation table.
 
     Args:
         study_dir: The path to the study directory.

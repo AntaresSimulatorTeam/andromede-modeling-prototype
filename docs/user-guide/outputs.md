@@ -36,14 +36,26 @@ results = SimulationSession(
 
 Each scenario is written to `my_run/simulation_table/` as soon as it is solved,
 so the whole table is never held in memory, and `run()` returns the stored
-table. In frontal mode, the rows of each scenario are built from the solution
-and written one scenario at a time. Benders mode produces no simulation table:
-no folder is written and `run()` returns an empty table.
+table. In frontal mode, the problem is solved once, then the rows of each
+scenario are built from the solution and written one scenario at a time.
+
+- `my_run/simulation_table/` must be missing or empty: use a new `output_dir`
+  for each run. Otherwise `run()` raises `FileExistsError`, before anything is
+  solved.
+- If the run fails or is interrupted, the scenario files written so far stay
+  in the folder, but no manifest is written, so `SimulationTable.open()`
+  refuses it. Delete the folder, or use another `output_dir`, before running
+  again.
+- Benders mode produces no simulation table: no `simulation_table/` folder is
+  written and `run()` returns an empty table.
 
 ### From the command line: `gemspy` and `run_study`
 
-`gemspy` and `run_study` always store the results, in
-`<study>/output/<run_id>/simulation_table/`, in Parquet by default:
+`gemspy` and `run_study` store the results in a new run folder,
+`<study>/output/<run_id>/simulation_table/`, in Parquet by default (Benders
+mode writes no table). The run folder is created before the run starts, so a
+run that fails leaves it in `output/`, empty or with the scenarios written so
+far:
 
 ~~~ bash
 gemspy --study path/to/study_dir                       # Parquet
@@ -92,11 +104,15 @@ simulation_table/
   scenario dimension and the objective value of a frontal run with several
   scenarios. Their `scenario_index` is empty.
 - `manifest.json` holds the schema version, the `run_id`, the format, the
-  scenarios and the column schema.
+  scenarios of the run, whether there is a `scenario-common` file
+  (`has_common`) and the column schema.
 - Every file has the same columns and types: `block`, `absolute_time_index`,
   `block_time_index` and `scenario_index` are integers (empty for a missing
   dimension), `component`, `output` and `basis_status` are strings, `value` is
   a float.
+- In CSV, only an empty cell is read as missing, so a label that is an empty
+  string and a missing value both read back as `<NA>`. Parquet keeps them
+  apart.
 
 Other tools can read the files directly, e.g. `scenario-*.parquet` with polars
 or duckdb: include the `scenario-common` file, which the glob matches.
@@ -168,7 +184,10 @@ results.save(Path("copy_csv"), OutputFormat.CSV)
 
 `save()` writes the folder described above, from a table in memory or on disk.
 The folder is created if missing and must be empty otherwise. Parquet files are
-written with zstd compression (level 3) and row groups of 64,000 rows.
+written with zstd compression (level 3) and row groups of 64,000 rows. If the
+write fails or is interrupted, the files written so far are removed and the
+folder is left as it was, so `save()` can be retried with the same path; a run
+given an `output_dir`, by contrast, keeps its partial files (see above).
 
 `to_csv()`, `to_parquet()`, `to_dataset()` and `to_netcdf()` are deprecated and
 will be removed in a following release: use `save()`, or build an xarray object

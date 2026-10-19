@@ -43,12 +43,11 @@ SIMULATION_TABLE_FOLDER = "simulation_table"
 
 
 class SimulationSession:
-    """Solves a study.
+    """Solves a study and returns its results as a ``SimulationTable``.
 
-    Results are stored on disk if and only if *output_dir* is given: each
-    scenario is written to ``output_dir / "simulation_table"`` as soon as it is
-    solved, in *output_format*, and ``run()`` returns the stored table.
-    Otherwise they stay in memory.
+    Without *output_dir*, the results stay in memory. With it, each scenario is
+    written to ``output_dir / "simulation_table"`` as soon as it is solved, and
+    ``run()`` returns the stored table (see docs/user-guide/outputs.md).
     """
 
     def __init__(
@@ -71,8 +70,9 @@ class SimulationSession:
         return self.optim_config.scenario_scope.scenario_ids
 
     def run(self) -> SimulationTable:
-        """Entry point. Solves the study and returns its results, stored on
-        disk when the session has an ``output_dir``, in memory otherwise."""
+        """Entry point. Validates the optim config, solves the study and returns
+        its results: the stored table with an ``output_dir``, a table in memory
+        otherwise, and an empty table in Benders mode."""
         validate_optim_config(
             self.optim_config, self.study.system, self.study.scenario_builder
         )
@@ -93,7 +93,8 @@ class SimulationSession:
         last = self.optim_config.time_scope.last_time_step
         if mode == ResolutionMode.SEQUENTIAL_SUBPROBLEMS and first == last:
             # Checked before anything is solved or written: the sequential
-            # loop solves no block on a single time step (#310).
+            # loop solves no block on a single time step. Remove once the
+            # block list is built upfront.
             raise ValueError(
                 "Sequential mode solves no time block when the time scope has a "
                 f"single time step ({first}..{last}): use frontal or "
@@ -127,10 +128,15 @@ class SimulationSession:
     def _iter_scenario_frames(
         self, mode: ResolutionMode
     ) -> Iterator[Tuple[Optional[int], pd.DataFrame]]:
-        """Solve and yield the rows of the run one scenario at a time, as
-        ``(scenario, rows)``; ``(None, rows)`` for rows shared by all
-        scenarios. A scenario is solved only once the previous one has been
-        consumed. Private: results are returned by ``run()`` only."""
+        """Solve and yield the rows of the run as ``(scenario, rows)``.
+        Private: results are returned by ``run()`` only.
+
+        Sequential and parallel modes yield one frame per scenario, and solve
+        a scenario only once the previous one has been consumed. Frontal mode
+        solves once; with an ``output_dir``, it yields the rows shared by all
+        scenarios as ``(None, rows)``, then one frame per scenario; without
+        one, it yields every row in a single ``(None, rows)`` frame, in the
+        order of ``build()``."""
         if mode == ResolutionMode.FRONTAL:
             yield from self._iter_frontal()
         elif mode == ResolutionMode.SEQUENTIAL_SUBPROBLEMS:
@@ -271,7 +277,7 @@ class SimulationSession:
         scenario_ids: List[int],
         initial_values: Optional[Dict[Tuple[str, str], xr.DataArray]] = None,
     ) -> Tuple[OptimizationProblem, pd.DataFrame]:
-        """MAP: build and solve one block, then convert it to rows.
+        """Build and solve one block, then convert it to rows.
 
         Returns both the solved problem (for carry-over extraction or inspection)
         and its rows with correct absolute-time and scenario indices.
