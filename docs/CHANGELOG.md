@@ -10,6 +10,11 @@ All notable changes to GemsPy are documented here.
   10.2), which names the port field through which a component reads the
   marginal price of the legacy area it is connected to. `parse_yaml_library`
   rejected libraries using it (`Extra inputs are not permitted`).
+- **Plain numbers in expression fields** - in a model library, every
+  expression field (constraint expressions and bounds, port-field definitions,
+  objective contributions, extra outputs) now accepts a YAML number, such as
+  `definition: 0`, read as if it were quoted. Only variable bounds accepted one
+  before; elsewhere parsing failed with `Input should be a valid string`.
 - **`SimulationTable.objective_values()`** - returns the objective value of
   every solved problem, with columns `block`, `scenario_index` and `value`.
 - **`block=` on the simulation table views** - `component(...).output(name,
@@ -22,6 +27,14 @@ All notable changes to GemsPy are documented here.
   `SimulationTable(df, table_id, scenarios=...)` takes the scenarios of the
   run, checked against the rows; the builder and the session pass them.
   `SimulationTable` is exported from `gems_runner.simulation`.
+- **Simulation tables stored on disk** - `SimulationTable.save(path, format)`
+  writes the table as a folder: one file per scenario of the run
+  (`scenario-<N>`, empty for a scenario without rows of its own), a
+  `scenario-common` file for the rows shared by all scenarios, and a
+  `manifest.json` written last, in Parquet (default) or CSV with one fixed
+  schema. `SimulationTable.open(path)` reads it back lazily, opening only the
+  files a call needs, and refuses a folder without a manifest. On such a table
+  `data` raises and `to_pandas()` without filter needs `load_all=True`.
 - **Taxonomy conformance checked when a study is loaded** - `load_study` reads
   the optional `input/taxonomy.yml` and calls
   `validate_libraries_against_taxonomy` on every library declaring a `taxonomy`
@@ -82,6 +95,12 @@ All notable changes to GemsPy are documented here.
   near-identical old names invited confusion. Reading and validating are now
   separate modules, as in `optim_config/`. No behavior change; names and
   import paths only.
+
+### Deprecated
+- **`SimulationTable.to_csv()`, `to_parquet()`, `to_dataset()` and
+  `to_netcdf()`** - they emit a `DeprecationWarning` and will be removed in a
+  following release. Use `save()`, or build an xarray object from
+  `to_pandas()`. They raise on a table stored on disk.
 
 ### Fixed
 - **Outputs without a time or scenario dimension** - `OutputView.value()`

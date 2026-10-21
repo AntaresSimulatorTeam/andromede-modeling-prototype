@@ -89,7 +89,8 @@ def test_simulation_table_builder_manual(tmp_path: Path) -> None:
         check_dtype=False,
     )
 
-    csv_path = df.to_csv(tmp_path)
+    with pytest.warns(DeprecationWarning):
+        csv_path = df.to_csv(tmp_path)
 
     assert csv_path.exists(), "CSV file was not created"
 
@@ -102,7 +103,8 @@ def test_simulation_table_builder_manual(tmp_path: Path) -> None:
     csv_path.unlink()
 
     pytest.importorskip("pyarrow")
-    parquet_path = df.to_parquet(tmp_path)
+    with pytest.warns(DeprecationWarning):
+        parquet_path = df.to_parquet(tmp_path)
     assert parquet_path.exists(), "Parquet file was not created"
     loaded = pd.read_parquet(parquet_path)
     assert list(loaded.columns) == [col.value for col in SimulationColumns]
