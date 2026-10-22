@@ -79,19 +79,25 @@ class AreaConnectionSchema(ModifiedBaseModel):
         """Always write the keys Antares Simulator requires, even when empty.
 
         Antares rejects an area-connection missing one of these keys, so they
-        survive exclude_none. The optional price key is still dropped when None,
+        are written whatever the dump options (exclude_none, include, exclude),
+        in field order. The optional price key is still dropped when None,
         since Antares versions before 10.2 reject it.
         """
         data: Dict[str, Any] = handler(self)
+        mandatory: Dict[str, Any] = {}
         for name in (
             "injection_to_balance",
             "spillage_bound",
             "unsupplied_energy_bound",
         ):
             field = type(self).model_fields[name]
-            key = field.alias if info.by_alias and field.alias else name
-            data.setdefault(key, None)
-        return data
+            key = (
+                field.serialization_alias
+                if info.by_alias and field.serialization_alias
+                else name
+            )
+            mandatory[key] = data.pop(key, None)
+        return {**mandatory, **data}
 
 
 class PortThermalCapacitySchema(ModifiedBaseModel):

@@ -14,6 +14,7 @@
 area-connection / thermal-capacity-connection fields on the base PortTypeSchema."""
 
 from pathlib import Path
+from typing import Any, Dict
 
 import pytest
 from yaml import safe_load
@@ -165,7 +166,7 @@ def test_write_yaml_library_roundtrip_hybrid(tmp_path: Path) -> None:
     assert reloaded == original
 
 
-def _written_area_connections(path: Path) -> dict:
+def _written_area_connections(path: Path) -> Dict[str, Dict[str, Any]]:
     with path.open() as f:
         tree = safe_load(f)
     return {
@@ -180,7 +181,15 @@ def test_write_yaml_library_keeps_empty_area_connection_keys(tmp_path: Path) -> 
         library = parse_yaml_library(f)
     out = tmp_path / "lib.yml"
     write_yaml_library(library, out)
-    assert _written_area_connections(out) == {
+    written = _written_area_connections(out)
+    # Antares-required keys first, in field order, then the optional price key
+    assert list(written["flow_with_price"]) == [
+        "injection-to-balance",
+        "spillage-bound",
+        "unsupplied-energy-bound",
+        "price",
+    ]
+    assert written == {
         "flow": {
             "injection-to-balance": "flow",
             "spillage-bound": "flow",
