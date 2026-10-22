@@ -5,6 +5,11 @@ All notable changes to GemsPy are documented here.
 ## [Unreleased]
 
 ### Added
+- **`price` in the `area-connection` of port types** - `AreaConnectionSchema`
+  accepts the optional `price` key of hybrid libraries (Antares Simulator
+  10.2), which names the port field through which a component reads the
+  marginal price of the legacy area it is connected to. `parse_yaml_library`
+  rejected libraries using it (`Extra inputs are not permitted`).
 - **Plain numbers in expression fields** - in a model library, every
   expression field (constraint expressions and bounds, port-field definitions,
   objective contributions, extra outputs) now accepts a YAML number, such as
