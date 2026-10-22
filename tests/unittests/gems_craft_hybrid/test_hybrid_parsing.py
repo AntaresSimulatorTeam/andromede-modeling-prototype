@@ -16,10 +16,14 @@ area-connection / thermal-capacity-connection fields on the base PortTypeSchema.
 from pathlib import Path
 
 import pytest
+from yaml import safe_load
 
 from gems_craft.model.parsing import (
     AreaConnectionSchema,
+    FieldSchema,
+    LibrarySchema,
     PortThermalCapacitySchema,
+    PortTypeSchema,
     parse_yaml_library,
     write_yaml_library,
 )
@@ -159,6 +163,61 @@ def test_write_yaml_library_roundtrip_hybrid(tmp_path: Path) -> None:
     with out.open() as f:
         reloaded = parse_yaml_library(f)
     assert reloaded == original
+
+
+def _written_area_connections(path: Path) -> dict:
+    with path.open() as f:
+        tree = safe_load(f)
+    return {
+        port_type["id"]: port_type["area-connection"]
+        for port_type in tree["library"]["port-types"]
+        if "area-connection" in port_type
+    }
+
+
+def test_write_yaml_library_keeps_empty_area_connection_keys(tmp_path: Path) -> None:
+    with FIXTURES.joinpath("hybrid_lib.yml").open() as f:
+        library = parse_yaml_library(f)
+    out = tmp_path / "lib.yml"
+    write_yaml_library(library, out)
+    assert _written_area_connections(out) == {
+        "flow": {
+            "injection-to-balance": "flow",
+            "spillage-bound": "flow",
+            "unsupplied-energy-bound": None,
+        },
+        "flow_with_price": {
+            "injection-to-balance": "flow",
+            "spillage-bound": None,
+            "unsupplied-energy-bound": None,
+            "price": "price",
+        },
+    }
+
+
+def test_write_yaml_library_writes_mandatory_area_connection_keys_of_python_library(
+    tmp_path: Path,
+) -> None:
+    library = LibrarySchema(
+        id="lib",
+        port_types=[
+            PortTypeSchema(
+                id="flow",
+                fields=[FieldSchema(id="flow")],
+                area_connection=AreaConnectionSchema(injection_to_balance="flow"),
+            ),
+            PortTypeSchema(id="plain", fields=[FieldSchema(id="flow")]),
+        ],
+    )
+    out = tmp_path / "lib.yml"
+    write_yaml_library(library, out)
+    assert _written_area_connections(out) == {
+        "flow": {
+            "injection-to-balance": "flow",
+            "spillage-bound": None,
+            "unsupplied-energy-bound": None,
+        }
+    }
 
 
 # ---------------------------------------------------------------------------
