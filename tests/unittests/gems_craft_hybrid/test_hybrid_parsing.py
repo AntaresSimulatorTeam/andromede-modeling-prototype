@@ -182,7 +182,7 @@ def test_write_yaml_library_keeps_empty_area_connection_keys(tmp_path: Path) -> 
     out = tmp_path / "lib.yml"
     write_yaml_library(library, out)
     written = _written_area_connections(out)
-    # Antares-required keys first, in field order, then the optional price key
+    # Mandatory keys first, in field order, then the optional price key
     assert list(written["flow_with_price"]) == [
         "injection-to-balance",
         "spillage-bound",

@@ -76,12 +76,12 @@ class AreaConnectionSchema(ModifiedBaseModel):
     def _keep_mandatory_keys(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
     ) -> Dict[str, Any]:
-        """Always write the keys Antares Simulator requires, even when empty.
+        """Always write the mandatory keys of the hybrid format, even when empty.
 
-        Antares rejects an area-connection missing one of these keys, so they
-        are written whatever the dump options (exclude_none, include, exclude),
-        in field order. The optional price key is still dropped when None,
-        since Antares versions before 10.2 reject it.
+        An area-connection missing one of these keys is invalid, so they are
+        written whatever the dump options (exclude_none, include, exclude), in
+        field order. The optional price key is still dropped when None, since
+        earlier versions of the hybrid format do not accept it.
         """
         data: Dict[str, Any] = handler(self)
         mandatory: Dict[str, Any] = {}
