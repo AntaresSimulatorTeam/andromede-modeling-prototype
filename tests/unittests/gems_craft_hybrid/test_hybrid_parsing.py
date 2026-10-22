@@ -38,6 +38,8 @@ from gems_craft_hybrid.study.parsing import (
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
+# Full GEMS libraries, without any hybrid-only field
+FULL_GEMS_LIBS = Path(__file__).parents[1] / "gems_craft" / "lib_parsing" / "libs"
 
 
 def _load_hybrid_system(path: Path) -> HybridSystemSchema:
@@ -94,6 +96,17 @@ def test_write_yaml_system_roundtrip_hybrid(tmp_path: Path) -> None:
     write_yaml_system(original, out)
     reloaded = _load_hybrid_system(out)
     assert reloaded == original
+
+
+def test_write_yaml_system_without_hybrid_entries_writes_no_hybrid_key(
+    tmp_path: Path,
+) -> None:
+    system = HybridSystemSchema(id="full_gems")
+    out = tmp_path / "system.yml"
+    write_yaml_system(system, out)
+    written = out.read_text()
+    assert "area-connections" not in written
+    assert "thermal-capacity-connections" not in written
 
 
 # ---------------------------------------------------------------------------
@@ -227,6 +240,37 @@ def test_write_yaml_library_writes_mandatory_area_connection_keys_of_python_libr
             "unsupplied-energy-bound": None,
         }
     }
+
+
+@pytest.mark.parametrize(
+    "library_file",
+    sorted(FULL_GEMS_LIBS.glob("*.yml")),
+    ids=lambda path: path.name,
+)
+def test_write_yaml_library_of_full_gems_library_writes_no_hybrid_key(
+    library_file: Path, tmp_path: Path
+) -> None:
+    with library_file.open() as f:
+        library = parse_yaml_library(f)
+    out = tmp_path / "lib.yml"
+    write_yaml_library(library, out)
+    written = out.read_text()
+    assert "area-connection" not in written
+    assert "thermal-capacity-connection" not in written
+
+
+def test_write_yaml_library_of_python_full_gems_library_writes_no_hybrid_key(
+    tmp_path: Path,
+) -> None:
+    library = LibrarySchema(
+        id="lib",
+        port_types=[PortTypeSchema(id="flow", fields=[FieldSchema(id="flow")])],
+    )
+    out = tmp_path / "lib.yml"
+    write_yaml_library(library, out)
+    written = out.read_text()
+    assert "area-connection" not in written
+    assert "thermal-capacity-connection" not in written
 
 
 # ---------------------------------------------------------------------------
